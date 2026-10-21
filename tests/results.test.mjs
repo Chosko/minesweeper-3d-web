@@ -1,6 +1,7 @@
 // Results screen (js/results/): the time and stat formats, the screen's content from a summary and
 // its comparison, the results flow over fakes, the #results markup and its wiring in js/main.js,
-// and in a browser a fixed Beginner board won through the real shell, then Play again.
+// and in a browser a fixed Beginner board won through the real shell, watched from the results
+// screen by mouse, keyboard and controller and from the Records screen's library view, then Play again.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -897,15 +898,46 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    // A fixed board: every board seed the session draws is 12345.
+    // A fixed board: every board seed the session draws is 12345. A fake standard controller,
+    // idle until pressed, for Watch replay's controller turn.
     await page.addInitScript(() => {
       const real = crypto.getRandomValues.bind(crypto);
       crypto.getRandomValues = (a) => { if (a instanceof Uint32Array && a.length === 1) { a[0] = 12345; return a; } return real(a); };
+      const pad = {
+        id: 'Fake pad (STANDARD GAMEPAD)', index: 0, connected: true, mapping: 'standard', timestamp: 0,
+        buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
+        axes: [0, 0, 0, 0],
+      };
+      globalThis.__fakePad = pad;
+      Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad, null, null, null] });
     });
     await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const mode = () => page.evaluate(() => globalThis.__ms.state.mode);
+    const frames = (n) => page.evaluate((count) => new Promise((done) => {
+      const step = (left) => (left ? requestAnimationFrame(() => step(left - 1)) : done());
+      step(count);
+    }), n);
+    // Holds a controller button for exactly one poll, then waits two frames (as tests/shell-menu.test.mjs).
+    const press = async (b) => {
+      await page.evaluate((i) => new Promise((done) => {
+        const set = (v) => {
+          Object.assign(globalThis.__fakePad.buttons[i], { pressed: v, touched: v, value: v ? 1 : 0 });
+          globalThis.__fakePad.timestamp++;
+        };
+        set(true);
+        requestAnimationFrame(() => { set(false); done(); });
+      }), b);
+      await frames(2);
+    };
+    const PAD = { A: 0, B: 1, LEFT: 14 };
+    const focused = () => page.evaluate(() => document.activeElement.id);
+    const viewerReady = () => page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    const shownNow = (id) => page.evaluate((i) => {
+      const el = document.getElementById(i);
+      return !el.classList.contains('hidden') && el.getBoundingClientRect().width > 0;
+    }, id);
 
     await page.click('#menu-entry-classic-2d');
     if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
@@ -1098,6 +1130,44 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     }
     await page.setViewportSize({ width: 1366, height: 768 });
 
+    // Watch replay shows beside Play again; the mouse opens the viewer on the game just played.
+    assert.equal(await shownNow('r-watch'), true, 'Watch replay is offered');
+    await page.click('#r-watch');
+    assert.equal(await mode(), 'replay');
+    await viewerReady();
+    const played = await page.evaluate(() => globalThis.__ms.replayViewer.state);
+    assert.equal(played.time, -500, 'the replay starts at the beginning, on the closed board');
+    assert.ok(played.duration > 0);
+    await page.keyboard.press('End');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended);
+    assert.match(await page.evaluate(() => document.getElementById('replay-end').textContent), /won/i, 'the replay ends on the win');
+    // Back returns to the results screen of the same game.
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'results', 'Back from the viewer returns to the results screen');
+    assert.equal(await page.evaluate(() => globalThis.__ms.replayViewer.state.status), 'closed');
+    assert.equal(await page.evaluate(() => document.getElementById('results-title').textContent), 'You won!', 'the same results');
+    assert.equal(await shownNow('c2d'), true, 'the finished board is still behind the results screen');
+    // The keyboard reaches Watch replay too: back from Play again past Records, Enter.
+    assert.equal(await focused(), 'r-again');
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Shift+Tab');
+    assert.equal(await focused(), 'r-watch', 'Shift+Tab twice from Play again');
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'replay', 'Enter on Watch replay');
+    await viewerReady();
+    await page.click('#rp-back');
+    assert.equal(await mode(), 'results');
+    // And the controller: left from Play again past Records, A opens the viewer, B comes back.
+    assert.equal(await focused(), 'r-again');
+    await press(PAD.LEFT);
+    await press(PAD.LEFT);
+    assert.equal(await focused(), 'r-watch', 'Left twice from Play again');
+    await press(PAD.A);
+    assert.equal(await mode(), 'replay', 'A on Watch replay');
+    await viewerReady();
+    await press(PAD.B);
+    assert.equal(await mode(), 'results', 'B from the viewer');
+
     // Records, then Back: the results screen shows again, and Play again still starts the same choice.
     await page.click('#r-records');
     assert.equal(await mode(), 'records', 'the records screen');
@@ -1105,6 +1175,19 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('records-back'); return [b.hasAttribute('data-to-menu'), b.getAttribute('aria-label'), b.innerText.split('\n')[0].trim()]; }),
       [false, 'Back', 'Back'], 'Records\' Back returns to the results, so it reads Back');
     assert.equal(await page.evaluate(() => document.querySelector('#rec-games .ui-stat__value').textContent), '1');
+    // From the Records screen's library view: Watch on the kept replay, on the best and on the recent
+    // game opens the viewer by id; Back returns to Records on the same board.
+    const kept = await page.evaluate(() => document.querySelector('#records-replays-body button[data-act="watch"]')?.dataset.id);
+    assert.ok(kept, 'the game\'s replay is kept and offers Watch');
+    for (const selector of [`#records-replays-body button[data-act="watch"][data-id="${kept}"]`, `#rec-time [data-watch="${kept}"]`, `#records-games-body [data-watch="${kept}"]`]) {
+      if (selector.startsWith('#records-replays')) await page.click('#records-tab-replays');
+      await page.click(selector);
+      assert.equal(await mode(), 'replay', selector);
+      await viewerReady();
+      await page.keyboard.press('Escape');
+      assert.equal(await mode(), 'records', selector);
+      assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), 'Beginner · Bests', `${selector}: back on the same board`);
+    }
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'results');
     assert.equal(await page.evaluate(() => document.getElementById('results-title').textContent), 'You won!');

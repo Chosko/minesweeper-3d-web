@@ -6,10 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { createBlobStore } from '../js/platform/blob-store.js';
 import { createMemoryBlobStore } from '../js/platform/memory-blob-store.js';
 import { openIndexedDBBlobStore, DB_NAME, STORE_NAME } from '../js/platform/indexeddb-blob-store.js';
-import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const suite = browserSuite({ pages: { '/': '<!doctype html><title>blob store</title>' } });
 const bytes = (...values) => new Uint8Array(values);
 
 // A blob store over a fresh in-memory implementation, opened at once.
@@ -286,64 +284,4 @@ test('no blob store file touches localStorage; the interface and memory store ar
   }
 });
 
-// ---------------------------------------------------------------- browser: IndexedDB round trip
-
-test('in a browser, a blob round-trips through IndexedDB across a page reload', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage();
-    await page.goto(`${base}/`);
-    const saved = await page.evaluate(async () => {
-      const { blobStore } = await import('/js/platform/index.js');
-      const blob = new Uint8Array(100_000).map((_, i) => (i * 7) & 0xff);
-      return {
-        available: await blobStore.available(),
-        put: await blobStore.put('replay-1', blob),
-        other: await blobStore.put('replay-2', new Uint8Array([1, 2])),
-      };
-    });
-    assert.deepEqual(saved, { available: true, put: { ok: true }, other: { ok: true } });
-
-    await page.reload();
-    const after = await page.evaluate(async ({ dbName, storeName }) => {
-      const { blobStore } = await import('/js/platform/index.js');
-      const got = await blobStore.get('replay-1');
-      let intact = got instanceof Uint8Array && got.length === 100_000;
-      for (let i = 0; intact && i < got.length; i++) intact = got[i] === ((i * 7) & 0xff);
-      const listed = await blobStore.list();
-      const deleted = await blobStore.delete('replay-2');
-      const records = await new Promise((resolve, reject) => {
-        const open = indexedDB.open(dbName);
-        open.onerror = () => reject(open.error);
-        open.onsuccess = () => {
-          const db = open.result;
-          const count = db.transaction(storeName).objectStore(storeName).count();
-          count.onsuccess = () => { db.close(); resolve(count.result); };
-          count.onerror = () => reject(count.error);
-        };
-      });
-      return {
-        available: await blobStore.available(),
-        intact,
-        listed,
-        deleted,
-        remaining: await blobStore.list(),
-        records,
-        localStorageKeys: localStorage.length,
-      };
-    }, { dbName: DB_NAME, storeName: STORE_NAME });
-    assert.deepEqual(after, {
-      available: true,
-      intact: true,
-      listed: ['replay-1', 'replay-2'],
-      deleted: { ok: true },
-      remaining: ['replay-1'],
-      records: 1,
-      localStorageKeys: 0,
-    });
-  } finally {
-    await browser.close();
-  }
-});
+// The IndexedDB round trip across a page reload is tests/platform-browser.test.mjs's browser test.

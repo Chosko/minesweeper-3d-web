@@ -1,10 +1,12 @@
-// The cards a 3D game shows over its scene in a browser (J-Ready-xl, -m, -p, -ls and J-Ready-states): the ready
-// card, its lock states and the context-lost card, readable on their surface and never wider than the window.
+// The cards a 3D game shows over its scene in a browser (J-Ready-xl, -l, -m, -p, -ls and J-Ready-states): the ready
+// card, its lock states, the Learn 3D end cards of a lost lesson and a won one, and the context-lost card,
+// readable on their surface and never wider than the window.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { browserSuite } from './helpers/browser.mjs';
 import { checkCard } from './helpers/contrast.mjs';
+import { patience } from './helpers/timing.mjs';
 // The page modules components.test.mjs imports, imported here too so the affected-tests mapping
 // selects this file for every change that selects that one.
 import '../js/ui/components.js';
@@ -16,8 +18,8 @@ import '../js/shell/navigation.js';
 
 const suite = browserSuite();
 
-// The 3D scene's card sizes (J-Ready-xl, -m, -p, -ls): the large and small desktop sizes and a phone held
-// either way.
+// The 3D scene's card sizes, each its own card width (J-Ready-xl, -l, -m, -p, -ls): the desktop sizes and a
+// phone held either way.
 const SIZES = [
   ['xl', { viewport: { width: 1920, height: 1080 } }],
   ['l', { viewport: { width: 1366, height: 768 } }],
@@ -47,7 +49,7 @@ test('the ready card\'s markup: the canvas\'s icons, the plain Learn line, the p
 });
 
 for (const [size, device] of SIZES) {
-  test(`in a browser, the 3D ready card, its lock states and the context-lost card at ${size} fit the window without a sideways scroll and meet the contrast contract`, async (t) => {
+  test(`in a browser, the 3D ready card, its lock states, the Learn 3D end cards and the context-lost card at ${size} fit the window without a sideways scroll and meet the contrast contract`, async (t) => {
     const env = await suite.open(t);
     if (!env) return;
     const { browser, base } = env;
@@ -138,6 +140,30 @@ for (const [size, device] of SIZES) {
         });
         assert.deepEqual(offer, ['hand', '17px', '15px', true], `${size}: drag-to-look a medium button with the hand icon, its controller note plain muted 15 px`);
         await checkCard(page, '#ready .ui-card', `ready-blocked-${size}`);
+      }
+
+      // The Learn 3D end cards: a lost lesson, then a won one.
+      for (const won of [false, true]) {
+        await ms(() => { globalThis.__ms.learn(); globalThis.__ms.forcePlay(); });
+        await ms(() => globalThis.__ms.state.play.reveal(globalThis.__ms.learnBoard.startCell));
+        await page.waitForFunction(() => globalThis.__ms.state.started);
+        await ms((w) => {
+          const g = globalThis.__ms.game;
+          const mines = [...globalThis.__ms.learnBoard.minePositions];
+          if (!w) globalThis.__ms.state.play.reveal(mines[0]);
+          else for (let c = 0; c < g.n; c++) if (!mines.includes(c) && !g.pressed[c]) globalThis.__ms.state.play.reveal(c);
+        }, won);
+        await page.waitForFunction(() => globalThis.__ms.state.mode === 'learn-end', null, { timeout: patience(7500) });
+        assert.equal(await ms(() => document.getElementById('learn-end-primary-label').textContent), won ? 'Play Cube Intro' : 'Try again');
+        // J-Ready-states' "end card · won" and "· lost": the line on both, in ink, the play or restart icon, Back's arrow.
+        assert.equal(await ms(() => document.getElementById('learn-end-line').getClientRects().length > 0), true, 'the line shows');
+        assert.equal(await ms(() => document.getElementById('learn-end-line').textContent),
+          won ? 'Ready for a real board? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records.' : 'The lesson box is always the same. Try it again.');
+        assert.deepEqual(await ms(() => [...document.querySelectorAll('#learn-end-primary > .ui-icon')].map((i) => i.dataset.icon)), [won ? 'play' : 'restart']);
+        assert.deepEqual(await ms(() => [...document.querySelectorAll('#learn-end-back > .ui-icon')].map((i) => i.dataset.icon)), ['arrow-left']);
+        assert.equal(await ms(() => getComputedStyle(document.getElementById('learn-end-line')).color),
+          await ms(() => getComputedStyle(document.getElementById('learn-end-title')).color), 'the body text in the title\'s ink');
+        await checkCard(page, '#learn-end .ui-card', `learn-end-${won ? 'won' : 'lost'}-${size}`);
       }
 
       // The context-lost card: the canvas does not come back.

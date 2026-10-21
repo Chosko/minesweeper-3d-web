@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createStorage } from '../js/platform/storage.js';
 import { createBrowserBackend, DOC_PREFIX, ASIDE_PREFIX } from '../js/platform/browser-backend.js';
+import { DB_NAME, STORE_NAME } from '../js/platform/indexeddb-blob-store.js';
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -352,7 +353,7 @@ test('no caller imports a backend directly: only js/platform/index.js selects on
 
 // ---------------------------------------------------------------- browser: survives a reload
 
-test('in a browser, a saved document survives a page reload', async (t) => {
+test('in a browser, a saved document and a blob in IndexedDB survive a page reload', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -364,9 +365,14 @@ test('in a browser, a saved document survives a page reload', async (t) => {
     const saved = await page.evaluate(async () => {
       const platform = await import('/js/platform/index.js');
       platform.register('reload-test', 1, {});
-      return { available: platform.available(), result: await platform.save('reload-test', { n: 42 }) };
+      const { blobStore } = platform;
+      const blob = new Uint8Array(100_000).map((_, i) => (i * 7) & 0xff);
+      return {
+        available: platform.available(), result: await platform.save('reload-test', { n: 42 }),
+        blobs: { available: await blobStore.available(), put: await blobStore.put('replay-1', blob), other: await blobStore.put('replay-2', new Uint8Array([1, 2])) },
+      };
     });
-    assert.deepEqual(saved, { available: true, result: { ok: true } });
+    assert.deepEqual(saved, { available: true, result: { ok: true }, blobs: { available: true, put: { ok: true }, other: { ok: true } } });
 
     await page.reload();
     const after = await page.evaluate(async () => {
@@ -374,7 +380,34 @@ test('in a browser, a saved document survives a page reload', async (t) => {
       platform.register('reload-test', 1, {});
       return { data: await platform.load('reload-test'), legacy: localStorage.getItem('ms3d.muted') };
     });
-    assert.deepEqual(after, { data: { n: 42 }, legacy: '1' });
+    assert.deepEqual(after, { data: { n: 42 }, legacy: '1' }, 'the document survives the reload');
+
+    const blobs = await page.evaluate(async ({ dbName, storeName }) => {
+      const { blobStore } = await import('/js/platform/index.js');
+      const got = await blobStore.get('replay-1');
+      let intact = got instanceof Uint8Array && got.length === 100_000;
+      for (let i = 0; intact && i < got.length; i++) intact = got[i] === ((i * 7) & 0xff);
+      const listed = await blobStore.list();
+      const deleted = await blobStore.delete('replay-2');
+      const records = await new Promise((resolve, reject) => {
+        const open = indexedDB.open(dbName);
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const count = db.transaction(storeName).objectStore(storeName).count();
+          count.onsuccess = () => { db.close(); resolve(count.result); };
+          count.onerror = () => reject(count.error);
+        };
+      });
+      return {
+        available: await blobStore.available(), intact, listed, deleted, remaining: await blobStore.list(), records,
+        blobKeysInLocalStorage: Object.keys(localStorage).filter((k) => k.includes('replay-')),
+      };
+    }, { dbName: DB_NAME, storeName: STORE_NAME });
+    assert.deepEqual(blobs, {
+      available: true, intact: true, listed: ['replay-1', 'replay-2'], deleted: { ok: true }, remaining: ['replay-1'], records: 1,
+      blobKeysInLocalStorage: [],
+    }, 'the blob round-trips through IndexedDB, never through localStorage');
   } finally {
     await browser.close();
   }

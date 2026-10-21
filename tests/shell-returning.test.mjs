@@ -1,6 +1,8 @@
 // The returning player's surface: the board's bests on both board choices, over a records model built
 // here; that the main menu keeps no Play again and no session strip and the
-// board options no detail line; and a browser run of them.
+// board options no detail line. In a browser, the bests are the board choices' tests'
+// (tests/classic2d-mode.test.mjs, tests/mode3d-board-choice.test.mjs), the menu opening on the last mode
+// and its board choice on the last board tests/classic2d-mode.test.mjs's first.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -12,10 +14,8 @@ import { createRecordsModel } from '../js/records/model.js';
 import * as RETURNING from '../js/shell/returning.js';
 
 const { boardBests, NO_BEST } = RETURNING;
-import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 
@@ -124,93 +124,4 @@ test('the catalogue documents both board choices\' bests, and no Play again or s
   assert.match(head, /Classic 2D board choice \(index\.html #c2d-choice\)[\s\S]*?bests[\s\S]*?Default focus/);
   const three = head.slice(head.indexOf('3D board choice (index.html #board-choice)'));
   assert.doesNotMatch(three.slice(0, three.indexOf('Default focus')), /detail line|typical 3BV|streak/, 'no detail line on a 3D option');
-});
-
-// ---------------------------------------------------------------- browser
-
-/** Records a won game on `board` through the page's records store. */
-function recordWin(page, { board, ms }) {
-  return page.evaluate(async ({ board: b, ms: elapsed }) => {
-    const { buildSummary } = await import('/js/records/summary.js');
-    const engine = { outcome: 'won', bbbv: 20, bbbvSolved: 20, clicks: { reveal: { effective: 20, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } } };
-    globalThis.__ms.records.record(buildSummary({ engine, elapsedMs: elapsed, board: b, seed: 1, generatorVersion: 1, endedAt: new Date(), id: `w-${Math.random()}` }));
-  }, { board, ms });
-}
-
-test('in a browser, both board choices\' bests follow the records and the switch, and the menu opens on the last mode, whose board choice opens on the last board', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html?still-backdrop`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
-    const ms = (fn, arg) => page.evaluate(fn, arg);
-    const mode = () => ms(() => globalThis.__ms.state.mode);
-    const shown = (sel) => ms((s) => { const e = document.querySelector(s); return !!e && !e.classList.contains('hidden') && e.getBoundingClientRect().width > 0; }, sel);
-    const text = (sel) => ms((s) => document.querySelector(s).textContent, sel);
-
-    // The 2D board choice: the chosen board's bests, no detail line on an option.
-    const best = () => ms(() => document.querySelector('#c2d-best-time .ui-stat__value').textContent);
-    await page.click('#menu-entry-classic-2d');
-    assert.equal(await mode(), 'classic-2d-choice');
-    assert.equal(await ms(() => document.querySelectorAll('#c2d-choice [data-detail]').length), 0);
-    await page.click('#c2d-choice [data-size="expert"]');
-    assert.equal(await best(), '—');
-    assert.equal(await ms(() => document.getElementById('c2d-noguess').checked), true, 'no-guess on for a new player');
-
-    // A won no-guess Expert game shows as the board's best; the switch off shows the other board's.
-    await recordWin(page, { board: { ...EXPERT_NG }, ms: 61234 });
-    assert.equal(await best(), '61.234 s');
-    await page.click('#c2d-noguess');
-    assert.equal(await best(), '—', 'the guessing twin has no game');
-    await page.click('#c2d-noguess');
-    assert.equal(await best(), '61.234 s');
-
-    // The 3D board choice too, following its presets' switch, with no detail line on an option.
-    const best3d = () => ms(() => document.querySelector('#bc-best-time .ui-stat__value').textContent);
-    await page.click('#c2d-choice-back');
-    await page.click('#menu-entry-3d');
-    assert.equal(await ms(() => document.querySelectorAll('#board-choice [data-detail]').length), 0);
-    await page.click('#board-choice [data-preset="8,8,8,40"]');
-    assert.equal(await best3d(), '—');
-    await recordWin(page, { board: { ...CUBE_INT_NG }, ms: 45000 });
-    assert.equal(await best3d(), '45.000 s');
-    await page.click('#bc-noguess');
-    assert.equal(await best3d(), '—', 'the guessing twin has no game');
-    assert.equal(await text('label[for="c-noguess"]'), 'No-guess');
-    await page.click('#board-choice-back');
-
-    // Play an Expert no-guess game to its first click, then leave it: the last board played.
-    await page.click('#menu-entry-classic-2d');
-    await page.click('#c2d-choice [data-size="expert"]');
-    await page.click('#c2d-play');
-    assert.equal(await mode(), 'classic-2d');
-    const canvas = await page.locator('#c2d-board canvas').first().boundingBox();
-    await page.mouse.click(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
-    await page.waitForFunction(() => document.getElementById('menu-entry-classic-2d').hasAttribute('data-last'));
-    await page.keyboard.press('Escape');
-    assert.equal(await mode(), 'paused');
-    await page.click('#p-menu');
-    if (await shown('#p-confirm-yes')) await page.click('#p-confirm-yes'); // "It will count as a loss"
-    assert.equal(await mode(), 'menu');
-    assert.equal(await ms(() => document.activeElement?.id), 'menu-entry-classic-2d', 'the menu opens on the last mode played');
-    assert.equal(await shown('#menu-entry-classic-2d .ui-chip[data-last]'), true, 'with its Last played chip');
-
-    // Enter, then Enter: the board choice opens on the last board, so it starts again.
-    const savedChoice = await ms(() => localStorage.getItem('ms3d:doc:classic2d.lastChoice'));
-    await page.keyboard.press('Enter');
-    assert.equal(await mode(), 'classic-2d-choice');
-    assert.equal(await ms(() => document.activeElement?.dataset.size), 'expert', 'the last board is selected');
-    await page.keyboard.press('Enter');
-    assert.equal(await mode(), 'classic-2d', 'onto the closed board');
-    assert.equal(await ms(() => globalThis.__ms.modes.active), 'classic-2d');
-    assert.equal(await text('#c2d-size'), '30 × 16 · 99 mines · No-guess');
-    assert.equal(await ms(() => localStorage.getItem('ms3d:doc:classic2d.lastChoice')), savedChoice, 'the last choice is as it was');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
 });

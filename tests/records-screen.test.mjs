@@ -1006,19 +1006,21 @@ test('in a browser, at 1280 × 800 and 390 × 844, the Top 10 opens, both charts
   }
 });
 
-test('in a browser, the best tiles and the Records tables keep every figure on one line, and a replay row\'s actions in one row, in both modes and themes', async (t) => {
+test('in a browser, in both modes the best tiles and the Records tables keep every figure on one line, a replay row\'s actions in one row, and the Averages table stays inside its panel with times over 500 s, a table at 1024 px and stacked on a phone', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
+    const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
-    // A long custom board in each mode, a won game at the longest time and a lost one, each kept with its board code.
-    const keys = await page.evaluate(async () => {
+    // For the figures: a long custom board in each mode, a won game at the longest time and a lost one,
+    // each kept with its board code. For the averages: another long board in each mode with twelve won
+    // games, each 502.426 s long, so every average is a three-digit time and the Last 50 column "Last 50 (12)".
+    const { figureKeys, averageKeys } = await page.evaluate(async () => {
       const { createBoardIdentity, boardKey } = await import('/js/records/board.js');
       const { codeOf } = await import('/js/records/board-code.js');
       const boards = [createBoardIdentity({ mode: 'classic-2d', grid: 'square', width: 99, height: 99, mines: 1500, noGuess: true }),
@@ -1040,10 +1042,22 @@ test('in a browser, the best tiles and the Records tables keep every figure on o
         }
       }
       await library.settled();
-      return boards.map(boardKey);
+      const averages = [createBoardIdentity({ mode: 'classic-2d', grid: 'square', width: 98, height: 98, mines: 1400, noGuess: true }),
+        createBoardIdentity({ mode: '3d', width: 19, height: 19, depth: 19, mines: 1000, noGuess: false })];
+      let a = 0;
+      for (const board of averages) {
+        for (let i = 0; i < 12; i++) {
+          const elapsedMs = 502426;
+          const clicks = { reveal: { effective: 999, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } };
+          globalThis.__ms.records.record({ id: `avg${a++}`, board, outcome: 'won', elapsedMs, bbbv: 999, bbbvSolved: 999, clicks,
+            bbbvPerSecond: 999 / (elapsedMs / 1000), efficiency: 100, seed: 0x1234 + a, startCell: 0, generatorVersion: 1,
+            endedAt: `2026-10-${String(1 + i).padStart(2, '0')}T12:34:00.000Z` });
+        }
+      }
+      return { figureKeys: boards.map(boardKey), averageKeys: averages.map(boardKey) };
     });
     // Lines of text an element's content takes; the boxes that must lie inside another.
-    const measure = () => page.evaluate(() => {
+    const figures = () => page.evaluate(() => {
       const lines = (el) => {
         const range = document.createRange();
         range.selectNodeContents(el);
@@ -1066,74 +1080,7 @@ test('in a browser, the best tiles and the Records tables keep every figure on o
       const rows = [...document.querySelectorAll('#records-replays-body tr')].map((tr) => new Set([...tr.querySelectorAll('button[data-act]')].map((b) => Math.round(b.getBoundingClientRect().top))).size);
       return { tiles, cells, rows };
     });
-    const setTiles = (texts) => page.evaluate((list) => ['rec-time', 'rec-bbbvPerSecond', 'rec-efficiency'].forEach((id, i) => {
-      document.querySelector(`#${id} .ui-stat__value`).textContent = list[i];
-    }), texts);
-    const FIGURES = [['999.999 s', '99.99', '100.0%'], ['—', '—', '—']];
-    for (const theme of ['joyful-tiles']) {
-      for (const [width, height] of [[1024, 768], [1920, 1080], [390, 844]]) { // the narrowest and widest desktop, and a phone
-        await page.setViewportSize({ width, height });
-        for (const key of keys) {
-          const at = `${theme} ${width} px ${key}`;
-          await page.click('#menu-entry-records');
-          await page.evaluate((k) => globalThis.__ms.state.mode === 'records' && document.querySelector(`#records-mode [data-value="${k.startsWith('3d') ? '3d' : 'classic-2d'}"]`).click(), key);
-          await page.click(`#records-picker [data-value="${key}"]`);
-          for (const figures of [null, ...FIGURES]) {
-            if (figures) await setTiles(figures);
-            for (const tile of (await measure()).tiles) {
-              assert.equal(tile.lines, 1, `${at}: ${tile.id} "${tile.text}" on one line`);
-              assert.ok(tile.inside, `${at}: ${tile.id} "${tile.text}" — its label, figure, date and Watch inside the tile`);
-            }
-          }
-          if (width >= 1024) {
-            for (const tab of ['recent', 'top', 'replays']) {
-              await page.click(`#records-tabs [data-value="${tab}"]`);
-              const { cells, rows } = await measure();
-              assert.ok(cells.some((c) => c.text === '999.999 s'), `${at} ${tab}: a long time shown`);
-              assert.equal(cells.some((c) => /-/.test(c.text)), width >= 1440, `${at} ${tab}: the board code shown on the largest window only`);
-              for (const c of cells) assert.equal(c.lines, 1, `${at} ${tab}: "${c.text}" on one line`);
-              if (tab === 'replays') assert.ok(rows.length > 0 && rows.every((n) => n === 1), `${at}: each replay row's actions in one row (${rows})`);
-            }
-          }
-          await page.keyboard.press('Escape');
-        }
-      }
-    }
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser, at 390 × 844 and 360 × 800 in both modes, the Averages table stays inside its panel with times over 500 s, its figures on one line; a table still at 1024 px', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.addInitScript(removeWebGL2);
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
-    // Twelve won games on a board of each mode, each 502.426 s long: every average a three-digit time, the Last 50 column "Last 50 (12)".
-    const keys = await page.evaluate(async () => {
-      const { createBoardIdentity, boardKey } = await import('/js/records/board.js');
-      const boards = [createBoardIdentity({ mode: 'classic-2d', grid: 'square', width: 99, height: 99, mines: 1500, noGuess: true }),
-        createBoardIdentity({ mode: '3d', width: 20, height: 20, depth: 20, mines: 1200, noGuess: false })];
-      let n = 0;
-      for (const board of boards) {
-        for (let i = 0; i < 12; i++) {
-          const elapsedMs = 502426;
-          const clicks = { reveal: { effective: 999, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } };
-          globalThis.__ms.records.record({ id: `avg${n++}`, board, outcome: 'won', elapsedMs, bbbv: 999, bbbvSolved: 999, clicks,
-            bbbvPerSecond: 999 / (elapsedMs / 1000), efficiency: 100, seed: 0x1234 + n, startCell: 0, generatorVersion: 1,
-            endedAt: `2026-10-${String(1 + i).padStart(2, '0')}T12:34:00.000Z` });
-        }
-      }
-      return boards.map(boardKey);
-    });
-    const measure = () => page.evaluate(() => {
+    const averagesOf = () => page.evaluate(() => {
       const lines = (el) => {
         const range = document.createRange();
         range.selectNodeContents(el);
@@ -1153,23 +1100,51 @@ test('in a browser, at 390 × 844 and 360 × 800 in both modes, the Averages tab
         cells: [...document.querySelectorAll('#records-averages-body td')].map((td) => ({ text: td.textContent, lines: lines(td) })),
       };
     });
-    for (const theme of ['joyful-tiles']) {
-      for (const [width, height] of [[390, 844], [360, 800], [1024, 768]]) {
-        await page.setViewportSize({ width, height });
-        for (const key of keys) {
-          const at = `${theme} ${width} px ${key}`;
-          await page.click('#menu-entry-records');
-          await page.evaluate((k) => globalThis.__ms.state.mode === 'records' && document.querySelector(`#records-mode [data-value="${k.startsWith('3d') ? '3d' : 'classic-2d'}"]`).click(), key);
-          await page.click(`#records-picker [data-value="${key}"]`);
-          const m = await measure();
-          assert.deepEqual(m.heads, ['Last 10', 'Last 50 (12)', 'All'], `${at}: the columns`);
-          assert.ok(m.cells.filter((c) => c.text === '502.426 s').length === 3, `${at}: a three-digit average time in every column`);
-          assert.ok(m.inside, `${at}: the Averages table ${m.table} inside its panel's content box ${m.box}`);
-          assert.equal(m.scrollWidth, m.viewport, `${at}: the page does not scroll sideways`);
-          for (const c of m.cells) assert.equal(c.lines, 1, `${at}: "${c.text}" on one line`);
-          assert.equal(m.display, width >= 1024 ? 'table' : 'block', `${at}: a table at 1024 px, the stacked cards on a phone`);
-          await page.keyboard.press('Escape');
+    const setTiles = (texts) => page.evaluate((list) => ['rec-time', 'rec-bbbvPerSecond', 'rec-efficiency'].forEach((id, i) => {
+      document.querySelector(`#${id} .ui-stat__value`).textContent = list[i];
+    }), texts);
+    const open = async (key) => {
+      await page.click('#menu-entry-records');
+      await page.evaluate((k) => globalThis.__ms.state.mode === 'records' && document.querySelector(`#records-mode [data-value="${k.startsWith('3d') ? '3d' : 'classic-2d'}"]`).click(), key);
+      await page.click(`#records-picker [data-value="${key}"]`);
+    };
+    const FIGURES = [['999.999 s', '99.99', '100.0%'], ['—', '—', '—']];
+    // The narrowest desktop, the largest (the board code shown), a phone and the narrowest phone.
+    for (const [width, height] of [[1024, 768], [1920, 1080], [390, 844], [360, 800]]) {
+      await page.setViewportSize({ width, height });
+      for (const key of figureKeys) {
+        const at = `${width} px ${key}`;
+        await open(key);
+        for (const shown of [null, ...FIGURES]) {
+          if (shown) await setTiles(shown);
+          for (const tile of (await figures()).tiles) {
+            assert.equal(tile.lines, 1, `${at}: ${tile.id} "${tile.text}" on one line`);
+            assert.ok(tile.inside, `${at}: ${tile.id} "${tile.text}" — its label, figure, date and Watch inside the tile`);
+          }
         }
+        if (width >= 1024) {
+          for (const tab of ['recent', 'top', 'replays']) {
+            await page.click(`#records-tabs [data-value="${tab}"]`);
+            const { cells, rows } = await figures();
+            assert.ok(cells.some((c) => c.text === '999.999 s'), `${at} ${tab}: a long time shown`);
+            assert.equal(cells.some((c) => /-/.test(c.text)), width >= 1440, `${at} ${tab}: the board code shown on the largest window only`);
+            for (const c of cells) assert.equal(c.lines, 1, `${at} ${tab}: "${c.text}" on one line`);
+            if (tab === 'replays') assert.ok(rows.length > 0 && rows.every((n) => n === 1), `${at}: each replay row's actions in one row (${rows})`);
+          }
+        }
+        await page.keyboard.press('Escape');
+      }
+      for (const key of averageKeys) {
+        const at = `${width} px ${key}, Averages`;
+        await open(key);
+        const m = await averagesOf();
+        assert.deepEqual(m.heads, ['Last 10', 'Last 50 (12)', 'All'], `${at}: the columns`);
+        assert.ok(m.cells.filter((c) => c.text === '502.426 s').length === 3, `${at}: a three-digit average time in every column`);
+        assert.ok(m.inside, `${at}: the Averages table ${m.table} inside its panel's content box ${m.box}`);
+        assert.equal(m.scrollWidth, m.viewport, `${at}: the page does not scroll sideways`);
+        for (const c of m.cells) assert.equal(c.lines, 1, `${at}: "${c.text}" on one line`);
+        assert.equal(m.display, width >= 1024 ? 'table' : 'block', `${at}: a table at 1024 px, the stacked cards on a phone`);
+        await page.keyboard.press('Escape');
       }
     }
     assert.deepEqual(errors, []);

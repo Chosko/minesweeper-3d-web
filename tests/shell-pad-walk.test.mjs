@@ -304,12 +304,13 @@ test('[slow] in a browser, LB / RB step the Records board and LT / RT switch 2D 
   }
 });
 
-test('in a browser, the replay viewer\'s seek bar shows the D-pad hint under pad navigation and steps with Left / Right', async (t) => {
+test('in a browser, the replay viewer\'s seek bar shows the D-pad hint under pad navigation and steps with Left / Right; a trigger press on a board pulses, a controller flag double-pulses, and the mouse never rumbles', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
-    const { page, errors, ms, tap } = await open(browser, base);
+    const { page, errors, ms, frames, hold, tap } = await open(browser, base);
+    // The replay viewer's seek bar: the D-pad hint under pad navigation, Left / Right step it.
     await seed(ms);
     await page.click('#menu-entry-records');
     await page.click('#records-games button[data-watch]');
@@ -330,18 +331,11 @@ test('in a browser, the replay viewer\'s seek bar shows the D-pad hint under pad
     await page.mouse.move(5, 5);
     await page.mouse.move(40, 40);
     assert.equal((await hint())[1], 'hidden', 'hidden after a mouse move');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'records');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'menu');
 
-test('in a browser, a trigger press on a board pulses, a controller flag double-pulses, and the mouse never rumbles', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const { page, errors, ms, frames, hold, tap } = await open(browser, base);
     // The pulses so far: polled until `count` have come, or a fixed window that proves none comes.
     const rumbles = async (count = 0) => {
       if (count) await page.waitForFunction((n) => globalThis.__pad.rumbles.length >= n, count, { timeout: patience(1000) });

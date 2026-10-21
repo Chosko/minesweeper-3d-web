@@ -29,13 +29,12 @@ export const SHELL_SMOKE = [
   'tests/components-menu-screens.test.mjs', // the main menu and every screen it opens
   'tests/components-pause.test.mjs', // the pause card, its confirmation, the status card, the results layout
   'tests/results.test.mjs', // a Classic 2D game through the shell to its results
-  'tests/mode3d-session.test.mjs', // a 3D game through the worker to its end
+  'tests/mode3d-end.test.mjs', // a 3D game through the worker to its end and its results
   'tests/replay-viewer.test.mjs', // the replay viewer
 ];
 
-/** The 3D renderer's smoke set, beside its importers: a 3D game drawn, its end waves, a 3D replay. */
+/** The 3D renderer's smoke set, beside its importers: a 3D game drawn to its end with its waves, a 3D replay. */
 export const RENDER_SMOKE = [
-  'tests/mode3d-session.test.mjs',
   'tests/mode3d-end.test.mjs',
   'tests/replay-viewer-3d.test.mjs',
 ];

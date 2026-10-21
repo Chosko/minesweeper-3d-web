@@ -2958,10 +2958,10 @@ test('bindFiguresLive writes the panel\'s live part at most once a second, the l
   assert.equal(writes.at(-1), '3BV 4 of 118', 'stop drops the waiting text');
 });
 
-// The Classic 2D game window at each artboard size where its layout changes: the panel beside,
+// The Classic 2D game window at each artboard size where its layout changes: the panel beside (at
+// its narrowest desktop size; the large one, J-Game2D-xl, lays it out the same with more room),
 // under or hidden.
 const WINDOW_SIZES = [
-  ['xl', { viewport: { width: 1920, height: 1080 } }, 'beside'],
   ['m', { viewport: { width: 1024, height: 768 } }, 'beside'],
   ['tablet', { viewport: { width: 800, height: 1024 } }, 'under'],
   ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, 'hidden'],

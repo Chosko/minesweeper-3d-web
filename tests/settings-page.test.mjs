@@ -1091,7 +1091,7 @@ function removeWebGL2() {
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
 
-test('in a browser: Settings from the menu, its bindings panel, the theme list with its swatches, its keys, and the pause card on the same store', async (t) => {
+test('in a browser: Settings from the menu, its bindings panel, the theme list with its swatches, its keys, the controller, and the pause card on the same store', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1099,6 +1099,13 @@ test('in a browser: Settings from the menu, its bindings panel, the theme list w
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    // A fake standard-mapping controller, idle until the test presses its buttons.
+    await page.addInitScript(() => {
+      const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+      const pad = { id: 'Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e)', index: 0, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons, timestamp: 0 };
+      navigator.getGamepads = () => [pad];
+      globalThis.__pad = { press(i, on) { buttons[i].pressed = on; buttons[i].value = on ? 1 : 0; pad.timestamp++; } };
+    });
     await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
@@ -1179,6 +1186,33 @@ test('in a browser: Settings from the menu, its bindings panel, the theme list w
     await page.click('#settings-back');
     assert.equal(await mode(), 'menu');
 
+    // The controller operates the page: A opens it and switches a toggle, Left / Right step a slider, B is Back.
+    // The game polls the pad first thing in each animation frame, so a press held through one frame is
+    // seen exactly once, short of the auto-repeat delay.
+    const frames = (count) => ms((n) => new Promise((r) => { const step = () => (--n ? requestAnimationFrame(step) : r()); requestAnimationFrame(step); }), count);
+    const tap = async (button) => {
+      await ms((btn) => globalThis.__pad.press(btn, true), button);
+      await frames(1);
+      await ms((btn) => globalThis.__pad.press(btn, false), button);
+      await frames(2);
+    };
+    const BTN = { A: 0, B: 1, DOWN: 13, RIGHT: 15 };
+    await ms(() => document.getElementById('menu-entry-settings').focus());
+    await tap(BTN.A);
+    assert.equal(await mode(), 'settings', 'controller: A opens Settings');
+    assert.equal(await active(), 'set-lookSensitivity');
+    const sens = await setting('lookSensitivity');
+    await tap(BTN.RIGHT);
+    assert.ok(Math.abs(await setting('lookSensitivity') - sens - 0.05) < 1e-9, 'controller: Right steps the slider');
+    await tap(BTN.DOWN);
+    assert.equal(await active(), 'set-invertY');
+    const invert = await setting('invertY');
+    await tap(BTN.A);
+    assert.equal(await setting('invertY'), !invert, 'controller: A switches the toggle');
+    await tap(BTN.B);
+    assert.equal(await mode(), 'menu', 'controller: B is Back');
+    await ms(() => globalThis.__ms.settings.set('lookSensitivity', 1.05)); // the value the pause card reads below
+
     // The pause card's shortcuts read and write the same store.
     await ms(() => { globalThis.__ms.start(9, 9, 1, 10); globalThis.__ms.forcePlay(); globalThis.__ms.pause(); });
     assert.equal(await mode(), 'paused');
@@ -1188,56 +1222,6 @@ test('in a browser: Settings from the menu, its bindings panel, the theme list w
     assert.equal(await ms(() => document.getElementById('set-volume').value), '40', 'the Settings page shows it too');
     await ms(() => globalThis.__ms.pauser.toMenu());
     assert.equal(await mode(), 'menu');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser, the Settings page is operable by controller', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    // A fake standard-mapping controller whose buttons the test presses.
-    await page.addInitScript(() => {
-      const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
-      const pad = { id: 'Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e)', index: 0, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons, timestamp: 0 };
-      navigator.getGamepads = () => [pad];
-      globalThis.__pad = { press(i, on) { buttons[i].pressed = on; buttons[i].value = on ? 1 : 0; pad.timestamp++; } };
-    });
-    await page.addInitScript(removeWebGL2);
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
-    const ms = (fn, arg) => page.evaluate(fn, arg);
-    const mode = () => ms(() => globalThis.__ms.state.mode);
-    const active = () => ms(() => document.activeElement?.id || document.activeElement?.getAttribute('data-value') || '');
-    // The game polls the pad first thing in each animation frame, so a press held through one frame
-    // is seen exactly once, short of the auto-repeat delay.
-    const frames = (count) => ms((n) => new Promise((r) => { const f = () => (--n ? requestAnimationFrame(f) : r()); requestAnimationFrame(f); }), count);
-    const tap = async (button) => {
-      await ms((b) => globalThis.__pad.press(b, true), button);
-      await frames(1);
-      await ms((b) => globalThis.__pad.press(b, false), button);
-      await frames(2);
-    };
-    const BTN = { A: 0, B: 1, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 };
-
-    await ms(() => document.getElementById('menu-entry-settings').focus());
-    await tap(BTN.A);
-    assert.equal(await mode(), 'settings');
-    assert.equal(await active(), 'set-lookSensitivity');
-    await tap(BTN.RIGHT);
-    assert.equal(await ms(() => globalThis.__ms.settings.get('lookSensitivity')), 1.05, 'left/right steps the slider');
-    await tap(BTN.DOWN);
-    assert.equal(await active(), 'set-invertY');
-    await tap(BTN.A);
-    assert.equal(await ms(() => globalThis.__ms.settings.get('invertY')), true, 'A switches the toggle');
-    await tap(BTN.B);
-    assert.equal(await mode(), 'menu', 'B is Back');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

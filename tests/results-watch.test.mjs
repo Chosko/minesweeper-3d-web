@@ -1,8 +1,7 @@
 // Watch replay (replay-playback): the results screen's Watch replay action — its presence rules in
 // the results flow and the screen's content, the route it opens with the finished game's own replay
 // and the results screen to return to, the #r-watch markup and its wiring in js/main.js — and in a
-// browser a fixed Beginner board won through the real shell, watched from the results screen by
-// mouse, keyboard and controller, then watched again from the Records screen's library view.
+// browser test of tests/results.test.mjs, which watches a game won through the real shell.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -13,10 +12,8 @@ import { createResultsFlow, RESULTS_SCREEN } from '../js/results/flow.js';
 import { REPLAY_SCREEN } from '../js/records/replay-list.js';
 import { createRouter } from '../js/shell/router.js';
 import { createBoardIdentity } from '../js/records/board.js';
-import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const suite = browserSuite();
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 
 const BEGINNER = createBoardIdentity({ mode: 'classic-2d', grid: 'square', width: 9, height: 9, mines: 10, noGuess: false });
@@ -223,151 +220,4 @@ test('the shell wires Watch replay to the flow and registers the viewer under th
   assert.match(MAIN, /onWatch: \(\) => RESULTS\.watch\(\)/);
   assert.match(MAIN, /\[REPLAY_SCREEN\]: \{/);
   assert.equal(REPLAY_SCREEN, 'replay');
-});
-
-// ---------------------------------------------------------------- in a browser
-
-// A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
-// redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
-function removeWebGL2() {
-  const getContext = HTMLCanvasElement.prototype.getContext;
-  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
-}
-
-test('in a browser, a just-won 2D game is watched from the results screen and again from the Records screen', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    // A fixed board: every board seed the session draws is 12345. A fake standard controller,
-    // idle until pressed, for the controller's turn.
-    await page.addInitScript(() => {
-      const real = crypto.getRandomValues.bind(crypto);
-      crypto.getRandomValues = (a) => { if (a instanceof Uint32Array && a.length === 1) { a[0] = 12345; return a; } return real(a); };
-      const pad = {
-        id: 'Fake pad (STANDARD GAMEPAD)', index: 0, connected: true, mapping: 'standard', timestamp: 0,
-        buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
-        axes: [0, 0, 0, 0],
-      };
-      globalThis.__fakePad = pad;
-      Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad, null, null, null] });
-    });
-    await page.addInitScript(removeWebGL2);
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
-    const mode = () => page.evaluate(() => globalThis.__ms.state.mode);
-    const frames = (n) => page.evaluate((count) => new Promise((done) => {
-      const step = (left) => (left ? requestAnimationFrame(() => step(left - 1)) : done());
-      step(count);
-    }), n);
-    // Holds a controller button for exactly one poll, then waits two frames (as tests/shell-menu.test.mjs).
-    const press = async (b) => {
-      await page.evaluate((i) => new Promise((done) => {
-        const set = (v) => {
-          Object.assign(globalThis.__fakePad.buttons[i], { pressed: v, touched: v, value: v ? 1 : 0 });
-          globalThis.__fakePad.timestamp++;
-        };
-        set(true);
-        requestAnimationFrame(() => { set(false); done(); });
-      }), b);
-      await frames(2);
-    };
-    const PAD = { A: 0, B: 1, LEFT: 14 };
-    const viewer = () => page.evaluate(() => globalThis.__ms.replayViewer.state.status);
-    const visible = (id) => page.evaluate((i) => {
-      const el = document.getElementById(i);
-      return !el.classList.contains('hidden') && el.getBoundingClientRect().width > 0;
-    }, id);
-
-    await page.click('#menu-entry-classic-2d');
-    if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
-    await page.click('#c2d-choice [data-size="beginner"]');
-    await page.click('#c2d-play');
-    const centres = await page.evaluate(async () => {
-      const r = document.querySelector('#c2d-board canvas').getBoundingClientRect();
-      const L = globalThis.__ms.board2D.layout;
-      return Array.from({ length: 81 }, (_, c) => ({
-        x: r.left + L.offsetX + (c % 9) * L.pitch + 0.5 * L.tile, y: r.top + L.offsetY + Math.floor(c / 9) * L.pitch + 0.5 * L.tile,
-      }));
-    });
-    const first = 40;
-    const mines = await page.evaluate(async (fc) => {
-      const { generate } = await import('/js/generation/generate.js');
-      const r = generate({ graph: { kind: 'square', width: 9, height: 9 }, mineCount: 10, firstClick: fc, noGuess: false, seed: 12345 });
-      return [...r.mines];
-    }, first);
-    await page.mouse.click(centres[first].x, centres[first].y);
-    await page.waitForFunction(() => globalThis.__ms.modes.state.started);
-    for (let c = 0; c < 81 && (await mode()) === 'classic-2d'; c++) {
-      if (mines.includes(c)) continue;
-      await page.mouse.click(centres[c].x, centres[c].y);
-    }
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results');
-
-    // Watch replay shows beside Play again; the mouse opens the viewer on the game just played.
-    assert.equal(await visible('r-watch'), true, 'Watch replay is offered');
-    await page.click('#r-watch');
-    assert.equal(await mode(), 'replay');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
-    const played = await page.evaluate(() => globalThis.__ms.replayViewer.state);
-    assert.equal(played.time, -500, 'it starts at the beginning, on the closed board');
-    assert.ok(played.duration > 0);
-    await page.keyboard.press('End');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended);
-    assert.match(await page.evaluate(() => document.getElementById('replay-end').textContent), /won/i);
-
-    // Back returns to the results screen of the same game.
-    await page.keyboard.press('Escape');
-    assert.equal(await mode(), 'results');
-    assert.equal(await viewer(), 'closed');
-    assert.equal(await page.evaluate(() => document.getElementById('results-title').textContent), 'You won!');
-    assert.equal(await visible('r-watch'), true);
-    assert.equal(await visible('c2d'), true, 'the finished board is still behind the results screen');
-
-    // The keyboard reaches it too: back from Play again past Records, Enter.
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'r-again');
-    await page.keyboard.press('Shift+Tab');
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'r-records');
-    await page.keyboard.press('Shift+Tab');
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'r-watch');
-    await page.keyboard.press('Enter');
-    assert.equal(await mode(), 'replay');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
-    await page.click('#rp-back');
-    assert.equal(await mode(), 'results');
-
-    // And the controller: left from Play again past Records, A opens the viewer, B comes back.
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'r-again');
-    await press(PAD.LEFT);
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'r-records');
-    await press(PAD.LEFT);
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'r-watch');
-    await press(PAD.A);
-    assert.equal(await mode(), 'replay');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
-    await press(PAD.B);
-    assert.equal(await mode(), 'results');
-
-    // From the Records screen's library view: Watch on the kept replay, on the best and on the
-    // recent game opens the viewer by id; Back returns to Records on the same board.
-    await page.click('#r-records');
-    assert.equal(await mode(), 'records');
-    const id = await page.evaluate(() => document.querySelector('#records-replays-body button[data-act="watch"]')?.dataset.id);
-    assert.ok(id, 'the game\'s replay is kept and offers Watch');
-    for (const selector of [`#records-replays-body button[data-act="watch"][data-id="${id}"]`, `#rec-time [data-watch="${id}"]`, `#records-games-body [data-watch="${id}"]`]) {
-      if (selector.startsWith('#records-replays')) await page.click('#records-tab-replays');
-      await page.click(selector);
-      assert.equal(await mode(), 'replay', selector);
-      await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
-      await page.keyboard.press('Escape');
-      assert.equal(await mode(), 'records', selector);
-      assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), 'Beginner · Bests', 'on the same board');
-    }
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
 });

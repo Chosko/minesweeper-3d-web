@@ -616,7 +616,7 @@ function removeWebGL2() {
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
 
-test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu through the pause controller', async (t) => {
+test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu through the pause controller and the mode adapter, and a lost graphics context is its failure', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -632,8 +632,12 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
       for (const h of ['finished', 'abandoned', 'inProgress']) {
         globalThis.__ms.pauser.attach(h, (summary) => globalThis.__hand.push([h, summary?.outcome ?? null]));
       }
+      // what the 3D mode adapter reports to the mode host
+      globalThis.__events = [];
+      for (const type of ['started', 'finished', 'abandoned', 'failed']) globalThis.__ms.modes.on(type, (e) => globalThis.__events.push([type, e]));
     });
     const hand = () => ms(() => globalThis.__hand.map(([h]) => h));
+    const events = () => ms(() => globalThis.__events.map(([type]) => type));
     const mode = () => ms(() => globalThis.__ms.state.mode);
     const visible = (id) => ms((i) => !document.getElementById(i).classList.contains('hidden'), id);
     const boardHidden = () => ms(() => getComputedStyle(document.getElementById('scene')).visibility === 'hidden');
@@ -664,10 +668,13 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await ms(() => document.getElementById('pause-sub').textContent), 'No game in progress: the board is not started yet.', 'the running time never replaces it');
     await ms(() => document.getElementById('p-menu').click());
     assert.equal(await mode(), 'menu', 'back to menu before the first click asks nothing');
+    assert.deepEqual(await events(), [], 'the adapter reports nothing for a board never revealed');
 
     // a started game: the pause key pauses it over a hidden board and keeps its summary
     await startAndClick();
     assert.deepEqual(await hand(), ['inProgress']);
+    assert.deepEqual(await events(), ['started'], 'the adapter reports the first reveal');
+    assert.equal(await ms(() => globalThis.__ms.modes.summary()), null, 'a fixed board, which no generator made, has no summary');
     await frames(5);
     await ms(() => globalThis.__ms.pause());
     assert.equal(await mode(), 'paused');
@@ -718,6 +725,7 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await ms(() => globalThis.__ms.state.started), false);
     assert.equal((await hand()).at(-1), 'abandoned');
     assert.equal(await guarded(), false, 'disarmed once the game is abandoned');
+    assert.deepEqual(await events(), ['started', 'abandoned'], 'the adapter reports the restart as abandoned');
     assert.match(await toast(), /counted as a loss[\s\S]*Always ask before restarting/, 'the first restart of the session says so');
     await ms(() => document.getElementById('toast').classList.remove('on'));
 
@@ -756,16 +764,19 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     await ms(() => globalThis.__ms.pauser.resume('pad'));
     await ms(() => globalThis.__ms.settings.set('confirmRestart', false));
 
-    // R and Home in 3D play still return the camera to the start view, and restart nothing
-    const spawn = await ms(() => { const p = globalThis.__ms.spawnPose(5, 1, 1); return [p.x, p.y, p.z]; });
-    const camAt = () => ms(() => { const c = globalThis.__ms.camera; return [c.x, c.y, c.z]; });
-    for (const key of ['KeyR', 'Home']) {
-      await ms(() => globalThis.__ms.moveTo(40, 40, 40));
-      await page.keyboard.press(key);
-      assert.deepEqual((await camAt()).map((v) => +v.toFixed(3)), spawn.map((v) => +v.toFixed(3)), `${key} returns the camera`);
-      assert.equal(await mode(), 'playing');
-      assert.equal(await ms(() => globalThis.__ms.state.started), true, `${key} restarts nothing`);
-    }
+    // R and Home in 3D play return the camera and restart nothing: tests/camera-spawn.test.mjs's browser test.
+
+    // resume with the mouse goes to the click-to-play card, which re-acquires pointer lock; no screen
+    // change stops the clock, the click-to-play card neither
+    await ms(() => globalThis.__ms.modes.pause());
+    await ms(() => globalThis.__ms.modes.resume({ source: 'pointer' }));
+    await frames(5);
+    const resumed = await ms(() => ({ mode: globalThis.__ms.state.mode, locked: !!document.pointerLockElement, lockless: globalThis.__ms.state.lockless }));
+    assert.equal(resumed.lockless, false);
+    assert.ok(resumed.mode === 'playing' ? resumed.locked : resumed.mode === 'ready',
+      `play under pointer lock, or the click-to-play card when the browser refuses it (${JSON.stringify(resumed)})`);
+    const r0 = await ms(() => globalThis.__ms.state.play.elapsedMs());
+    await page.waitForFunction((start) => globalThis.__ms.state.play.elapsedMs() >= start + 300, r0, { timeout: patience(5000) });
 
     // Esc closes an open confirmation instead of resuming
     await startAndClick();
@@ -792,9 +803,24 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await mode(), 'paused', 'a fixed board has no results screen: it ends on the pause card');
     assert.equal(await boardHidden(), true, 'an ended game is hidden under the card too');
     assert.equal(await ms(() => document.getElementById('pause-sub').textContent), 'No game in progress: the board is not started yet.', 'an ended game is no game in progress');
+    assert.deepEqual(await ms(() => { const [type, e] = globalThis.__events.at(-1); return { type, summary: e.summary }; }),
+      { type: 'finished', summary: null }, 'the adapter reports the game finished, with no summary for a fixed board');
     await ms(() => document.getElementById('p-restart').click());
     assert.equal(await visible('pause-confirm'), false, 'no confirmation once the game ended');
     assert.ok(['ready', 'playing'].includes(await mode()));
+    assert.equal((await events()).at(-1), 'finished', 'a restart after the end abandons nothing');
+
+    // a lost graphics context is the 3D mode's failure; its screen offers back to menu
+    await ms(() => { globalThis.__ms.modes.start('3d', { X: 3, Y: 3, Z: 3, mines: 1 }); globalThis.__ms.forcePlay(); });
+    await ms(() => globalThis.__ms.renderer.renderer.getContext().getExtension('WEBGL_lose_context').loseContext());
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ctxlost');
+    assert.equal((await events()).at(-1), 'failed', 'the adapter reports the failure');
+    await ms(() => document.getElementById('ctx-lost-menu').click());
+    assert.equal(await mode(), 'menu');
+    assert.equal(await ms(() => document.getElementById('menu').inert), false, 'the menu is usable again');
+    assert.equal(await ms(() => document.getElementById('ctx-lost').classList.contains('hidden')), true);
+    await ms(() => globalThis.__ms.modes.start('3d', { X: 3, Y: 3, Z: 3, mines: 1 }));
+    assert.equal(await mode(), 'ctxlost', 'a dead canvas cannot start a 3D game, and says so');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
@@ -1029,7 +1055,7 @@ test('on a coarse-only device every path back to play enters lockless touch play
   assert.match(main, /onReadyClick: \(\) => \{[^\n]*COARSE_ONLY[^\n]*enterPlaying\(true\)/, 'the ready card');
 });
 
-test('in a browser with touch on a phone, Pause takes a tap, resume returns to lockless touch play with the toolbar latched, restart clears it', async (t) => {
+test('in a browser with touch on a phone, the toolbar clears the overlay\'s counters and title bar, Pause takes a tap, resume returns to lockless touch play with the toolbar latched, restart clears it, and Learn 3D\'s prompt line speaks touch', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1050,6 +1076,12 @@ test('in a browser with touch on a phone, Pause takes a tap, resume returns to l
     await ms(() => globalThis.__ms.modes.start('3d', { X: 5, Y: 1, Z: 1, mines: 1, minePositions: [4] }));
     await page.tap('#ready-btn');
     assert.equal(await mode(), 'playing');
+    const overlap = await ms(() => {
+      const tb = document.getElementById('touch-modes').getBoundingClientRect();
+      const apart = (el) => { const r = el.getBoundingClientRect(); return tb.top >= r.bottom || tb.bottom <= r.top || tb.left >= r.right || tb.right <= r.left; };
+      return !apart(document.getElementById('hud-counters')) || !apart(document.querySelector('#hud-figures .ui-figures__head'));
+    });
+    assert.equal(overlap, false, 'the toolbar is clear of the overlay\'s counters and title bar');
     await ms(() => { globalThis.__ms.aimAt(3); globalThis.__ms.click('left'); });
     await page.tap('#touch-modes [data-mode="ctrl"]');
     const pauseBox = await page.locator('#hud-pause').boundingBox();
@@ -1068,6 +1100,14 @@ test('in a browser with touch on a phone, Pause takes a tap, resume returns to l
     assert.equal(await ms(() => globalThis.__ms.controls.ctrl), false, 'a restart clears the toolbar');
     assert.equal(await ms(() => document.querySelector('#touch-modes [data-mode="ctrl"]').getAttribute('aria-pressed')), 'false');
     assert.equal(await ms(() => globalThis.__locks), 0, 'no pointer lock asked on any path');
+    // Learn 3D's prompt line speaks touch.
+    await ms(() => globalThis.__ms.learn());
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
+    await page.tap('#ready-btn');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
+    assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Aim at the marked cube and tap to start', 'Learn 3D\'s prompt on touch');
+    assert.equal(await ms(() => globalThis.__locks), 0, 'Learn 3D asks no pointer lock either');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

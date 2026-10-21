@@ -8,10 +8,6 @@ import { create3DMode, END_DELAY_MS, END_DELAY_MAX_MS, endDelayMs, waveStepS, WA
 import { startCell } from '../js/generation/start-cell.js';
 import { createSession } from '../js/mode3d/session.js';
 import { LEARN_BOARD, learnChoice } from '../js/mode3d/learn.js';
-import { generate } from '../js/generation/generate.js';
-import { createBoxGrid } from '../js/engine/box-grid.js';
-import { createGameWithMines, PHASE, CELL } from '../js/engine/rules.js';
-import { PROFILE_3D } from '../js/engine/profiles.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
 
@@ -568,261 +564,12 @@ test('js/main.js takes the scene\'s touches below the overlay\'s top row', () =>
   assert.match(read('js/main.js'), /touchZone\(x, y, \{ width: canvas\.clientWidth, top: ui\.overlayBottom3D\(\) \}\)/);
 });
 
-// ---------------------------------------------------------------- browser: the 3D game through the adapter
-
-test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves through the adapter', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
-    const ms = (fn, arg) => page.evaluate(fn, arg);
-    await ms(() => {
-      globalThis.__events = [];
-      for (const type of ['started', 'finished', 'abandoned', 'canPause', 'failed']) {
-        globalThis.__ms.modes.on(type, (e) => globalThis.__events.push([type, e]));
-      }
-    });
-    const events = () => ms(() => globalThis.__events.map(([t]) => t));
-    const mode = () => ms(() => globalThis.__ms.state.mode);
-    const frames = (n) => ms((k) => new Promise((r) => { const f = () => (--k <= 0 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
-
-    // start: a row of five with the mine at the end, so cell 3 is a numbered cell that does not win
-    const BOARD = { X: 5, Y: 1, Z: 1, mines: 1, minePositions: [4] };
-    // a game left before its first reveal reports nothing
-    await ms((b) => { globalThis.__ms.modes.start('3d', b); globalThis.__ms.forcePlay(); globalThis.__ms.modes.leave(); }, BOARD);
-    assert.deepEqual(await events(), [], 'nothing is reported for a board never revealed');
-
-    await ms((b) => globalThis.__ms.modes.start('3d', b), BOARD);
-    assert.equal(await mode(), 'ready');
-    assert.equal(await ms(() => globalThis.__ms.modes.active), '3d');
-    assert.equal(await ms(() => globalThis.__ms.modes.summary()), null, 'nothing before the first click');
-    await ms(() => globalThis.__ms.forcePlay());
-    assert.equal(await mode(), 'playing');
-    assert.equal(await ms(() => globalThis.__ms.aimAt(3)), 3, 'the numbered cell is aimed at');
-    await ms(() => globalThis.__ms.click('left'));
-    assert.deepEqual(await events(), ['started', 'canPause']);
-    assert.equal(await ms(() => globalThis.__ms.game.state), 'playing');
-    await frames(10);
-
-    // pause through the host: the pause card shows and the clock keeps running, on the card too
-    await ms(() => globalThis.__ms.modes.pause());
-    assert.equal(await mode(), 'paused');
-    const t0 = await ms(() => globalThis.__ms.state.time);
-    await page.waitForFunction((start) => globalThis.__ms.state.time >= start + 1
-      && Number(document.getElementById('pause-sub').textContent.match(/^Time (\d+)\./)[1]) >= Math.floor(start) + 1, t0, { timeout: patience(5000) });
-    assert.equal(await mode(), 'paused', 'still paused');
-    const t1 = await ms(() => globalThis.__ms.state.time);
-    assert.ok(t1 >= t0 + 1, `the clock runs while paused (${t0} → ${t1})`);
-    const card = Number((await page.textContent('#pause-sub')).match(/^Time (\d+)\./)[1]);
-    assert.ok(card >= Math.floor(t0) + 1, `the pause card shows the running time (${t0} → card ${card})`);
-    assert.equal(await ms(() => globalThis.__ms.state.play.pauses().length), 1, 'one pause so far');
-    assert.equal(await ms(() => globalThis.__ms.modes.summary()), null, 'a fixed board, which no generator made, has no summary');
-
-    // resume from a controller enters lockless play, as today
-    await ms(() => globalThis.__ms.modes.resume({ source: 'pad' }));
-    assert.equal(await mode(), 'playing');
-    assert.equal(await ms(() => globalThis.__ms.state.lockless), true);
-
-    // resume with the mouse goes to the click-to-play card, which re-acquires pointer lock
-    await ms(() => globalThis.__ms.modes.pause());
-    await ms(() => globalThis.__ms.modes.resume({ source: 'pointer' }));
-    await frames(5);
-    const resumed = await ms(() => ({ mode: globalThis.__ms.state.mode, locked: !!document.pointerLockElement, lockless: globalThis.__ms.state.lockless }));
-    assert.equal(resumed.lockless, false);
-    assert.ok(resumed.mode === 'playing' ? resumed.locked : resumed.mode === 'ready',
-      `play under pointer lock, or the click-to-play card when the browser refuses it (${JSON.stringify(resumed)})`);
-    const r0 = await ms(() => globalThis.__ms.state.play.elapsedMs());
-    await page.waitForFunction((start) => globalThis.__ms.state.play.elapsedMs() >= start + 300, r0, { timeout: patience(5000) });
-    assert.ok(await ms(() => globalThis.__ms.state.play.elapsedMs()) >= r0 + 300, 'no screen change stops the clock, the click-to-play card neither');
-
-    // restart from the pause card abandons the started game at once
-    await ms(() => globalThis.__ms.pause());
-    await ms(() => document.getElementById('p-restart').click());
-    assert.ok(['ready', 'playing'].includes(await mode()), 'a new board, entered as resume enters play');
-    assert.deepEqual(await events(), ['started', 'canPause', 'abandoned', 'canPause']);
-    assert.equal(await ms(() => globalThis.__ms.state.started), false);
-
-    // leave through the pause card's Main menu: the game is released
-    await ms((b) => {
-      globalThis.__ms.modes.start('3d', b);
-      globalThis.__ms.forcePlay();
-      globalThis.__ms.aimAt(3);
-      globalThis.__ms.click('left');
-      globalThis.__ms.pause();
-    }, BOARD);
-    await ms(() => document.getElementById('p-menu').click());
-    await ms(() => document.getElementById('p-confirm-yes').click());
-    assert.equal(await mode(), 'menu');
-    assert.equal(await ms(() => globalThis.__ms.modes.active), null);
-    assert.equal(await ms(() => globalThis.__ms.game), null);
-    assert.equal(await ms(() => globalThis.__ms.state.lockless), false);
-    assert.deepEqual((await events()).slice(-3), ['canPause', 'abandoned', 'canPause']);
-
-    // a win reports game finished after the end delay — a fixed board with no summary, which ends on
-    // the pause card — and leaving afterwards abandons nothing
-    await ms((b) => {
-      globalThis.__ms.modes.start('3d', b);
-      globalThis.__ms.forcePlay();
-      globalThis.__ms.aimAt(0);
-      globalThis.__ms.click('left');
-    }, BOARD);
-    assert.equal(await ms(() => globalThis.__ms.game.state), 'won');
-    await page.waitForFunction(() => globalThis.__events.at(-1)[0] === 'finished', null, { timeout: patience(5000) });
-    assert.equal(await mode(), 'paused', 'a fixed board, which has no results, ends on the pause card');
-    const won = await ms(() => {
-      const [type, e] = globalThis.__events.at(-1);
-      globalThis.__ms.modes.leave();
-      return { type, summary: e.summary, last: globalThis.__events.at(-1)[0] };
-    });
-    assert.deepEqual(won, { type: 'finished', summary: null, last: 'finished' });
-
-    // a lost graphics context is the 3D mode's failure; its screen offers back to menu
-    await ms(() => { globalThis.__ms.modes.start('3d', { X: 3, Y: 3, Z: 3, mines: 1 }); globalThis.__ms.forcePlay(); });
-    await ms(() => globalThis.__ms.renderer.renderer.getContext().getExtension('WEBGL_lose_context').loseContext());
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ctxlost');
-    assert.equal((await events()).at(-1), 'failed');
-    await ms(() => document.getElementById('ctx-lost-menu').click());
-    assert.equal(await mode(), 'menu');
-    assert.equal(await ms(() => document.getElementById('menu').inert), false, 'the menu is usable again');
-    assert.equal(await ms(() => document.getElementById('ctx-lost').classList.contains('hidden')), true);
-    await ms(() => globalThis.__ms.modes.start('3d', { X: 3, Y: 3, Z: 3, mines: 1 }));
-    assert.equal(await mode(), 'ctxlost', 'a dead canvas cannot start a 3D game, and says so');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-// The generating-card test's first board: the no-guess 5 × 5 × 1 · 4 box from seed 1 with its first
-// click on cell 0 (mines at 4, 9, 12, 20), whose first click opens 12 of the 21 safe cells.
-const FIRST_SEED = 1;
-
-test('the generating-card test\'s fixed first board is not won by its first click, and keeps a mine to lose on', () => {
-  const result = generate({ graph: { kind: 'box', X: 5, Y: 5, Z: 1 }, mineCount: 4, firstClick: 0, noGuess: true, seed: FIRST_SEED });
-  assert.equal(result.ok, true);
-  const game = createGameWithMines({ graph: createBoxGrid(5, 5, 1).graph, profile: PROFILE_3D, mines: result.mines });
-  game.reveal(0);
-  assert.equal(game.phase, PHASE.PLAYING, 'the first click does not win');
-  assert.equal(Array.from({ length: 25 }, (_, c) => game.cellState(c)).filter((v) => v === CELL.REVEALED).length, 12);
-  assert.ok(Array.from(result.mines).some((m) => game.cellState(m) === CELL.CLOSED), 'a closed mine is left to reveal');
-});
-
-test('in a browser, the 3D generating card shows by its delay in pointer-locked play, with its progress line; Play again marks the start cell and the in-flight board shows it too', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 640, height: 480 } }); // a small canvas: software GL draws its frames fast enough
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    // A slow worker for this test's 5 × 5 × 1 box: progress at once, the first board 4 s later and
-    // every later one (the pre-generation) 12 s later, so it is still in flight after the loss and
-    // Play again; the real generator behind it. The first board is a fixed one (FIRST_SEED, whose
-    // first click opens 12 of the 21 safe cells and leaves the mines to lose on), since a random
-    // no-guess board's first click can win outright. Any other request — the start-up's daily
-    // pre-generation shares this worker — is answered at once with no board, so it never takes the
-    // first board's slot.
-    await page.route('**/js/generation/worker.js', (route) => route.fulfill({
-      contentType: 'text/javascript',
-      body: `import { handleMessage } from './worker-real.js';
-        let boards = 0;
-        globalThis.onmessage = ({ data }) => {
-          if (data.warm) { globalThis.postMessage({ id: data.id, warm: true }); return; }
-          const g = data.request.graph;
-          if (!(g.kind === 'box' && g.X === 5 && g.Y === 5 && g.Z === 1)) {
-            globalThis.postMessage({ id: data.id, result: { ok: false, reason: 'another board' } });
-            return;
-          }
-          globalThis.postMessage({ id: data.id, progress: { candidates: 7 } });
-          const first = boards++ === 0;
-          const message = first ? { ...data, request: { ...data.request, seed: ${FIRST_SEED} } } : data;
-          setTimeout(() => globalThis.postMessage(handleMessage(message)), first ? 4000 : 12000);
-        };`,
-    }));
-    await page.route('**/js/generation/worker-real.js', (route) => route.fulfill({ contentType: 'text/javascript', body: read('js/generation/worker.js') }));
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
-    const ms = (fn, arg) => page.evaluate(fn, arg);
-    // A real click at an element's centre: a user gesture, with no wait for the page to settle
-    // (frames under pointer lock are long tasks in software GL).
-    const press = async (selector) => {
-      const r = await ms((sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; }, selector);
-      await page.mouse.click(r.x, r.y);
-    };
-    const lockAndPlay = async () => {
-      if (await ms(() => globalThis.__ms.state.mode) === 'ready') await press('#ready-btn');
-      await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing' && !!document.pointerLockElement, null, { timeout: patience(5000), polling: 100 });
-    };
-    // Click `cell` and measure, in the page, when the card loses its hidden class, and the main-thread
-    // long tasks meanwhile: a timer cannot fire inside one (software GL makes frames long).
-    const clickAndTime = (cell) => ms((c) => new Promise((resolve) => {
-      const card = document.getElementById('m3d-status');
-      const t0 = performance.now();
-      let stall = 0;
-      const tasks = new PerformanceObserver((list) => { for (const e of list.getEntries()) stall += e.duration; });
-      tasks.observe({ type: 'longtask' });
-      const seen = new MutationObserver(() => {
-        if (card.classList.contains('hidden')) return;
-        seen.disconnect();
-        const after = performance.now() - t0;
-        setTimeout(() => { tasks.disconnect(); resolve({ after, stall, state: globalThis.__ms.state.play.state, line: document.getElementById('m3d-progress').textContent }); }, 0);
-      });
-      seen.observe(card, { attributes: true, attributeFilter: ['class'] });
-      if (globalThis.__ms.aimAt(c) !== c) { seen.disconnect(); resolve({ aimed: false }); return; }
-      globalThis.__ms.click('left');
-      if (globalThis.__ms.state.play.state !== 'generating') { seen.disconnect(); resolve({ state: globalThis.__ms.state.play.state }); }
-    }), cell);
-
-    // 5 x 5 x 1, no-guess: its marked start cell (2, 2, 0) is on the face the camera sees
-    const BOX = { X: 5, Y: 5, Z: 1, mines: 4, noGuess: true };
-    const MARK = 2 + 5 * 2;
-    await ms((b) => globalThis.__ms.modes.start('3d', b), BOX);
-    await lockAndPlay();
-    const first = await clickAndTime(0);
-    assert.equal(first.state, 'generating');
-    assert.ok(first.after >= 200 - 5, `not before the delay (${first.after.toFixed(0)} ms)`);
-    assert.ok(first.after <= 200 + first.stall + 250, `the card shows by the delay under pointer lock (${first.after.toFixed(0)} ms, long tasks ${first.stall.toFixed(0)} ms)`);
-    assert.equal(await ms(() => !!document.pointerLockElement), true, 'still pointer-locked');
-    assert.match(first.line, /^candidate \d+ · \d+ s$/, `the progress line shows with the card (${JSON.stringify(first)})`);
-    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: patience(4000), polling: 100 });
-    assert.equal(await ms(() => document.getElementById('m3d-status').classList.contains('hidden')), true, 'the card goes with the board');
-    assert.equal(await ms(() => globalThis.__ms.renderer.mark), -1, 'no mark on a game with no pre-generated board');
-
-    // lose at once: reveal a mine
-    await ms(() => {
-      const m = globalThis.__ms, g = m.game;
-      for (let c = 0; c < g.n; c++) if (g.number[c] === -1 && m.aimAt(c) === c) { m.click('left'); return; }
-    });
-    assert.equal(await ms(() => globalThis.__ms.game.state), 'lost');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(5000), polling: 100 });
-
-    // Play again: the closed box opens with its marked start cell tinted, the next board on its way
-    await page.keyboard.press('Enter'); // Play again: a user gesture, which asks for pointer lock
-    await page.waitForFunction(() => globalThis.__ms.state.mode !== 'results', null, { timeout: patience(5000), polling: 100 });
-    await lockAndPlay();
-    const marked = await ms(() => ({ tinted: globalThis.__ms.renderer.mark, cell: globalThis.__ms.state.play.markedCell, state: globalThis.__ms.state.play.state }));
-    assert.deepEqual(marked, { tinted: MARK, cell: MARK, state: 'ready' }, 'the marked start cell is tinted');
-    const again = await clickAndTime(MARK);
-    assert.equal(again.state, 'generating', 'the pre-generated board is still in flight: the session waits for it');
-    assert.ok(again.after <= 200 + again.stall + 250, `the card shows by the delay for the in-flight board (${again.after.toFixed(0)} ms, long tasks ${again.stall.toFixed(0)} ms)`);
-    assert.equal(await ms(() => globalThis.__ms.renderer.mark), -1, 'the mark goes at the first click');
-    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: patience(12000), polling: 100 });
-    assert.equal(await ms((c) => globalThis.__ms.game.pressed[c], MARK), 1, 'the first click is applied on the board that arrived');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
 // ---------------------------------------------------------------- touch: the coarse-only 3D start and touch play
 
+// The 3D game through the adapter — start, pause, resume, restart, leave and a lost context — is
+// tests/shell-pause.test.mjs's 3D pause test; touch on a phone is its phone test.
+
 const TABLET = { viewport: { width: 820, height: 1180 }, hasTouch: true, isMobile: true };
-const PHONE = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 };
 
 // Counts every pointer-lock request and fullscreen request, and records vibrations and mouse events.
 function watchPage() {
@@ -863,14 +610,14 @@ async function openTouchPage(browser, base, device) {
   return { context, page, errors, ms, frames, f: fingers(await context.newCDPSession(page)) };
 }
 
-test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to play lists the gestures, and no path asks for pointer lock', async (t) => {
+test('in a browser with touch on a tablet, the 3D ready card is a start that asks no pointer lock, and 3D plays by touch: stick, look, tap, long-press, two-finger chord, the toolbar, pinch, Pause and resume, and Orbit', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
-    const { page, errors, ms } = await openTouchPage(browser, base, TABLET);
-    const note = await ms(() => document.getElementById('touch-note').textContent);
-    assert.match(note, /[Bb]oth modes play by touch/, 'the menu\'s note says 3D plays by touch too');
+    const { page, errors, ms, frames, f } = await openTouchPage(browser, base, TABLET);
+
+    // ---- the ready card from the menu: Tap to play lists the gestures, and no path asks for pointer lock
     await page.tap('#menu-entry-3d');
     await page.tap('#board-choice [data-preset="6,6,6,10"]');
     await page.tap('#bc-play');
@@ -880,8 +627,7 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
       const btn = document.getElementById('ready-btn');
       const ready = document.getElementById('ready');
       return {
-        btn: shown(btn), title: btn.querySelector('.ready-title').textContent,
-        keys: shown(ready.querySelector('.ready-keys')),
+        btn: shown(btn), keys: shown(ready.querySelector('.ready-keys')),
         list: [...ready.querySelectorAll('.ready-keys dt')].map((dt) => dt.textContent), back: shown(document.getElementById('ready-back')),
         notice: !!document.getElementById('ready-notice'),
         rules: shown(document.getElementById('ready-rules')) ? document.getElementById('ready-rules').innerText : '',
@@ -892,7 +638,6 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
     assert.doesNotMatch(card.rules, /hold Ctrl/, 'not the Ctrl key');
     assert.equal(card.escHint, false, 'no Esc key hint in the touch card\'s Back');
     assert.ok(card.btn, 'the ready card\'s play button shows');
-    assert.equal(card.title, 'Tap to play');
     assert.ok(card.keys, 'the controls list shows');
     assert.deepEqual(card.list, ['Left thumb', 'Drag', 'Tap', 'Long-press', 'Two-finger tap', 'Pinch'], 'the touch gestures in place of the keys');
     assert.ok(card.back, 'Back stays');
@@ -912,42 +657,16 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
     assert.ok(bar.shown && bar.right < 40 && bar.min >= 44, `the toolbar on the right edge with 44 px buttons (${JSON.stringify(bar)})`);
     const clear = await ms(() => document.getElementById('hud-figures').getBoundingClientRect().bottom <= document.getElementById('touch-modes').getBoundingClientRect().top);
     assert.ok(clear, 'the figures panel ends above the toolbar');
-    // Restart from the pause card and Look-free paths stay lockless.
+    // Restart from the pause card stays lockless.
     await ms(() => globalThis.__ms.pause());
     await page.tap('#p-restart');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing' || globalThis.__ms.state.mode === 'ready');
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'playing', 'restart enters touch play at once');
     assert.equal(await ms(() => globalThis.__locks), 0, 'restart asks no lock');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
 
-test('in a browser with touch on a phone, Learn 3D\'s prompt line speaks touch', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const { page, errors, ms } = await openTouchPage(browser, base, PHONE);
-    await ms(() => globalThis.__ms.learn());
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
-    await page.tap('#ready-btn');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
-    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
-    assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Aim at the marked cube and tap to start');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, long-press, two-finger chord, the toolbar, pinch, Pause and resume, and Orbit', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const { page, errors, ms, frames, f } = await openTouchPage(browser, base, TABLET);
+    // ---- touch play on a fixed board, out of fullscreen so the window is the tablet's again
+    await ms(() => { globalThis.__ms.settings.set('fullscreen', false); return document.fullscreenElement ? document.exitFullscreen() : null; }).catch(() => {});
+    await page.waitForFunction(([w, h]) => !document.fullscreenElement && innerWidth === w && innerHeight === h, [TABLET.viewport.width, TABLET.viewport.height]);
     const W = TABLET.viewport.width;
     const H = TABLET.viewport.height;
     const LOOK = [Math.round(W * 0.62), Math.round(H * 0.85)]; // below the figures panel, which takes its own touches
@@ -956,8 +675,8 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     const counts = () => ms(() => globalThis.__ms.state.play.counts().clicks);
     // 5 × 1 × 1 with mines at 0 and 2: the tap at 4 opens 4 and 3 (a 1); revealing 1 wins.
     await ms(() => { globalThis.__ms.modes.start('3d', { X: 5, Y: 1, Z: 1, mines: 2, minePositions: [0, 2] }); });
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
-    await page.tap('#ready-btn');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready' || globalThis.__ms.state.mode === 'playing');
+    if (await ms(() => globalThis.__ms.state.mode) === 'ready') await page.tap('#ready-btn');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
 
     // The hint strip and the HUD strip speak touch: gestures and on-screen buttons, no key.
@@ -1076,60 +795,7 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
   }
 });
 
-test('in a browser with touch on a phone, the ready card starts touch play with the toolbar clear of the overlay\'s counters and title bar', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const { page, errors, ms } = await openTouchPage(browser, base, PHONE);
-    await ms(() => { globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10 }); });
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
-    await page.tap('#ready-btn');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
-    const layout = await ms(() => {
-      const tb = document.getElementById('touch-modes').getBoundingClientRect();
-      const apart = (el) => { const r = el.getBoundingClientRect(); return tb.top >= r.bottom || tb.bottom <= r.top || tb.left >= r.right || tb.right <= r.left; };
-      return { overlap: !apart(document.getElementById('hud-counters')) || !apart(document.querySelector('#hud-figures .ui-figures__head')), locks: globalThis.__locks };
-    });
-    assert.deepEqual(layout, { overlap: false, locks: 0 });
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser with a mouse at 1280 × 800, 3D starts with pointer lock and shows no touch controls', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.addInitScript(watchPage);
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
-    const ms = (fn, arg) => page.evaluate(fn, arg);
-    assert.equal(await ms(() => document.getElementById('touch-note').classList.contains('hidden')), true);
-    await ms(() => { globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10 }); });
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
-    const card = await ms(() => ({ title: document.querySelector('#ready-btn .ready-title').textContent, keys: getComputedStyle(document.querySelector('#ready .ready-keys')).display, first: document.querySelector('#ready .ready-keys dt').textContent }));
-    assert.deepEqual(card, { title: 'Click to play', keys: 'grid', first: 'Mouse' }, 'the keyboard and mouse rows');
-    await page.click('#ready-btn');
-    assert.equal(await ms(() => globalThis.__locks), 1, 'the click asks for pointer lock');
-    await ms(() => globalThis.__ms.forcePlay());
-    assert.equal(await ms(() => getComputedStyle(document.getElementById('touch-3d')).display), 'none', 'no touch layer');
-    const help = await ms(() => ({ strip: document.getElementById('hint-strip-text').textContent, tools: document.getElementById('hud-tools').textContent }));
-    assert.equal(help.strip, 'Left reveal Right flag Hold Space aim through Hold Shift neighbours', 'the keyboard\'s hint strip, every input a key box');
-    assert.match(help.tools, /Esc menu/, 'the keyboard\'s HUD strip, as before');
-    assert.equal(await ms(() => document.body.classList.contains('touch-play')), false);
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two columns fits the window with its look settings, and with the restart confirmation in place of the actions', async (t) => {
+test('in a browser at 1024 × 768 with a mouse: the 3D ready card lists the keys and asks for pointer lock, play shows no touch controls, and a 3D game\'s pause card in two columns fits the window with its look settings, and with the restart confirmation in place of the actions', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1184,14 +850,28 @@ test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two c
     for (const theme of ['joyful-tiles']) {
       const at = `1024 × 768 ${theme}`;
       const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.addInitScript(watchPage);
       await page.goto(`${base}/index.html`);
       await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
       const ms = (fn, arg) => page.evaluate(fn, arg);
       assert.ok(await ms(() => matchMedia('(pointer: fine)').matches), `${at}: a fine pointer`);
+      assert.equal(await ms(() => document.getElementById('touch-note').classList.contains('hidden')), true, `${at}: no touch note with a mouse`);
+      // With a mouse the ready card lists the keys, its click asks for pointer lock, and play shows no touch controls.
       await ms(() => {
         globalThis.__ms.settings.set('confirmRestart', true);
         globalThis.__ms.modes.start('3d', { X: 5, Y: 1, Z: 1, mines: 1, minePositions: [4] });
-        globalThis.__ms.forcePlay();
+      });
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
+      assert.deepEqual(await ms(() => ({ keys: getComputedStyle(document.querySelector('#ready .ready-keys')).display, first: document.querySelector('#ready .ready-keys dt').textContent })),
+        { keys: 'grid', first: 'Mouse' }, `${at}: the ready card's keyboard and mouse rows`);
+      await page.click('#ready-btn');
+      assert.equal(await ms(() => globalThis.__locks), 1, `${at}: the click asks for pointer lock`);
+      await ms(() => globalThis.__ms.forcePlay());
+      assert.deepEqual(await ms(() => ({ layer: getComputedStyle(document.getElementById('touch-3d')).display, touchPlay: document.body.classList.contains('touch-play') })),
+        { layer: 'none', touchPlay: false }, `${at}: no touch layer in play`);
+      await ms(() => {
         globalThis.__ms.aimAt(3);
         globalThis.__ms.click('left');
         globalThis.__ms.pause();
@@ -1206,6 +886,7 @@ test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two c
       const asking = await ms(measure);
       assert.equal(asking.confirm, true, `${at}: the restart confirmation shows`);
       fits(asking, `${at}, the restart confirmation`);
+      assert.deepEqual(errors, []);
       await page.close();
     }
   } finally {

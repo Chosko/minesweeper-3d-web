@@ -531,7 +531,7 @@ test('in a browser, the custom board validates, the switch follows the limit and
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
@@ -859,11 +859,13 @@ test('in a browser, the 3D board choice at every supported window size: its wind
   if (!env) return;
   const { browser, base } = env;
   try {
+    // One page, resized: each size lays the open board choice out afresh.
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    await page.click('#menu-entry-3d');
     for (const [width, height, frame] of [[1920, 1080, 1120], [1366, 768, 1080], [1024, 768, 984], [390, 844, 390]]) {
-      const page = await browser.newPage({ viewport: { width, height } });
-      await page.goto(`${base}/index.html?still-backdrop`);
-      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
-      await page.click('#menu-entry-3d');
+      await page.setViewportSize({ width, height });
       const at = `${width} × ${height}`;
       for (const option of ['learn', '8,8,8,40', 'custom', 'code']) {
         await page.click(`#board-choice [data-preset="${option}"]`);
@@ -905,7 +907,6 @@ test('in a browser, the 3D board choice at every supported window size: its wind
         assert.ok(chip.chip.right <= chip.check.left, 'the chip clear of the check');
         assert.ok(chip.chip.top >= chip.name.bottom - 0.5, 'the chip wrapped under the name');
       }
-      await page.close();
     }
   } finally {
     await browser.close();

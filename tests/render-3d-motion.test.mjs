@@ -154,7 +154,7 @@ test('motion drops on a new board, a seek, a loss, a theme change and a pause hi
 
 // ---------------------------------------------------------------- in a browser
 
-test('in a browser, a cube animates on the motion mesh with its ordinary instance hidden; the solved pulse plays the theme\'s description; motion drops', async (t) => {
+test('in a browser, a cube animates on the motion mesh with its ordinary instance hidden; the solved pulse plays the theme\'s description; motion drops; the game is the same with motion on or off', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -296,22 +296,8 @@ test('in a browser, a cube animates on the motion mesh with its ordinary instanc
     await ms(() => globalThis.__ms.start(6, 1, 1, 2, [0, 3]));
     s = await look(0);
     assert.deepEqual([s.cells, s.hidden], [[], []], 'a new board drops motion');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
 
-test('in a browser, the game is the same with motion on or off', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1000, height: 650 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && !!globalThis.__ms.renderer.board);
+    // The game is the same with motion on or off: the same moves, the same states and picking.
     const play = (still) => page.evaluate(async (off) => {
       const { BOARD } = await import('/themes/joyful-tiles/board.js');
       const r = globalThis.__ms.renderer;

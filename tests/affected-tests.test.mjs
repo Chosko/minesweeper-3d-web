@@ -162,7 +162,7 @@ test('a change under js/classic2d/ selects the tests reaching it, not the 3D ren
 });
 
 test('the browser files split out of components.test.mjs are selected by every change that selects it', () => {
-  const split = ['components-ready', 'components-learn-end', 'components-menu-screens', 'components-pause'].map((n) => `tests/${n}.test.mjs`);
+  const split = ['components-ready', 'components-menu-screens', 'components-pause'].map((n) => `tests/${n}.test.mjs`);
   const reached = [...importClosure('tests/components.test.mjs', ROOT)].filter((f) => f.startsWith('js/'));
   assert.ok(reached.includes('js/ui.js') && reached.includes('js/ui/components.js'));
   for (const f of split) {
@@ -176,16 +176,16 @@ test('the browser files split out of components.test.mjs are selected by every c
   }
 });
 
-test('the smoke sets are small sets of present browser test files: the screens and both games for the shell, a 3D game, its end and a 3D replay for the renderer', () => {
+test('the smoke sets are small sets of present browser test files: the screens and both games for the shell, a 3D game to its end and a 3D replay for the renderer', () => {
   const browser = testFiles(ROOT).filter((f) => isBrowserTest(f, ROOT));
   for (const set of [SHELL_SMOKE, RENDER_SMOKE]) {
     assert.ok(set.length < browser.length / 8, 'small');
     for (const f of set) assert.ok(browser.includes(f), `${f} is a browser test file`);
   }
-  for (const f of ['components-menu-screens', 'components-pause', 'results', 'mode3d-session', 'replay-viewer']) {
+  for (const f of ['components-menu-screens', 'components-pause', 'results', 'mode3d-end', 'replay-viewer']) {
     assert.ok(SHELL_SMOKE.includes(`tests/${f}.test.mjs`), `${f} stands for its screens`);
   }
-  for (const f of ['mode3d-session', 'mode3d-end', 'replay-viewer-3d']) assert.ok(RENDER_SMOKE.includes(`tests/${f}.test.mjs`), f);
+  for (const f of ['mode3d-end', 'replay-viewer-3d']) assert.ok(RENDER_SMOKE.includes(`tests/${f}.test.mjs`), f);
 });
 
 test('a change to js/main.js, index.html or css/ selects the smoke set, slow tests skipped, not every browser test', () => {

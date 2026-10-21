@@ -1,4 +1,4 @@
-// The 3D game's overlay in a browser, at each of its artboard sizes (J-Game3D-xl, -l, -m, -p, -ls and
+// The 3D game's overlay in a browser, at the artboard sizes where its layout differs (J-Game3D-xl, -m, -p, -ls and
 // J-Game3D-states): the counters, the figures panel or the phone's title and Pause, the help panel, the
 // hint strip and the view chips in their places, every readout on a surface of its own, Pause and Restart.
 import { test } from 'node:test';
@@ -12,12 +12,12 @@ import { measureContrast } from './helpers/contrast.mjs';
 const suite = browserSuite();
 const SHOTS = process.env.MS_SHOTS === '1';
 
-// The 3D game's overlay at each artboard size (J-Game3D-xl, -l, -m, -p, -ls and J-Game3D-states): every part
-// in its place on its own surface, readable over any sky the theme draws.
+// The 3D game's overlay at the artboard sizes where its layout differs (J-Game3D-xl, -m, -p, -ls and
+// J-Game3D-states; -l lays the panel out as -xl and -m do, between their widths, at -m's density): every part in its place on
+// its own surface, readable over any sky the theme draws.
 // Each size's HUD density: the counter digits, the panel's title, a figure's value and the 3BV's, a figure's top padding, Restart's height.
 const GAME_3D_SIZES = [
   ['xl', { viewport: { width: 1920, height: 1080 } }, 300, ['34px', '17px', '28px', '16px', '11px', 38]],
-  ['l', { viewport: { width: 1366, height: 768 } }, 290, ['28px', '15px', '23px', '23px', '8px', 38]],
   ['m', { viewport: { width: 1024, height: 768 } }, 280, ['28px', '15px', '23px', '23px', '8px', 38]],
   ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, null, ['26px', '16px', null, null, null, 44]],
   ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, null, ['26px', '15px', null, null, null, 44]],

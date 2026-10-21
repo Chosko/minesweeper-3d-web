@@ -1421,13 +1421,22 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.equal(abandoned[0].summary.pauses, 2, 'two pauses: the one resumed, and the one left from');
     assert.ok(abandoned[0].summary.pausedMs >= 1000, `the paused time counts the second-long pause (${abandoned[0].summary.pausedMs})`);
 
-    // The board choice reopens on the last choice; the abandoned game set no best.
-    await page.click('#menu-entry-classic-2d');
-    assert.equal(await active(), 'expert');
+    // The menu opens on the last mode played, with its Last played chip; Enter opens its board choice
+    // on the last choice, and the abandoned game set no best; Enter again starts that board.
+    assert.equal(await active(), 'menu-entry-classic-2d', 'the menu opens on the last mode played');
+    assert.equal(await ms(() => { const e = document.querySelector('#menu-entry-classic-2d .ui-chip[data-last]'); return !!e && !e.classList.contains('hidden') && e.getBoundingClientRect().width > 0; }), true, 'with its Last played chip');
+    const savedChoice = await ms(() => localStorage.getItem('ms3d:doc:classic2d.lastChoice'));
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'classic-2d-choice');
+    assert.equal(await active(), 'expert', 'the last board is selected');
     assert.equal(await ms(() => document.querySelector('#c2d-choice [aria-pressed="true"]').dataset.size), 'expert');
     assert.equal(await ms(() => document.getElementById('c2d-noguess').checked), false, 'the switch as last played');
     assert.equal(await ms(() => document.getElementById('c2d-bests-title').textContent), 'Expert · your bests');
     assert.equal(await ms(() => document.querySelector('#c2d-best-time .ui-stat__detail').textContent), 'no best yet');
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'classic-2d', 'Enter starts the last board');
+    assert.equal(await ms(() => document.getElementById('c2d-size').textContent), '30 × 16 · 99 mines');
+    assert.equal(await ms(() => localStorage.getItem('ms3d:doc:classic2d.lastChoice')), savedChoice, 'the last choice is as it was');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
@@ -1560,12 +1569,14 @@ test('in a browser, the board choice at every supported window size: its window\
   if (!env) return;
   const { browser, base } = env;
   try {
+    // One page, resized: each size lays the open board choice out afresh.
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    await page.click('#menu-entry-classic-2d');
     for (const [width, height, frame] of [[1920, 1080, 1120], [1366, 768, 1080], [1024, 768, 984], [390, 844, 390]]) {
-      const page = await browser.newPage({ viewport: { width, height } });
-      await page.addInitScript(removeWebGL2);
-      await page.goto(`${base}/index.html`);
-      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
-      await page.click('#menu-entry-classic-2d');
+      await page.setViewportSize({ width, height });
       const at = `${width} × ${height}`;
       for (const size of ['intermediate', 'custom', 'code']) {
         await page.click(`#c2d-choice [data-size="${size}"]`);
@@ -1603,7 +1614,6 @@ test('in a browser, the board choice at every supported window size: its window\
           assert.ok(m.rule.height === 1 && m.rule.width > 300, 'a rule between the options and the settings');
         }
       }
-      await page.close();
     }
   } finally {
     await browser.close();

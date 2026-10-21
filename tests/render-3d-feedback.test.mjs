@@ -185,69 +185,6 @@ test('the renderer draws into a target rectangle: viewport, scissor and camera a
 
 // ---------------------------------------------------------------- in a browser
 
-test('in a browser, a solved number stops being drawn, and Ctrl draws hidden cells as transparent ghosts that stay unpickable', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
-    const ms = (fn, arg) => page.evaluate(fn, arg);
-    const frames = () => ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-    const stats = async () => { await frames(); return ms(() => ({ ...globalThis.__ms.renderer.stats })); };
-    const act = (cell, type) => ms(([c, k]) => {
-      if (globalThis.__ms.aimAt(c) !== c) throw new Error(`cell ${c} could not be aimed at`);
-      globalThis.__ms.click(k);
-    }, [cell, type]);
-
-    // A row of six: mines at 0 and 3; 1 and 2 show a 1. Flagging 0 solves 1, which hides.
-    await ms(() => { globalThis.__ms.start(6, 1, 1, 2, [0, 3]); globalThis.__ms.forcePlay(); });
-    await act(1, 'left');
-    await act(2, 'left');
-    await ms(() => globalThis.__ms.aimAt(0));
-    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: 8000 }); // the aim's glow settles
-    const plain = await stats();
-    assert.deepEqual([plain.opaque, plain.trans], [6, 0], 'every cube opaque, nothing transparent');
-
-    // The flag hides the 1; once its pulse has played, the renderer stops asking for frames.
-    await ms(() => globalThis.__ms.click('right'));
-    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: 8000 });
-    assert.equal(await ms(() => globalThis.__ms.game.unlinked[1]), 1, 'the engine hid the cell');
-    assert.notEqual(await ms(() => globalThis.__ms.aimAt(1)), 1, 'and picking passes through it');
-    await ms(() => globalThis.__ms.aimAt(0));
-    const hidden = await stats();
-    assert.deepEqual([hidden.opaque, hidden.trans], [5, 0], 'the hidden 1 is not drawn');
-
-    // Ctrl: the hidden 1 counts in the transparent pass, not the opaque one; releasing it hides it again.
-    await ms(() => globalThis.__ms.key('ControlLeft'));
-    const ghosts = await stats();
-    assert.deepEqual([ghosts.opaque, ghosts.trans], [5, 1], 'a ghost in the transparent pass');
-    await ms(() => globalThis.__ms.key('ShiftLeft'));
-    const shifted = await stats();
-    assert.deepEqual([shifted.opaque, shifted.trans], [1, 6], 'with Shift too the ghost stays in the transparent pass');
-    assert.notEqual(await ms(() => globalThis.__ms.aimAt(1)), 1, 'hidden cells stay unpickable under Ctrl');
-    await ms(() => globalThis.__ms.aimAt(0));
-    await ms(() => globalThis.__ms.key('ShiftLeft', false));
-    await ms(() => globalThis.__ms.key('ControlLeft', false));
-    const released = await stats();
-    assert.deepEqual([released.opaque, released.trans], [5, 0], 'released: hidden again');
-
-    // Unflagging shows the 1 again, drawn as before.
-    await act(0, 'right');
-    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: 8000 });
-    const shown = await stats();
-    assert.deepEqual([shown.opaque, shown.trans], [6, 0], 'the 1 is drawn normally');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-// ---------------------------------------------------------------- in a browser: the board module
-
 // J-3DSheet's atlas: the closed cube's thin edge and four lit sides round its face, the revealed cube
 // flat cream inside its edge (page "Joyful tiles").
 const J3D = {
@@ -259,17 +196,34 @@ const near = (got, hex, what) => {
   const want = rgb(hex);
   assert.ok(got.every((v, i) => Math.abs(v - want[i]) <= 2), `${what}: ${got} is ${hex} (${want})`);
 };
+// J-3DSheet's selection and confetti (page "Joyful tiles", panels "Selection, start cell, view modes,
+// waves" and "Confetti").
+const J3D_SEL = { outline: '#16204a', glow: '#ffc93c', tint: [1, 0.86, 0.84] };
+const J3D_CONFETTI = ['#ff6b6b', '#ffc93c', '#49c6b8', '#78aaf8', '#6d4ee8', '#ffffff', '#ff8c42'];
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-test('in a browser, the Joyful tiles atlas samples as J-3DSheet: bevelled closed and flagged cubes, flat revealed cubes', async (t) => {
+// One page, each part on a fresh row of six (mines at 0 and 3; 1 and 2 show a 1): the atlas, the
+// solved number and the Ctrl ghosts, the selection, the win confetti, then the theme switch, last since
+// it leaves the fixture theme on.
+test('in a browser, the 3D renderer: the atlas, the selection and the confetti sample as J-3DSheet; a solved number stops being drawn and Ctrl draws it as an unpickable ghost; a theme switch changes the atlas and the sky and nothing in the game', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
-    const page = await browser.newPage();
+    const page = await browser.newPage({ viewport: { width: 1000, height: 650 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html?still-backdrop`);
-    const px = await page.evaluate(async () => {
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && !!globalThis.__ms.renderer.board);
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const row = () => ms(() => { globalThis.__ms.start(6, 1, 1, 2, [0, 3]); globalThis.__ms.forcePlay(); });
+    const act = (cell, type) => ms(([c, k]) => {
+      if (globalThis.__ms.aimAt(c) !== c) throw new Error(`cell ${c} could not be aimed at`);
+      globalThis.__ms.click(k);
+    }, [cell, type]);
+
+    // ---- the Joyful tiles atlas: bevelled closed and flagged cubes, flat revealed cubes
+    const px = await ms(async () => {
       const tex = await import('/js/textures.js');
       const { BOARD } = await import('/themes/joyful-tiles/board.js');
       const canvas = document.createElement('canvas');
@@ -286,29 +240,118 @@ test('in a browser, the Joyful tiles atlas samples as J-3DSheet: bevelled closed
       };
       return { closed: sample(tex.L_CLOSED), flag: sample(tex.L_FLAG), sunk: sample(tex.L_SUNK), zero: sample(tex.L_NUM0) };
     });
-    for (const side of ['edge', 'top', 'left', 'right', 'bottom', 'face']) near(px.closed[side], J3D[side], `closed ${side}`);
-    for (const side of ['edge', 'top', 'left', 'right', 'bottom']) near(px.flag[side], J3D[side], `flagged ${side}`);
-    near(px.sunk.top, J3D.bottom, 'the sunk face turns its top side over');
-    near(px.sunk.bottom, J3D.top, 'and its bottom side');
-    near(px.zero.edge, J3D.revealedEdge, 'revealed edge');
-    for (const side of ['top', 'left', 'right', 'bottom', 'face']) near(px.zero[side], J3D.revealed, `revealed flat at the ${side}`);
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
+    for (const side of ['edge', 'top', 'left', 'right', 'bottom', 'face']) near(px.closed[side], J3D[side], `atlas: closed ${side}`);
+    for (const side of ['edge', 'top', 'left', 'right', 'bottom']) near(px.flag[side], J3D[side], `atlas: flagged ${side}`);
+    near(px.sunk.top, J3D.bottom, 'atlas: the sunk face turns its top side over');
+    near(px.sunk.bottom, J3D.top, 'atlas: and its bottom side');
+    near(px.zero.edge, J3D.revealedEdge, 'atlas: revealed edge');
+    for (const side of ['top', 'left', 'right', 'bottom', 'face']) near(px.zero[side], J3D.revealed, `atlas: revealed flat at the ${side}`);
 
-test('in a browser, switching theme in a 3D game changes the atlas and the sky and nothing in the game', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1000, height: 650 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && !!globalThis.__ms.renderer.board);
-    const look = () => page.evaluate(async () => {
+    // ---- a solved number stops being drawn; Ctrl draws it as a transparent ghost that stays unpickable
+    const frames = () => ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const stats = async () => { await frames(); return ms(() => ({ ...globalThis.__ms.renderer.stats })); };
+    await row();
+    await act(1, 'left');
+    await act(2, 'left');
+    await ms(() => globalThis.__ms.aimAt(0));
+    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: 8000 }); // the aim's glow settles
+    const plain = await stats();
+    assert.deepEqual([plain.opaque, plain.trans], [6, 0], 'ghosts: every cube opaque, nothing transparent');
+    // The flag on 0 solves the 1 at 1, which hides; once its pulse has played, the renderer stops asking for frames.
+    await ms(() => globalThis.__ms.click('right'));
+    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: 8000 });
+    assert.equal(await ms(() => globalThis.__ms.game.unlinked[1]), 1, 'ghosts: the engine hid the cell');
+    assert.notEqual(await ms(() => globalThis.__ms.aimAt(1)), 1, 'ghosts: picking passes through it');
+    await ms(() => globalThis.__ms.aimAt(0));
+    const hidden = await stats();
+    assert.deepEqual([hidden.opaque, hidden.trans], [5, 0], 'ghosts: the hidden 1 is not drawn');
+    await ms(() => globalThis.__ms.key('ControlLeft'));
+    const ghosts = await stats();
+    assert.deepEqual([ghosts.opaque, ghosts.trans], [5, 1], 'ghosts: under Ctrl a ghost in the transparent pass');
+    await ms(() => globalThis.__ms.key('ShiftLeft'));
+    const shifted = await stats();
+    assert.deepEqual([shifted.opaque, shifted.trans], [1, 6], 'ghosts: with Shift too the ghost stays in the transparent pass');
+    assert.notEqual(await ms(() => globalThis.__ms.aimAt(1)), 1, 'ghosts: hidden cells stay unpickable under Ctrl');
+    await ms(() => globalThis.__ms.aimAt(0));
+    await ms(() => globalThis.__ms.key('ShiftLeft', false));
+    await ms(() => globalThis.__ms.key('ControlLeft', false));
+    const released = await stats();
+    assert.deepEqual([released.opaque, released.trans], [5, 0], 'ghosts: Ctrl released, hidden again');
+    await act(0, 'right');
+    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: 8000 });
+    const shown = await stats();
+    assert.deepEqual([shown.opaque, shown.trans], [6, 0], 'ghosts: unflagged, the 1 is drawn normally');
+
+    // ---- a selected cube: navy outline, a yellow glow line inside it, a coral-tinted face
+    await row();
+    // The camera straight in front of the closed cube 2, a few cubes away, aimed at its centre.
+    const sel = await ms(() => {
+      const m = globalThis.__ms, r = m.renderer;
+      const [x, y, z] = m.cellCenter(2);
+      m.moveTo(x, y, z + 16);
+      if (m.aimAt(2) !== 2) throw new Error('cell 2 could not be aimed at');
+      r._selAnim = false; // the aim's glow settled: its steady value
+      const gl = r.renderer.getContext(), pr = r.renderer.getPixelRatio(), out = new Uint8Array(4);
+      const c = r.cellScreen(2);
+      const at = (px, py) => {
+        gl.readPixels(Math.floor(px), Math.floor(gl.drawingBufferHeight - py - 1), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, out);
+        return [out[0], out[1], out[2]];
+      };
+      const cx = c.x * pr, cy = c.y * pr;
+      r.render();
+      const line = [];
+      for (let dx = 0; dx < 220 * pr; dx++) line.push(at(cx + dx, cy));
+      r.setSelected(-1);
+      r.render();
+      const bare = at(cx, cy);
+      r.setSelected(2);
+      return { row: line, plain: bare, pr };
+    });
+    // The selected face is the plain face × the tint, give or take the selection's lighter face shade:
+    // one common factor over the three channels.
+    const face = sel.row[0];
+    const k = face.map((v, i) => v / (sel.plain[i] * J3D_SEL.tint[i]));
+    assert.ok(Math.max(...k) - Math.min(...k) <= 0.03 && Math.min(...k) >= 0.97 && Math.max(...k) <= 1.08,
+      `selection: the selected face ${face} is the plain face ${sel.plain} × the tint ${J3D_SEL.tint} (${k.map((v) => v.toFixed(3))})`);
+    const outline = rgb(J3D_SEL.outline);
+    const o = sel.row.findIndex((p) => dist(p, outline) <= 6);
+    assert.ok(o > 0, `selection: the outline in ${J3D_SEL.outline} along the face's middle row: ${JSON.stringify(sel.row.slice(0, 120))}`);
+    const run = sel.row.slice(o).findIndex((p) => dist(p, outline) > 6);
+    assert.ok(run >= Math.floor(3 * sel.pr) - 1, `selection: the outline at least 3 px wide (${run} device px)`);
+    // Just inside the outline, the glow line: one pixel nearer its colour than the outline's or the face's.
+    const glow = rgb(J3D_SEL.glow);
+    const inside = sel.row.slice(Math.max(0, o - 3 * sel.pr), o);
+    const best = inside.reduce((a, p) => (dist(p, glow) < dist(a, glow) ? p : a));
+    assert.ok(dist(best, glow) < dist(best, outline) && dist(best, glow) < dist(best, face),
+      `selection: a glow line in ${J3D_SEL.glow} inside the outline: ${JSON.stringify(inside)}`);
+
+    // ---- a frame of the win confetti shows J-3DSheet's seven colours: revealing 1, 2 and 5 (which opens 4) wins
+    await row();
+    for (const c of [1, 2, 5]) await act(c, 'left');
+    await page.waitForFunction(() => globalThis.__ms.game.state === 'won' && globalThis.__ms.renderer.confetti.visible);
+    await page.waitForTimeout(500); // the burst spread out
+    // The confetti's own colours: each piece is its colour × (0.75 to 1) as it flips.
+    const found = await ms((palette) => {
+      const r = globalThis.__ms.renderer;
+      r.render();
+      const gl = r.renderer.getContext(), w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+      const buf = new Uint8Array(w * h * 4);
+      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+      const want = palette.map((hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)));
+      const seen = want.map(() => 0);
+      for (let p = 0; p < w * h * 4; p += 4) {
+        want.forEach((c, n) => {
+          const m = Math.max(...c), s = Math.max(buf[p], buf[p + 1], buf[p + 2]) / m;
+          if (s < 0.74 || s > 1.01) return;
+          if (c.every((v, i) => Math.abs(v * s - buf[p + i]) <= 2)) seen[n]++;
+        });
+      }
+      return seen;
+    }, J3D_CONFETTI);
+    J3D_CONFETTI.forEach((hex, n) => assert.ok(found[n] > 0, `confetti in ${hex}: ${found}`));
+
+    // ---- switching theme in a 3D game changes the atlas and the sky and nothing in the game
+    const look = () => ms(async () => {
       const tex = await import('/js/textures.js');
       const r = globalThis.__ms.renderer;
       const g = globalThis.__ms.game;
@@ -321,18 +364,13 @@ test('in a browser, switching theme in a 3D game changes the atlas and the sky a
         mode: globalThis.__ms.state.mode,
       };
     });
-    // A 3D game with one cell revealed.
-    await page.evaluate(() => { globalThis.__ms.start(6, 1, 1, 2, [0, 3]); globalThis.__ms.forcePlay(); });
-    await page.evaluate(() => {
-      const c = 1;
-      if (globalThis.__ms.aimAt(c) !== c) throw new Error('cell could not be aimed at');
-      globalThis.__ms.click('left');
-    });
+    await row();
+    await act(1, 'left');
     const before = await look();
-    assert.deepEqual(before.sky.horizon, [0x2b, 0x3f, 0x8a], 'Joyful tiles\' horizon');
-    assert.deepEqual(before.sky.fog, [0x2b, 0x3f, 0x8a], 'its fog');
-    near(before.closed, J3D.face, 'Joyful tiles\' closed face');
-    await page.evaluate(async () => {
+    assert.deepEqual(before.sky.horizon, [0x2b, 0x3f, 0x8a], 'theme switch: Joyful tiles\' horizon');
+    assert.deepEqual(before.sky.fog, [0x2b, 0x3f, 0x8a], 'theme switch: its fog');
+    near(before.closed, J3D.face, 'theme switch: Joyful tiles\' closed face');
+    await ms(async () => {
       const { registerTheme } = await import('/js/themes/registry.js');
       const { FIXTURE_THEME } = await import('/tests/fixtures/themes/fixture-theme.js');
       const { themeApplier } = await import('/js/themes/applier.js');
@@ -341,121 +379,13 @@ test('in a browser, switching theme in a 3D game changes the atlas and the sky a
     });
     await page.waitForFunction(() => globalThis.__ms.renderer.board?.fixture === 'fixture-dusk');
     const after = await look();
-    assert.deepEqual(after.sky.horizon, [0x33, 0x41, 0x5d], 'the fixture\'s horizon');
-    assert.deepEqual(after.sky.zenith, [0x0b, 0x14, 0x24], 'its zenith');
-    assert.deepEqual(after.sky.fog, after.sky.horizon, 'a module with no fog fogs toward its horizon');
-    assert.notDeepEqual(after.closed, before.closed, 'the atlas is rebuilt');
-    assert.notDeepEqual(after.top, before.top, 'its bevel too');
-    assert.deepEqual(after.game, before.game, 'the game is untouched');
+    assert.deepEqual(after.sky.horizon, [0x33, 0x41, 0x5d], 'theme switch: the fixture\'s horizon');
+    assert.deepEqual(after.sky.zenith, [0x0b, 0x14, 0x24], 'theme switch: its zenith');
+    assert.deepEqual(after.sky.fog, after.sky.horizon, 'theme switch: a module with no fog fogs toward its horizon');
+    assert.notDeepEqual(after.closed, before.closed, 'theme switch: the atlas is rebuilt');
+    assert.notDeepEqual(after.top, before.top, 'theme switch: its bevel too');
+    assert.deepEqual(after.game, before.game, 'theme switch: the game is untouched');
     assert.equal(after.mode, before.mode);
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-// J-3DSheet's selection and confetti (page "Joyful tiles", panels "Selection, start cell, view modes,
-// waves" and "Confetti").
-const J3D_SEL = { outline: '#16204a', glow: '#ffc93c', tint: [1, 0.86, 0.84] };
-const J3D_CONFETTI = ['#ff6b6b', '#ffc93c', '#49c6b8', '#78aaf8', '#6d4ee8', '#ffffff', '#ff8c42'];
-const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-
-test('in a browser, a selected cube under Joyful tiles samples as J-3DSheet: navy outline, a yellow glow line inside it, a coral-tinted face', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1000, height: 650 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && !!globalThis.__ms.renderer.board);
-    await page.evaluate(() => { globalThis.__ms.start(6, 1, 1, 2, [0, 3]); globalThis.__ms.forcePlay(); });
-    // The camera straight in front of the closed cube 2, a few cubes away, aimed at its centre.
-    const px = await page.evaluate(() => {
-      const ms = globalThis.__ms, r = ms.renderer;
-      const [x, y, z] = ms.cellCenter(2);
-      ms.moveTo(x, y, z + 16);
-      if (ms.aimAt(2) !== 2) throw new Error('cell 2 could not be aimed at');
-      r._selAnim = false; // the aim's glow settled: its steady value
-      const gl = r.renderer.getContext(), pr = r.renderer.getPixelRatio(), out = new Uint8Array(4);
-      const c = r.cellScreen(2);
-      const at = (x, y) => {
-        gl.readPixels(Math.floor(x), Math.floor(gl.drawingBufferHeight - y - 1), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, out);
-        return [out[0], out[1], out[2]];
-      };
-      const cx = c.x * pr, cy = c.y * pr;
-      r.render();
-      const row = [];
-      for (let dx = 0; dx < 220 * pr; dx++) row.push(at(cx + dx, cy));
-      r.setSelected(-1);
-      r.render();
-      const plain = at(cx, cy);
-      r.setSelected(2);
-      return { row, plain, pr };
-    });
-    // The selected face is the plain face × the tint, give or take the selection's lighter face shade:
-    // one common factor over the three channels.
-    const face = px.row[0];
-    const k = face.map((v, i) => v / (px.plain[i] * J3D_SEL.tint[i]));
-    assert.ok(Math.max(...k) - Math.min(...k) <= 0.03 && Math.min(...k) >= 0.97 && Math.max(...k) <= 1.08,
-      `the selected face ${face} is the plain face ${px.plain} × the tint ${J3D_SEL.tint} (${k.map((v) => v.toFixed(3))})`);
-    const outline = rgb(J3D_SEL.outline);
-    const o = px.row.findIndex((p) => dist(p, outline) <= 6);
-    assert.ok(o > 0, `the outline in ${J3D_SEL.outline} along the face's middle row: ${JSON.stringify(px.row.slice(0, 120))}`);
-    const run = px.row.slice(o).findIndex((p) => dist(p, outline) > 6);
-    assert.ok(run >= Math.floor(3 * px.pr) - 1, `the outline at least 3 px wide (${run} device px)`);
-    // Just inside the outline, the glow line: one pixel nearer its colour than the outline's or the face's.
-    const glow = rgb(J3D_SEL.glow);
-    const inside = px.row.slice(Math.max(0, o - 3 * px.pr), o);
-    const best = inside.reduce((a, p) => (dist(p, glow) < dist(a, glow) ? p : a));
-    assert.ok(dist(best, glow) < dist(best, outline) && dist(best, glow) < dist(best, face),
-      `a glow line in ${J3D_SEL.glow} inside the outline: ${JSON.stringify(inside)}`);
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser, a frame of the win confetti under Joyful tiles shows J-3DSheet\'s seven colours', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1000, height: 650 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && !!globalThis.__ms.renderer.board);
-    // A row of six, mines at 0 and 3: revealing 1, 2 and 5 (which opens 4) wins.
-    await page.evaluate(() => { globalThis.__ms.start(6, 1, 1, 2, [0, 3]); globalThis.__ms.forcePlay(); });
-    for (const c of [1, 2, 5]) {
-      await page.evaluate((cell) => {
-        if (globalThis.__ms.aimAt(cell) !== cell) throw new Error(`cell ${cell} could not be aimed at`);
-        globalThis.__ms.click('left');
-      }, c);
-    }
-    await page.waitForFunction(() => globalThis.__ms.game.state === 'won' && globalThis.__ms.renderer.confetti.visible);
-    await page.waitForTimeout(500); // the burst spread out
-    // The confetti's own colours: each piece is its colour × (0.75 to 1) as it flips.
-    const found = await page.evaluate((palette) => {
-      const r = globalThis.__ms.renderer;
-      r.render();
-      const gl = r.renderer.getContext(), w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
-      const buf = new Uint8Array(w * h * 4);
-      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
-      const want = palette.map((hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)));
-      const seen = want.map(() => 0);
-      for (let p = 0; p < w * h * 4; p += 4) {
-        want.forEach((c, k) => {
-          const m = Math.max(...c), s = Math.max(buf[p], buf[p + 1], buf[p + 2]) / m;
-          if (s < 0.74 || s > 1.01) return;
-          if (c.every((v, i) => Math.abs(v * s - buf[p + i]) <= 2)) seen[k]++;
-        });
-      }
-      return seen;
-    }, J3D_CONFETTI);
-    J3D_CONFETTI.forEach((hex, k) => assert.ok(found[k] > 0, `confetti in ${hex}: ${found}`));
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

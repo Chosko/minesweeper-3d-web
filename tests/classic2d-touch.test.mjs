@@ -714,10 +714,16 @@ test('in a browser with touch on a phone, the Classic 2D window fits the screen 
       page.on('pageerror', (e) => errors.push(e.message));
       await page.addInitScript(removeWebGL2);
       const ms = (fn, arg) => page.evaluate(fn, arg);
+      // Back to the menu from a board not yet started: no confirmation, no reload.
+      const toMenu = async () => {
+        await ms(() => globalThis.__ms.pauser.toMenu());
+        await page.waitForFunction(() => globalThis.__ms.state.mode === 'menu');
+      };
+      await page.goto(`${base}/index.html`);
+      await page.waitForFunction(() => globalThis.__ms !== undefined);
       for (const size of BOARDS_2D) {
         const where = `${phone.name}, ${size}`;
-        await page.goto(`${base}/index.html`);
-        await page.waitForFunction(() => globalThis.__ms !== undefined);
+        if (size !== BOARDS_2D[0]) await toMenu();
         await page.tap('#menu-entry-classic-2d');
         await page.locator('#c2d-noguess').setChecked(true);
         await page.tap(`#c2d-choice [data-size="${size}"]`);
@@ -750,9 +756,8 @@ test('in a browser with touch on a phone, the Classic 2D window fits the screen 
 
       // The phone turns mid-game: a board opened in landscape, where the counter strip stands beside
       // the board, is laid out again below the strip in portrait.
+      await toMenu();
       await page.setViewportSize({ width: phone.viewport.height, height: phone.viewport.width });
-      await page.goto(`${base}/index.html`);
-      await page.waitForFunction(() => globalThis.__ms !== undefined);
       await page.tap('#menu-entry-classic-2d');
       await page.tap('#c2d-choice [data-size="expert"]');
       await page.tap('#c2d-play');

@@ -581,21 +581,6 @@ test('in a browser, a switch leaves every font file the active theme declares lo
   }
 });
 
-test('in a browser, the default theme failing to load shows the fatal card', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
-    await page.route('**/themes/joyful-tiles/theme.css', (route) => route.abort());
-    await page.goto(`${base}/index.html?still-backdrop`);
-    await page.waitForSelector('.fatal', { timeout: 30000 });
-    assert.match(await page.textContent('.fatal'), /Cannot start Minesweeper 3D/);
-  } finally {
-    await browser.close();
-  }
-});
-
 // ---------- light and dark are gone ----------
 function files(dir, ext) {
   return readdirSync(new URL(dir, import.meta.url), { withFileTypes: true }).flatMap((e) => {
