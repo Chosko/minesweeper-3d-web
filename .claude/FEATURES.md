@@ -346,10 +346,10 @@ Tasks: 267, 268, 269, 270, 271
 
 ## flat-grid-records-replays — Hexagon and Triangle in records, the Records mode switch, and their replays
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/flat-grid-records-replays.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
-Tasks: none
+Tasks: 272, 273, 274, 275, 276
 
 ---
 

@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 271
+Last task number: 276
 
 ---
 
@@ -1586,5 +1586,55 @@ Target: claude
 Files: .claude/context/classic2d.md, .claude/context/classic2d-mode.md, .claude/context/classic2d-session.md, .claude/context/app-shell-2d.md, .claude/context/app-shell-ui.md, .claude/context/app-shell-help.md, .claude/context/app-shell-results.md, .claude/context/app-shell-navigation.md, .claude/context/app-shell-markup.md, .claude/context/app-shell-daily.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-modes.md
 Preconditions: 267, 268, 269, 270
 Feature: flat-grid-modes
+
+---
+
+## 272. Records model and summaries for Hexagon and Triangle
+
+Status: [MISSING]
+Target: claude
+Files: js/records/model.js, js/records/summary.js, js/records/board.js, js/records/store.js, tests/records-model.test.mjs, tests/records-summary.test.mjs, tests/records-store.test.mjs
+Preconditions: 256, 260, 269
+Feature: flat-grid-records-replays
+
+---
+
+## 273. Records screen's mode switch over four modes
+
+Status: [MISSING]
+Target: claude
+Files: js/records/screen.js, js/main.js, index.html, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs
+Preconditions: 272
+Feature: flat-grid-records-replays
+
+---
+
+## 274. Replay format version with `hex` and `tri`, and the 2D recorder over them
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/format.js, js/replay/recorder.js, js/replay/sampler-2d.js, js/classic2d/session.js, tests/replay-format.test.mjs, tests/replay-recorder.test.mjs, tests/replay-handoff.test.mjs
+Preconditions: 254, 258, 269
+Feature: flat-grid-records-replays
+
+---
+
+## 275. Playback of Hexagon and Triangle replays
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/simulator.js, js/replay/verify.js, js/replay/viewer-2d.js, js/replay/viewer.js, js/replay/library.js, js/main.js, tests/replay-simulator.test.mjs, tests/replay-viewer.test.mjs, tests/replay-2d.test.mjs
+Preconditions: 264, 274
+Feature: flat-grid-records-replays
+
+---
+
+## 276. Update documentation for feature `flat-grid-records-replays`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/records.md, .claude/context/records-store.md, .claude/context/records-screen.md, .claude/context/records-screen-view.md, .claude/context/records-library-view.md, .claude/context/replay.md, .claude/context/replay-samplers.md, .claude/context/replay-playback.md, .claude/context/replay-viewers.md, .claude/context/replay-viewer-screen.md, .claude/context/replay-library.md, .claude/context/app-shell-replay.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-records-replays.md
+Preconditions: 272, 273, 274, 275
+Feature: flat-grid-records-replays
 
 ---
