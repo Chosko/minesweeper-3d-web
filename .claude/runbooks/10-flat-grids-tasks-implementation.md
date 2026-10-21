@@ -15,7 +15,7 @@ Context: none
 
 Done: 2026-10-21, commit `f550202` (5 files, +320/-1). The geometry works in CSS pixels from the board's top-left, taking the tile size and the layout's whole-pixel gap (not the board module's gap fraction); `js/geometry/square.js` imports the tile floor and cap from `js/classic2d/`.
 
-## [ ] 2. Implement task 249 — Classic 2D board view on the grid geometry
+## [x] 2. Implement task 249 — Classic 2D board view on the grid geometry
 
 Depends on: 1
 
@@ -25,6 +25,8 @@ Context:
 ```prompt
 /task-implement 249 --review
 ```
+
+Done: 2026-10-21, commit `e531af6` (13 files, +325/-124). `boardPoint` (touch-zoom anchor, wheel line) stays in pitches until task 252; the cols/rows forms of `fitTileSize`, `boardLayout` and `cellAtLayout` still work through the square geometry; `js/shell/daily.js` needed no change.
 
 ## [ ] 3. Implement task 250 — Tile painter and cache through the geometry's outline
 
@@ -80,7 +82,8 @@ Context: none
 
 Depends on: 1
 
-Context: none
+Context:
+- 2026-10-21 (from step 2): the board view's repaint walks only the cells between the viewport's top-left and bottom-right corners plus one row either side, so it assumes cells are numbered row by row — this geometry must number its cells the same way.
 
 ```prompt
 /task-implement 255 --review
@@ -120,7 +123,8 @@ Context: none
 
 Depends on: 1
 
-Context: none
+Context:
+- 2026-10-21 (from step 2): the board view's repaint walks only the cells between the viewport's top-left and bottom-right corners plus one row either side, so it assumes cells are numbered row by row — this geometry must number its cells the same way.
 
 ```prompt
 /task-implement 259 --review
