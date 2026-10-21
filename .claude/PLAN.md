@@ -1,7 +1,7 @@
 # Plan
 
 Roadmap: .claude/domain/product-roadmap.md
-Last reconciled: 2026-10-19
+Last reconciled: 2026-10-21
 
 ---
 
@@ -26,6 +26,14 @@ Features: 3d-board-graph, 3d-play-flow, 3d-game-records, replay-recording, repla
 Status: [ACTIVE]
 Covers: product-design.md § Visual design system, product-design.md § Main menu and game shell, product-design.md § 3D mode
 Features: theme-system, shared-screen-layout, in-game-layout, themed-board-art-and-motion, theme-implement-skill
+
+---
+
+## m2c-flat-grids — Hexagon and Triangle join the game
+
+Status: [PLANNED]
+Covers: product-design.md § Hexagon, product-design.md § Triangle, product-design.md § Main menu and game shell, product-design.md § Visual design system
+Features: flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, flat-grid-modes, flat-grid-records-replays, flat-grid-menu-entries
 
 ---
 
@@ -56,7 +64,7 @@ Features: none
 ## m6-launch — 1.0
 
 Status: [PLANNED]
-Covers: product-design.md § Classic 2D, product-design.md § Surface, product-design.md § Campaign levels, product-design.md § Visual design system, product-design.md § Demo edition, product-design.md § Steam features, product-design.md § Main menu and game shell
+Covers: product-design.md § Hexagon, product-design.md § Triangle, product-design.md § Surface, product-design.md § Campaign levels, product-design.md § Visual design system, product-design.md § Demo edition, product-design.md § Steam features, product-design.md § Main menu and game shell
 Features: none
 
 ---
@@ -105,3 +113,10 @@ Features: none
 - shared-screen-layout: depends on theme-system, screen-components, game-shell, settings, results-screen, records-screen, replay-playback, 3d-results-records-screens, 3d-play-flow, classic-2d-square-play, personal-records, 3d-game-records
 - in-game-layout: depends on shared-screen-layout, theme-system, classic-2d-square-play, 3d-play-flow, cell-graph-rules-engine, game-summary, personal-records, 3d-game-records, replay-playback, game-shell
 - theme-implement-skill: depends on theme-system, themed-board-art-and-motion, shared-screen-layout, in-game-layout
+- flat-grid-geometry: depends on classic-2d-square-play, themed-board-art-and-motion, replay-recording, replay-playback, in-game-layout
+- hexagon-grid: depends on cell-graph-rules-engine, board-generation, flat-grid-geometry, game-summary, classic-2d-square-play
+- triangle-grid: depends on cell-graph-rules-engine, board-generation, flat-grid-geometry, game-summary, classic-2d-square-play
+- hex-tri-board-art: depends on themed-board-art-and-motion, theme-system, flat-grid-geometry, hexagon-grid, triangle-grid, theme-implement-skill
+- flat-grid-modes: depends on classic-2d-square-play, flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, game-shell, shared-screen-layout, in-game-layout, results-screen, game-summary
+- flat-grid-records-replays: depends on game-summary, personal-records, records-screen, 3d-results-records-screens, replay-recording, replay-playback, replay-library, flat-grid-geometry, hexagon-grid, triangle-grid, flat-grid-modes
+- flat-grid-menu-entries: depends on game-shell, shared-screen-layout, flat-grid-modes, flat-grid-geometry, hexagon-grid, triangle-grid
