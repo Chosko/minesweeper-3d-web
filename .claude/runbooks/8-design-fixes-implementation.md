@@ -406,7 +406,7 @@ Context: none
 
 Done: 2026-10-21, commit `3cc9fb5` (20 files, +71/-56).
 
-## [~] 32. Implement task 245 — Update documentation for feature `in-game-layout`
+## [x] 32. Implement task 245 — Update documentation for feature `in-game-layout`
 
 Depends on: 18, 19, 23
 
@@ -415,6 +415,8 @@ Context: none
 ```prompt
 /task-implement 245 --review
 ```
+
+Done: 2026-10-21, commit `c378640` (10 files, +43/-33).
 
 ## [x] 33. Implement task 246 — Update documentation for feature `themed-board-art-and-motion`
 
