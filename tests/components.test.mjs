@@ -527,7 +527,7 @@ test('the 3D game overlay is built from catalogued components: the counter strip
   // Besides the kit: the shell's visibility utility and the overlay's own placement hooks.
   const allowed = new Set(['hidden', 'hud-overlay', 'hud-counters', 'hud-figures']);
   for (const t of parts) for (const c of classesOf(t)) assert.ok(c.startsWith('ui-') || allowed.has(c), `#hud-overlay <${t.tag} class="${c}"> is not a kit class`);
-  assert.ok(!HUD_TAGS.some((t) => hasClasses(t, '.ui-overlay-bar')), 'the overlay bar is the replay viewer\'s, no longer the 3D game\'s');
+  assert.ok(!HUD_TAGS.some((t) => hasClasses(t, '.ui-overlay-bar')), 'the 3D game shows no overlay bar');
 
   const strip = byIdHud('hud-counters');
   assert.ok(hasClasses(strip, '.ui-counter-strip') && strip.attrs.role === 'group' && strip.attrs['aria-label'], 'the counter strip, a named group');
@@ -2486,7 +2486,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
     assert.match(learnEnd, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Learn 3D end card uses ${cls}`);
   }
   for (const card of [ready, ctxLost, learnEnd]) assert.doesNotMatch(card, /class="[^"]*\b(ready-card|link-btn|esc-row)\b/, 'no one-off card or link button');
-  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint', 'ui-key-hints', 'ui-chip', 'ui-spinner', 'ui-overlay-bar', 'ui-code', 'ui-segmented', 'ui-slider']) {
+  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint', 'ui-key-hints', 'ui-chip', 'ui-spinner', 'ui-counter-strip', 'ui-counter', 'ui-code', 'ui-segmented', 'ui-slider__input', 'ui-figures']) {
     assert.match(replay, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the replay viewer uses ${cls}`);
   }
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint']) assert.match(settings, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Settings page uses ${cls}`);

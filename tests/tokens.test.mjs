@@ -306,9 +306,8 @@ test('the replay pointer: a dark core in a light outline', () => {
   assert.ok(luminance(core) < luminance(ring));
 });
 
-test('Show 3BV: a small cycle of translucent opening tints, neighbours distinct, and the isolated number\'s mark', () => {
-  const tints = [1, 2, 3, 4, 5, 6].map((i) => color(`--color-replay-bbbv-${i}`));
-  for (const c of tints) assert.ok(c[3] > 0 && c[3] < 1, 'a tint lets the tile show through');
+test('Show 3BV: the openings tinted in three confetti colours, distinct from each other; no replay palette of its own', () => {
+  const tints = [2, 3, 5].map((i) => color(`--color-confetti-${i}`));
   for (let i = 0; i < tints.length; i++) for (let j = i + 1; j < tints.length; j++) assert.ok(distance(tints[i], tints[j]) > 60, `tints ${i + 1} and ${j + 1} differ`);
-  assert.equal(color('--color-replay-bbbv-isolated')[3], 1, 'the isolated mark is opaque');
+  assert.doesNotMatch(read('../themes/joyful-tiles/theme.css'), /--color-replay-bbbv/, 'the replay\'s own tints are retired');
 });

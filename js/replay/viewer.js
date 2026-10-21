@@ -122,24 +122,27 @@
 // createReplayView({ root, win?, onCommand, onSpeed, onSeek, onBack, onDownload?, onOpen?, onCopy? }) → the
 // view above, filling #replay by id: a screen frame on the backdrop (#replay-frame), its head Back
 // (#rp-back) and title (#replay-title: "Replay" until a replay is ready, then replayTitle's); its body
-// the overlay bar of figures (#rp-clock, #rp-mines, #rp-bbbv, #rp-rate) with the code chip #rp-code
+// the strip of figures (#rp-clock, #rp-mines, #rp-bbbv, #rp-rate) with the code chip #rp-code
 // (its Copy and Copy link call onCopy; hidden while loading, failed or with no code), then #replay-main:
-// the board area #replay-board in #replay-stage, which takes the room the bar, the panel and the
+// the board area #replay-board in #replay-stage, which takes the room the strip, the panel and the
 // controls leave, the message card over it (#replay-message: the spinner while a replay opens, the
 // reason and its Back #replay-message-back when it cannot play), and beside it the figures panel
 // #rp-figures — the live figures of the playback position (js/ui/components.js bindFigures), its live
 // part announcing figuresLine through bindFiguresLive, so only a change of the counts is heard; then
-// the controls #replay-controls — the seek bar #rp-seek
-// over the timeline with its pause marks #rp-pauses and its action ticks #rp-ticks, the position
-// #rp-position; #rp-prev, #rp-play (its label #rp-play-label: Play, Pause, or Play again at the end),
-// #rp-next, the speed choice #rp-speed, the toggles #rp-show-bbbv, #rp-sound and #rp-camera (3D only),
-// the end line #replay-end (the outcome as a chip, #replay-end-outcome, and the time, #replay-end-time),
-// #rp-download, #rp-open; the key line #rp-keys (REPLAY_KEY_LINE as key hints) and the pauses' text
-// alternative #rp-pauses-text. While a replay loads or has failed the controls stay in place, every one
-// that needs a replay disabled (Sound and Open replay file still work), and nothing of one shown earlier
-// stays: the figures and the panel's figures read DASH and the position, the seek bar, its marks and
-// ticks and the end line are cleared. A failed replay whose header reads keeps its title, its seek
-// bar's marks and ticks, and the speed choice, Show 3BV and Download enabled. A 3D replay marks #replay replay--scene, which lets the full-window 3D scene behind it show.
+// the controls #replay-controls — the seek bar #rp-seek over the timeline, its played part following
+// its value (bindSliderFill), with its pause marks #rp-pauses and its action ticks #rp-ticks; #rp-prev,
+// #rp-play (its label #rp-play-label and its leading icon: Play, Pause, or Play again at the end, with
+// the play, pause or restart icon), #rp-next, the speed choice #rp-speed, the toggles #rp-show-bbbv,
+// #rp-sound and #rp-camera (3D only), the end line #replay-end (the outcome as a chip,
+// #replay-end-outcome, and the time, #replay-end-time), #rp-download, #rp-open; the key line #rp-keys
+// (REPLAY_KEY_LINE as key hints, each controller button a .replay-key__pad the page shows only while a
+// pad is connected) and the pauses' text alternative #rp-pauses-text. While a replay loads or has
+// failed the controls stay in place, every one that needs a replay disabled (Sound and Open replay file
+// still work), and nothing of one shown earlier stays: the figures and the panel's figures read DASH
+// and the seek bar, its marks and ticks and the end line are cleared. A failed replay whose header
+// reads keeps its title, its seek bar's marks and ticks, and the speed choice, Show 3BV and Download
+// enabled. A 3D replay marks #replay replay--scene: its scene draws in the board area (js/main.js), and
+// the free-camera notice #rp-free-note, on the layer over the scene, shows while the camera is free.
 // While it shows, REPLAY_KEYS typed anywhere but in a field reach onCommand; Space and Enter on a
 // button keep their own click.
 
@@ -147,8 +150,8 @@ import { createSimulator, REFUSAL } from './simulator.js';
 import { verify } from './verify.js';
 import { encodeReplay } from './format.js';
 import { createPlaybackClock, SPEEDS, LEAD_IN_MS } from './clock.js';
-import { mountViewer2D } from './viewer-2d.js';
-import { formatMineCount, bindSegmented, bindCodeChip, bindFigures, bindFiguresLive } from '../ui/components.js';
+import { mountViewer2D, BBBV_TINT_TOKENS, TINT_ALPHA } from './viewer-2d.js';
+import { formatMineCount, bindSegmented, bindSliderFill, bindCodeChip, bindFigures, bindFiguresLive, setButtonIcon } from '../ui/components.js';
 import { liveFigures, figuresLine } from '../shell/live-figures.js';
 import { codeOf } from '../records/board-code.js';
 import { formatTime, formatRate, DASH } from '../results/view.js';
@@ -157,7 +160,7 @@ import { REPLAY_SCREEN, replayFileName } from '../records/replay-list.js';
 import { boardKey, boardLabel, MODE_3D } from '../records/board.js';
 import { bbbvPartition } from '../engine/metrics.js';
 
-export { LEAD_IN_MS };
+export { LEAD_IN_MS, BBBV_TINT_TOKENS, TINT_ALPHA };
 
 /** What the viewer says when a replay cannot be played. */
 export const FAILURES = Object.freeze({
@@ -181,21 +184,21 @@ export const REPLAY_PAD = Object.freeze([
   [BTN.START, 'toggle'], [BTN.Y, 'toggle'], [BTN.LB, 'prev'], [BTN.RB, 'next'], [BTN.LT, 'slower'], [BTN.RT, 'faster'],
 ].map((e) => Object.freeze(e)));
 
-/** The viewer's key line: the replay keys, their controller buttons where they have one; `only` a graph kind. */
+/** The viewer's key line: the keyboard's replay keys, their controller buttons where they have one; `only` a graph kind. */
 export const REPLAY_KEY_LINE = Object.freeze([
-  { keys: 'Space / K', pad: 'Start / Y', label: 'Play' },
-  { keys: '← / →', pad: 'LB / RB', label: 'Action' },
-  { keys: ', / .', pad: null, label: 'Frame' },
-  { keys: 'Home / End', pad: null, label: 'Start / End' },
-  { keys: '− / =', pad: 'LT / RT', label: 'Speed' },
-  { keys: 'B', pad: null, label: 'Show 3BV' },
-  { keys: 'C', pad: null, label: 'Free camera', only: 'box' },
+  { keys: 'Space', pad: 'Start / Y', label: 'play / pause' },
+  { keys: '← / →', pad: 'LB / RB', label: 'action' },
+  { keys: ', / .', pad: null, label: 'frame' },
+  { keys: '- / =', pad: 'LT / RT', label: 'speed' },
+  { keys: 'B', pad: null, label: '3BV' },
+  { keys: 'C', pad: null, label: 'camera', only: 'box' },
+  { keys: 'Esc', pad: 'B', label: 'back' },
 ].map((e) => Object.freeze(e)));
 
 /** The largest replay file Open replay file reads. */
 export const MAX_REPLAY_FILE_BYTES = 16 * 1024 * 1024;
-/** Show 3BV's opening tints (--color-replay-bbbv-1 .. 6); the isolated numbers' mark comes after them. */
-export const BBBV_TINTS = 6;
+/** Show 3BV's opening tints (BBBV_TINT_TOKENS); the isolated numbers' mark comes after them. */
+export const BBBV_TINTS = BBBV_TINT_TOKENS.length;
 
 const OUTCOMES = Object.freeze({ won: 'Won', lost: 'Lost', abandoned: 'Abandoned' });
 
@@ -638,10 +641,10 @@ export function createReplayView({
     board: $('replay-board'), message: $('replay-message'), messageTitle: $('replay-message-title'), messageText: $('replay-message-text'),
     spinner: $('replay-message-spinner'), messageActions: $('replay-message-actions'),
     controls: $('replay-controls'), play: $('rp-play'), playLabel: $('rp-play-label'), prev: $('rp-prev'), next: $('rp-next'), speed: $('rp-speed'),
-    seek: $('rp-seek'), position: $('rp-position'), end: $('replay-end'), endOutcome: $('replay-end-outcome'), endTime: $('replay-end-time'),
+    seek: $('rp-seek'), end: $('replay-end'), endOutcome: $('replay-end-outcome'), endTime: $('replay-end-time'),
     pauses: $('rp-pauses'), pausesText: $('rp-pauses-text'),
     ticks: $('rp-ticks'), keys: $('rp-keys'), showBbbv: $('rp-show-bbbv'), sound: $('rp-sound'), camera: $('rp-camera'),
-    download: $('rp-download'), open: $('rp-open'),
+    download: $('rp-download'), open: $('rp-open'), freeNote: root.ownerDocument.getElementById('rp-free-note'),
   };
   const code = $('rp-code') ? bindCodeChip($('rp-code'), { onCopy: (c) => onCopy(c) }) : null;
   const panel = $('rp-figures');
@@ -674,7 +677,7 @@ export function createReplayView({
   ];
   const onInput = () => { seeking = true; onSeek(Number(el.seek.value)); seeking = false; };
   el.seek.addEventListener('input', onInput);
-  unbind.push(() => el.seek.removeEventListener('input', onInput));
+  unbind.push(() => el.seek.removeEventListener('input', onInput), bindSliderFill(el.seek));
 
   const onKey = (e) => {
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
@@ -714,7 +717,7 @@ export function createReplayView({
     for (const [key, node] of [['clock', el.clock], ['mines', el.mines], ['bbbv', el.bbbv], ['rate', el.rate]]) set(key, node, DASH);
     figures?.show(NO_FIGURES);
     said?.stop();
-    set('position', el.position, '');
+    playIcon('play');
     set('play', el.playLabel, 'Play');
     set('title', el.title, TITLE);
     el.end.classList.add('hidden');
@@ -731,6 +734,7 @@ export function createReplayView({
   // The message card over the board area: the spinner while a replay opens, the reason and Back once it failed.
   const card = (title, text, failed) => {
     root.classList.remove('replay--scene');
+    el.freeNote.classList.add('hidden');
     clear();
     enable(false);
     el.camera.classList.add('hidden');
@@ -765,6 +769,8 @@ export function createReplayView({
   };
 
   const pressed = (node, on) => node.setAttribute('aria-pressed', String(on));
+  // Play / Pause / Play again lead with their play, pause or restart icon.
+  const playIcon = (name) => { if (shown.playIcon !== name) { setButtonIcon(el.play, name); shown.playIcon = name; } };
 
   // The seek bar's pause marks, their text alternative and the action ticks of a replay's timeline.
   const showTimeline = ({ duration, leadIn, pauses, actions }) => {
@@ -794,6 +800,7 @@ export function createReplayView({
       said?.stop();
       root.classList.add('hidden');
       root.classList.remove('replay--scene');
+      el.freeNote.classList.add('hidden');
       el.message.classList.add('hidden');
       for (const k of Object.keys(shown)) delete shown[k];
       timeline = null;
@@ -835,7 +842,7 @@ export function createReplayView({
         said?.announce(figuresLine(state.live));
       }
       set('play', el.playLabel, state.playing ? 'Pause' : state.ended ? 'Play again' : 'Play');
-      set('position', el.position, `${f.clock} / ${clockText(state.duration)}`);
+      playIcon(state.playing ? 'pause' : state.ended ? 'restart' : 'play');
       if (!seeking && Number(el.seek.value) !== Math.round(state.time)) el.seek.value = String(Math.round(state.time));
       const at = Math.max(0, state.time);
       el.seek.setAttribute('aria-valuetext', `${formatTime(at)} of ${formatTime(state.duration)}`);
@@ -843,6 +850,7 @@ export function createReplayView({
       options.forEach((o, i) => { o.setAttribute('aria-checked', String(i === speed)); o.tabIndex = i === speed ? 0 : -1; });
       pressed(el.showBbbv, state.bbbv === true);
       pressed(el.camera, state.camera === 'free');
+      el.freeNote.classList.toggle('hidden', state.camera !== 'free');
       const end = state.end;
       set('endOutcome', el.endOutcome, end ? end.outcome : '');
       set('endTime', el.endTime, end ? end.time : '');

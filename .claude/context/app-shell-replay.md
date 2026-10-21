@@ -54,10 +54,15 @@ are listed in [app-shell.md](app-shell.md) § PUBLIC API.
   `REPLAY_SPACING` (`SPACING_START`) with its own `FlyCamera` (`replayCam`),
   at the box's spawn pose until the first sample; each frame applies the
   camera and the recorded view mode and glows the aimed cell
-  (`updateReplayPick`). `ring(cell, kind)` projects a press ring through the
-  replay camera (`ui.replayRing`); `tint(tints)` hands Show 3BV's tints to
-  `renderer.setRegionTint` coloured from the `--color-replay-bbbv-*`
-  tokens (`bbbvTint`), again on a theme change. `hide()` gives the renderer
+  (`updateReplayPick`). The scene draws in the viewer's board area: `show`
+  syncs the scene panel, which takes `#replay-stage` once the viewer marks
+  the replay `replay--scene` ([app-shell-3d.md](app-shell-3d.md) § Scene
+  panel), and `hide` syncs it again. `ring(cell, kind)` projects a press
+  ring through the replay camera and scales it to the board area
+  (`ui.replayRing`, on the layer over the scene); `tint(tints)` hands Show
+  3BV's tints to `renderer.setRegionTint` (`bbbvTint`, painted as
+  [replay-viewers.md](replay-viewers.md) § Show 3BV says), again on a theme
+  change. `hide()` gives the renderer
   back what it drew before. With the context already lost it routes to
   `ctxlost` and mounts nothing. `show` keeps the finished game's
   `renderer.wrongFlags()`, which `hide` gives back after `setGame`, so the

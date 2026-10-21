@@ -132,20 +132,13 @@
   --color-number-7: #212121;
   --color-number-8: #666666;
 
-  /* the replay viewer: action marks, the paused span, the recorded pointer, Show 3BV's tints */
+  /* the replay viewer: action marks, the paused span, the recorded pointer */
   --color-replay-reveal: #3563d8;
   --color-replay-flag: #b8323a;
   --color-replay-chord: #0d7064;
   --color-replay-pointer: #16204a;
   --color-replay-pointer-outline: #ffffff;
   --color-replay-pause: #c9930c;
-  --color-replay-bbbv-1: rgba(46, 125, 230, 0.38);
-  --color-replay-bbbv-2: rgba(230, 126, 34, 0.38);
-  --color-replay-bbbv-3: rgba(39, 174, 96, 0.38);
-  --color-replay-bbbv-4: rgba(155, 89, 182, 0.38);
-  --color-replay-bbbv-5: rgba(214, 48, 120, 0.38);
-  --color-replay-bbbv-6: rgba(22, 160, 170, 0.38);
-  --color-replay-bbbv-isolated: #7a4f00;
 
   /* confetti */
   --color-confetti-1: #ff6b6b;
@@ -1226,15 +1219,29 @@
 /* the main menu's build label: a mono caption */
 :root[data-theme="joyful-tiles"] #menu-build { font-family: var(--font-family-mono); }
 
-/* ---------- replay seek bar ---------- */
+/* ---------- replay viewer: the strip's figures in the mono face, the seek bar, the end line ---------- */
+:root[data-theme="joyful-tiles"] .replay-figure {
+  font-family: var(--font-family-mono);
+  font-size: 17px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+}
+:root[data-theme="joyful-tiles"] .replay-figure--clock { font-size: 30px; }
+:root[data-theme="joyful-tiles"] .replay-bar .ui-counter__digits { font-size: 20px; }
+/* the seek bar: an 8 px track in the line colour, played in ink up to the 24 px thumb ringed in ink on its drop */
 :root[data-theme="joyful-tiles"] .replay-seek::before { border-radius: var(--radius-pill); background: var(--color-line); }
-:root[data-theme="joyful-tiles"] .replay-seek .ui-slider__input::-webkit-slider-runnable-track { background: transparent; }
-:root[data-theme="joyful-tiles"] .replay-seek .ui-slider__input::-moz-range-track { background: transparent; }
-:root[data-theme="joyful-tiles"] .replay-pause { border-radius: 2px; background: var(--color-replay-pause); }
-:root[data-theme="joyful-tiles"] .replay-tick { border-radius: 1px; }
+:root[data-theme="joyful-tiles"] .replay-seek .ui-slider__input::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--color-ink) calc(12px + (100% - 24px) * var(--slider-fill)), transparent 0); }
+:root[data-theme="joyful-tiles"] .replay-seek .ui-slider__input::-moz-range-track { background: linear-gradient(to right, var(--color-ink) calc(12px + (100% - 24px) * var(--slider-fill)), transparent 0); }
+:root[data-theme="joyful-tiles"] .replay-seek .ui-slider__input::-webkit-slider-thumb { box-shadow: inset 0 0 0 3px var(--color-ink), 0 3px 0 var(--color-edge); }
+:root[data-theme="joyful-tiles"] .replay-seek .ui-slider__input::-moz-range-thumb { box-shadow: inset 0 0 0 3px var(--color-ink), 0 3px 0 var(--color-edge); }
+:root[data-theme="joyful-tiles"] .replay-pause { background: repeating-linear-gradient(45deg, var(--color-replay-pause) 0 3px, transparent 3px 6px); }
+:root[data-theme="joyful-tiles"] .replay-tick { border-radius: 2px; }
 :root[data-theme="joyful-tiles"] .replay-tick--reveal { background: var(--color-replay-reveal); }
 :root[data-theme="joyful-tiles"] .replay-tick--flag { background: var(--color-replay-flag); }
 :root[data-theme="joyful-tiles"] .replay-tick--chord { background: var(--color-replay-chord); }
+:root[data-theme="joyful-tiles"] .replay-end__time { font-family: var(--font-family-mono); font-size: 17px; font-weight: var(--font-weight-bold); }
+:root[data-theme="joyful-tiles"] .replay-end { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .replay-foot > .replay-pauses-text { color: var(--color-ink-muted); }
 
 /* ---------- the shell's screens ---------- */
 :root[data-theme="joyful-tiles"] kbd {
@@ -1355,12 +1362,12 @@
   background-size: 22px 22px;
 }
 :root[data-theme="joyful-tiles"] #c2d-figures { border-radius: 0; background: none; box-shadow: none; }
-:root[data-theme="joyful-tiles"] #replay.replay--scene { background: transparent; }
-/* A 3D replay: the frame's window lets the full-window scene through; the controls keep a surface of their own over it. */
-:root[data-theme="joyful-tiles"] #replay.replay--scene #replay-frame { background: transparent; box-shadow: none; }
-:root[data-theme="joyful-tiles"] #replay.replay--scene #replay-controls {
-  border-radius: var(--radius-xl);
+/* A 3D replay: its scene drawn in the board area, clipped to its rounded corners; the free-camera notice a pill over it. */
+:root[data-theme="joyful-tiles"] #replay.replay--scene #replay-stage { border-radius: 18px; }
+:root[data-theme="joyful-tiles"] .replay-note {
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
+  color: var(--color-ink);
   box-shadow: inset 0 0 0 2px var(--color-border), 0 4px 0 var(--color-edge);
 }
 :root[data-theme="joyful-tiles"] .ui-board-frame {
@@ -1385,13 +1392,14 @@
   background: var(--color-replay-pointer);
 }
 @keyframes joyful-tiles-ring { from { transform: scale(0.35); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+@keyframes joyful-tiles-ring-flag { from { transform: scale(0.35); opacity: 0.6; } to { transform: scale(1.4); opacity: 0; } }
 :root[data-theme="joyful-tiles"] .replay-ring {
   border: 3px solid currentColor;
   border-radius: 50%;
   animation: joyful-tiles-ring 0.4s var(--easing-out) forwards;
 }
 :root[data-theme="joyful-tiles"] .replay-ring--reveal { color: var(--color-replay-reveal); }
-:root[data-theme="joyful-tiles"] .replay-ring--flag { color: var(--color-replay-flag); }
+:root[data-theme="joyful-tiles"] .replay-ring--flag { color: var(--color-replay-flag); animation-name: joyful-tiles-ring-flag; }
 :root[data-theme="joyful-tiles"] .replay-ring--chord { color: var(--color-replay-chord); }
 :root[data-theme="joyful-tiles"] .replay-key__pad { opacity: 0.8; }
 

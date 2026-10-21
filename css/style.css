@@ -490,69 +490,97 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 body:has(> :is(#ready:not(.hidden):not(.ready--pending), #pause:not(.hidden), #results:not(.hidden))) #hud { visibility: hidden; }
 body:has(> :is(#ready:not(.hidden):not(.ready--pending), #pause:not(.hidden), #results:not(.hidden))) #c2d-frame :is(.ui-frame__start, .ui-frame__end, #c2d-counters, #c2d-figures, #c2d-divider, .ui-frame__foot, #hud-tap) { visibility: hidden; }
 body:has(> #m3d-status:not(.hidden)) #hud { visibility: hidden; }
-/* The replay viewer (#replay): its window fills the backdrop; the body stacks the counters, the board
-   area with the figures panel beside it, which take the room left, and the controls. The 2D board view
-   fits the board area; a 3D replay's scene is the full window behind it (replay--scene), the panel on
-   its own surface over it. On the smaller desktop windows the code chip and the figures panel give
-   way; on a phone the window is full-bleed and the key line gives way too; on a phone held sideways
-   the board takes the left and the counters, seek bar and transport the right. */
-#replay { position: fixed; inset: 0; z-index: var(--z-overlay); }
-#replay-frame { width: 100%; height: 100%; }
-#replay-body { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-3) var(--space-6); }
-.replay-bar { flex: none; flex-wrap: wrap; align-self: flex-start; max-width: 100%; box-sizing: border-box; }
-#replay-main { display: flex; flex: 1 1 auto; gap: var(--space-4); min-height: 160px; }
+/* The replay viewer (#replay): its window inset on the backdrop at the canvas's size, a step smaller on
+   the smaller desktop windows; the body stacks the strip across it, the board area with the figures
+   panel beside it down to its bottom, and the controls — the seek bar alone on its row, the tools row
+   (transport, speed, the toggles, the end line, the files at its right end), the key line. The 2D board
+   view fits the board area; a 3D replay's scene draws into it (js/main.js syncScenePanel), the layer
+   over the scene (#replay-scene-over: the free-camera notice, the press rings) above it. On the smaller
+   desktop windows the code chip and the figures panel give way and the files wrap to a row of their
+   own; on a phone the window is full-bleed, the key line gives way and speed, toggles and files take a
+   row each; on a phone held sideways the board takes the left and the strip, seek bar and transport
+   the right. */
+#replay { position: fixed; inset: 0; z-index: var(--z-overlay); padding: 8px 16px; }
+#replay-frame { width: 1640px; height: 940px; margin-top: -8px; }
+@media (max-width: 1439px) { #replay-frame { width: 1302px; height: 712px; } }
+@media (max-width: 1199px) { #replay-frame { width: 984px; height: 728px; } }
+#replay-body { display: flex; flex-direction: column; gap: 12px; padding: 16px 22px; }
+@media (max-width: 1439px) {
+  #replay-body { padding: 12px 16px; }
+}
+.replay-bar { flex: none; flex-wrap: wrap; justify-content: flex-start; gap: 28px; padding: 8px 14px; min-width: 0; }
+.replay-figure { white-space: nowrap; font-variant-numeric: var(--font-numeric-tabular); }
+.replay-bar .ui-counter__icon { width: 20px; height: 20px; }
+#replay-main { display: flex; flex: 1 1 auto; gap: 18px; min-height: 160px; }
 #replay-stage { position: relative; flex: 1 1 auto; min-width: 0; }
-#rp-figures { flex: none; width: 280px; align-self: flex-start; max-height: 100%; box-sizing: border-box; }
+#rp-figures { flex: none; width: 280px; align-self: stretch; box-sizing: border-box; }
 #rp-figures .ui-figures__body { min-height: 0; overflow-y: auto; }
 #rp-figures .ui-figure__value { white-space: nowrap; }
 #replay-board { position: absolute; inset: 0; overflow: hidden; }
 #replay-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(480px, calc(100% - 2 * var(--space-4))); box-sizing: border-box; }
 #replay-message > .ui-row { align-items: center; flex-wrap: nowrap; }
 #replay-message > .ui-row > .ui-card__title { margin: 0; font-size: 28px; line-height: 1.1; }
-#replay-controls { flex: none; display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
-#replay.replay--scene #replay-controls { padding: var(--space-3) var(--space-4); }
-/* The seek bar on one row between its label and the position; on a phone under them. */
-#replay-controls .ui-slider { grid-template-columns: auto minmax(0, 1fr) auto auto; }
-#replay-controls .replay-seek { grid-column: 2; grid-row: 1; }
-#replay-controls :is(.ui-slider__label, .ui-slider__value) { grid-area: auto; }
-.replay-tools { flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+#replay-controls { flex: none; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.replay-tools { flex-wrap: wrap; align-items: center; gap: 12px 14px; }
 #rp-speed .ui-segmented__option { padding: 7px 14px; font-size: 15px; }
-.replay-transport { flex-wrap: nowrap; gap: var(--space-2); }
-.replay-files { flex: none; flex-wrap: nowrap; gap: var(--space-2); margin-inline-start: auto; }
-.replay-end { display: inline-flex; align-items: center; gap: var(--space-2); }
-.replay-foot { flex-wrap: nowrap; align-items: center; gap: var(--space-2) var(--space-4); }
-.replay-keys { flex: 1 1 auto; min-width: 0; flex-wrap: wrap; gap: var(--space-1) var(--space-3); font-size: var(--font-size-sm); }
-.replay-foot > .replay-pauses-text { margin: 0; }
-@media (max-width: 1599px) { #rp-figures { width: 230px; } }
+.replay-transport, .replay-toggles, .replay-files { flex: none; flex-wrap: nowrap; gap: 8px; }
+.replay-toggles { gap: 14px; }
+.replay-files { margin-inline-start: auto; }
+.replay-end { display: inline-flex; align-items: center; gap: 10px; }
+.replay-foot { flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 12px; }
+.replay-keys { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; gap: 4px 14px; font-size: 13px; white-space: nowrap; }
+.replay-key__pad { display: none; }
+body.pad-connected .replay-key__pad { display: inline-flex; }
+.replay-foot > .replay-pauses-text { margin: 0; font-size: 14px; font-weight: var(--font-weight-bold); white-space: nowrap; }
+.replay-pauses-text[hidden] { display: none; }
+.replay-seek-pad { white-space: nowrap; }
+/* The seek bar: the track 8 px tall 11 px down a 30 px row, the action ticks above it, the paused spans
+   on it, the input over both with a 24 px thumb; the ticks and spans run between the thumb's centres. */
+.replay-seek { position: relative; height: 30px; }
+.replay-seek::before { content: ''; position: absolute; left: 0; right: 0; top: 11px; height: 8px; }
+.replay-ticks { position: absolute; z-index: 1; left: 12px; right: 12px; top: 2px; height: 9px; pointer-events: none; }
+.replay-tick { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1.5px; }
+.replay-pauses { position: absolute; z-index: 1; left: 12px; right: 12px; top: 11px; height: 8px; pointer-events: none; }
+.replay-pause { position: absolute; top: 0; bottom: 0; min-width: 2px; }
+.replay-seek .ui-slider__input { position: relative; z-index: 2; display: block; height: 30px; }
+.replay-seek .ui-slider__input::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -8px; }
+.replay-seek .ui-slider__input::-moz-range-thumb { width: 24px; height: 24px; }
+/* The layer over a 3D replay's scene, which draws in front of the frame: the board area's rectangle
+   (js/main.js syncScenePanel), the free-camera notice centred at its top and the press rings on it. */
+.replay-over { position: fixed; z-index: calc(var(--z-overlay) + 2); pointer-events: none; }
+.replay-note { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 10px; margin: 0; padding: 7px 16px; font-size: 14px; font-weight: var(--font-weight-bold); white-space: nowrap; }
+.replay-note > .ui-icon { width: 18px; height: 18px; flex: none; }
+/* The l step: a denser tools row, so the files keep its right end; a 3D replay's end line, which its
+   camera toggle leaves no room for, takes the next row. */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .replay-tools { column-gap: 8px; }
+  .replay-toggles, .replay-files { gap: 8px; }
+  :is(.replay-toggles, .replay-files) > .ui-button--sm { padding-inline: 10px; }
+  #rp-speed .ui-segmented__option { padding-inline: 8px; }
+  #replay.replay--scene .replay-end { order: 1; flex-basis: 100%; }
+}
 @media (max-width: 1199px) { #rp-code, #rp-figures { display: none; } }
-@media (max-height: 820px) { #replay { padding: var(--space-2) var(--space-4); } }
 @media (max-width: 719px) {
   #replay { padding: 0; }
-  #replay-frame { border-radius: 0; box-shadow: none; }
-  #replay-body { padding: var(--space-3); }
-  .replay-bar { gap: var(--space-3); }
-  .replay-bar .ui-stat__value { font-size: var(--font-size-md); }
+  #replay-frame { width: 100%; height: 100%; margin: 0; border-radius: 0; box-shadow: none; }
+  #replay-body { padding: 12px 14px; }
   #replay-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr); }
   #replay-frame .ui-frame__end { display: none; }
   #replay-title { text-align: start; }
-  #replay-controls .ui-slider { grid-template-columns: 1fr auto auto; }
-  #replay-controls .replay-seek { grid-column: 1 / -1; grid-row: auto; }
-  .replay-keys, .replay-key-hint { display: none; }
+  .replay-tools { flex-direction: column; align-items: flex-start; }
+  .replay-files { margin-inline-start: 0; align-self: flex-end; }
+  .replay-keys, .replay-key-hint, .replay-seek-pad { display: none; }
   .replay-foot { flex-wrap: wrap; }
-  .replay-files { margin-inline-start: 0; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   #replay { padding: 0; }
-  #replay-frame { border-radius: 0; box-shadow: none; }
-  #replay-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: var(--space-2) var(--space-4); padding: var(--space-2) var(--space-3); }
+  #replay-frame { width: 100%; height: 100%; margin: 0; border-radius: 0; box-shadow: none; }
+  #replay-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); gap: 10px 12px; padding: 8px 12px; }
   #replay-main { grid-column: 1; grid-row: 1 / -1; min-height: 0; }
   #rp-figures { display: none; }
-  .replay-bar { grid-column: 2; grid-row: 1; gap: var(--space-3); }
-  #replay-controls { grid-column: 2; grid-row: 2; }
-  #replay-controls .ui-slider { grid-template-columns: 1fr auto auto; }
-  #replay-controls .replay-seek { grid-column: 1 / -1; grid-row: auto; }
-  .replay-keys, .replay-key-hint, .replay-foot > .replay-pauses-text { display: none; }
-  .replay-files { margin-inline-start: 0; }
+  .replay-bar { grid-column: 2; grid-row: 1; gap: 16px; }
+  #replay-controls { grid-column: 2; grid-row: 2; gap: 10px; }
+  .replay-tools > :not(.replay-transport), .replay-foot, .replay-key-hint { display: none; }
 }
 /* The recorded pointer: a core in a contrasting outline, readable on any tile; its trail fades behind it. */
 .replay-pointer { position: absolute; top: 0; left: 0; z-index: 3; width: 12px; height: 12px; margin: -6px 0 0 -6px; pointer-events: none; }
@@ -562,7 +590,7 @@ body:has(> #m3d-status:not(.hidden)) #hud { visibility: hidden; }
 .replay-bbbv { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
 .replay-bbbv[hidden] { display: none; }
 /* A press ring: the theme expands and fades it, coloured by its action's button. */
-.replay-ring { position: absolute; z-index: 4; width: 36px; height: 36px; margin: -18px 0 0 -18px; pointer-events: none; }
+.replay-ring { position: absolute; z-index: 4; width: 30px; height: 30px; margin: -15px 0 0 -15px; pointer-events: none; }
 /* While the replay viewer shows, the game's view chips, tools strip, hint strip and toast neither show nor appear,
    nor does a menu it was opened from show through a 3D replay's window. */
 body.replaying :is(#mode-chips, #hud-tools, #hint-strip, #toast) { display: none; }

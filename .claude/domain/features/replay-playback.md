@@ -130,12 +130,12 @@ and is never paused into hiding the board.
   press ring sits on the acted cell's projected screen position, the
   crosshair while *Free camera* is off. While a 3D replay shows, the game's view chips and
   toasts are hidden and do not appear; the viewer shows its own key line of
-  the replay keys and their controller buttons.
+  the replay keys, their controller buttons while a pad is connected.
 - **Show 3BV.** Paints the board's 3BV partition from the engine's 3BV
   definition (`cell-graph-rules-engine`), never recomputed in the view: each
   opening — its zeros and the numbers bordering it — in one tint from a
-  small cycle of token colours, neighbouring openings differing, and each
-  isolated number in its own mark; over the board view in 2D, as a cell tint
+  small cycle of token colours, neighbouring openings differing, an
+  isolated number left untinted; over the board view in 2D, as a cell tint
   in the renderer in 3D. Off by default, held across seeks; a press ring on
   a region already solved reads as a wasted click.
 - **Sound.** Off by default and kept for the session, not a saved setting.

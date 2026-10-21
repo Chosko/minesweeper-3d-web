@@ -265,12 +265,22 @@ test('a 3D replay shows the live figures of its frame, following a seek forward 
   assert.deepEqual(at(), [['11 / 35', null], ['14', 'Efficiency 78.6%'], ['1', '9 mines left']], 'the end');
 });
 
-test('a 3D replay opens on the scene: the screen lets the 3D scene show', () => {
+test('a 3D replay draws its scene in the board area of the frame, which keeps its white body and its layout', () => {
   const src = read('js/replay/viewer.js');
   assert.match(src, /replay--scene/, 'the view marks a 3D replay');
   const theme = read('themes/joyful-tiles/theme.css');
-  assert.match(theme, /#replay\.replay--scene\s*\{[^}]*background: transparent/);
-  assert.match(theme, /#replay\.replay--scene #replay-frame\s*\{[^}]*background: transparent/, 'the frame\'s window lets the scene through');
+  assert.doesNotMatch(theme, /replay--scene[^{]*\{[^}]*transparent/, 'no window lets a full-window scene through');
+  assert.match(theme, /#replay\.replay--scene #replay-stage \{ border-radius: 18px; \}/, 'the board area\'s rounded corners clip the scene');
+  const main = read('js/main.js');
+  const sync = main.slice(main.indexOf('function syncScenePanel()'), main.indexOf('\n}\n', main.indexOf('function syncScenePanel()')));
+  assert.match(sync, /S\.mode === REPLAY_SCREEN \? document\.querySelector\('#replay\.replay--scene #replay-stage'\)/, 'a 3D replay\'s board area is the renderer\'s target');
+  assert.match(sync, /REPLAY_OVER\.classList\.toggle\('hidden', !replayStage\)/, 'the layer over its scene shows with it');
+  const scene = main.slice(main.indexOf('const REPLAY_SCENE = {'), main.indexOf('\n};\n', main.indexOf('const REPLAY_SCENE = {')));
+  assert.match(scene, /show\(view\) \{[\s\S]*syncScenePanel\(\);[\s\S]*\},\n  camera/, 'the scene takes the board area once the replay shows');
+  // Free camera: primary when on, its camera icon; the canvas's notice over the scene while it is on.
+  assert.match(src, /el\.freeNote\.classList\.toggle\('hidden', state\.camera !== 'free'\)/);
+  assert.match(read('css/style.css'), /\.replay-over \{ position: fixed; z-index: calc\(var\(--z-overlay\) \+ 2\); pointer-events: none; \}/, 'above the scene, which draws in front of the frame');
+  assert.match(read('js/ui.js'), /\$\('replay-scene-over'\)\.append\(ring\)/, 'a 3D press ring on that layer too');
 });
 
 test('the 3D viewer is DOM-free and reaches no records, sound, pause or player input', () => {
@@ -300,7 +310,8 @@ test('the shell registers the 3D viewer under the box graph, with its own camera
   assert.match(fly, /replayCam\.move\(dt, input\.move\)/, 'the game\'s movement keys');
   assert.match(fly, /moveAxes\(/, 'the controller sticks');
   const scene = MAIN.slice(MAIN.indexOf('const REPLAY_SCENE = {'), MAIN.indexOf('\n};\n', MAIN.indexOf('const REPLAY_SCENE = {')));
-  assert.match(scene, /const at = renderer\.cellScreen\(cell\);\s*if \(at\) ui\.replayRing\(at\.x, at\.y, kind\);/, 'a 3D press ring on the cell\'s projection');
+  assert.match(scene, /const at = renderer\.cellScreen\(cell\);\s*const t = renderer\.target;\s*if \(at && t\) ui\.replayRing\(\(at\.x \/ canvas\.clientWidth\) \* t\.width, \(at\.y \/ canvas\.clientHeight\) \* t\.height, kind\);/,
+    'a 3D press ring on the cell\'s projection, placed in the board area the scene draws into');
   assert.match(fly, /needRender = true/, 'flying a paused replay draws');
 });
 
@@ -351,17 +362,21 @@ test('[slow] in a browser, a recorded 3D replay plays from its fixture through t
     const frames = () => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'replay');
     assert.equal(await page.evaluate(() => globalThis.__ms.renderer.game.n), 216, 'the renderer draws the replay\'s 6 × 6 × 6 box');
-    assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('replay')).backgroundColor), 'rgba(0, 0, 0, 0)', 'the scene shows through');
+    await frames();
     const scene = await page.evaluate(() => {
       const style = (id) => getComputedStyle(document.getElementById(id));
       const canvas = globalThis.__ms.renderer.renderer.domElement;
-      const box = canvas.getBoundingClientRect();
-      return { frame: style('replay-frame').backgroundColor, body: style('replay-body').backgroundColor,
-        full: box.width === innerWidth && box.height === innerHeight && canvas.style.clipPath === '' && style('menu').display === 'none',
+      const stage = document.getElementById('replay-stage').getBoundingClientRect();
+      const t = globalThis.__ms.renderer.target;
+      return { frame: style('replay-frame').backgroundColor !== 'rgba(0, 0, 0, 0)',
+        target: !!t && Math.abs(t.x - stage.left) < 1 && Math.abs(t.y - stage.top) < 1 && Math.abs(t.width - stage.width) < 1 && Math.abs(t.height - stage.height) < 1,
+        clipped: canvas.style.clipPath.startsWith('inset(') && canvas.style.clipPath.includes('round 18px'),
+        panel: document.getElementById('rp-figures').checkVisibility() && document.getElementById('rp-figures').getBoundingClientRect().left >= stage.right,
+        menu: style('menu').display === 'none',
         title: /^Replay · 3D · Cube /.test(document.getElementById('replay-title').textContent) };
     });
-    assert.deepEqual(scene, { frame: 'rgba(0, 0, 0, 0)', body: 'rgba(0, 0, 0, 0)', full: true, title: true },
-      'the 3D scene stays full-window behind the frame, whose window lets it through, and no menu preview takes it from under the viewer');
+    assert.deepEqual(scene, { frame: true, target: true, clipped: true, panel: true, menu: true, title: true },
+      'the 3D scene draws in the board area of the white frame, the panel beside it, and no menu preview takes it from under the viewer');
     assert.equal(await page.evaluate(() => document.querySelectorAll('#replay-board canvas').length), 0, 'no 2D board view');
 
     // The camera follows the recording and the view mode is applied; player input does not move it.
@@ -427,7 +442,7 @@ test('[slow] in a browser, a recorded 3D replay plays from its fixture through t
     // Replay chrome, not the game's: no chips, no toast, the viewer's key line.
     const hidden = (sel) => page.evaluate((s) => { const e = document.querySelector(s); return !e || getComputedStyle(e).display === 'none' || e.offsetParent === null; }, sel);
     for (const sel of ['#chip-shift', '#chip-space', '#chip-ctrl', '#hud-tools', '#toast']) assert.equal(await hidden(sel), true, `${sel} hidden`);
-    assert.match(await text('rp-keys'), /C.*Free camera/);
+    assert.match(await text('rp-keys'), /C\s*camera/);
     assert.equal(await hidden('#rp-camera'), false, 'the Follow / Free toggle shows in 3D');
 
     // Free camera: C detaches it, the movement keys fly it while playback runs on; C again follows the recording.
@@ -436,6 +451,12 @@ test('[slow] in a browser, a recorded 3D replay plays from its fixture through t
     await page.evaluate(() => { document.activeElement?.blur(); });
     await page.keyboard.press('KeyC');
     assert.equal(await page.evaluate(() => globalThis.__ms.replayViewer.state.camera), 'free');
+    const note = await page.evaluate(() => {
+      const n = document.getElementById('rp-free-note'), b = n.getBoundingClientRect(), s = document.getElementById('replay-stage').getBoundingClientRect();
+      return { shows: n.checkVisibility(), top: b.top >= s.top && b.top <= s.top + 24, centred: Math.abs(b.left + b.width / 2 - (s.left + s.width / 2)) < 2,
+        pressed: document.getElementById('rp-camera').getAttribute('aria-pressed'), icon: document.querySelector('#rp-camera > .ui-icon')?.getAttribute('data-icon') };
+    });
+    assert.deepEqual(note, { shows: true, top: true, centred: true, pressed: 'true', icon: 'camera' }, 'Free camera on: its notice at the top of the scene');
     const detached = await camera();
     await page.keyboard.down('KeyW');
     await frames();
@@ -445,6 +466,7 @@ test('[slow] in a browser, a recorded 3D replay plays from its fixture through t
     assert.ok(Math.hypot(flown.x - detached.x, flown.y - detached.y, flown.z - detached.z) > 1e-3, 'W flies the free camera');
     await page.keyboard.press('KeyC');
     await frames();
+    assert.equal(await page.evaluate(() => document.getElementById('rp-free-note').checkVisibility()), false, 'Follow: no notice');
     got = await camera();
     for (const k of ['x', 'y', 'z']) assert.ok(Math.abs(got[k] - want[k]) < 1e-6, `back on the recorded camera: ${k}`);
 

@@ -23,7 +23,9 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
   `frameNext`, `start`, `end`, `slower`, `faster`, `bbbv`, `camera`,
   `sound`), `REPLAY_KEYS`, `REPLAY_PAD` (Start / Y, LB / RB, LT / RT),
   `REPLAY_KEY_LINE`, `SEEK_STEP_MIN_MS` (100),
-  `MAX_REPLAY_FILE_BYTES` (16 MB), `BBBV_TINTS` (6), `LEAD_IN_MS`.
+  `MAX_REPLAY_FILE_BYTES` (16 MB), `BBBV_TINTS` (the count of
+  `BBBV_TINT_TOKENS`, re-exported from [replay-viewers.md](replay-viewers.md)'s
+  `viewer-2d.js`), `LEAD_IN_MS`.
 - `prepareReplay({replay?, replayId?, file?}, {library})` → Promise of
   `{ok, sim, bytes}` or a failure — one that does not reproduce still
   carries its `sim` and `bytes`; `replayId` is fetched with
@@ -34,7 +36,7 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
   "Replay · Classic 2D · Intermediate" (the board as the records name it);
   both handed to `view.ready({ …, code, title })`.
 - `clockText(ms)` (`"13.342"`, seconds to the thousandth, truncated),
-  `overlayFigures(frame, ms)` (the bar's clock, mines, 3BV and 3BV/s),
+  `overlayFigures(frame, ms)` (the strip's clock, mines, 3BV and 3BV/s),
   `replayFigures(frame, ms, bests)` (the panel's live figures),
   `endLine(check)`, `seekStep(duration)`,
   `pauseMarks(pauses, duration, leadIn?)`, `pausesText`,
@@ -54,25 +56,37 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
   `state.live` is `replayFigures` at the playback position.
 - `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack,
   onDownload?, onOpen?, onCopy?})` → the `#replay` binder (its ids in the
-  head comment): a `ui-frame` on the backdrop (`#replay-frame`; Back
-  `#rp-back` and the title `#replay-title` in its head), whose body holds
-  the overlay bar of figures with the code chip `#rp-code` (Copy and Copy
-  link call `onCopy`; hidden while loading, failed or with no code), then
-  `#replay-main`: the board area `#replay-stage`, which takes the room the
-  bar, the panel and the controls leave, with the message card over it,
-  and beside it the figures panel `#rp-figures` (`bindFigures`,
-  `bindFiguresLive`; dashes while no replay plays; hidden with the code
-  chip on the narrower windows); then the controls (the seek bar,
-  transport, speed, the toggles — `#rp-camera` in 3D only —, the end line
-  with its outcome chip, Download, Open replay file, the key line
-  `#rp-keys`). While a replay opens or has failed the controls stay in
-  place, those that need a replay disabled. A failed replay whose header
-  reads (no viewer for its board, or it does not reproduce) is handed to
-  `view.failed(message, known)` as its title and timeline: the frame keeps
-  the title, the seek bar its marks and ticks, and the speed choice, Show
-  3BV and Download stay enabled, `download()` saving it. The composition,
-  by window size, is the head comment of `css/components.css` (*Replay
-  viewer*).
+  head comment): a `ui-frame` inset on the backdrop at the canvas's size
+  (`#replay-frame`; Back `#rp-back` with its arrow and the title
+  `#replay-title` in its head), whose body holds the strip across it — the
+  figures inline and unlabelled with the code chip `#rp-code` (Copy and
+  Copy link call `onCopy`; hidden while loading, failed or with no code) —,
+  then `#replay-main`: the board area `#replay-stage`, which takes the room
+  the strip, the panel and the controls leave, with the message card over
+  it, and beside it, down to its bottom, the figures panel `#rp-figures`
+  (`bindFigures`, `bindFiguresLive`; dashes while no replay plays; hidden
+  with the code chip on the narrower windows); then the controls: the seek
+  bar alone on its row (named Position, its played part following its
+  value through `bindSliderFill`, ticks above the track, hatched pause marks
+  on it), the tools row (transport — Play's icon follows its label: play,
+  pause, restart —, speed, the toggles — `#rp-camera` in 3D only —, the end
+  line with its outcome chip after them, Download and Open replay file at
+  the row's end), and the key line `#rp-keys` (`REPLAY_KEY_LINE`, its
+  controller buttons shown only under `body.pad-connected`, which the
+  shell sets while a pad is connected) beside the pauses' line. While a
+  replay opens or has failed the controls stay in place, those that need
+  a replay disabled. A failed replay whose header reads (no viewer for its
+  board, or it does not reproduce) is handed to `view.failed(message,
+  known)` as its title and timeline: the frame keeps the title, the seek
+  bar its marks and ticks, and the speed choice, Show 3BV and Download stay
+  enabled, `download()` saving it; its strip and panel read dashes. A 3D
+  replay marks `#replay` `replay--scene`: the shell draws its scene in the
+  board area, the frame keeping its white body
+  ([app-shell-replay.md](app-shell-replay.md)), and the free-camera notice
+  `#rp-free-note`, on the layer over the scene, shows while the camera is
+  free. The composition, by window size, is the head comment of
+  `css/components.css` (*Replay viewer*) and the `#replay` rules of
+  `css/style.css`.
 
 ## INTERNAL PATTERNS
 
@@ -144,7 +158,7 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
 
 ## WHEN TO READ THE SOURCE
 
-- Changing a control, a key or button, the overlay, the figures panel, the
+- Changing a control, a key or button, the strip, the figures panel, the
   timeline or the failure lines: the head comment of `viewer.js` and the
   `replay` wiring in `js/main.js`; the panel's place by window size, the
   `#replay-main` and `#rp-figures` rules of `css/style.css`.

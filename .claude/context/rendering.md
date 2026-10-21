@@ -98,9 +98,10 @@ shake, ground grid — and the replay and end-of-game behaviour are in
   the scissor and the camera aspect to the target, WebGL's y counted from the bottom, and turns the
   scissor test off with no target. With a target, `render()` first clears the whole canvas to
   transparent, so the page shows outside the panel, and the confetti's point size follows the
-  target's height. The shell sets the target from the shown screen's live scene panel and clears it
-  everywhere else — a 3D game, the 3D replay viewer — so picking and the HUD keep mapping the full
-  window ([app-shell-3d.md](app-shell-3d.md) § Scene panel).
+  target's height. The shell sets the target from the shown screen's live scene panel or a 3D
+  replay's board area and clears it everywhere else — a 3D game above all — so picking and the HUD
+  keep mapping the full window ([app-shell-3d.md](app-shell-3d.md) § Scene panel). `cellScreen`
+  projects onto the whole canvas whatever the target; the replay's rings scale it to the target.
 - **Render resolution.** The pixel ratio is the player's 3D resolution setting
   ([settings.md](settings.md) states `pixelRatioFor`): `js/main.js::applyPixelRatio` computes it
   for the board shown and calls `setPixelRatio` at each new board and on every setting change. The

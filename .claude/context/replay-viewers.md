@@ -29,8 +29,11 @@ DOM-free at import.
   board frame, the whole board fitted in the container at any tile up to
   the board scale's cap, so it never scrolls (no play input), the pointer,
   trail and rings as
-  elements (`.replay-pointer`, `.replay-trail`, `.replay-ring--<kind>`,
-  coloured from tokens), Show 3BV as a canvas made the first time it shows.
+  elements (`.replay-pointer`, `.replay-trail`, `.replay-ring--<kind>`: the
+  theme's ring, the flag's fainter, expanding and fading, coloured from
+  tokens), Show 3BV as a canvas made the first time it shows.
+- `BBBV_TINT_TOKENS`, `paintBbbv(ctx, rects, colours)` — Show 3BV's paint
+  (§ Internal patterns).
 
 `viewer-3d.js`
 - `cameraTrack(movement, cappedAt?, interval?)`, `cameraAt`, `viewModeAt`,
@@ -65,6 +68,10 @@ DOM-free at import.
   [rendering-effects.md](rendering-effects.md)).
 - **Show 3BV.** The tints (`regionTints`) are painted per cell and kept
   through seeks, refits and (2D, `repaint`) a theme change; null clears.
+  An opening takes one of `BBBV_TINT_TOKENS` (confetti tokens) at
+  `TINT_ALPHA` — in 2D a tile-sized square rounded `TINT_RADIUS`
+  (`paintBbbv`), in 3D its cubes' tint —; an isolated number is left
+  unpainted.
 - **3D playback.** On Follow the camera is the recorded pose with the
   recorded view mode, from a movement cap on the last sample before it. On
   Free (`setFree(true)`, the `camera` command) the scene's camera is

@@ -1735,9 +1735,9 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
             const controls = document.getElementById('replay-controls').getBoundingClientRect();
             return { width: board.width, height: board.height, bottom: board.bottom, controlsTop: controls.top };
           });
-          assert.ok(v.bottom <= v.controlsTop - 15, `${at}: the board area ends above the controls`);
+          assert.ok(v.bottom <= v.controlsTop - 12, `${at}: the board area ends the body's gap above the controls`);
           const tile = Math.floor(Math.min(v.width / 30, v.height / 16));
-          assert.ok(tile >= 26, `${at}: Expert fits the viewer at ${tile} px, with no scrolling`);
+          assert.ok(tile >= 24, `${at}: Expert fits the viewer at ${tile} px, with no scrolling (J-Replay-m draws its 16 rows at 24 px)`);
         }
         assert.deepEqual(errors, [], `${at}: no page errors`);
         await page.close();

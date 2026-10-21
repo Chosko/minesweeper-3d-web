@@ -1261,7 +1261,7 @@ Feature: shared-screen-layout
 
 ## 239. Replay viewer to the canvas
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/style.css, themes/joyful-tiles/theme.css, css/components.css, js/replay/viewer.js, js/replay/viewer-2d.js, .claude/context/replay-viewer-screen.md, .claude/context/replay-viewers.md
 Preconditions: 222, 223, 227

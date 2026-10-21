@@ -11,7 +11,7 @@ shell wires, and the shell stylesheet `css/style.css`. The component kit is
 | File | Responsibility |
 | ---- | -------------- |
 | `index.html` | every overlay as static markup toggled by `.hidden`; importmap `three` → `vendor/three/three.module.min.js` (r186, no build step); a module `onerror` shows `.fatal` |
-| `css/style.css` | shell styling: fixed layers, each screen's placement in its frame (the main menu's grid, the board choices' and Daily's window under the wordmark, Records', Settings', the placeholder's and the replay viewer's window, the results frame's head, tiles and action bar, the ready card's columns) and what each gives way at the smaller window sizes and on a phone, the scene panel's canvas (`body.scene-off`, `body.scene-front`), the Classic 2D game window (its board area and panel, the figures panel beside or under the board or hidden, the phone layouts), the replay layer (`replay--scene` transparent over the 3D scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the HUD and the game window's chrome hidden behind the ready card, the pause card, the results and the 3D status card, the board status cards' placement and parts, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the toast's place and the message pages' (`.fatal`, `.noscript`, `.not-found`: the card's width and its margin from the window's edges), the 3D touch stick and toolbar, the 3D overlay's placement (the counter strip, the figures panel, the phone layouts) and the HUD's; declares no custom property |
+| `css/style.css` | shell styling: fixed layers, each screen's placement in its frame (the main menu's grid, the board choices' and Daily's window under the wordmark, Records', Settings', the placeholder's and the replay viewer's window, the results frame's head, tiles and action bar, the ready card's columns) and what each gives way at the smaller window sizes and on a phone, the scene panel's canvas (`body.scene-off`, `body.scene-front`), the Classic 2D game window (its board area and panel, the figures panel beside or under the board or hidden, the phone layouts), the replay layer (the viewer's window, body, strip, seek bar, tools row and key line by window size; the layer over a 3D replay's scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; the controller's buttons in the key line only under `body.pad-connected`; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the HUD and the game window's chrome hidden behind the ready card, the pause card, the results and the 3D status card, the board status cards' placement and parts, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the toast's place and the message pages' (`.fatal`, `.noscript`, `.not-found`: the card's width and its margin from the window's edges), the 3D touch stick and toolbar, the 3D overlay's placement (the counter strip, the figures panel, the phone layouts) and the HUD's; declares no custom property |
 
 `index.html` head order: `css/tokens.css`, `css/components.css`,
 `css/style.css`, `js/theme.js` (which appends the theme stylesheet), then
@@ -81,12 +81,14 @@ bind.
     `#r-again` at the end ([app-shell-results.md](app-shell-results.md));
   - replay viewer `#replay` (its ids: [replay-viewer-screen.md](replay-viewer-screen.md)):
     the frame `#replay-frame` with `#rp-back` and `#replay-title`, the
-    figures bar with the code chip and the outcome `#replay-end`,
+    strip `.replay-bar` with the code chip,
     `#replay-main` — the board area `#replay-stage` holding
     `#replay-board` and the card `#replay-message`, beside the figures
-    panel `#rp-figures` —, `#replay-controls` (seek bar with pause marks and
-    action ticks, transport, speed, toggles, the key line, Download, Open
-    replay file); the hidden file input `#replay-file`;
+    panel `#rp-figures` —, `#replay-controls` (seek bar with action ticks
+    and pause marks; the tools row: transport, speed, toggles, the end line
+    `#replay-end`, Download, Open replay file; the key line); the hidden
+    file input `#replay-file`; after it the layer over a 3D replay's scene
+    `#replay-scene-over` with the free-camera notice `#rp-free-note`;
   - status cards `#c2d-status` (centred on the board column by `UI`) and
     `#m3d-status`, stacked above the pause card: progress line,
     `ui-spinner`, Cancel and Play a standard board (`#…-wait`,

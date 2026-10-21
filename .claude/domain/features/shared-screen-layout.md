@@ -273,8 +273,7 @@ In scope (m2b-themes):
   action.
 - **The 3D scene in a panel** — the 3D renderer draws into the scene panel's
   rectangle when a screen has one (the menu's 3D preview, the Daily
-  screen's cube), and full-window in a 3D game and the 3D replay viewer as
-  today.
+  screen's cube, a 3D replay's board area), and full-window in a 3D game.
 - The shared layout at every window size the game supports, from the
   phone sizes to the largest desktop window the canvas draws.
 

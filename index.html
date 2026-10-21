@@ -541,18 +541,17 @@
     <section class="ui-frame" id="replay-frame" aria-labelledby="replay-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start"><button type="button" id="rp-back" class="ui-button ui-button--secondary ui-button--sm">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
+        <div class="ui-frame__start"><button type="button" id="rp-back" class="ui-button ui-button--secondary ui-button--sm" data-icon="arrow-left">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
         <h2 class="ui-frame__title" id="replay-title">Replay</h2>
         <div class="ui-frame__end"></div>
       </header>
       <div class="ui-frame__body" id="replay-body">
-        <div class="ui-overlay-bar replay-bar" role="group" aria-label="Replay">
-          <div class="ui-stat" role="group" aria-labelledby="rp-clock-label"><span class="ui-stat__label" id="rp-clock-label">Time</span><span id="rp-clock" class="ui-stat__value">00.000</span></div>
-          <div class="ui-stat" role="group" aria-labelledby="rp-mines-label"><span class="ui-stat__label" id="rp-mines-label">Mines</span><span id="rp-mines" class="ui-stat__value">0</span></div>
-          <div class="ui-stat" role="group" aria-labelledby="rp-bbbv-label"><span class="ui-stat__label" id="rp-bbbv-label">3BV</span><span id="rp-bbbv" class="ui-stat__value">&mdash;</span></div>
-          <div class="ui-stat" role="group" aria-labelledby="rp-rate-label"><span class="ui-stat__label" id="rp-rate-label">3BV/s</span><span id="rp-rate" class="ui-stat__value">&mdash;</span></div>
+        <div class="ui-counter-strip replay-bar" role="group" aria-label="Replay">
+          <div class="replay-figure replay-figure--clock" role="group" aria-label="Time"><span id="rp-clock">00.000</span></div>
+          <div class="ui-counter replay-figure" role="group" aria-label="Mines left"><svg class="ui-counter__icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h12l-3 4 3 4H5"/></svg><span id="rp-mines" class="ui-counter__digits">000</span></div>
+          <div class="replay-figure" role="group" aria-label="3BV solved">3BV <span id="rp-bbbv">&mdash;</span></div>
+          <div class="replay-figure" role="group" aria-label="3BV per second">3BV/s <span id="rp-rate">&mdash;</span></div>
           <div id="rp-code" class="ui-code hidden"><code class="ui-code__value"></code><button type="button" id="rp-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="rp-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
-          <span id="replay-end" class="replay-end hidden" role="status"><span id="replay-end-outcome" class="ui-chip"></span> <span id="replay-end-time" class="ui-text"></span></span>
         </div>
         <div id="replay-main">
           <div id="replay-stage">
@@ -577,21 +576,16 @@
           </section>
         </div>
         <div id="replay-controls" role="group" aria-label="Playback">
-          <div class="ui-slider">
-            <label class="ui-slider__label" for="rp-seek">Position</label>
-            <span id="rp-seek-pad" class="ui-text ui-text--muted" data-pad-hint aria-hidden="true">D-pad <kbd>◀</kbd> <kbd>▶</kbd> seek</span>
-            <output class="ui-slider__value" for="rp-seek" id="rp-position"></output>
-            <div class="replay-seek">
-              <input id="rp-seek" class="ui-slider__input" type="range" min="0" max="0" step="1" value="0" aria-describedby="rp-pauses-text">
-              <div id="rp-pauses" class="replay-pauses" aria-hidden="true"></div>
-              <div id="rp-ticks" class="replay-ticks" aria-hidden="true"></div>
-            </div>
+          <div class="replay-seek">
+            <div id="rp-ticks" class="replay-ticks" aria-hidden="true"></div>
+            <div id="rp-pauses" class="replay-pauses" aria-hidden="true"></div>
+            <input id="rp-seek" class="ui-slider__input" type="range" min="0" max="0" step="1" value="0" aria-label="Position" aria-describedby="rp-pauses-text">
           </div>
           <div class="ui-row replay-tools">
             <div class="ui-row replay-transport">
-              <button type="button" id="rp-prev" class="ui-button ui-button--secondary" aria-label="Previous action"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-7 6 7 6M7 6v12"/></svg></button>
-              <button type="button" id="rp-play" class="ui-button ui-button--primary"><span id="rp-play-label">Play</span> <span class="ui-key-hint replay-key-hint" aria-hidden="true"><kbd class="ui-key-hint__key">Space</kbd></span></button>
-              <button type="button" id="rp-next" class="ui-button ui-button--secondary" aria-label="Next action"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l7 6-7 6M17 6v12"/></svg></button>
+              <button type="button" id="rp-prev" class="ui-button ui-button--secondary" aria-label="Previous action" data-icon="skip-back"></button>
+              <button type="button" id="rp-play" class="ui-button ui-button--primary" data-icon="play"><span id="rp-play-label">Play</span> <span class="ui-key-hint replay-key-hint" aria-hidden="true"><kbd class="ui-key-hint__key">Space</kbd></span></button>
+              <button type="button" id="rp-next" class="ui-button ui-button--secondary" aria-label="Next action" data-icon="skip-forward"></button>
             </div>
             <div id="rp-speed" class="ui-segmented" role="radiogroup" aria-label="Speed">
               <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="0.25" tabindex="-1">0.25&times;</button>
@@ -600,23 +594,30 @@
               <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="2" tabindex="-1">2&times;</button>
               <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="4" tabindex="-1">4&times;</button>
             </div>
-            <button type="button" id="rp-show-bbbv" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false">Show 3BV</button>
-            <button type="button" id="rp-sound" class="ui-button ui-button--secondary ui-button--sm" aria-pressed="false">Sound</button>
-            <button type="button" id="rp-camera" class="ui-button ui-button--quiet ui-button--sm hidden" aria-pressed="false">Free camera</button>
+            <div class="ui-row replay-toggles">
+              <button type="button" id="rp-show-bbbv" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false" data-icon="grid">Show 3BV</button>
+              <button type="button" id="rp-sound" class="ui-button ui-button--secondary ui-button--sm" aria-pressed="false" data-icon="speaker">Sound</button>
+              <button type="button" id="rp-camera" class="ui-button ui-button--quiet ui-button--sm hidden" aria-pressed="false" data-icon="camera">Free camera</button>
+            </div>
+            <span id="replay-end" class="replay-end hidden" role="status"><span id="replay-end-outcome" class="ui-chip"></span> <span id="replay-end-time" class="replay-end__time"></span></span>
+            <div class="ui-row replay-files">
+              <button type="button" id="rp-download" class="ui-button ui-button--secondary ui-button--sm" data-icon="download">Download</button>
+              <button type="button" id="rp-open" class="ui-button ui-button--secondary ui-button--sm" data-icon="upload">Open replay file</button>
+            </div>
           </div>
           <div class="ui-row replay-foot">
             <div id="rp-keys" class="ui-key-hints replay-keys"></div>
+            <span id="rp-seek-pad" class="ui-text ui-text--muted replay-seek-pad" data-pad-hint aria-hidden="true">D-pad <kbd>◀</kbd> <kbd>▶</kbd> seek</span>
             <p id="rp-pauses-text" class="ui-text ui-text--muted replay-pauses-text" hidden></p>
-            <div class="ui-row replay-files">
-              <button type="button" id="rp-download" class="ui-button ui-button--secondary ui-button--sm">Download</button>
-              <button type="button" id="rp-open" class="ui-button ui-button--secondary ui-button--sm">Open replay file</button>
-            </div>
           </div>
         </div>
       </div>
     </section>
     <input id="replay-file" type="file" accept=".msrp" tabindex="-1" aria-hidden="true" hidden>
   </section>
+  <div id="replay-scene-over" class="replay-over hidden" aria-hidden="false">
+    <p id="rp-free-note" class="replay-note hidden" role="status"><svg class="ui-icon" data-icon="camera" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Free camera · fly with W A S D, click the scene for mouse look · C: Follow</p>
+  </div>
   <!-- /Replay viewer -->
 
   <!-- Results -->

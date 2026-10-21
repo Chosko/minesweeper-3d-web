@@ -37,7 +37,7 @@ import { createRecordsStore } from './records/store.js';
 import { countedClicks } from './records/summary.js';
 import { createResultsFlow } from './results/flow.js';
 import { createReplayLibrary } from './replay/library.js';
-import { createReplayViewer, createReplayView } from './replay/viewer.js';
+import { createReplayViewer, createReplayView, BBBV_TINT_TOKENS, TINT_ALPHA } from './replay/viewer.js';
 import { mountViewer2D } from './replay/viewer-2d.js';
 import { panelRect, mountBoardView, BOARD_FRAME } from './classic2d/board-view.js';
 import { createViewer3D } from './replay/viewer-3d.js';
@@ -956,17 +956,18 @@ const replayOrbit = new OrbitCamera(replayCam);
 const replay3d = { view: null, toggles: { shift: false, space: false, ctrl: false }, pickKey: '', time: 0, wrong: [], free: false, tints: null };
 /** What the free replay camera's look and dolly turn: the orbit under the Camera setting's Orbit, else the flight. */
 const replayView = () => (cameraMode === 'orbit' ? replayOrbit : replayCam);
-/** Show 3BV's cube tints from the tokens (js/replay/viewer.js regionTints indices), 4 bytes a cell. */
-const BBBV_TOKENS = ['--color-replay-bbbv-1', '--color-replay-bbbv-2', '--color-replay-bbbv-3', '--color-replay-bbbv-4', '--color-replay-bbbv-5',
-  '--color-replay-bbbv-6', '--color-replay-bbbv-isolated'];
+/**
+ * Show 3BV's cube tints (js/replay/viewer.js regionTints indices), 4 bytes a cell: an opening's cubes in
+ * its BBBV_TINT_TOKENS colour at TINT_ALPHA, as the 2D board paints it; an isolated number untinted.
+ */
 function bbbvTint(tints) {
-  const colours = BBBV_TOKENS.map((name) => parseRgb(token(name)));
+  const colours = BBBV_TINT_TOKENS.map((name) => parseRgb(token(name)));
   const rgba = new Uint8Array(tints.length * 4);
   for (let c = 0; c < tints.length; c++) {
     const k = tints[c];
-    if (k < 0) continue;
+    if (k < 0 || k >= colours.length) continue;
     rgba.set(colours[k], c * 4);
-    rgba[c * 4 + 3] = k === BBBV_TOKENS.length - 1 ? 180 : 130;
+    rgba[c * 4 + 3] = Math.round(TINT_ALPHA * 255);
   }
   return rgba;
 }
@@ -979,6 +980,7 @@ const REPLAY_SCENE = {
     replayCam.place(spawnPose(view, REPLAY_SPACING, renderer.camera.fov, renderer.camera.aspect)); // until its first sample
     renderer.setGame(view);
     applyPixelRatio(view.n);
+    syncScenePanel();
     needRender = true;
   },
   camera(pose, toggles) {
@@ -992,12 +994,13 @@ const REPLAY_SCENE = {
     if (!on && document.pointerLockElement === canvas) input.exitLock();
     needRender = true;
   },
-  /** A press ring on the acted cell's projection: through the replay camera, the crosshair on Follow. */
+  /** A press ring on the acted cell's projection through the replay camera, on the layer over the board area the scene draws into. */
   ring(cell, kind) {
     replayCam.apply(renderer.camera);
     renderer.setSpacing(REPLAY_SPACING);
     const at = renderer.cellScreen(cell);
-    if (at) ui.replayRing(at.x, at.y, kind);
+    const t = renderer.target;
+    if (at && t) ui.replayRing((at.x / canvas.clientWidth) * t.width, (at.y / canvas.clientHeight) * t.height, kind);
   },
   tint(tints) {
     replay3d.tints = tints;
@@ -1015,6 +1018,7 @@ const REPLAY_SCENE = {
     if (g && g === S.game && replay3d.wrong.length) renderer.setWrongFlags(replay3d.wrong);
     replay3d.wrong = [];
     S.pickKey = '';
+    syncScenePanel();
     needRender = true;
   },
 };
@@ -1626,18 +1630,22 @@ function showMenuBackdrop() {
 }
 
 /**
- * The shown screen's live scene panel (ui-scene-panel--live) takes the 3D scene: its stage's rectangle
- * is the renderer's target, set on every screen change, window resize and change of the panel's box,
- * and the canvas is clipped to the panel's rounded corners; with no live panel shown (a 3D game, the
- * replay viewer, even over the menu it was opened from, every screen without one) the scene draws
- * full-window. On the main menu it draws only
- * into its 3D preview: on any other preview the canvas is hidden and nothing is drawn.
+ * The shown screen's live scene panel (ui-scene-panel--live) takes the 3D scene, as a 3D replay's board
+ * area does (#replay-stage once the viewer marks the replay replay--scene): its rectangle is the
+ * renderer's target, set on every screen change, window resize and change of its box, and the canvas is
+ * clipped to its rounded corners; the layer over a replay's scene (REPLAY_OVER: the free-camera notice,
+ * the press rings) covers the board area while it shows. With no live panel shown (a 3D game, the replay
+ * viewer opening or with a 2D replay, even over the menu it was opened from, every screen without one)
+ * the scene draws full-window. On the main menu it draws only into its 3D preview: on any other preview
+ * the canvas is hidden and nothing is drawn.
  */
 let scenePanel = null;
+const REPLAY_OVER = document.getElementById('replay-scene-over');
 const SCENE_PANEL_OBSERVER = WEBGL2 && typeof ResizeObserver === 'function' ? new ResizeObserver(() => syncScenePanel()) : null;
 function syncScenePanel() {
   if (!WEBGL2) return;
-  const stage = S.mode === REPLAY_SCREEN ? null
+  const replayStage = S.mode === REPLAY_SCREEN ? document.querySelector('#replay.replay--scene #replay-stage') : null;
+  const stage = S.mode === REPLAY_SCREEN ? replayStage
     : [...document.querySelectorAll('.ui-scene-panel--live .ui-scene-panel__stage')].find((el) => el.getClientRects().length > 0) ?? null;
   if (stage !== scenePanel) {
     if (scenePanel) SCENE_PANEL_OBSERVER?.unobserve(scenePanel);
@@ -1645,9 +1653,9 @@ function syncScenePanel() {
     scenePanel = stage;
   }
   const box = stage?.getBoundingClientRect();
-  const round = box ? getComputedStyle(stage.closest('.ui-scene-panel')).borderTopLeftRadius : '';
-  // A panel inside a screen frame (the Daily screen's) is drawn in front of the frame, clipped to the
-  // part of the panel the frame's scrolling body shows.
+  const round = box ? getComputedStyle(replayStage ?? stage.closest('.ui-scene-panel')).borderTopLeftRadius : '';
+  // A panel inside a screen frame (the Daily screen's, a replay's board area) is drawn in front of the
+  // frame, clipped to the part of the panel the frame's scrolling body shows.
   const body = stage?.closest('.ui-frame__body')?.getBoundingClientRect();
   const clip = box && body
     ? { top: Math.max(box.top, body.top), right: Math.min(box.right, body.right), bottom: Math.min(box.bottom, body.bottom), left: Math.max(box.left, body.left) }
@@ -1656,6 +1664,8 @@ function syncScenePanel() {
     ? `inset(${clip.top}px ${window.innerWidth - clip.right}px ${window.innerHeight - clip.bottom}px ${clip.left}px round ${round})` : '';
   document.body.classList.toggle('scene-front', !!body);
   document.body.classList.toggle('scene-off', sceneOff());
+  REPLAY_OVER.classList.toggle('hidden', !replayStage);
+  if (replayStage) Object.assign(REPLAY_OVER.style, { left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${box.height}px` });
   if (renderer.setTarget(box ? { x: box.left, y: box.top, width: box.width, height: box.height } : null)) needRender = true;
 }
 /**
@@ -1727,6 +1737,7 @@ const pads = new GamepadReader({
 function updatePadUi() {
   const p = pads.activePad();
   DEVICE.connected(!!p);
+  document.body.classList.toggle('pad-connected', !!p);
   ui.setPad(p ? { glyphs: padGlyphs(p.id), mapping: p.mapping } : null);
 }
 /** Every rumble: a pulse pattern of js/gamepad.js on the active pad. */

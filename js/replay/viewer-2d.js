@@ -23,6 +23,10 @@
 // trailPoints(track, t, ms?) → [[x, y]] the recorded pointer's trail behind replay time t, in cells,
 //   newest first: the pointer every TRAIL_STEP_MS back over the last ms (TRAIL_MS), where it was
 //   elsewhere than at t; none before the first sample.
+// paintBbbv(ctx, rects, colours) paints Show 3BV's rects on a 2D canvas context: each a tile-sized
+//   square, its corners rounded TINT_RADIUS, in colours[tint] at TINT_ALPHA of it — the colours of
+//   BBBV_TINT_TOKENS, three of the confetti tokens —; a tint past them (an isolated number) is left
+//   unpainted.
 //
 // createViewer2D({ view, sim, pointer, overlay? }) → { track, draw(frame, { playing }), place(),
 //   setScale(scale), press(actions), still(), showBbbv(tints), destroy() }
@@ -56,7 +60,7 @@
 // play input), the whole board fitted in the container at any tile up to the board scale's cap, so
 // it never scrolls, the pointer, its trail and the press rings
 // as elements over it (.replay-pointer, .replay-trail, .replay-ring--<kind>, coloured from tokens),
-// and Show 3BV as a canvas over the board view made the first time it shows.
+// and Show 3BV as a canvas over the board view made the first time it shows, painted by paintBbbv.
 
 import { SAMPLE_STEPS, SAMPLE_INTERVAL_MS } from './sampler-2d.js';
 import { mountBoardView } from '../classic2d/board-view.js';
@@ -218,8 +222,23 @@ export function createViewer2D({ view, sim, pointer, overlay = null }) {
   };
 }
 
-const TINT_TOKENS = ['--color-replay-bbbv-1', '--color-replay-bbbv-2', '--color-replay-bbbv-3', '--color-replay-bbbv-4', '--color-replay-bbbv-5',
-  '--color-replay-bbbv-6', '--color-replay-bbbv-isolated'];
+/** Show 3BV's opening tints, a cycle of three (js/replay/viewer.js regionTints); an isolated number is left unpainted. */
+export const BBBV_TINT_TOKENS = Object.freeze(['--color-confetti-2', '--color-confetti-3', '--color-confetti-5']);
+/** A tint's share of its colour (the 3D cubes' too), and its square's corner radius in CSS pixels. */
+export const TINT_ALPHA = 0.42;
+const TINT_RADIUS = 4;
+
+export function paintBbbv(ctx, rects, colours) {
+  for (const { x, y, size, tint } of rects) {
+    if (tint < 0 || tint >= colours.length) continue;
+    ctx.globalAlpha = TINT_ALPHA;
+    ctx.fillStyle = colours[tint];
+    ctx.beginPath();
+    ctx.roundRect(x, y, size, size, TINT_RADIUS);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
 
 export function mountViewer2D({ container, sim, scale, win = globalThis }) {
   const doc = win.document;
@@ -275,19 +294,7 @@ export function mountViewer2D({ container, sim, scale, win = globalThis }) {
       const ctx = canvas.getContext('2d');
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.clearRect(0, 0, w, h);
-      const colours = TINT_TOKENS.map((name) => token(name));
-      const isolated = TINT_TOKENS.length - 1;
-      for (const { x, y, size, tint } of rects) {
-        if (tint >= isolated) {
-          ctx.strokeStyle = colours[isolated];
-          ctx.lineWidth = Math.max(2, size / 10);
-          const inset = ctx.lineWidth;
-          ctx.strokeRect(x + inset, y + inset, size - 2 * inset, size - 2 * inset);
-        } else {
-          ctx.fillStyle = colours[tint];
-          ctx.fillRect(x, y, size, size);
-        }
-      }
+      paintBbbv(ctx, rects, BBBV_TINT_TOKENS.map((name) => token(name)));
     },
     clear() { if (canvas) canvas.hidden = true; },
   };

@@ -37,7 +37,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     `showPause({state, time, minesLeft, note, mode})`, `updatePause`,
     `showReplay` / `hideReplay` (`body.replaying`: no HUD, view chips, tools
     strip, help, hint strip or toast shows or appears over the viewer),
-    `replayRing(x, y, kind)` (a 3D replay's press ring on `#replay`);
+    `replayRing(x, y, kind)` (a 3D replay's press ring on the layer over its scene, `#replay-scene-over`, at x, y in the board area);
   - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`,
     `placePanel2D(rect, radius)` (the board frame at `rect`, its corner radius set as `--board-frame-radius`; a null `rect` hides it),
     `sizeBoard2D(extent)` (the board area `#c2d-stage` at the board's extent in the room the window's chrome leaves, measured under `#c2d.c2d--measure`; → whether it changed),

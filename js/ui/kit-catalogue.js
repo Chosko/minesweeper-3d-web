@@ -341,9 +341,8 @@ export const REQUIRED_TOKENS = Object.freeze([
   // the board frame's corner radius, which the shell sets on the frame from the board module; a
   // theme declares the frame's radius before the shell first sets it
   '--board-frame-radius',
-  // the replay viewer's Show 3BV tints
-  '--color-replay-bbbv-1', '--color-replay-bbbv-2', '--color-replay-bbbv-3', '--color-replay-bbbv-4',
-  '--color-replay-bbbv-5', '--color-replay-bbbv-6', '--color-replay-bbbv-isolated',
+  // the replay viewer's Show 3BV tints (js/replay/viewer-2d.js BBBV_TINT_TOKENS)
+  '--color-confetti-2', '--color-confetti-3', '--color-confetti-5',
   // the Settings theme list's swatch (js/settings/page.js SWATCH_TOKENS) beyond the contrast roles
   '--color-accent-fill',
   // a slider's filled share of its range, which the kit sets on the input (bindSliderFill); a theme
