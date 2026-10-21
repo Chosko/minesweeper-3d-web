@@ -269,7 +269,7 @@ Context:
 /task-implement 234 --review
 ```
 
-## [~] 22. Implement task 235 — 3D ready card, HUD readouts and the touch stick
+## [x] 22. Implement task 235 — 3D ready card, HUD readouts and the touch stick
 
 Depends on: 7, 10, 20
 
@@ -282,11 +282,14 @@ Context:
 /task-implement 235 --review
 ```
 
-## [ ] 23. Implement task 236 — Learn 3D play layout and end cards
+Done: 2026-10-21, commit `3da5a58` (19 files, +282/-111). Decisions: the crosshair is hidden when no cell is targeted (per `in-game-layout.md`; the idle 0.4-opacity crosshair is gone); the off-screen arrow circles the crosshair about 50 px out; the ready overlay's margin is 12 px; the phone-landscape layout applies to any window under 500 px tall held sideways, touch or not.
+
+## [~] 23. Implement task 236 — Learn 3D play layout and end cards
 
 Depends on: 22
 
-Context: none
+Context:
+- 2026-10-21 (from step 22): task 235 hides the 3D crosshair when no cell is targeted, sets the ready overlay's margin to 12 px, and applies the phone-landscape ready layout to any window under 500 px tall held sideways (touch or not); `js/ui.js`'s `setTouch3D` and `setStick` changed with it.
 
 ```prompt
 /task-implement 236 --review
