@@ -48,16 +48,16 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   keeps `mode3d.lastChoice` with it.
 
 `js/shell/menu-preview.js` (its head comment is the contract)
-- `DEMO_SEED`; `demoBoard2D()` → `{grid, game}`, the Classic 2D preview's
-  Intermediate board, the same on every load; `dailyBoard2D(daily)` →
-  `{grid, game, mark}`, today's daily Expert board closed with its start
+- `DEMO_SEED`; `demoBoard2D()` → `{grid, geometry, game}`, the Classic 2D
+  preview's Intermediate board and its square geometry, the same on every
+  load; `dailyBoard2D(daily)` → `{grid, geometry, game, mark}`, today's daily Expert board closed with its start
   cell; `demoBoard3D(random?)` → the 3D game of the menu's 3D preview and
   backdrop (a `DEMO_BOARD_3D` box, some shell cells revealed, a few mines
   flagged; `Math.random` by default, the gallery's seeded) and
   `DEMO_SPACING_3D`, the spacing it is drawn at.
 - `bindMenuPreview({panel, stage, tag, iconOf, mountBoard, boardOf})` →
   `{show(preview), shown}` over a `ui-scene-panel`: a board view per board
-  kind, mounted once and kept in its own `[data-preview]` layer; the panel
+  kind, mounted once (`mountBoard({container, grid, geometry})`) and kept in its own `[data-preview]` layer; the panel
   `ui-scene-panel--live` only for `scene` and carrying the kind as
   `data-shows`; a card (badge, name, note) for `badge`. The Daily screen
   reuses it.

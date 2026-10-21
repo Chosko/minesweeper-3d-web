@@ -733,7 +733,7 @@ const DAILY_PREVIEW = bindMenuPreview({
   stage: document.getElementById('daily-preview-stage'),
   tag: document.getElementById('daily-preview-tag'),
   iconOf: (entry) => document.querySelector(`#menu-entry-${entry} .ui-mode-entry__icon > svg`),
-  mountBoard: ({ container, grid }) => mountBoardView({ container, grid, minTile: 1, framed: true }),
+  mountBoard: ({ container, grid, geometry }) => mountBoardView({ container, grid, geometry, minTile: 1, framed: true }),
   boardOf: () => {
     const daily = dailyPreview();
     return { key: daily.date, ...dailyBoard2D(daily) };
@@ -1298,7 +1298,7 @@ const MENU_PREVIEW = bindMenuPreview({
   stage: document.getElementById('menu-preview-stage'),
   tag: document.getElementById('menu-preview-tag'),
   iconOf: (entry) => document.querySelector(`#menu-entry-${entry} .ui-mode-entry__icon > svg`),
-  mountBoard: ({ container, grid }) => mountBoardView({ container, grid, minTile: 1, framed: true }),
+  mountBoard: ({ container, grid, geometry }) => mountBoardView({ container, grid, geometry, minTile: 1, framed: true }),
   boardOf: (kind) => {
     if (kind === 'board') return { key: 'demo', ...DEMO_2D };
     const daily = dailyPreview();

@@ -27,6 +27,10 @@ import { BOARD as JOYFUL } from '../themes/joyful-tiles/board.js';
 import { END_DELAY_MS } from '../js/classic2d/mode.js';
 import { createSession } from '../js/classic2d/session.js';
 import { browserSuite } from './helpers/browser.mjs';
+import { createGeometry } from '../js/geometry/index.js';
+import { createMotionLayer } from '../js/classic2d/motion-layer.js';
+import { demoBoard2D, dailyBoard2D } from '../js/shell/menu-preview.js';
+import { dailyPreview } from '../js/shell/daily.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const suite = browserSuite({ args: [] });
@@ -926,6 +930,122 @@ test('a view without a game paints the background only, and dispose releases the
 test('the view needs a grid and a canvas', () => {
   assert.throws(() => createBoardView({ canvas: fakeCanvas() }), TypeError);
   assert.throws(() => createBoardView({ grid: createSquareGrid(2, 2) }), TypeError);
+});
+
+// ---------- the grid geometry ----------
+
+// A geometry `width` × `height` laid out transposed: cell c (column c % width, row c / width) is
+// drawn at the square geometry's column row, row column — a board no square pitch arithmetic places.
+function transposedGeometry(width, height, { minTile, tileCap: cap } = {}) {
+  const base = createGeometry('square', height, width);
+  const to = (c) => (Number.isInteger(c) && c >= 0 && c < width * height ? Math.floor(c / width) + height * (c % width) : -1);
+  const from = (v) => (v < 0 ? -1 : Math.floor(v / height) + width * (v % height));
+  return {
+    kind: 'transposed', width, height, count: width * height,
+    minTile: minTile ?? base.minTile,
+    tileCap: cap ?? base.tileCap,
+    extent: (tile, gap) => base.extent(tile, gap),
+    outline: (c, tile, gap) => base.outline(to(c), tile, gap),
+    centre: (c, tile, gap) => base.centre(to(c), tile, gap),
+    glyphBox: (c, tile, gap) => base.glyphBox(to(c), tile, gap),
+    cellAt: (x, y, tile, gap) => from(base.cellAt(x, y, tile, gap)),
+    neighbour: () => -1,
+  };
+}
+
+function geometryView({ cols = 3, rows = 2, geometry, width = 600, height = 500, scale = 'fit', frame, board } = {}) {
+  const grid = createSquareGrid(cols, rows);
+  const canvas = fakeCanvas();
+  const skin = fakeSkinFactory(board);
+  const view = createBoardView({ canvas, grid, geometry, createSkin: skin.createSkin, scale, frame, token: tokenMap({}) });
+  view.resize(width, height, 1);
+  return { grid, view, skin };
+}
+
+test('the square geometry lays out, hit-tests and places tiles exactly as the grid alone did', () => {
+  for (const [cols, rows, width, height, scale, board] of [[9, 9, 600, 500, '100', null], [30, 16, 900, 500, '100', JOYFUL], [100, 100, 700, 500, 'fit', JOYFUL], [8, 8, 300, 900, '125', JOYFUL]]) {
+    const plain = geometryView({ cols, rows, width, height, scale, board, frame: BOARD_FRAME }).view;
+    const { view } = geometryView({ cols, rows, width, height, scale, board, frame: BOARD_FRAME, geometry: createGeometry('square', cols, rows) });
+    assert.deepEqual(view.layout, plain.layout, `${cols} × ${rows}: the same layout`);
+    assert.deepEqual(view.extent(width, height), plain.extent(width, height), `${cols} × ${rows}: the same extent`);
+    assert.deepEqual(view.zoomRange, plain.zoomRange, `${cols} × ${rows}: the same zoom range`);
+    view.scrollTo(37, 23);
+    plain.scrollTo(37, 23);
+    for (let c = 0; c < cols * rows; c += 7) assert.deepEqual(view.cellRect(c), plain.cellRect(c), `${cols} × ${rows}: cell ${c}'s tile`);
+    for (let x = 0; x < width; x += 13) {
+      for (let y = 0; y < height; y += 11) {
+        assert.equal(view.cellAt(x, y), plain.cellAt(x, y), `${cols} × ${rows}: the cell at ${x}, ${y}`);
+        assert.deepEqual(view.boardPoint(x, y), plain.boardPoint(x, y));
+      }
+    }
+  }
+});
+
+test('the view places, hit-tests and draws every cell where its geometry puts it, the board\'s extent the geometry\'s', () => {
+  const geometry = transposedGeometry(3, 2);
+  const { view, skin } = geometryView({ geometry });
+  const l = view.layout;
+  assert.deepEqual([l.boardWidth, l.boardHeight], [2 * l.tile, 3 * l.tile], 'the extent is the geometry\'s, two tiles wide and three tall');
+  for (let c = 0; c < 6; c++) {
+    const o = geometry.outline(c, l.tile, l.gap);
+    const r = view.cellRect(c);
+    assert.deepEqual(r, { x: l.offsetX + o.x, y: l.offsetY + o.y, size: l.tile }, `cell ${c}'s tile is its outline's`);
+    assert.equal(view.cellAt(r.x + 1, r.y + l.tile - 1), c, `the point on cell ${c}'s tile is cell ${c}`);
+  }
+  assert.equal(view.cellAt(l.offsetX + 2 * l.tile, l.offsetY), -1, 'past the geometry\'s extent is no cell');
+  view.setGame(beginnerGame().game);
+  const at = skin.draws.map((d) => [d.x - l.offsetX, d.y - l.offsetY]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const want = Array.from({ length: 6 }, (_, c) => geometry.outline(c, l.tile, l.gap)).map((o) => [o.x, o.y]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  assert.deepEqual(at, want, 'every tile drawn at its outline');
+  const r = view.cellRect(1);
+  const p = view.boardPoint(r.x, r.y);
+  assert.deepEqual(p, { u: 0, v: 1 }, 'the board point is in board units from the board\'s corner, wherever the cell\'s column is');
+});
+
+test('the floor and the tile at each board scale are the geometry\'s', () => {
+  const caps = { fit: Infinity, 100: 40, 125: 44 };
+  const geometry = (cols, rows) => transposedGeometry(cols, rows, { minTile: 30, tileCap: (s = '100') => caps[s] });
+  const capped = geometryView({ cols: 3, rows: 2, geometry: geometry(3, 2), scale: '100' }).view;
+  assert.equal(capped.layout.tile, 40, 'the geometry\'s cap at 100 %');
+  capped.setScale('125');
+  assert.equal(capped.layout.tile, 44, 'and at 125 %');
+  const floored = geometryView({ cols: 40, rows: 40, geometry: geometry(40, 40), width: 300, height: 300, scale: '100' }).view;
+  assert.equal(floored.layout.tile, 30, 'a board too large keeps the geometry\'s floor');
+  assert.equal(floored.zoomRange.max, 30, 'the touch zoom reaches no lower than the floor');
+});
+
+test('a geometry and a grid built for different sizes are refused when the view is created', () => {
+  for (const [w, h] of [[9, 8], [8, 9], [3, 27]]) {
+    assert.throws(() => createBoardView({ canvas: fakeCanvas(), grid: createSquareGrid(9, 9), geometry: createGeometry('square', w, h), createSkin: fakeSkinFactory().createSkin }), RangeError, `${w} × ${h}`);
+  }
+  assert.doesNotThrow(() => createBoardView({ canvas: fakeCanvas(), grid: createSquareGrid(9, 9), geometry: createGeometry('square', 9, 9), createSkin: fakeSkinFactory().createSkin }));
+});
+
+test('the view computes no column or row from a pitch, and every Classic 2D board is mounted on a geometry', () => {
+  const src = readFileSync(join(ROOT, 'js/classic2d/board-view.js'), 'utf8').replace(/^\s*\/\/.*$/gm, '');
+  assert.doesNotMatch(src, /%\s*cols\b|\/\s*cols\b|Math\.floor\([^()]*\/\s*(?:layout\.)?p(?:itch)?\)/, 'no column or row arithmetic');
+  for (const file of ['js/classic2d/mode.js', 'js/replay/viewer-2d.js', 'js/main.js', 'js/shell/menu-preview.js']) {
+    const text = readFileSync(join(ROOT, file), 'utf8');
+    for (const call of text.matchAll(/mountBoard(?:View)?\(\{[^}]*\}/g)) assert.match(call[0], /geometry/, `${file}: ${call[0]}`);
+  }
+  for (const make of [demoBoard2D, () => dailyBoard2D(dailyPreview(new Date(2026, 9, 21)))]) {
+    const { grid, geometry } = make();
+    assert.deepEqual([geometry.kind, geometry.width, geometry.height], ['square', grid.width, grid.height], 'the menu\'s and Daily\'s previews carry their square geometry');
+  }
+});
+
+test('the motion layer turns a cell about the centre its place gives', () => {
+  const canvas = fakeCanvas();
+  const layer = createMotionLayer({
+    canvas, frames: { request: () => 1, cancel: () => {} }, now: () => 0,
+    place: () => ({ x: 10, y: 20, size: 30, cx: 31, cy: 29 }),
+    paint: () => {},
+  });
+  layer.resize(100, 100, 2);
+  layer.start(0, 'reveal', 'closed', 'revealed', { duration: 100, easing: 'linear', tracks: [{ property: 'opacity', keyframes: [{ at: 0, value: 1 }] }] });
+  layer.frame();
+  const set = canvas.ctx.calls.filter((c) => c.op === 'setTransform').at(-1);
+  assert.deepEqual(set.args.slice(4), [62, 58], 'centred on the place\'s centre');
 });
 
 // ---------- the board module: gap, corner radius, ground and cursor ring ----------

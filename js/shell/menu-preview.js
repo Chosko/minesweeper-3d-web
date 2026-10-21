@@ -3,22 +3,22 @@
 // board closed with its marked start cell — the 3D scene drawn live into the panel by the renderer,
 // the panel's static background, or a card with the entry's badge, its name and a note.
 //
-// demoBoard2D()       → { grid, game }: an Intermediate board (STANDARD_SIZES) with a fixed mine set,
+// demoBoard2D()       → { grid, geometry, game }: an Intermediate board (STANDARD_SIZES) with a fixed mine set,
 //                       an opening revealed and a few flags placed — a real engine game, the same on
 //                       every load.
 // demoBoard3D(random?) → the 3D game the menu's 3D preview and backdrop show: a DEMO_BOARD_3D box
 //                       with mines from `random` (Math.random by default), some cells of its outer shell
 //                       revealed until about 55 % stay closed, a few mines flagged; DEMO_SPACING_3D the
 //                       spacing it is drawn at.
-// dailyBoard2D(daily) → { grid, game, mark }: `daily` the shell's dailyPreview(now) (js/shell/daily.js);
+// dailyBoard2D(daily) → { grid, geometry, game, mark }: `daily` the shell's dailyPreview(now) (js/shell/daily.js);
 //                       the closed board awaiting its first click, its start cell the mark.
 // bindMenuPreview({ panel, stage, tag, iconOf, mountBoard, boardOf }) → { show(preview), shown }:
 //   panel, stage, tag    the ui-scene-panel, its stage and its tag;
 //   iconOf(entry)        the entry's icon, an element the card's badge takes a copy of;
-//   mountBoard({ container, grid }) → a mounted Classic 2D board view in its board frame
+//   mountBoard({ container, grid, geometry }) → a mounted Classic 2D board view in its board frame
 //                        (js/classic2d/board-view.js mountBoardView, framed), asked once per board
 //                        kind, the first time it shows;
-//   boardOf(kind)        → { key, grid, game, mark? } for 'board' and 'daily'; a board whose key
+//   boardOf(kind)        → { key, grid, geometry, game, mark? } for 'board' and 'daily'; a board whose key
 //                        changed (a new day) is handed to its view again.
 //   show(preview)        shows `preview`: the panel is ui-scene-panel--live only for 'scene' and
 //                        carries the preview's kind as data-shows (a screen's own styling of it: the
@@ -28,6 +28,7 @@
 // another preview shows.
 
 import { createSquareGrid } from '../engine/square-grid.js';
+import { createGeometry } from '../geometry/index.js';
 import { createGame, createGameWithMines } from '../engine/rules.js';
 import { REFERENCE_PROFILE } from '../engine/profiles.js';
 import { STANDARD_SIZES } from '../classic2d/board-setup.js';
@@ -63,7 +64,7 @@ export function demoBoard2D() {
     if (!mines.has(c) || game.cellState(c) !== 'closed') continue;
     if (grid.graph.neighbours(c).some((n) => game.cellState(n) === 'revealed')) { game.toggleFlag(c); flags++; }
   }
-  return { grid, game };
+  return { grid, geometry: createGeometry('square', width, height), game };
 }
 
 export const DEMO_SPACING_3D = 1.25;
@@ -93,7 +94,7 @@ export function dailyBoard2D(daily) {
   const { width, height, mines } = daily.board;
   const grid = createSquareGrid(width, height);
   const game = createGame({ graph: grid.graph, profile: REFERENCE_PROFILE, mineCount: mines, dimensions: { width, height } });
-  return { grid, game, mark: daily.startCell };
+  return { grid, geometry: createGeometry('square', width, height), game, mark: daily.startCell };
 }
 
 export function bindMenuPreview({ panel, stage, tag, iconOf, mountBoard, boardOf }) {
@@ -116,7 +117,7 @@ export function bindMenuPreview({ panel, stage, tag, iconOf, mountBoard, boardOf
   function showBoard(kind) {
     const l = layer(kind);
     const b = boardOf(kind);
-    if (!l.view) l.view = mountBoard({ container: l.el, grid: b.grid });
+    if (!l.view) l.view = mountBoard({ container: l.el, grid: b.grid, geometry: b.geometry });
     if (l.key !== b.key) {
       l.view.setGame(b.game);
       l.view.setMark(b.mark ?? -1);

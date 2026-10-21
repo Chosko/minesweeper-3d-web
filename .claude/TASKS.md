@@ -1361,7 +1361,7 @@ Feature: flat-grid-geometry
 
 ## 249. Classic 2D board view on the grid geometry
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/board-view.js, js/classic2d/motion-layer.js, js/classic2d/mode.js, js/shell/menu-preview.js, js/shell/daily.js, js/replay/viewer-2d.js, js/main.js, tests/classic2d-view.test.mjs
 Preconditions: 248

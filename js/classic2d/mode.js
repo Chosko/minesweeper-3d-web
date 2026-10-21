@@ -1,5 +1,6 @@
-// Classic 2D mode: the game session (js/classic2d/session.js), the board view and its pointer, touch and
-// cursor inputs behind the game shell's mode contract (js/shell/mode-host.js). DOM-free: the shell
+// Classic 2D mode: the game session (js/classic2d/session.js), the board view — on the square geometry
+// of the game's grid (js/geometry/index.js) — and its pointer, touch and cursor inputs behind the
+// game shell's mode contract (js/shell/mode-host.js). DOM-free: the shell
 // hands in its flow; the mounts default to the browser ones and are only called by start().
 //
 // createClassic2DMode(report, { flow, lastChoice, createClient?, mount?, sound?, clock?, randomSeed?,
@@ -123,6 +124,7 @@ import { createSession, SESSION_STATE } from './session.js';
 import { CELL, PHASE } from '../engine/rules.js';
 import { normaliseChoice } from './board-setup.js';
 import { mountBoardView } from './board-view.js';
+import { createGeometry } from '../geometry/index.js';
 import { mountPointerInput } from './pointer-input.js';
 import { mountCursorInput } from './cursor-input.js';
 import { mountTouchInput, TAP_MODES } from './touch-input.js';
@@ -283,6 +285,7 @@ export function createClassic2DMode(report, {
     const view = mount.board({
       container: flow.container(),
       grid: session.setup.grid,
+      geometry: createGeometry('square', width, height),
       scale: flow.scale?.(),
       frame: flow.frame && (() => flow.frame()),
       onLayout: (layout) => flow.layout?.(layout),

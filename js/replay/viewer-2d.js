@@ -30,7 +30,8 @@
 //
 // createViewer2D({ view, sim, pointer, overlay? }) → { track, draw(frame, { playing }), place(),
 //   setScale(scale), press(actions), still(), showBbbv(tints), destroy() }
-//   view     the board view (js/classic2d/board-view.js) over the simulator's square grid; the viewer
+//   view     the board view (js/classic2d/board-view.js) over the simulator's square grid and its square
+//            geometry (js/geometry/index.js); the viewer
 //            hands it the simulator's game, which it draws and never changes.
 //   sim      the simulator (js/replay/simulator.js).
 //   pointer  { place(x, y), hide(), trail?(points), ring?(x, y, kind) } — the pointer drawn over the
@@ -64,6 +65,7 @@
 
 import { SAMPLE_STEPS, SAMPLE_INTERVAL_MS } from './sampler-2d.js';
 import { mountBoardView } from '../classic2d/board-view.js';
+import { createGeometry } from '../geometry/index.js';
 import { token, onThemeChange } from '../tokens.js';
 
 /** The pointer's trail: its last TRAIL_MS of replay time, a point every TRAIL_STEP_MS. */
@@ -242,7 +244,8 @@ export function paintBbbv(ctx, rects, colours) {
 
 export function mountViewer2D({ container, sim, scale, win = globalThis }) {
   const doc = win.document;
-  const view = mountBoardView({ container, grid: sim.grid, scale, win, framed: true, minTile: 1 });
+  const geometry = createGeometry('square', sim.grid.width, sim.grid.height);
+  const view = mountBoardView({ container, grid: sim.grid, geometry, scale, win, framed: true, minTile: 1 });
   const mark = (className) => {
     const node = doc.createElement('div');
     node.className = className;

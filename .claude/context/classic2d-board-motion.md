@@ -33,7 +33,9 @@ view's layout, fit rule, scrolling, redraw and `mountBoardView` are
   of an engine change list's cell from its state after the change — reveal
   (from closed, pressed or flagged), flag, unflag.
 - `createMotionLayer({canvas, place, paint, frames, clip?, onSettle?,
-  now?, cap?})` → `{start(cell, event, before, after, description),
+  now?, cap?})` (`place(cell)` → the tile `{x, y, size}` and its centre
+  `cx, cy` from the geometry, the tile's middle when absent; the cell is
+  scaled and offset round that centre) → `{start(cell, event, before, after, description),
   drop(cell), has(cell), cells, frame(), dropAll() → cells, resize(width,
   height, pixelRatio), dispose()}` over the cell motion player
   ([classic2d-tile-motion.md](classic2d-tile-motion.md)).

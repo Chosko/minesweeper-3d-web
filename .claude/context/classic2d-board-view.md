@@ -2,9 +2,11 @@
 
 ## OVERVIEW
 
-`js/classic2d/board-view.js` lays the Classic 2D board out and draws it:
-the fit rule with its floor, the board scale's cap and the board frame, the
-layout on the tile and the board module's gap, the frame's rectangle,
+`js/classic2d/board-view.js` lays the Classic 2D board out and draws it on
+the board's grid geometry ([../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md),
+`js/geometry/`): the fit rule with its floor, the board scale's cap and the
+board frame, the layout on the tile and the board module's gap, the frame's
+rectangle,
 hit-testing, per-cell redraw from the engine's change lists, scrolling and
 panning with a clipped board's shadows and scroll bars, the touch zoom,
 the hidden board while paused, and `mountBoardView`, the browser wiring
@@ -26,14 +28,16 @@ cell motion, the end effect — is
   100 %, 60 at 125 %, `Infinity` at Fit.
 - `BOARD_FRAME` (`{gaps: 1}`) — the board frame every Classic 2D board sits
   in: the module's gap on every side.
-- `boardLayout({cols, rows, width, height, min, max, frame, gap,
-  frameRadius})` → frozen `{width, height, tile, gap, pitch, inset,
+- `boardLayout({geometry, width, height, min, max, frame, gap,
+  frameRadius})` (or `cols, rows` for a square board in place of
+  `geometry`; `min` the geometry's floor by default) → frozen `{width, height, tile, gap, pitch, inset,
   frameRadius, boardWidth, boardHeight, viewX, viewY, viewWidth, viewHeight,
   offsetX, offsetY, maxScrollX, maxScrollY, scrolls}` — `frame` `{top,
   right, bottom, left, minWidth, gaps}` (a fixed part in pixels plus `gaps`
   of the gap), `gap` and `frameRadius` fractions of the tile, `pitch` the
   tile plus the gap in pixels, `inset` the frame's room on each side as laid
-  out, `frameRadius` its corner radius in whole pixels; the view rectangle
+  out, `frameRadius` its corner radius in whole pixels, `boardWidth` and
+  `boardHeight` the geometry's extent; the view rectangle
   is the board centred with its frame, or the area inside the frame's fixed
   part when it scrolls.
 - `panelRect(layout, frame)` → `{x, y, width, height}` — the frame around
@@ -45,12 +49,14 @@ cell motion, the end effect — is
   tile with nothing left over.
 - `clipMarks(layout, scroll)` → `{left, right, top, bottom, barX, barY}`;
   `SHADOW_DEPTH` (12), `SCROLLBAR` (`{thickness: 4, inset: 2}`).
-- `cellAtLayout(layout, scroll, cols, rows, x, y)` → cell index or -1.
+- `cellAtLayout(layout, scroll, geometry, x, y)` (or `cols, rows` in place
+  of `geometry` for a square board) → the geometry's cell at the board
+  point, or -1 outside the view or the board.
 - Tokens: `BOARD_SHADOW`, `BOARD_SCROLLBAR`; `BOARD_BACKGROUND`
   (`--color-board-frame`) only while the skin has no board module, whose
   `palette.boardGround` takes its place. `PAN_MODIFIER` (`shiftKey`).
-- `createBoardView({canvas, grid, createSkin, token, scale, frame, minTile,
-  onLayout, layer, overlay, frames, now, onMotion, timers})` (`frame` an object, or a
+- `createBoardView({canvas, grid, geometry, createSkin, token, scale, frame,
+  minTile, onLayout, layer, overlay, frames, now, onMotion, timers})` (`frame` an object, or a
   function measured again at every refit) → `{resize(width, height,
   pixelRatio), setScale(scale), scale, setGame(game), update(changed,
   {motion}), repaint(), cellAt(x, y), cellRect(c), scroll, scrollTo,
@@ -59,14 +65,18 @@ cell motion, the end effect — is
   pixelRatio, canvas, dispose}` (`extent` the `boardExtent` of the fit
   rule's layout in a width × height area, a touch zoom aside) plus the feedback, ring, motion and effect members of
   [classic2d-board-motion.md](classic2d-board-motion.md); `grid` the
-  square grid ([engine.md](engine.md)); `createSkin` defaults to
+  square grid ([engine.md](engine.md)), `geometry` its grid geometry — the
+  square geometry of the grid's size when not given; a geometry built for
+  another size than the grid is a `RangeError` at creation —, `minTile` the
+  geometry's floor by default; `cellRect(c)` the box of the cell's outline;
+  `createSkin` defaults to
   `createTileSkin`, `token` to the token reader. Positions are canvas CSS
   pixels.
-- Touch zoom: `zoomRange` → `{min, max}` (`MIN_TILE_SIZE` and the
+- Touch zoom: `zoomRange` → `{min, max}` (the geometry's floor and the
   fit-to-view tile, the whole board inside the frame, whichever is larger),
-  `boardPoint(x, y)` → `{u, v}` in pitches, `zoom(tile, x, y, point?)` →
-  changed.
-- `mountBoardView({container, grid, win, onUserScroll, framed, onMount,
+  `boardPoint(x, y)` → `{u, v}` in board units (pitches) from the board's
+  corner, `zoom(tile, x, y, point?)` → changed.
+- `mountBoardView({container, grid, geometry, win, onUserScroll, framed, onMount,
   ...})` → the view plus `destroy()`: `onMount(view)` first, before the
   first fit, so the page can size the container to the board; a canvas filling `container`, then the motion
   layer's canvas (`.board-motion`) and the ring layer's (`.board-ring`)
@@ -88,17 +98,26 @@ cell motion, the end effect — is
   `style2d.params.gap`, `radius` and `frameRadius`, `palette.boardGround`,
   `cursor`, `end2d` and `motion`. A hand-off of a new module drops every animation, lays the
   board out again (its gap may change) and repaints it.
-- **Pitch.** Tiles sit one pitch apart, the tile plus the gap in whole
-  pixels (none without a gap), inside the view rectangle, filled with the
-  module's ground. The fit rule counts the gaps; a cell's slot is its tile
-  and the gap after it, so hit-testing maps a pointer in a gap to a cell,
-  and scrolling, the wheel's line, the touch zoom's board point and the
-  replay's pointer samples ([replay-samplers.md](replay-samplers.md)) are
-  in pitches. A tile with a corner radius is laid on fresh ground when it
-  is redrawn.
+- **Geometry.** Every Classic 2D board — the game, the menu's and Daily
+  previews, the replay viewer — is mounted on the square geometry of its
+  grid. The board's extent, each cell's outline (asked once per tile and
+  gap) and centre, the cell at a board point, the floor and the tile at
+  each board scale are the geometry's; the view computes no column or row.
+  A repaint walks the index span between the cells at the view's corners,
+  widened by a row each way, and draws those in view.
+- **Pitch.** On the square geometry tiles sit one pitch apart, the tile
+  plus the gap in whole pixels (none without a gap), inside the view
+  rectangle, filled with the module's ground. The fit rule counts the
+  gaps; a cell's slot is its tile and the gap after it, so hit-testing maps
+  a pointer in a gap to a cell. The board units — the wheel's line, the
+  touch zoom's board point and the replay's pointer samples
+  ([replay-samplers.md](replay-samplers.md)) — are pitches. A tile with a
+  corner radius is laid on fresh ground when it is redrawn.
 - **Fit rule.** The board fits the area less the frame at the largest whole
-  tile up to the scale's cap, never below `MIN_TILE_SIZE`
-  ([square-tile-skin.md § Minimum tile size](../domain/features/square-tile-skin.md)),
+  tile up to the geometry's tile at the scale (`tileCap` on the square
+  geometry), never below the geometry's floor (`MIN_TILE_SIZE` on the
+  square geometry,
+  [square-tile-skin.md § Minimum tile size](../domain/features/square-tile-skin.md)),
   or the view's `minTile` for a board shown and not played. A board that
   fits is centred with its frame and never scrolls; one that does not keeps
   the floor, fills the area with no frame, starts at its top-left corner
@@ -163,11 +182,13 @@ cell motion, the end effect — is
   draws through and `MIN_TILE_SIZE`.
 - [classic2d-input.md](classic2d-input.md) — the inputs that drive the
   pressed set, the cursor and the pan.
-- [engine.md](engine.md) — the square grid's index layout, `changed` lists.
+- [engine.md](engine.md) — the square grid's index layout, `changed` lists;
+  `js/geometry/` the grid geometry the view lays out on.
 - [app-shell-board-module.md](app-shell-board-module.md), [app-shell-2d.md](app-shell-2d.md) — the board module, the board frame
   component, the board tokens and the shell's panel frame;
   [app-shell-ui.md](app-shell-ui.md) — `placePanel2D`.
-- [testing.md](testing.md) — `tests/classic2d-view.test.mjs` the view, pitch.
+- [testing.md](testing.md) — `tests/classic2d-view.test.mjs` the view, pitch,
+  the geometry it lays out on.
 
 ## WHEN TO READ THE SOURCE
 
