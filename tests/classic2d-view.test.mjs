@@ -521,6 +521,27 @@ test('a win\'s end effect bumps and lightens the tiles the wave is passing, clip
   }
 });
 
+test('a win\'s confetti bursts from the centre of the winning tile on a board laid out with a gap', () => {
+  const board = effectBoard();
+  const { view, canvas, grid } = makeView({ board, token: () => '#111111' });
+  assert.ok(view.layout.gap > 0, 'the module lays the board out with a gap');
+  const { game } = beginnerGame();
+  view.setGame(game);
+  const origin = grid.index(6, 5);
+  const effect = createEndEffect({ kind: WIN, cols: 9, rows: 9, origin, duration: END_DELAY_MS, random: () => 0.5 });
+  canvas.ctx.calls.length = 0;
+  view.showEffect(effect, 0);
+  const clip = canvas.ctx.calls.findLast((c) => c.op === 'rect');
+  const at = canvas.ctx.calls.slice(canvas.ctx.calls.indexOf(clip)).filter((c) => c.op === 'translate');
+  assert.ok(at.length > 0, 'the burst is drawn');
+  const tile = view.cellRect(origin);
+  const cx = tile.x + tile.size / 2;
+  const cy = tile.y + tile.size / 2;
+  for (const t of at) {
+    assert.ok(Math.abs(t.args[0] - cx) < 1e-9 && Math.abs(t.args[1] - cy) < 1e-9, `a piece at the winning tile's centre (${t.args} vs ${cx},${cy})`);
+  }
+});
+
 test('a loss\'s end effect snaps each tile the loss changed in from the module\'s scale under its flash, and leaves the others still', () => {
   const board = effectBoard();
   const { view, canvas, grid } = makeView({ board, token: () => '#111111' });

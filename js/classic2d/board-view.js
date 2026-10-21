@@ -596,7 +596,7 @@ export function createBoardView({
   // The end effect's confetti over the board's rectangle, clipped to the part in view.
   function drawEffectLayer() {
     const colours = boardOf()?.palette?.confetti;
-    const pieces = confettiAt(effect, effectT, { width: layout.boardWidth, height: layout.boardHeight, tile: layout.tile });
+    const pieces = confettiAt(effect, effectT, { width: layout.boardWidth, height: layout.boardHeight, tile: layout.tile, gap: layout.gap });
     if (!pieces.length || !colours?.length) return;
     ctx.save();
     clipTo(layout.viewX, layout.viewY, layout.viewWidth, layout.viewHeight);
