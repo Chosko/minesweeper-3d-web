@@ -1421,7 +1421,7 @@ Feature: hexagon-grid
 
 ## 255. Hexagon geometry
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/geometry/hex.js, js/geometry/index.js, tests/geometry-hex.test.mjs
 Preconditions: 248

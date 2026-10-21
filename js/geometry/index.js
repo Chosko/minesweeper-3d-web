@@ -3,8 +3,8 @@
 // replay or a summary rebuilds it from the board identity. DOM-free.
 //
 // The contract every geometry answers, in CSS pixels from the board's top-left corner, for a tile
-// size `tile` (as the grid measures it: a square's side) and a gap `gap` between tiles in whole
-// pixels (a layout's `gap`):
+// size `tile` (as the grid measures it: a square's side, a hexagon across the flats) and a gap `gap`
+// between tiles in whole pixels (a layout's `gap`):
 //   kind, width, height, count       the grid kind, its size in cells, the cell count.
 //   extent(tile, gap)                → { width, height }: the board's extent.
 //   centre(c, tile, gap)             → { x, y }: cell c's centre, or null off the board.
@@ -23,8 +23,9 @@
 // An unknown grid kind is a programming error: createGeometry throws a RangeError.
 
 import { createSquareGeometry } from './square.js';
+import { createHexGeometry } from './hex.js';
 
-const BUILDERS = Object.freeze({ square: createSquareGeometry });
+const BUILDERS = Object.freeze({ square: createSquareGeometry, hex: createHexGeometry });
 
 /** The grid kinds a geometry can be built for. */
 export const GRID_KINDS = Object.freeze(Object.keys(BUILDERS));
