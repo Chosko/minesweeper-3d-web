@@ -1,6 +1,6 @@
 # Runbooks
 
-Last runbook number: 8
+Last runbook number: 9
 
 ---
 
@@ -41,5 +41,15 @@ File: .claude/runbooks/8-design-fixes-implementation.md
 Created: 2026-10-20
 Source: /runbook-create interview
 Steps: 34/35
+
+---
+
+## 9. flat-grids-planning — Plan Hexagon and Triangle as milestone m2c-flat-grids, through to its implementation runbook
+
+Status: [PENDING]
+File: .claude/runbooks/9-flat-grids-planning.md
+Created: 2026-10-21
+Source: /runbook-create interview
+Steps: 0/6
 
 ---
