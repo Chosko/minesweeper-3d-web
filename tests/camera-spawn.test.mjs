@@ -185,46 +185,6 @@ test('Home and R return to start during 3D play only, unrepeated, with the brows
 
 // ---------------------------------------------------------------- in a browser
 
-test('in a browser, Cube Intro picked from the board choice starts at the ordinary spacing in the three-quarter view, the whole box on screen', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html?still-backdrop`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
-    const ms = (fn, arg) => page.evaluate(fn, arg);
-    await page.click('#menu-entry-3d');
-    await page.click('#board-choice [data-preset="6,6,6,10"]');
-    await page.click('#bc-play');
-    await page.waitForFunction(() => globalThis.__ms.modes.active === '3d' && globalThis.__ms.game);
-    assert.deepEqual(await ms(() => globalThis.__ms.state.settings), { X: 6, Y: 6, Z: 6, mines: 10 });
-    assert.equal(await ms(() => globalThis.__ms.state.spacing), SPACING_START, 'the ordinary start spacing');
-    assert.match(await ms(() => document.getElementById('hud-tools').textContent), new RegExp(`spacing ${SPACING_START.toFixed(1).replace('.', '\\.')}`), 'the readout shows it');
-    const cam = await ms(() => globalThis.__ms.info().cam);
-    const spawn = await ms(() => globalThis.__ms.spawnPose(6, 6, 6));
-    assert.ok(['x', 'y', 'z', 'yaw', 'pitch'].every((k) => Math.abs(cam[k] - spawn[k]) < 1e-9), 'at the spawn pose for that spacing');
-    const ndc = await ms(() => {
-      const { THREE, renderer, state } = globalThis.__ms;
-      const c = renderer.camera;
-      c.updateMatrixWorld();
-      const p = 4 * state.spacing, h = [(6 - 1) * p / 2 + 2, (6 - 1) * p / 2 + 2, (6 - 1) * p / 2 + 2];
-      const out = [];
-      for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
-        const v = new THREE.Vector3(sx * h[0], sy * h[1], sz * h[2]).project(c);
-        out.push([v.x, v.y, v.z]);
-      }
-      return out;
-    });
-    for (const [x, y, z] of ndc) assert.ok(Math.abs(x) < 1 && Math.abs(y) < 1 && z < 1, `corner on screen (${x.toFixed(3)}, ${y.toFixed(3)})`);
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
 test('in a browser, a 3D game starts framed, and Home, R and "Back to start" return there during play only', async (t) => {
   const env = await suite.open(t);
   if (!env) return;

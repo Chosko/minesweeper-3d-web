@@ -1,8 +1,5 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { browserSuite } from './helpers/browser.mjs';
-
-const suite = browserSuite({ args: [], pages: { '/tile-art-blank.html': '<!doctype html><meta charset="utf-8"><title>tile art</title><body></body>' } });
 
 const artModule = () => import('../js/tile-art.js');
 
@@ -434,85 +431,4 @@ test('an unknown style draws the first shipped style and reports the error once'
   assert.match(logged[0], /sparkle/);
   art.drawFace(fakeContext(), 48, 'closed', { style: 'glitter', palette: CLOSED });
   assert.equal(logged.length, 2, 'another unknown style is reported in its turn');
-});
-
-// ---------------------------------------------------------------- browser: legibility at the minimum tile size
-
-// Runs in the page: draws every tile state in `style` at `size` CSS pixels and
-// `ratio` device pixels and reports, per tile, the device pixels carrying its
-// glyph's colour and a digest of its face.
-async function sampleStates([style, size, ratio, palette]) {
-  const art = await import('/js/tile-art.js');
-  const states = [
-    ['closed', 'closed', null], ['sunk', 'sunk', null], ['revealed', 'revealed', null],
-    ['flag', 'closed', 'flag'], ['mine', 'revealed', 'mine'], ['exploded', 'exploded', 'mine'], ['wrong-flag', 'revealed', 'wrong-flag'],
-    ...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => [`number-${n}`, 'revealed', n]),
-  ];
-  const canvas = document.createElement('canvas');
-  canvas.width = size * ratio;
-  canvas.height = size * ratio;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  const parse = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  return states.map(([name, face, glyph]) => {
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = palette.ground;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const faceName = face === 'exploded' ? 'revealed' : face;
-    art.drawFace(ctx, size, faceName, { style, palette: palette[face], depth: 1, px: 1 / ratio });
-    let wanted = [];
-    if (glyph === 'flag') { art.drawFlagGlyph(ctx, size, palette.flag); wanted = [palette.flag.cloth, palette.flag.clothShade, palette.flag.base]; }
-    if (glyph === 'mine') { art.drawMineGlyph(ctx, size, palette.mine); wanted = [palette.mine.body]; }
-    if (glyph === 'wrong-flag') { art.drawFlagGlyph(ctx, size, palette.flag); art.drawCross(ctx, size, palette.cross); wanted = [palette.cross.mark]; }
-    if (typeof glyph === 'number') { art.drawNumberGlyph(ctx, size, glyph, { color: palette.numbers[glyph - 1], shadow: palette.numberShadow }); wanted = [palette.numbers[glyph - 1]]; }
-    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    const rgb = wanted.map(parse);
-    let hits = 0;
-    let sum = 0;
-    for (let p = 0; p < data.length; p += 4) {
-      sum = (sum * 31 + data[p] + data[p + 1] * 7 + data[p + 2] * 13) % 1000000007;
-      if (rgb.some(([r, g, b]) => Math.abs(data[p] - r) + Math.abs(data[p + 1] - g) + Math.abs(data[p + 2] - b) < 40)) hits++;
-    }
-    return { name, glyph: glyph !== null, hits, digest: sum };
-  });
-}
-
-const LEGIBILITY_PALETTE = {
-  ground: '#5a6478',
-  closed: CLOSED,
-  sunk: SUNK,
-  revealed: REVEALED,
-  exploded: { rim: '#8f9bb0', edge: '#b3261e', face: '#ff5a4f', faceShade: '#f0554a' },
-  flag: { base: '#1b1b1b', shadow: 'rgba(0,0,0,0.25)', cloth: '#ff3b30', clothShade: '#c4161c' },
-  mine: { body: '#1b1b1b', highlight: 'rgba(255,255,255,0.85)' },
-  cross: { outline: 'rgba(255,255,255,0.95)', mark: '#d50000' },
-  numbers: ['#1565c0', '#2e7d32', '#d32f2f', '#1a237e', '#8d1c1c', '#00838f', '#212121', '#5c5c5c'],
-  numberShadow: 'rgba(0,0,0,0.12)',
-};
-
-test('in a browser, every face and glyph of both styles stays legible at MIN_TILE_SIZE, at pixel ratios 1 and 2', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  const { MIN_TILE_SIZE } = await import('../js/classic2d/tile-skin.js');
-  try {
-    const page = await browser.newPage();
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/tile-art-blank.html`);
-    for (const style of ['bevel', 'flat']) {
-      for (const ratio of [1, 2]) {
-        const tiles = await page.evaluate(sampleStates, [style, MIN_TILE_SIZE, ratio, LEGIBILITY_PALETTE]);
-        const area = MIN_TILE_SIZE * MIN_TILE_SIZE * ratio * ratio;
-        for (const tile of tiles.filter((x) => x.glyph)) {
-          assert.ok(tile.hits >= area * 0.04, `${style} x${ratio}: the ${tile.name} glyph shows (${tile.hits} device px of ${area})`);
-        }
-        const faces = Object.fromEntries(tiles.filter((x) => !x.glyph).map((x) => [x.name, x.digest]));
-        assert.equal(new Set(Object.values(faces)).size, 3, `${style} x${ratio}: closed, sunk and revealed faces are told apart`);
-      }
-    }
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
 });

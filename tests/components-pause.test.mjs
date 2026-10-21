@@ -1,5 +1,6 @@
 // The 3D game's cards in a browser, readable under the contrast contract: the pause card and its confirmation,
-// the board status card while generating and its failure offer, an ended game's card, and the results layout.
+// the board status card while generating and its failure offer, and an ended game's card. The results
+// layout's contrast is the gallery's, in tests/components.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
@@ -21,7 +22,7 @@ const suite = browserSuite();
 // The element screenshots are artefacts for a person to look at: taken only with MS_SHOTS=1.
 const SHOTS = process.env.MS_SHOTS === '1';
 
-test('in a browser, the pause card, its confirmation, the board status card and the results layout meet the contrast contract', async (t) => {
+test('in a browser, the pause card, its confirmation and the board status card meet the contrast contract', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -209,11 +210,6 @@ test('in a browser, the pause card, its confirmation, the board status card and 
     // Back on an ended game's card goes to the main menu, asking nothing.
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Back leaves an ended game for the menu');
-
-    const results = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    results.on('pageerror', (e) => errors.push(e.message));
-    await results.goto(`${base}/dev/components.html`);
-    await check(results, '#g-results', 'results');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

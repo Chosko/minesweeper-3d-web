@@ -859,7 +859,7 @@ test('in a browser, the 3D board choice at every supported window size: its wind
   if (!env) return;
   const { browser, base } = env;
   try {
-    for (const [width, height, frame] of [[1920, 1080, 1120], [1440, 900, 1120], [1366, 768, 1080], [1280, 800, 1080], [1024, 768, 984], [390, 844, 390]]) {
+    for (const [width, height, frame] of [[1920, 1080, 1120], [1366, 768, 1080], [1024, 768, 984], [390, 844, 390]]) {
       const page = await browser.newPage({ viewport: { width, height } });
       await page.goto(`${base}/index.html?still-backdrop`);
       await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');

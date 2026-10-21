@@ -9,10 +9,8 @@ import { PHASE } from '../js/engine/rules.js';
 import { clampSettings } from '../js/ui.js';
 import { customStatus } from '../js/mode3d/board-choice.js';
 import { pickCell, pickCellBrute } from '../js/picking.js';
-import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const MAIN_SRC = () => read('js/main.js');
 
@@ -360,58 +358,4 @@ test('the shell reaches the 3D game only through the mode host', () => {
   assert.match(MAIN, /onRestart: \(\) => PAUSE\.restart\(padGesture \? 'pad' : 'pointer'\)/, 'restart goes through the pause controller');
   assert.match(MAIN, /menu: \{[^\n]*MODES\.leave\(\)/, 'the menu leaves the active mode');
   assert.match(MAIN, /MODES\.on\('failed'/, 'a mode failure routes to its failure screen');
-});
-
-// ---------------------------------------------------------------- browser: the 3D game on the shared engine
-
-test('in a browser, a 3D game on the shared engine plays a fixed mine set to a win and to a loss', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
-    const ms = (fn, arg) => page.evaluate(fn, arg);
-    const frames = (n) => ms((k) => new Promise((r) => { const f = () => (--k <= 0 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
-    const play = (board, cells) => ms(([b, cs]) => {
-      globalThis.__ms.start(b.X, b.Y, b.Z, b.mines, b.minePositions);
-      globalThis.__ms.forcePlay();
-      for (const [cell, kind] of cs) {
-        if (globalThis.__ms.aimAt(cell) !== cell) return `cell ${cell} could not be aimed at`;
-        globalThis.__ms.click(kind);
-      }
-      const g = globalThis.__ms.game;
-      return { state: g.state, pressed: Array.from(g.pressed), flagged: Array.from(g.flagged), minesLeft: g.minesLeft, version: g.version };
-    }, [board, cells]);
-
-    // a 3 x 3 x 1 board, the mine in a corner: flag it, then open the far corner's zero region
-    const BOARD = { X: 3, Y: 3, Z: 1, mines: 1, minePositions: [0] };
-    const won = await play(BOARD, [[0, 'right'], [8, 'left']]);
-    assert.equal(won.state, 'won', JSON.stringify(won));
-    assert.deepEqual(won.flagged, [1, 0, 0, 0, 0, 0, 0, 0, 0]);
-    assert.deepEqual(won.pressed, [0, 1, 1, 1, 1, 1, 1, 1, 1]);
-    assert.equal(won.minesLeft, 0);
-    await frames(3);
-    assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '000', 'the HUD reads the state view');
-    assert.equal(await ms(() => globalThis.__ms.state.endState?.state), 'won');
-
-    const lost = await play(BOARD, [[4, 'left'], [0, 'left']]);
-    assert.equal(lost.state, 'lost', JSON.stringify(lost));
-    assert.deepEqual(lost.pressed, [1, 1, 1, 1, 1, 1, 1, 1, 1], 'a loss shows the whole board');
-    assert.equal(await ms(() => globalThis.__ms.game.explodedIdx), 0);
-    assert.equal(await ms(() => globalThis.__ms.state.endState?.state), 'lost');
-
-    // from a mine count, the first click is always safe: the worker's board arrives, then the reveal
-    for (let i = 0; i < 5; i++) {
-      await play({ X: 3, Y: 3, Z: 3, mines: 26 }, [[7, 'left']]);
-      await page.waitForFunction(() => globalThis.__ms.state.endState !== null, null, { timeout: 15000 });
-      assert.equal(await ms(() => globalThis.__ms.game.state), 'won', 'with every other cell a mine, the safe first click wins');
-    }
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
 });

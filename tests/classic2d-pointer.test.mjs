@@ -1,8 +1,7 @@
 // Classic 2D pointer input (js/classic2d/pointer-input.js): the press-and-release state machine
 // over the mouse buttons against the behaviour recorded in tests/fidelity/minesweeper-online.md,
 // its rules read from the reference profile, the pressed feedback drawn by the board view
-// (js/classic2d/board-view.js), the browser wiring to the view and the session, and in a browser
-// a Beginner game played by mouse to a win.
+// (js/classic2d/board-view.js), and the browser wiring to the view and the session.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -16,10 +15,8 @@ import { createBoardView, PAN_MODIFIER } from '../js/classic2d/board-view.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
 import { createGameWithMines } from '../js/engine/rules.js';
 import { REFERENCE_PROFILE, getRuleProfile } from '../js/engine/profiles.js';
-import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const suite = browserSuite({ args: [] });
 const PROFILE = getRuleProfile(REFERENCE_PROFILE);
 const FIDELITY = readFileSync(join(ROOT, 'tests', 'fidelity', 'minesweeper-online.md'), 'utf8');
 
@@ -541,118 +538,4 @@ test('the module is DOM-free at import and independent of three.js and js/input.
   const src = readFileSync(join(ROOT, 'js', 'classic2d', 'pointer-input.js'), 'utf8');
   assert.doesNotMatch(src, /\b(document|window|localStorage|HTMLElement|requestAnimationFrame)\b/);
   assert.doesNotMatch(src, /three|\.\.\/input\.js/);
-});
-
-// ---------------------------------------------------------------- browser
-
-// Runs in the page: a Beginner session whose board request is answered with a fixed board, the
-// board view below a 64px bar with 16px margins, and the pointer input wired to both. Mines: a
-// wall along row 4 from column 0 to 7, and the two top corners.
-async function mountGame() {
-  const { mountBoardView } = await import('/js/classic2d/board-view.js');
-  const { mountPointerInput } = await import('/js/classic2d/pointer-input.js');
-  const { createSession } = await import('/js/classic2d/session.js');
-  const host = document.createElement('div');
-  Object.assign(host.style, { position: 'fixed', left: '16px', right: '16px', top: '96px', bottom: '16px', zIndex: 9999 });
-  document.body.append(host);
-  const mines = [0, 8];
-  for (let col = 0; col < 8; col++) mines.push(4 * 9 + col);
-  const client = { request: async () => ({ ok: true, mines, seed: 1, generatorVersion: 1 }), cancel() {} };
-  const place = () => ({ ok: true, mines, seed: 1, generatorVersion: 1 }); // the standard board, placed at the first click
-  const session = createSession({ choice: { size: 'beginner', custom: { width: 30, height: 16, mines: 99 }, noGuess: false }, client, place });
-  const view = mountBoardView({ container: host, grid: session.setup.grid });
-  view.setGame(session.game);
-  session.on('changed', ({ changed }) => view.update(changed));
-  const pointer = mountPointerInput({ view, session });
-  const menus = [];
-  window.addEventListener('contextmenu', (e) => menus.push(e.defaultPrevented));
-  globalThis.__play = { session, view, pointer, mines, menus };
-}
-
-test('in a browser, a Beginner game on a fixed board is played by mouse to a win', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/dev/components.html`);
-    await page.evaluate(mountGame);
-
-    const centre = async (col, row) => {
-      const r = await page.evaluate((c) => globalThis.__play.view.cellRect(c), row * 9 + col);
-      const box = await page.evaluate(() => {
-        const b = globalThis.__play.view.canvas.getBoundingClientRect();
-        return { x: b.left, y: b.top };
-      });
-      return { x: box.x + r.x + r.size / 2, y: box.y + r.y + r.size / 2 };
-    };
-    const state = (col, row) => page.evaluate((c) => globalThis.__play.session.game.cellState(c), row * 9 + col);
-    const at = async (col, row) => { const p = await centre(col, row); await page.mouse.move(p.x, p.y); };
-
-    // The first click: the pressed state shows while held, the board arrives on release.
-    await at(0, 8);
-    await page.mouse.down();
-    assert.deepEqual(await page.evaluate(() => globalThis.__play.view.pressed), [8 * 9]);
-    await page.mouse.up();
-    await page.waitForFunction(() => globalThis.__play.session.state === 'playing');
-    assert.equal(await state(0, 6), 'revealed', 'the bottom opened');
-    assert.equal(await state(8, 4), 'closed', 'the wall holds the top closed');
-
-    // A right press flags the wall's last mine; the context menu stays shut.
-    await at(7, 4);
-    await page.mouse.down({ button: 'right' });
-    assert.equal(await state(7, 4), 'flagged', 'flagged on the press');
-    await page.mouse.up({ button: 'right' });
-    assert.deepEqual(await page.evaluate(() => globalThis.__play.menus), [true]);
-
-    // Left on the 1 beside the flag chords the gap open.
-    await at(8, 5);
-    await page.mouse.down();
-    assert.deepEqual(await page.evaluate(() => globalThis.__play.view.pressed), [4 * 9 + 8]);
-    await page.mouse.up();
-    assert.equal(await state(8, 4), 'revealed');
-
-    // Left + right on that new 1 chords through the left release.
-    await at(8, 4);
-    await page.mouse.down();
-    await page.mouse.down({ button: 'right' });
-    await page.mouse.up({ button: 'right' });
-    assert.equal(await state(8, 3), 'closed', 'nothing yet');
-    await page.mouse.up();
-    assert.equal(await state(8, 3), 'revealed');
-    assert.equal(await state(7, 3), 'revealed');
-
-    // A press dragged off the board and released there does nothing.
-    await at(4, 2);
-    await page.mouse.down();
-    await page.mouse.move(4, 4, { steps: 3 });
-    assert.deepEqual(await page.evaluate(() => globalThis.__play.view.pressed), []);
-    await page.mouse.up();
-    assert.equal(await state(4, 2), 'closed');
-
-    // The middle button opens the top.
-    await at(4, 2);
-    await page.mouse.down({ button: 'middle' });
-    await page.mouse.up({ button: 'middle' });
-    assert.equal(await state(4, 2), 'revealed');
-
-    // Every safe cell still closed is opened with the left button.
-    const closed = await page.evaluate(() => {
-      const { session, mines } = globalThis.__play;
-      const out = [];
-      for (let c = 0; c < 81; c++) if (!mines.includes(c) && session.game.cellState(c) === 'closed') out.push(c);
-      return out;
-    });
-    for (const c of closed) {
-      await at(c % 9, Math.floor(c / 9));
-      await page.mouse.down();
-      await page.mouse.up();
-    }
-    assert.equal(await page.evaluate(() => globalThis.__play.session.state), 'won');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
 });

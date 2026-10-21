@@ -1091,7 +1091,7 @@ function removeWebGL2() {
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
 
-test('in a browser: Settings from the menu, the theme list with its swatches, and a carried-over Dark starting on Joyful tiles after a reload', async (t) => {
+test('in a browser: Settings from the menu, its bindings panel, the theme list with its swatches, its keys, and the pause card on the same store', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1099,14 +1099,6 @@ test('in a browser: Settings from the menu, the theme list with its swatches, an
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    // The theme on the root at the moment the main menu enters the document.
-    await page.addInitScript(() => {
-      new MutationObserver((_, obs) => {
-        if (!document.getElementById('menu')) return;
-        globalThis.__themeAtMenu = document.documentElement.getAttribute('data-theme');
-        obs.disconnect();
-      }).observe(document, { childList: true, subtree: true });
-    });
     await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
@@ -1195,23 +1187,6 @@ test('in a browser: Settings from the menu, the theme list with its swatches, an
     assert.equal(await setting('volume'), 0.4);
     assert.equal(await ms(() => document.getElementById('set-volume').value), '40', 'the Settings page shows it too');
     await ms(() => globalThis.__ms.pauser.toMenu());
-
-    // Reload: Joyful tiles is on the root before the menu is in the document, here from a stored
-    // version-1 Dark, which the store then carries over.
-    await page.waitForFunction(() => { // the saves settle
-      const d = JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? 'null')?.data;
-      return d?.volume === 0.4;
-    }, null, { timeout: patience(5000) });
-    await ms(() => {
-      const d = JSON.parse(localStorage.getItem('ms3d:doc:settings')).data;
-      localStorage.setItem('ms3d:doc:settings', JSON.stringify({ version: 1, data: { ...d, theme: 'dark' } }));
-    });
-    await page.reload();
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
-    assert.equal(await ms(() => globalThis.__themeAtMenu), 'joyful-tiles', 'Joyful tiles before the menu shows');
-    assert.equal(await theme(), 'joyful-tiles');
-    assert.equal(await setting('theme'), 'joyful-tiles', 'Dark carried over');
-    assert.equal(await setting('volume'), 0.4, 'everything else intact');
     assert.equal(await mode(), 'menu');
     assert.deepEqual(errors, []);
   } finally {

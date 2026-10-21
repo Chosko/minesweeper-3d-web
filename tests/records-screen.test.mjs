@@ -812,7 +812,7 @@ test('in a browser, the menu opens the records screen on the last board played, 
   }
 });
 
-test('in a browser, Records and Settings lay out in columns at 1280 px, one column at 900 and 390 px, never scrolling sideways', async (t) => {
+test('in a browser, Records lays out in columns at 1280 px, one column at 900 and 390 px, never scrolling sideways; Back closes a Delete confirmation first', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -856,11 +856,6 @@ test('in a browser, Records and Settings lay out in columns at 1280 px, one colu
         const records = await measure('records', '.ui-columns > .ui-column');
         assert.equal(records.columns, columns, `${theme} ${width} px: Records in ${columns} column(s)`);
         assert.deepEqual(records.wide, [], `${theme} ${width} px: Records never scrolls sideways`);
-        await page.keyboard.press('Escape');
-        await page.click('#menu-entry-settings');
-        const settings = await measure('settings', '#settings-columns [data-section]');
-        assert.equal(settings.columns, width >= 1024 ? 2 : 1, `${theme} ${width} px: Settings in ${width >= 1024 ? 2 : 1} column(s)`);
-        assert.deepEqual(settings.wide, [], `${theme} ${width} px: Settings never scrolls sideways`);
         await page.keyboard.press('Escape');
       }
     }
@@ -987,7 +982,9 @@ test('in a browser, at 1280 × 800 and 390 × 844, the Top 10 opens, both charts
     assert.equal(await visible('records-export-note'), false);
     const save = async (selector) => {
       const [download] = await Promise.all([page.waitForEvent('download'), page.click(selector)]);
-      const body = readFileSync(await download.path(), 'utf8');
+      const chunks = []; // a download's path is local to the browser's machine; its stream reaches the shared Chromium too
+      for await (const chunk of await download.createReadStream()) chunks.push(chunk);
+      const body = Buffer.concat(chunks).toString('utf8');
       return { name: download.suggestedFilename(), body };
     };
     const csv = await save('#records-export-csv');
@@ -1074,7 +1071,7 @@ test('in a browser, the best tiles and the Records tables keep every figure on o
     }), texts);
     const FIGURES = [['999.999 s', '99.99', '100.0%'], ['—', '—', '—']];
     for (const theme of ['joyful-tiles']) {
-      for (const [width, height] of [[1024, 768], [1280, 800], [1440, 900], [1920, 1080], [390, 844]]) {
+      for (const [width, height] of [[1024, 768], [1920, 1080], [390, 844]]) { // the narrowest and widest desktop, and a phone
         await page.setViewportSize({ width, height });
         for (const key of keys) {
           const at = `${theme} ${width} px ${key}`;

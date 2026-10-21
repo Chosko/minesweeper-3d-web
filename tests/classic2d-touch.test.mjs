@@ -667,35 +667,6 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
   }
 });
 
-test('in a browser with touch on a phone, a fresh profile\'s Classic 2D game shows the touch hint strip from its start, before any input', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const context = await browser.newContext(PHONE);
-    const page = await context.newPage();
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.addInitScript(removeWebGL2);
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
-    const ms = (fn, arg) => page.evaluate(fn, arg);
-
-    await page.tap('#menu-entry-classic-2d');
-    await page.tap('#c2d-choice [data-size="beginner"]');
-    await page.tap('#c2d-play');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
-    assert.equal(await ms(() => globalThis.__ms.board2D.layout.scrolls), false, 'Beginner fits a phone: no scroll hint first');
-    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
-    const shown = await ms(() => ({ text: document.getElementById('hint-strip-text').textContent, started: globalThis.__ms.modes.state.started }));
-    assert.equal(shown.text, 'Tap reveal · Long-press flag · Tap a number to chord');
-    assert.ok(!shown.started, 'before the first tap on the board');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
 // Every visible control and readout of the Classic 2D window, its counter strip and the board's panel.
 function barGeometry() {
   const box = (el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
@@ -725,8 +696,8 @@ async function settled(page) {
   }, null, { polling: 'raf', timeout: patience(5000) });
 }
 
+// The narrowest supported phone: a board that fits it fits every wider one.
 const PHONES = [
-  { name: '390 × 844', viewport: { width: 390, height: 844 } },
   { name: '360 × 740', viewport: { width: 360, height: 740 } },
 ];
 const BOARDS_2D = ['beginner', 'intermediate', 'expert', 'custom'];

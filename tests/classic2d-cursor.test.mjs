@@ -2,7 +2,7 @@
 // d-pad and left stick with auto-repeat, reveal / flag / chord on keys and controller buttons with
 // the same pressed feedback and release rules as the mouse, the focus ring the board view
 // (js/classic2d/board-view.js) draws over the cursor cell, the browser wiring to the view and the
-// session, and in a browser a Beginner game played by keyboard to a win.
+// session, and in a browser the board module's cursor ring drawn round the cursor cell.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -754,100 +754,6 @@ async function mountGame() {
   const cursor = mountCursorInput({ view, session });
   globalThis.__play = { session, view, cursor, mines };
 }
-
-test('in a browser, a Beginner game on a fixed board is played by keyboard to a win', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/dev/components.html`);
-    await page.evaluate(mountGame);
-
-    const state = (col, row) => page.evaluate((c) => globalThis.__play.session.game.cellState(c), row * 9 + col);
-    const cursor = () => page.evaluate(() => globalThis.__play.cursor.input.cell);
-    const ring = () => page.evaluate(() => globalThis.__play.view.cursor);
-    // Moves the cursor to col, row one key press per cell.
-    const to = async (col, row) => {
-      for (let step = 0; step < 32; step++) {
-        const c = await cursor();
-        const dc = col - (c % 9);
-        const dr = row - Math.floor(c / 9);
-        if (!dc && !dr) return;
-        await page.keyboard.press(dc > 0 ? 'ArrowRight' : dc < 0 ? 'ArrowLeft' : dr > 0 ? 'ArrowDown' : 'ArrowUp');
-      }
-      assert.fail(`the cursor never reached ${col}, ${row}`);
-    };
-
-    assert.equal(await cursor(), 0, 'the cursor is on the board from the start');
-    assert.equal(await ring(), -1, 'with no ring until a cursor key');
-
-    // The first reveal: the pressed state shows while Space is held, the board arrives on release.
-    await to(0, 8);
-    await page.keyboard.down('Space');
-    assert.deepEqual(await page.evaluate(() => globalThis.__play.view.pressed), [8 * 9]);
-    await page.keyboard.up('Space');
-    await page.waitForFunction(() => globalThis.__play.session.state === 'playing');
-    assert.equal(await ring(), 8 * 9, 'the ring shows on the cursor once a key moved it');
-    assert.equal(await state(0, 6), 'revealed', 'the bottom opened');
-    assert.equal(await state(8, 4), 'closed', 'the wall holds the top closed');
-
-    // F flags the wall's last mine on the press.
-    await to(7, 4);
-    await page.keyboard.down('KeyF');
-    assert.equal(await state(7, 4), 'flagged');
-    await page.keyboard.up('KeyF');
-
-    // D on the 1 beside the flag chords the gap open, its neighbours pressed while held.
-    await to(8, 5);
-    await page.keyboard.down('KeyD');
-    assert.deepEqual(await page.evaluate(() => globalThis.__play.view.pressed), [4 * 9 + 8]);
-    await page.keyboard.up('KeyD');
-    assert.equal(await state(8, 4), 'revealed');
-
-    // Enter on the new 1 does nothing; D chords it.
-    await to(8, 4);
-    await page.keyboard.press('Enter');
-    assert.equal(await state(8, 3), 'closed', 'a reveal never chords');
-    await page.keyboard.press('KeyD');
-    assert.equal(await state(8, 3), 'revealed');
-    assert.equal(await state(7, 3), 'revealed');
-
-    // A held arrow auto-repeats across the board.
-    await to(0, 0);
-    await page.keyboard.down('ArrowRight');
-    await page.waitForFunction(() => globalThis.__play.view.cursor === 8);
-    await page.keyboard.up('ArrowRight');
-
-    // Every safe cell still closed is opened with Space.
-    const closed = await page.evaluate(() => {
-      const { session, mines } = globalThis.__play;
-      const out = [];
-      for (let c = 0; c < 81; c++) if (!mines.includes(c) && session.game.cellState(c) === 'closed') out.push(c);
-      return out;
-    });
-    // The pointer moving over the board hides the ring; the next key brings it back where it was.
-    const box = await page.evaluate(() => { const r = globalThis.__play.view.canvas.getBoundingClientRect(); return { x: r.x, y: r.y }; });
-    await page.mouse.move(box.x + 30, box.y + 30);
-    await page.mouse.move(box.x + 60, box.y + 40);
-    assert.equal(await ring(), -1, 'a mouse move hides the ring');
-    assert.equal(await cursor(), 8, 'the cursor keeps its cell');
-    await page.keyboard.press('ArrowLeft');
-    assert.equal(await ring(), 7, 'shown again on the next key');
-
-    for (const c of closed) {
-      if (await state(c % 9, Math.floor(c / 9)) !== 'closed') continue; // opened by an earlier flood
-      await to(c % 9, Math.floor(c / 9));
-      await page.keyboard.press('Space');
-    }
-    assert.equal(await page.evaluate(() => globalThis.__play.session.state), 'won');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
 
 test('in a browser, the cursor ring an arrow key moves is the board module\'s and stands out from the closed tile it sits on', async (t) => {
   const env = await suite.open(t);

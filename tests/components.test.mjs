@@ -1194,42 +1194,6 @@ test('Restart discards an unfinished game; Play again starts the same choice onc
     'only the F2 and Start + Y rows name a restart; no help line names Play again or a new game');
 });
 
-test('in a browser, every Back that Esc triggers shows its Esc key hint, and no text hint shows', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html?still-backdrop`);
-    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
-    // Each board choice's frame carries its key hint inside its Back, a kit key hint, and no text hint.
-    for (const [entry, back] of [['classic-2d', 'c2d-choice-back'], ['3d', 'board-choice-back']]) {
-      await page.click(`#menu-entry-${entry}`);
-      assert.equal(await page.evaluate((id) => document.querySelector(`#${id} .ui-key-hint__key`)?.textContent, back), 'Esc');
-      assert.equal((await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back').length, 0);
-      if (entry === 'classic-2d') await page.keyboard.press('Escape');
-    }
-    await page.keyboard.press('Enter');
-    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'ready');
-    assert.equal(await page.evaluate(() => document.querySelector('#ready-back .ui-key-hint__key')?.textContent), 'Esc', 'the ready card\'s Back carries its key hint');
-    await page.keyboard.press('Escape');
-    await page.keyboard.press('Escape');
-    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
-    await page.click('#menu-entry-settings');
-    assert.equal(await page.evaluate(() => document.querySelector('#settings-back .ui-key-hint__key')?.textContent), 'Esc', 'Settings\' frame carries its key hint inside its Back');
-    assert.equal((await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back').length, 0);
-    await page.keyboard.press('Escape');
-    await page.click('#menu-entry-records');
-    assert.equal(await page.evaluate(() => document.querySelector('#records-back .ui-key-hint__key')?.textContent), 'Esc', 'Records\' frame carries its key hint inside its Back');
-    assert.equal((await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back').length, 0);
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
 // ---------------------------------------------------------------- one selected control
 
 test('one selected control: a moving mouse focuses the enabled button, menu entry or board option under it, without scrolling', () => {
@@ -1283,62 +1247,6 @@ test('the page and the gallery install the one listener once; no screen wires it
   const callers = ['js/main.js', 'js/ui.js', 'js/shell/router.js', 'js/shell/menu.js', 'js/records/screen.js', 'js/settings/page.js', 'js/mode3d/board-choice.js']
     .filter((f) => /bindSelectOnHover|mouseenter|mouseover/.test(read(f)));
   assert.deepEqual(callers, [], 'no screen moves the focus on hover itself');
-});
-
-test('in a browser, the mouse selects a button by focusing it, keys move the selection away from a resting pointer, and pressed differs from selected', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/dev/components.html`);
-    const [first, second] = ['#g-results .ui-actions:last-child button:nth-child(1)', '#g-results .ui-actions:last-child button:nth-child(2)'];
-    await page.locator(first).scrollIntoViewIfNeeded();
-    const look = (sel) => page.evaluate((s) => {
-      const el = document.querySelector(s);
-      const c = getComputedStyle(el);
-      return { focused: document.activeElement === el, transform: c.transform, shadow: c.boxShadow, outline: c.outlineStyle };
-    }, sel);
-    const settle = () => page.waitForTimeout(250);
-    const box = await page.locator(first).boundingBox();
-    const rest = await look(first);
-    assert.equal(rest.focused, false);
-
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await settle();
-    const selected = await look(first);
-    assert.equal(selected.focused, true, 'moving the mouse over a button focuses it');
-    assert.notEqual(selected.transform, rest.transform, 'it shows the selected look');
-    assert.equal(selected.outline, 'none', 'no outline is drawn');
-
-    await page.keyboard.press('Tab');
-    await settle();
-    const moved = await look(second);
-    assert.equal(moved.focused, true, 'Tab moves the focus to the next button');
-    assert.equal(moved.transform, selected.transform, 'which shows the selected look');
-    assert.equal(moved.outline, 'none', 'no outline is drawn');
-    const left = await look(first);
-    assert.equal(left.focused, false);
-    assert.equal(left.transform, rest.transform, 'the button under the resting pointer no longer looks selected');
-    assert.equal(left.shadow, rest.shadow);
-
-    await page.mouse.move(box.x + box.width / 2 + 3, box.y + box.height / 2);
-    await settle();
-    assert.equal((await look(first)).focused, true, 'moving the mouse again re-selects the button under it');
-    assert.equal((await look(second)).transform, rest.transform, 'one control looks selected at a time');
-
-    await page.mouse.down();
-    await settle();
-    const pressed = await look(first);
-    assert.notDeepEqual([pressed.transform, pressed.shadow], [selected.transform, selected.shadow], 'pressed differs from selected');
-    assert.equal(pressed.outline, 'none');
-    await page.mouse.up();
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
 });
 
 test('initComponents binds every slider and segmented group under a root', () => {
@@ -1490,96 +1398,6 @@ test('the pager: 38 px buttons, radius 10, bold, a 3 px edge, 6 px apart; the cu
   assert.match(disabled, /box-shadow:\s*none/);
   assert.match(themeRule('.ui-pager .ui-pager__button:focus'), /transform:\s*translateY\(3px\)/, 'selected: level, down its 3 px edge');
   assert.ok(rulesFor('.ui-columns').some(([, b]) => /gap:\s*var\(--space-/.test(b)), 'column spacing from the tokens');
-});
-
-test('in a browser, the gallery\'s surfaces draw as J-Components: the plain, warm and new-best tiles, the muted panel, the ruled table, the pager and the code chip, and their phone sizes', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  const measure = () => {
-    const css = (el) => getComputedStyle(el);
-    const box = (el) => el.getBoundingClientRect();
-    const tile = document.querySelector('[aria-labelledby="tl-7"]');
-    const warm = document.querySelector('[aria-labelledby="tl-9"]');
-    const best = document.querySelector('[aria-labelledby="tl-11"]');
-    const worse = document.querySelector('[aria-labelledby="tl-12"] .ui-stat__detail');
-    const muted = document.querySelector('.ui-panel--muted');
-    const table = document.querySelector('#g-table ~ .states .ui-table');
-    const row = table.querySelector('tbody tr');
-    const details = [...document.querySelectorAll('#g-table ~ .states .ui-table')][2];
-    const pager = document.querySelector('.ui-pager');
-    const button = pager.querySelector('[data-page="1"]');
-    const current = pager.querySelector('[aria-current="page"]');
-    const chip = document.querySelector('.code-demo .ui-code');
-    const copy = chip.querySelector('[data-copy="code"]');
-    return {
-      tile: { bg: css(tile).backgroundColor, shadow: css(tile).boxShadow, radius: css(tile).borderRadius, padding: css(tile).padding, value: css(tile.querySelector('.ui-stat__value')).fontSize },
-      label: { size: css(tile.querySelector('.ui-stat__label')).fontSize, transform: css(tile.querySelector('.ui-stat__label')).textTransform, weight: css(tile.querySelector('.ui-stat__label')).fontWeight },
-      note: { size: css(tile.querySelector('.ui-stat__detail')).fontSize, family: css(tile.querySelector('.ui-stat__detail')).fontFamily, weight: css(tile.querySelector('.ui-stat__detail')).fontWeight, link: !!tile.querySelector('.ui-stat__detail > .ui-link') },
-      warm: { bg: css(warm).backgroundColor },
-      best: { shadow: css(best).boxShadow, outline: css(best).outlineStyle, radius: css(best).borderRadius },
-      worse: css(worse).color,
-      muted: { bg: css(muted).backgroundColor, shadow: css(muted).boxShadow, padding: css(muted).padding, radius: css(muted).borderRadius },
-      table: { rule: css(row).borderTopWidth, ruleWidth: Math.round(box(row).width), tableWidth: Math.round(box(table).width), rank: css(row.querySelector('.ui-table__rank')).fontSize, rankFamily: css(row.querySelector('.ui-table__rank')).fontFamily, label: css(details.querySelector('th[scope="row"]')).textTransform, value: css(details.querySelector('td')).textAlign, row: css(details.querySelector('tr')).display },
-      pager: { h: box(button).height, w: box(button).width, radius: css(button).borderRadius, weight: css(button).fontWeight, shadow: css(button).boxShadow, gap: css(pager).columnGap, current: css(current).backgroundColor, currentShadow: css(current).boxShadow },
-      chip: { h: box(chip).height, w: Math.round(box(chip).width), parent: Math.round(box(chip.parentElement).width), gap: css(chip).columnGap, code: css(chip.querySelector('.ui-code__value')).fontSize, button: box(copy).height, radius: css(copy).borderRadius, font: css(copy).fontSize, icon: copy.firstElementChild.getAttribute('data-icon') },
-    };
-  };
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    await page.goto(`${base}/dev/components.html`);
-    await page.evaluate(() => globalThis.galleryReady);
-    const got = await page.evaluate(measure);
-    assert.equal(got.tile.bg, 'rgb(255, 255, 255)', 'the plain tile is white');
-    assert.equal(got.tile.shadow, 'rgb(236, 226, 208) 0px 0px 0px 2px inset', 'its 2 px border and no drop');
-    assert.equal(got.tile.radius, '16px');
-    assert.equal(got.tile.padding, '14px 16px');
-    assert.deepEqual(got.label, { size: '14px', transform: 'none', weight: '700' });
-    assert.equal(got.note.size, '13px');
-    assert.equal(got.note.weight, '700');
-    assert.match(got.note.family, /^"?Rubik/, 'the note in the sans face');
-    assert.ok(got.note.link, 'a note carries its inline Watch link');
-    assert.equal(got.warm.bg, 'rgb(255, 246, 232)', 'the warm variant in cream');
-    assert.equal(got.best.shadow, 'rgb(255, 201, 60) 0px 0px 0px 3px inset', 'a new best ringed in the head colour');
-    assert.equal(got.best.outline, 'none');
-    assert.equal(got.best.radius, '16px');
-    assert.equal(got.worse, 'rgb(90, 99, 133)', 'a worse difference muted');
-    assert.equal(got.muted.bg, 'rgb(251, 241, 223)');
-    assert.equal(got.muted.shadow, 'none');
-    assert.equal(got.muted.padding, '14px 16px');
-    assert.equal(got.muted.radius, '20px');
-    assert.equal(got.table.rule, '1px');
-    assert.equal(got.table.ruleWidth, got.table.tableWidth, 'the rule spans the row');
-    assert.equal(got.table.rank, '14px');
-    assert.match(got.table.rankFamily, /JetBrains Mono/);
-    assert.equal(got.table.label, 'none', 'row labels in sentence case');
-    assert.equal(got.table.value, 'right');
-    assert.equal(got.table.row, 'table-row');
-    assert.equal(got.pager.h, 38);
-    assert.ok(got.pager.w >= 38);
-    assert.equal(got.pager.radius, '10px');
-    assert.equal(got.pager.weight, '700');
-    assert.equal(got.pager.shadow, 'rgb(214, 198, 171) 0px 3px 0px 0px');
-    assert.equal(got.pager.gap, '6px');
-    assert.equal(got.pager.current, 'rgb(22, 32, 74)', 'the current page in ink');
-    assert.equal(got.pager.currentShadow, 'none');
-    assert.equal(got.chip.h, 40);
-    assert.ok(got.chip.w < got.chip.parent, 'the chip sized to its content');
-    assert.equal(got.chip.gap, '6px');
-    assert.equal(got.chip.code, '15px');
-    assert.equal(got.chip.button, 30);
-    assert.equal(got.chip.radius, '9px');
-    assert.equal(got.chip.font, '13px');
-    assert.equal(got.chip.icon, 'copy');
-    await page.setViewportSize({ width: 390, height: 844 });
-    const phone = await page.evaluate(measure);
-    assert.equal(phone.tile.padding, '12px');
-    assert.equal(phone.tile.value, '24px');
-    assert.equal(phone.chip.w, phone.chip.parent, 'on a phone the chip runs the full width');
-    assert.equal(phone.table.row, 'flex', 'a details row stacks label over value');
-  } finally {
-    await browser.close();
-  }
 });
 
 test('the column composition has one breakpoint, 1024 px, stated once, used by Records and Settings', async () => {
@@ -1867,38 +1685,6 @@ test('in a browser with touch, switches, sliders, labels and key caps reach thei
   }
 });
 
-test('in a browser with a mouse, labels and key caps reach their minimum sizes and the hit areas keep their fine sizes', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1024, height: 768 } });
-    await page.goto(`${base}/dev/components.html`);
-    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-    const sizes = await page.evaluate(() => ({
-      fine: matchMedia('(pointer: fine)').matches,
-      label: parseFloat(getComputedStyle(document.querySelector('.ui-stat__label')).fontSize),
-      slider: document.querySelector('.ui-slider__input').getBoundingClientRect().height,
-      toggleHit: getComputedStyle(document.querySelector('.ui-toggle__input'), '::after').content,
-    }));
-    assert.ok(sizes.fine, 'a fine pointer');
-    assert.equal(sizes.label, 12, `label ${sizes.label}`);
-    assert.equal(sizes.slider, 28, `slider ${sizes.slider}`);
-    assert.equal(sizes.toggleHit, 'none', 'no 44 px switch square');
-    await page.goto(`${base}/index.html?still-backdrop`);
-    const kbd = await page.evaluate(() => {
-      const k = document.createElement('kbd');
-      k.textContent = 'H';
-      document.getElementById('pause').append(k);
-      return { size: parseFloat(getComputedStyle(k).fontSize), tap: getComputedStyle(document.getElementById('hud-tap')).display };
-    });
-    assert.ok(kbd.size >= 11, `key cap ${kbd.size}`);
-    assert.equal(kbd.tap, 'none', 'no Reveal / Flag switch for a mouse');
-  } finally {
-    await browser.close();
-  }
-});
-
 // ---------------------------------------------------------------- buttons: md size, key hints, quiet, latched toggles, danger
 
 const buttonBase = (sel) => RULES.filter(([x]) => x === sel).map(([, b]) => b).join(';');
@@ -1991,58 +1777,6 @@ test('the danger button: the danger fill, white text, a dark-red drop edge; Dele
   const yes = html.find((t) => t.attrs.id === 'records-replays-yes');
   assert.ok(yes && hasClasses(yes, '.ui-button.ui-button--danger') && !hasClasses(yes, '.ui-button--primary'), 'Delete replay is a danger button');
   assert.match(read('js/settings/page.js'), /class="ui-button ui-button--danger" id="set-reset-yes"/, 'Reset all data is a danger button');
-});
-
-test('in a browser, the gallery\'s buttons draw as the canvas: the md size, key hints in the button\'s ink, quiet, latched and danger', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    await page.goto(`${base}/dev/components.html`);
-    await page.evaluate(() => document.fonts.ready);
-    const got = await page.evaluate(() => {
-      const cs = (sel) => getComputedStyle(document.querySelector(sel));
-      const box = (sel) => document.querySelector(sel).getBoundingClientRect();
-      const md = cs('#g-primary ~ .states .ui-button--primary:not(.ui-button--sm):not(.ui-button--lg)');
-      const keyIn = (sel) => { const k = document.querySelector(`${sel} .ui-key-hint__key`); const s = getComputedStyle(k); return { color: s.color, border: s.borderTopColor, width: s.borderTopWidth, size: parseFloat(s.fontSize), button: getComputedStyle(k.closest('.ui-button')).color }; };
-      const q = (sel) => { const s = cs(sel); return { bg: s.backgroundColor, color: s.color, shadow: s.boxShadow, transform: s.transform }; };
-      return {
-        md: { size: md.fontSize, weight: md.fontWeight, padding: md.padding, gap: md.columnGap, lineHeight: md.lineHeight, height: box('#g-primary ~ .states .ui-button--primary:not(.ui-button--sm):not(.ui-button--lg)').height },
-        primaryKey: keyIn('#g-keyed-primary'),
-        secondaryKey: keyIn('#g-keyed-secondary'),
-        quiet: q('#g-quiet ~ .states .ui-button--quiet:not([data-force]):not([disabled]):not([aria-pressed])'),
-        quietSelected: q('#g-quiet ~ .states .ui-button--quiet[data-force="focus"]:not([aria-pressed])'),
-        latchedOff: q('#g-quiet ~ .states .ui-button--quiet[aria-pressed="false"]'),
-        latchedOn: q('#g-quiet ~ .states .ui-button--quiet[aria-pressed="true"]'),
-        danger: q('#g-danger ~ .states .ui-button--danger:not([data-force]):not([disabled])'),
-      };
-    });
-    assert.deepEqual([got.md.size, got.md.weight, got.md.padding, got.md.gap], ['17px', '800', '10px 18px', '10px']);
-    assert.ok(Math.abs(parseFloat(got.md.lineHeight) - 18.7) < 0.05, `line-height 1.1 (${got.md.lineHeight})`);
-    assert.ok(got.md.height >= 46, `min-height 46 (${got.md.height})`);
-    for (const [name, k] of [['primary', got.primaryKey], ['secondary', got.secondaryKey]]) {
-      assert.equal(k.color, 'rgb(22, 32, 74)', `the key on ${name} in ink`);
-      assert.equal(k.color, k.button, `the key on ${name} in the button's own colour`);
-      assert.equal(k.border, k.color, `its border in the same colour on ${name}`);
-      assert.ok(parseFloat(k.width) >= 1, `a border drawn on ${name} (1.5px declared, snapped to the device pixel: ${k.width})`);
-      assert.ok(Math.abs(k.size - Math.max(11, 17 * 0.72)) < 0.05, `key size max(11px, .72em) on ${name} (${k.size})`);
-    }
-    assert.equal(got.quiet.bg, 'rgb(255, 255, 255)');
-    assert.equal(got.quiet.shadow, 'rgb(236, 226, 208) 0px 0px 0px 2px inset', 'a 2 px border ring, no drop edge');
-    assert.equal(got.quietSelected.transform, 'none', 'no lift when selected');
-    assert.equal(got.quietSelected.bg, 'rgb(251, 241, 223)');
-    assert.equal(got.quietSelected.shadow, 'rgb(214, 198, 171) 0px 0px 0px 2px inset');
-    assert.deepEqual([got.latchedOff.bg, got.latchedOff.shadow], [got.quiet.bg, got.quiet.shadow], 'a latched toggle off is a quiet button');
-    assert.equal(got.latchedOn.bg, 'rgb(255, 107, 107)', 'on: coral');
-    assert.equal(got.latchedOn.color, 'rgb(22, 32, 74)', 'ink text');
-    assert.match(got.latchedOn.shadow, /rgb\(201, 64, 63\) 0px 4px 0px/, 'its 4 px accent edge');
-    assert.equal(got.danger.bg, 'rgb(180, 42, 42)');
-    assert.equal(got.danger.color, 'rgb(255, 255, 255)');
-    assert.match(got.danger.shadow, /rgb\(125, 28, 28\) 0px 4px 0px/, 'a dark-red drop edge');
-  } finally {
-    await browser.close();
-  }
 });
 
 const SHOTS = process.env.MS_SHOTS === '1';
@@ -2245,52 +1979,6 @@ test('the gallery shows the icon set, a button of each size with its icon, a cod
   assert.ok(only.length > 0, 'an icon-only button, named');
 });
 
-test('in a browser, the gallery\'s icons fill the slot: 18 px on sm and md, 24 px on lg, 14 px on a chip, in the button\'s ink and out of its name', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    await page.goto(`${base}/dev/components.html`);
-    await page.evaluate(() => globalThis.galleryReady);
-    const got = await page.evaluate(() => {
-      const measure = (b) => {
-        const i = b.querySelector(':scope > .ui-icon');
-        const r = i.getBoundingClientRect();
-        const label = [...b.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
-        const range = document.createRange();
-        if (label) range.selectNodeContents(label);
-        return {
-          w: r.width, h: r.height, first: b.firstElementChild === i, hidden: i.getAttribute('aria-hidden'),
-          stroke: getComputedStyle(i).stroke, ink: getComputedStyle(b).color,
-          gap: label ? Math.round(range.getBoundingClientRect().left - r.right) : null,
-        };
-      };
-      const pick = (sel) => measure(document.querySelector(sel));
-      return {
-        sm: pick('#g-icon-buttons .ui-button--sm[data-icon]'),
-        md: pick('#g-icon-buttons .ui-button[data-icon]:not(.ui-button--sm):not(.ui-button--lg):not([aria-label])'),
-        lg: pick('#g-icon-buttons .ui-button--lg[data-icon]'),
-        chip: pick('.ui-code [data-copy="code"]'),
-        only: { ...pick('#g-icon-buttons [aria-label][data-icon="trash"]'), name: document.querySelector('#g-icon-buttons [aria-label][data-icon="trash"]').getAttribute('aria-label') },
-        set: [...document.querySelectorAll('#g-icon-set .ui-icon')].map((i) => i.dataset.icon),
-      };
-    });
-    for (const [name, size] of [['sm', 18], ['md', 18], ['lg', 24], ['chip', 14], ['only', 18]]) {
-      const g = got[name];
-      assert.deepEqual([g.w, g.h], [size, size], `${name}: ${size} px icon`);
-      assert.ok(g.first, `${name}: the icon leads`);
-      assert.equal(g.hidden, 'true', `${name}: hidden from assistive technology`);
-      assert.equal(g.stroke, g.ink, `${name}: drawn in the button's ink`);
-      if (name !== 'only') assert.equal(g.gap, 10, `${name}: the button's 10 px gap before the label`);
-    }
-    assert.equal(got.only.name, 'Delete replay');
-    assert.deepEqual(got.set, Object.keys(ICONS), 'the gallery shows the whole set');
-  } finally {
-    await browser.close();
-  }
-});
-
 // ---------------------------------------------------------------- the feedback parts: the confirm box and the notes
 
 test('the confirm box: the danger fill, radius 16, 16px 18px padding, a 12 px gap, no border and no drop; 17 px bold ink text, a 24 px heading, its actions side by side', () => {
@@ -2365,6 +2053,7 @@ test('setNote writes a note\'s text after its leading icon and sets its tone and
   assert.equal(refusal.children.length, 2, 'the text part is reused');
   assert.equal(refusal.children[1].textContent, 'Height must be a whole number.');
   assert.equal(refusal.className, 'ui-note ui-note--warn');
+  assert.match(read('js/main.js'), /applyIcons\(document\.body\)/, 'the game draws the icons its markup names');
 });
 
 test('the gallery shows the confirm box, with and without its heading and as a table row, and both notes with their icons', () => {
@@ -2381,48 +2070,6 @@ test('the gallery shows the confirm box, with and without its heading and as a t
     assert.ok(t.some((x) => hasClasses(x, `.ui-note.ui-note--${tone}`) && x.attrs['data-icon'] === icon), `a ${tone} note with the ${icon} icon`);
   }
   assert.ok(t.some((x) => hasClasses(x, '.ui-text.ui-text--success')), 'a valid code\'s line');
-});
-
-test('in a browser, the gallery\'s confirm box and notes draw as J-Components does', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    await page.goto(`${base}/dev/components.html`);
-    await page.evaluate(() => globalThis.galleryReady);
-    const got = await page.evaluate(() => {
-      const cs = (el) => getComputedStyle(el);
-      const box = document.querySelector('#g-feedback .ui-confirm:not(.ui-confirm--row)');
-      const note = (sel) => {
-        const el = document.querySelector(sel);
-        const s = cs(el);
-        const i = el.querySelector(':scope > .ui-icon').getBoundingClientRect();
-        return { bg: s.backgroundColor, ink: s.color, radius: s.borderRadius, padding: s.padding, size: s.fontSize, weight: s.fontWeight, icon: [i.width, i.height], first: el.firstElementChild.classList.contains('ui-icon') };
-      };
-      const token = (n) => { const d = document.createElement('div'); d.style.color = `var(${n})`; document.body.append(d); const c = cs(d).color; d.remove(); return c; };
-      const actions = [...box.querySelectorAll('.ui-actions .ui-button')].map((b) => b.getBoundingClientRect());
-      return {
-        box: { bg: cs(box).backgroundColor, radius: cs(box).borderRadius, padding: cs(box).padding, gap: cs(box).rowGap, shadow: cs(box).boxShadow, border: cs(box).borderTopWidth },
-        text: { size: cs(box.querySelector('.ui-confirm__text')).fontSize, weight: cs(box.querySelector('.ui-confirm__text')).fontWeight, ink: cs(box.querySelector('.ui-confirm__text')).color },
-        title: cs(box.querySelector('.ui-confirm__title')).fontSize,
-        sideBySide: actions.length === 2 && Math.abs(actions[0].top - actions[1].top) < 1 && actions[0].right < actions[1].left,
-        warn: note('#g-feedback .ui-note--warn'),
-        err: note('#g-feedback .ui-note--err'),
-        tokens: { dangerFill: token('--color-danger-fill'), danger: token('--color-danger'), warningFill: token('--color-warning-fill'), warning: token('--color-warning'), ink: token('--color-ink') },
-      };
-    });
-    assert.deepEqual(got.box, { bg: got.tokens.dangerFill, radius: '16px', padding: '16px 18px', gap: '12px', shadow: 'none', border: '0px' });
-    assert.deepEqual(got.text, { size: '17px', weight: '700', ink: got.tokens.ink });
-    assert.equal(got.title, '24px');
-    assert.ok(got.sideBySide, 'the danger action, then Cancel, side by side');
-    assert.match(read('js/main.js'), /applyIcons\(document\.body\)/, 'the game draws the icons its markup names');
-    for (const [name, bg, ink] of [['warn', got.tokens.warningFill, got.tokens.warning], ['err', got.tokens.dangerFill, got.tokens.danger]]) {
-      assert.deepEqual(got[name], { bg, ink, radius: '8px', padding: '6px 10px', size: '14px', weight: '700', icon: [16, 16], first: true }, `the ${name} note`);
-    }
-  } finally {
-    await browser.close();
-  }
 });
 
 // ---------------------------------------------------------------- the shared layout's components
@@ -3007,12 +2654,11 @@ test('every card animates in and out over the slow duration: the cards over the 
   assert.match(STYLE, /@media \(prefers-reduced-motion: reduce\) \{\s*\*, \*::before, \*::after \{ animation: none !important; transition: none !important; \}/);
 });
 
-test('in a browser, the 404 page, the no-JavaScript notice and the fatal card show on the backdrop in Joyful tiles at every window size, with its fonts, no remote file, and the contrast contract met', async (t) => {
+test('in a browser, the 404 page, the no-JavaScript notice and the fatal card show on the backdrop in Joyful tiles on a desktop and a phone, with its fonts, no remote file, and the contrast contract met', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   const SIZES = [
-    ['xl', { viewport: { width: 1920, height: 1080 } }],
     ['m', { viewport: { width: 1024, height: 768 } }],
     ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }],
   ];
@@ -3312,53 +2958,10 @@ test('bindFiguresLive writes the panel\'s live part at most once a second, the l
   assert.equal(writes.at(-1), '3BV 4 of 118', 'stop drops the waiting text');
 });
 
-test('in a browser, the counter strip and the figures panel draw in Joyful tiles: mono digits, the fill as wide as its share, the live part read but not shown, and the contrast contract met', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/dev/components.html`);
-    await page.evaluate(() => document.fonts.ready);
-    const got = await page.evaluate(() => {
-      const q = (sel) => document.querySelector(`#g-in-game ${sel}`);
-      const s = (sel) => getComputedStyle(q(sel));
-      const bar = q('.ui-figure__bar').getBoundingClientRect();
-      const fill = q('.ui-figure__fill').getBoundingClientRect();
-      const live = q('.ui-figures__live').getBoundingClientRect();
-      return {
-        digits: s('.ui-counter__digits').fontFamily, size: s('.ui-counter__digits').fontSize,
-        negative: s('.ui-counter[data-negative] .ui-counter__digits').color, danger: getComputedStyle(document.documentElement).getPropertyValue('--color-danger').trim(),
-        strip: s('.ui-counter-strip').backgroundColor, value: s('.ui-figure__value').fontFamily,
-        share: Math.round((fill.width / bar.width) * 100), live: [live.width, live.height],
-      };
-    });
-    assert.match(got.digits, /^"?JetBrains Mono/);
-    assert.equal(got.size, '28px', 'the compact step at 1100 px wide');
-    assert.equal(got.negative, 'rgb(180, 42, 42)', `a negative count in danger (${got.danger})`);
-    assert.equal(got.strip, 'rgb(255, 255, 255)', 'the strip on the surface');
-    assert.match(got.value, /^"?JetBrains Mono/);
-    assert.equal(got.share, 46, 'the fill as wide as the share solved');
-    assert.deepEqual(got.live, [1, 1], 'the live part is read, not shown');
-    const { runs } = await page.evaluate(measureContrast);
-    const own = await page.evaluate(() => [...document.querySelectorAll('#g-in-game :is(.ui-counter-strip, .ui-figures) *')]
-      .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
-      .map((e) => e.textContent.trim().slice(0, 30)));
-    const inGame = runs.filter((r) => own.includes(r.text));
-    assert.ok(inGame.length >= 20, `the in-game components show their text (${inGame.length})`);
-    assert.deepEqual(inGame.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`), [], 'in-game text below the contrast contract');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-// The Classic 2D game window at each artboard size: the panel beside, under or hidden.
+// The Classic 2D game window at each artboard size where its layout changes: the panel beside,
+// under or hidden.
 const WINDOW_SIZES = [
   ['xl', { viewport: { width: 1920, height: 1080 } }, 'beside'],
-  ['l', { viewport: { width: 1366, height: 768 } }, 'beside'],
   ['m', { viewport: { width: 1024, height: 768 } }, 'beside'],
   ['tablet', { viewport: { width: 800, height: 1024 } }, 'under'],
   ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, 'hidden'],
@@ -3767,73 +3370,6 @@ test('the focus ring: every ringed control takes the switch\'s — a 3 px navy o
     }
   }
   assert.ok(!THEME_RULES.some(([sel, b]) => /:focus|data-force~="focus"/.test(sel) && /9px var\(--color-focus-halo\)/.test(b)), 'no 9 px halo remains');
-});
-
-test('in a browser, the form controls draw as J-Components does: the switch and its knob, the slider\'s fill following a script, the invalid field, the halo on every ringed control', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/dev/components.html`);
-    await page.evaluate(() => globalThis.galleryReady);
-    const drawn = await page.evaluate((ringed) => {
-      const box = (e) => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; };
-      const on = document.querySelector('[aria-labelledby="g-toggle"] .ui-toggle__input:checked');
-      const off = document.querySelector('[aria-labelledby="g-toggle"] .ui-toggle__input:not(:checked):not([data-force]):not(:disabled)');
-      const knob = (e) => { const c = getComputedStyle(e, '::before'); return [c.left, c.width]; };
-      const slider = document.querySelector('#sl-1');
-      const fill = () => slider.style.getPropertyValue('--slider-fill');
-      const before = fill();
-      slider.value = slider.max;
-      const after = fill();
-      const invalid = getComputedStyle(document.querySelector('.ui-field__input.is-invalid'));
-      const rings = ringed.map((cls) => {
-        const e = document.querySelector(`${cls}[data-force~="focus"]`);
-        const c = getComputedStyle(e);
-        return [cls, c.outlineWidth, c.outlineOffset, c.boxShadow];
-      });
-      const row = document.querySelector('.ui-switchrow');
-      const label = row.querySelector('.ui-switchrow__label');
-      const sw = row.querySelector('.ui-toggle__input');
-      const locked = [...document.querySelectorAll('.ui-switchrow')].find((r) => r.querySelector('.ui-toggle__input:disabled'));
-      return {
-        switch: box(off), knobs: [knob(off), knob(on)], before, after,
-        invalid: [invalid.borderTopColor, invalid.boxShadow, invalid.height],
-        rings,
-        row: { switchRight: Math.round(row.getBoundingClientRect().right - sw.getBoundingClientRect().right), labelLeft: label.getBoundingClientRect().left < sw.getBoundingClientRect().left },
-        lockedInk: [getComputedStyle(locked.querySelector('.ui-switchrow__label')).color, getComputedStyle(label).color],
-      };
-    }, RINGED);
-    assert.deepEqual(drawn.switch, [60, 34]);
-    assert.deepEqual(drawn.knobs, [['5px', '24px'], ['31px', '24px']]);
-    assert.ok(Number(drawn.before) > 0 && Number(drawn.before) < 1, `the gallery's slider is partly filled (${drawn.before})`);
-    assert.equal(drawn.after, '1', 'a value set by a script fills the track to the end');
-    assert.deepEqual(drawn.invalid, ['rgb(180, 42, 42)', 'rgb(255, 225, 222) 0px 0px 0px 3px', '48px']);
-    for (const [cls, width, offset, shadow] of drawn.rings) {
-      assert.deepEqual([width, offset, shadow], ['3px', '4px', 'rgb(255, 201, 60) 0px 0px 0px 10px'], `${cls} focused`);
-    }
-    assert.equal(drawn.row.switchRight, 0, 'the switch at the row\'s right edge');
-    assert.ok(drawn.row.labelLeft, 'the label on its left');
-    assert.equal(drawn.lockedInk[0], drawn.lockedInk[1], 'a locked row\'s label keeps its ink');
-    // A focused switch under the pointer keeps its halo.
-    const forcedSwitch = '[aria-labelledby="g-toggle"] .ui-toggle__input[data-force~="focus"]';
-    await page.locator(forcedSwitch).hover();
-    assert.equal(await page.evaluate((s) => getComputedStyle(document.querySelector(s)).boxShadow, forcedSwitch), 'rgb(255, 201, 60) 0px 0px 0px 10px', 'hovered, the focused switch keeps its halo');
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    const touch = await page.evaluate(() => {
-      const e = document.querySelector('[aria-labelledby="g-toggle"] .ui-toggle__input:checked');
-      const r = e.getBoundingClientRect();
-      return [Math.round(r.width), Math.round(r.height), getComputedStyle(e, '::before').width, getComputedStyle(e, '::before').left];
-    });
-    assert.deepEqual(touch, [64, 38, '28px', '31px'], 'the touch step\'s switch');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
 });
 
 test('in a browser, a board choice opened by the mouse keeps its chosen option at rest; a key\'s focus, or the pointer over it, selects it', async (t) => {

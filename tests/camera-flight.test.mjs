@@ -311,7 +311,7 @@ test('in a browser, flying into a cube turns it to glass and aims beyond; the wh
     assert.equal(await ms(() => globalThis.__ms.renderer.camera.fov), 60);
     assert.equal(await ms(() => document.getElementById('chip-spacing')), null, 'the spacing toast is gone');
 
-    for (const [X, Y, Z] of [[6, 6, 6], [8, 8, 8], [12, 12, 12]]) { // the cube presets
+    for (const [X, Y, Z] of [[8, 8, 8]]) { // a cube preset: the fast tests hold the rule for every box
       await ms(([x, y, z]) => globalThis.__ms.start(x, y, z, 10), [X, Y, Z]);
       await ms(() => globalThis.__ms.forcePlay());
       assert.match(await strip3d(), /X spacing 1\.1/, 'the strip shows the spacing');

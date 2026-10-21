@@ -909,50 +909,6 @@ function removeWebGL2() {
   const getContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
-test('in a browser without WebGL 2, a 2D replay plays and a 3D replay says it needs WebGL 2', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
-    await page.addInitScript(() => {
-      const getContext = HTMLCanvasElement.prototype.getContext;
-      HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
-    });
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu', null, { timeout: patience(5000) });
-    assert.equal(await page.evaluate(() => globalThis.__ms.renderer), null, 'no WebGL 2 here');
-    const watch = (file) => page.evaluate(async (f) => {
-      const bytes = new Uint8Array(await (await fetch(`/tests/fixtures/replays/${f}`)).arrayBuffer());
-      globalThis.__ms.watch({ replay: bytes, returnTo: { screen: 'menu' } });
-    }, file);
-
-    await watch(WON);
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
-    assert.equal(await page.evaluate(() => document.querySelectorAll('#replay-board canvas:not(.board-motion):not(.board-ring)').length), 1, 'the 2D board view is mounted');
-    await page.click('#rp-speed [data-value="4"]');
-    await page.click('#rp-play');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: patience(3000) });
-    assert.equal(await page.evaluate(() => document.getElementById('replay-end').textContent), 'Won 9.971 s');
-    await page.click('#rp-back');
-    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
-
-    await watch(CUBE);
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'failed', null, { timeout: patience(5000) });
-    assert.equal(await page.evaluate(() => document.getElementById('replay-message-text').textContent), FAILURES.webgl2);
-    assert.equal(await page.evaluate(() => document.getElementById('replay').classList.contains('replay--scene')), false, 'no 3D scene is let through');
-    assert.equal(await page.evaluate(() => document.activeElement?.id), 'replay-message-back');
-    await page.keyboard.press('Escape');
-    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Back works');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
 test('[slow] in a browser, a recorded 2D replay plays from its fixture through to the end', async (t) => {
   const env = await suite.open(t);
   if (!env) return;

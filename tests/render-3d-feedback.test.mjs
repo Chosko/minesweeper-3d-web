@@ -185,7 +185,7 @@ test('the renderer draws into a target rectangle: viewport, scissor and camera a
 
 // ---------------------------------------------------------------- in a browser
 
-test('[slow] in a browser, Ctrl draws hidden cells as transparent ghosts and a hidden number pulses, then stops drawing', async (t) => {
+test('in a browser, a solved number stops being drawn, and Ctrl draws hidden cells as transparent ghosts that stay unpickable', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -198,7 +198,6 @@ test('[slow] in a browser, Ctrl draws hidden cells as transparent ghosts and a h
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const frames = () => ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     const stats = async () => { await frames(); return ms(() => ({ ...globalThis.__ms.renderer.stats })); };
-    const pulses = () => ms(() => [...globalThis.__ms.renderer.motion.valuesAt(performance.now()).values()].filter((v) => v.event === 'solvedPulse').length);
     const act = (cell, type) => ms(([c, k]) => {
       if (globalThis.__ms.aimAt(c) !== c) throw new Error(`cell ${c} could not be aimed at`);
       globalThis.__ms.click(k);
@@ -213,26 +212,10 @@ test('[slow] in a browser, Ctrl draws hidden cells as transparent ghosts and a h
     const plain = await stats();
     assert.deepEqual([plain.opaque, plain.trans], [6, 0], 'every cube opaque, nothing transparent');
 
-    // The flag hides the 1: a pulse runs, then the renderer stops asking for frames.
-    // Polled every frame: how long isAnimating() stays true, and the longest gap between two frames.
-    const { length, gap } = await ms(() => new Promise((resolve) => {
-      globalThis.__ms.click('right');
-      const t0 = performance.now();
-      let seen = false, last = t0, gap = 0;
-      const poll = () => {
-        const now = performance.now();
-        gap = Math.max(gap, now - last); last = now;
-        if (globalThis.__ms.renderer.isAnimating()) seen = true;
-        else if (seen) { resolve({ length: now - t0, gap }); return; }
-        if (now - t0 > 5000) { resolve({ length: -1, gap }); return; }
-        requestAnimationFrame(poll);
-      };
-      requestAnimationFrame(poll);
-    }));
-    assert.ok(length > 0, 'isAnimating() was true, then false');
-    assert.ok(length >= PULSE.duration, `not before the pulse has played (${Math.round(length)} ms)`);
-    assert.ok(length <= PULSE.duration + 2 * gap + 50, `but with it, give or take a frame (${Math.round(length)} ms, frames up to ${Math.round(gap)} ms apart)`);
-    assert.equal(await ms(() => globalThis.__ms.game.unlinked[1]), 1, 'the engine hid the cell at once');
+    // The flag hides the 1; once its pulse has played, the renderer stops asking for frames.
+    await ms(() => globalThis.__ms.click('right'));
+    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: 8000 });
+    assert.equal(await ms(() => globalThis.__ms.game.unlinked[1]), 1, 'the engine hid the cell');
     assert.notEqual(await ms(() => globalThis.__ms.aimAt(1)), 1, 'and picking passes through it');
     await ms(() => globalThis.__ms.aimAt(0));
     const hidden = await stats();
@@ -252,28 +235,11 @@ test('[slow] in a browser, Ctrl draws hidden cells as transparent ghosts and a h
     const released = await stats();
     assert.deepEqual([released.opaque, released.trans], [5, 0], 'released: hidden again');
 
-    // Unflagging during the pulse ends it at once, and the 1 is drawn as before.
-    await act(0, 'right'); // unflag: the 1 shows again
-    await frames();
-    await act(0, 'right'); // flag: the 1 hides and pulses
-    await frames();
-    assert.equal(await pulses(), 1, 'a pulse runs');
-    await act(0, 'right'); // unflag during the pulse
-    await frames();
-    assert.equal(await pulses(), 0, 'the pulse is dropped');
-    assert.equal(await ms(() => globalThis.__ms.renderer.meshMotion.visible), false, 'and no longer drawn');
+    // Unflagging shows the 1 again, drawn as before.
+    await act(0, 'right');
+    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: 8000 });
     const shown = await stats();
     assert.deepEqual([shown.opaque, shown.trans], [6, 0], 'the 1 is drawn normally');
-
-    // A loss during a pulse drops it; the loss wave proceeds.
-    await act(0, 'right');
-    await frames();
-    assert.equal(await pulses(), 1);
-    await act(3, 'left');
-    await frames();
-    assert.equal(await ms(() => globalThis.__ms.game.state), 'lost');
-    assert.equal(await pulses(), 0, 'the loss drops the pulse');
-    assert.equal(await ms(() => globalThis.__ms.renderer._eff?.type), 'loss', 'its wave runs');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

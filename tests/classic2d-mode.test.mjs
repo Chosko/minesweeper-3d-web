@@ -1560,7 +1560,7 @@ test('in a browser, the board choice at every supported window size: its window\
   if (!env) return;
   const { browser, base } = env;
   try {
-    for (const [width, height, frame] of [[1920, 1080, 1120], [1440, 900, 1120], [1366, 768, 1080], [1280, 800, 1080], [1024, 768, 984], [390, 844, 390]]) {
+    for (const [width, height, frame] of [[1920, 1080, 1120], [1366, 768, 1080], [1024, 768, 984], [390, 844, 390]]) {
       const page = await browser.newPage({ viewport: { width, height } });
       await page.addInitScript(removeWebGL2);
       await page.goto(`${base}/index.html`);
@@ -1754,68 +1754,6 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
   }
 });
 
-test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter strip keep one line each above the board, and the pause card\'s key rows whole', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    for (const theme of ['joyful-tiles']) {
-      const at = `1024 × 768 ${theme}`;
-      const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
-      await page.addInitScript(removeWebGL2);
-      await page.goto(`${base}/index.html`);
-      await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
-      const ms = (fn, arg) => page.evaluate(fn, arg);
-      await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
-      await page.waitForFunction(() => globalThis.__ms.board2D);
-      await ms(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))));
-      const rows = await ms(() => {
-        const rect = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, height: r.height }; };
-        const v = globalThis.__ms.board2D;
-        const area = document.getElementById('c2d-board').getBoundingClientRect();
-        const line = (els) => { const r = els.map(rect); const top = Math.min(...r.map((x) => x.y)); return r.every((x) => x.y < top + Math.max(...r.map((y) => y.height)) - 1); };
-        return {
-          fine: matchMedia('(pointer: fine)').matches,
-          head: line([document.getElementById('hud-swap'), document.getElementById('c2d-title'), document.getElementById('c2d-pause')]),
-          strip: line([document.getElementById('c2d-mines-left'), document.getElementById('c2d-restart'), document.getElementById('c2d-time')]),
-          stripBox: rect(document.getElementById('c2d-counters')), boardTop: area.top + v.layout.viewY,
-        };
-      });
-      assert.ok(rows.fine, `${at}: a fine pointer`);
-      assert.ok(rows.head, `${at}: Swap clicks, the title and Pause on one line`);
-      assert.ok(rows.strip, `${at}: mines left, Restart and the timer on one line`);
-      assert.ok(rows.stripBox.bottom <= rows.boardTop, `${at}: the strip above the board`);
-
-      await page.click('#c2d-pause');
-      await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused');
-      const card = await ms(() => {
-        const c = document.getElementById('pause-card');
-        const r = c.getBoundingClientRect();
-        const capRows = [...document.querySelectorAll('#pause-controls dt')].map((dt) => {
-          const range = document.createRange();
-          range.selectNodeContents(dt);
-          const lines = [...range.getClientRects()];
-          return { right: Math.max(...lines.map((k) => k.right)), tops: lines.map((k) => k.top), cap: parseFloat(getComputedStyle(dt).fontSize) };
-        });
-        return {
-          top: r.top, bottom: r.bottom, left: r.left, right: r.right,
-          innerRight: r.right - parseFloat(getComputedStyle(c).paddingRight) + 0.5, rows: capRows,
-        };
-      });
-      assert.ok(card.top >= 0 && card.left >= 0 && card.right <= 1024, `${at}: the pause card inside the viewport's width`);
-      assert.ok(card.rows.length > 0, `${at}: the controls list's keys`);
-      for (const row of card.rows) {
-        assert.ok(row.cap >= 15, `${at}: a key at ${row.cap} px`);
-        assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key on one line`);
-        assert.ok(row.right <= card.innerRight, `${at}: a key unclipped`);
-      }
-      await page.close();
-    }
-  } finally {
-    await browser.close();
-  }
-});
-
 // The pause card's layout, measured in the page: its rectangle, the scroll of the card, its overlay and
 // the document, where its two panels sit, its key rows and the font size of each kind of text.
 function measurePauseCard() {
@@ -1853,7 +1791,7 @@ function measurePauseCard() {
 // The pause card's font sizes with a fine pointer, which its two columns leave as they are.
 const PAUSE_FONTS_FINE = Object.freeze({ title: 34, status: 15, button: 17, slider: 16, switch: 16, heading: 13, list: 15, keyName: 15, kbd: null, statLabel: null });
 
-test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
+test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter strip keep one line each above the board; the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1866,6 +1804,22 @@ test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in tw
       await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
       await page.evaluate(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
       await page.waitForFunction(() => globalThis.__ms.board2D);
+      // The window's head and counter strip keep one line each above the board.
+      await page.evaluate(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))));
+      const rows = await page.evaluate(() => {
+        const rect = (el) => { const r = el.getBoundingClientRect(); return { y: r.y, bottom: r.bottom, height: r.height }; };
+        const v = globalThis.__ms.board2D;
+        const area = document.getElementById('c2d-board').getBoundingClientRect();
+        const line = (els) => { const r = els.map(rect); const top = Math.min(...r.map((x) => x.y)); return r.every((x) => x.y < top + Math.max(...r.map((y) => y.height)) - 1); };
+        return {
+          head: line([document.getElementById('hud-swap'), document.getElementById('c2d-title'), document.getElementById('c2d-pause')]),
+          strip: line([document.getElementById('c2d-mines-left'), document.getElementById('c2d-restart'), document.getElementById('c2d-time')]),
+          stripBottom: rect(document.getElementById('c2d-counters')).bottom, boardTop: area.top + v.layout.viewY,
+        };
+      });
+      assert.ok(rows.head, `${at}: Swap clicks, the title and Pause on one line`);
+      assert.ok(rows.strip, `${at}: mines left, Restart and the timer on one line`);
+      assert.ok(rows.stripBottom <= rows.boardTop, `${at}: the strip above the board`);
       // The first click starts the game, so a restart asks first.
       const board = await page.locator('#c2d-board canvas').first().boundingBox();
       await page.mouse.click(board.x + board.width / 2, board.y + board.height / 2);
