@@ -57,14 +57,15 @@ In scope (m1-classic-2d):
   and never takes keyboard focus. Keyboard, controller, touch and the 3D
   mode are unaffected.
 - Touch input: a tap acts on its lift — it reveals a closed cell, or
-  toggles its flag while the *Reveal / Flag* switch is on Flag, and chords
-  on a revealed number whichever way the switch is set — with the mouse's
+  toggles its flag while the Tap choice is on *Tap: Flag*, and chords
+  on a revealed number whichever way the choice is set — with the mouse's
   press feedback while the finger is down. A touch held 400 ms flags or
   unflags the cell under it while still held, with a short vibration where
   the device has one, and does nothing on a revealed cell. A touch that
-  moves 8 px or more never acts: it pans a board that scrolls. The switch,
-  a 44 px control by the board on a coarse pointer only, starts on Reveal
-  and lives for the page, never a setting. Touch never reaches the mouse
+  moves 8 px or more never acts: it pans a board that scrolls. The Tap
+  choice, a control by the board on a coarse pointer only
+  ([in-game-layout.md](./in-game-layout.md)), starts on Reveal and lives
+  for the page, never a setting. Touch never reaches the mouse
   input; the 3D mode's touch play is its own and shares only the long-press
   time, the 8 px threshold and the vibration length.
 - Keyboard and controller play: a visible cell cursor moved by arrow keys,
@@ -181,7 +182,7 @@ copied.
   mouse's: the 400 ms long-press, the tap on its lift, the 8 px threshold,
   the one-finger pan, and two fingers that cancel the first finger's
   pending tap or long-press and drive the pan and pinch. It reads the
-  Reveal / Flag switch and the profile's press feedback, and suppresses the
+  Tap choice and the profile's press feedback, and suppresses the
   emulated mouse events a tap produces, so the mouse state machine and its
   profile markers never see a touch and a tap acts exactly once. Its
   actions are recorded in the replay like mouse ones; a touch has no hover

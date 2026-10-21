@@ -16,8 +16,8 @@ themselves are [classic2d.md](classic2d.md).
 - **Routes.** Board choice routes to `classic-2d-choice` with the last
   board choice (loaded at boot by `mode2d.loadChoice()`); `show` routes to
   `classic-2d`, whose Back is `backGame`.
-- **Board area and panel.** The board area is `#c2d-board`; the board opens
-  at the `boardScale` setting (`scale`) inside the board frame (`frame`,
+- **Board area and panel.** The board area is `#c2d-stage`, filled by the
+  view's container `#c2d-board`; the board opens at the `boardScale` setting (`scale`) inside the board frame (`frame`,
   `BOARD_FRAME`). The window hugs its board: `ui.sizeBoard2D` measures the
   room its chrome leaves with the window at its largest (`c2d--measure`)
   and sizes `#c2d-stage` to the view's `extent` there, giving back what

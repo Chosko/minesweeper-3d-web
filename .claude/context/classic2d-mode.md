@@ -83,7 +83,7 @@ shell hands in its flow and its sound sink. The area overview is
   § Board area and panel). Too narrow for both, the panel moves under the
   board; on a phone it hides and the window is full-bleed, the board held
   sideways at the left edge beside a column of the counters, Restart and
-  the switch (`#c2d` in `css/style.css`).
+  the Tap choice (`#c2d` in `css/style.css`).
 - **Sound.** Every action the gate passes on — mouse, keyboard or
   controller — plays the 3D game's cue for its outcome (`cue` in
   `mode.js`), read from the engine's changed cells and the game's phase:

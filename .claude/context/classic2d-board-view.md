@@ -108,9 +108,9 @@ cell motion, the end effect — is
   window's chrome — the head, the counter strip, the figures panel beside
   or under the board, the foot line — leaves, so a board that fits a bare
   window may scroll in it (Expert does in the smaller desktop windows);
-  the window hugs its board, its board area `#c2d-board` sized to the
-  board's extent in that room, so a board that fits sits at the area's
-  corner with nothing to centre ([app-shell-2d.md](app-shell-2d.md)).
+  the window hugs its board, its board area `#c2d-stage` (which the view's
+  container `#c2d-board` fills) sized to the board's extent in that room,
+  so a board that fits sits at the area's corner with nothing to centre ([app-shell-2d.md](app-shell-2d.md)).
 - **Board frame.** Every Classic 2D board — the game, the menu's previews,
   the Daily preview and the replay viewer — sits in the kit's board frame
   component `ui-board-frame`, padded by the module's gap on every side

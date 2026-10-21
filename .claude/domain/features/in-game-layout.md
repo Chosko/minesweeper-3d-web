@@ -59,10 +59,13 @@ In scope (m2b-themes):
   - *flags* — flags placed, with mines left as its detail line.
 - **Controls reminder** — the side panel's foot lists the board's main
   bindings for the active input device, from the bindings source.
-- **First-use hint strip** — laid over the board column without refitting
-  the board, every input shown in a key box with no separators, never
-  overlapping the figures panel when that panel sits under the board; on
-  touch it names tap, long-press and the mode's chord gesture.
+- **First-use hint strip** — in Classic 2D laid over the board's foot
+  inside the board area, so the board keeps its size, never overlapping
+  the Tap choice or the figures panel when that panel sits under the
+  board; in 3D over the scene. Every keyboard and controller input is
+  shown whole in one key box, with no separators; on touch it names tap,
+  long-press and the mode's chord gesture — a tap on a number in Classic
+  2D, the two-finger tap in 3D — as words between dots.
 - **Tap choice** — on touch, the Reveal / Flag choice for a tap is a
   two-option segmented choice (*Tap: Reveal*, *Tap: Flag*) under the
   board; touch input reads its value.
@@ -83,8 +86,11 @@ In scope (m2b-themes):
   off-screen arrow sits by the crosshair; the HUD key strip's labels are in
   ink; the touch stick is drawn at rest and follows the thumb while used.
 - **Learn 3D** — its own play layout: a head with the title and Pause, a
-  strip with mines and Restart only, no figures panel, and the lesson's
-  prompt in its own strip with the step count. Its end cards carry a
+  strip with mines and Restart only — no timer, so the pause card shows
+  mines left alone —, no figures panel, the head over the strip in a
+  column at the top left above a phone and the phone layouts kept on a
+  phone, and the lesson's prompt in its own strip with the step count and
+  no close button. Its end cards carry a
   *Learn 3D* label above the title, ink body text, a line on a loss as well
   as on a win, and the icons the canvas draws.
 - **Replay viewer** — shows the same live figures for the replayed game
@@ -113,7 +119,9 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
 - **Game window composition.** The Classic 2D layer becomes the framed
   window: head, counter strip, board area, side panel, foot. The board area
   keeps the board view's fit rule, minimum tile size and scrolling; the
-  window's chrome reduces the space the fit rule works in, and the side
+  window's chrome reduces the space the fit rule works in, measured with
+  the window at its largest, and the board area takes the board's extent
+  there, so the window hugs the board and follows its size; the side
   panel moves under the board, its figures in a row, below 1024 px wide,
   and is hidden on a phone — narrower than 720 px, or held sideways at
   500 px high or less

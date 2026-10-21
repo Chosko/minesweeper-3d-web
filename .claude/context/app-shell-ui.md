@@ -73,9 +73,10 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
 ## INTERNAL PATTERNS
 
 - **Counters.** Each mode's `ui-counter-strip`: mines left
-  (`formatMineCount`, `data-negative` below zero, widened past three digits
-  by `mineCounterDigits`), Restart (`#c2d-restart` / `#hud-restart`, never
-  taking focus) and the timer (`formatOverlayTime`, stops at `999`).
+  (`formatMineCount`, `data-negative` below zero (drawn by the theme in
+  the danger colour), widened past three digits by `mineCounterDigits`),
+  Restart (`#c2d-restart` / `#hud-restart`, never taking focus) and the
+  timer (`formatOverlayTime`, stops at `999`).
   `updateHud` writes the Classic 2D window's (`#c2d-mines-left`,
   `#c2d-time`) while it shows, else the 3D overlay's (`#hud-mines`,
   `#hud-time`), and the Clicks figure (`#c2d-clicks`, `#hud-clicks`: counted
