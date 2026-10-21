@@ -28,7 +28,7 @@ Context:
 
 Done: 2026-10-21, commit `e531af6` (13 files, +325/-124). `boardPoint` (touch-zoom anchor, wheel line) stays in pitches until task 252; the cols/rows forms of `fitTileSize`, `boardLayout` and `cellAtLayout` still work through the square geometry; `js/shell/daily.js` needed no change.
 
-## [~] 3. Implement task 250 — Tile painter and cache through the geometry's outline
+## [x] 3. Implement task 250 — Tile painter and cache through the geometry's outline
 
 Depends on: 2
 
@@ -38,6 +38,8 @@ Context:
 ```prompt
 /task-implement 250 --review
 ```
+
+Done: 2026-10-21, commit `1fb399d` (9 files, +285/-60). The image cache is now also keyed by outline orientation; the new tests went to `tests/tile-skin.test.mjs`, not the `tests/tile-art.test.mjs` the task's `Files:` names.
 
 ## [x] 4. Implement task 251 — Cursor moves and end effect on the grid geometry
 
