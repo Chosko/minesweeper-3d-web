@@ -307,7 +307,7 @@ Context:
 /task-implement 239 --review
 ```
 
-## [P] 27. Implement task 240 — Settings screen to the canvas
+## [ ] 27. Implement task 240 — Settings screen to the canvas
 
 Depends on: 2, 6, 8
 
@@ -318,6 +318,7 @@ Context:
   c. Make the Bindings panel scroll its list inside the panel, so the page never scrolls whatever the list. The canvas does not draw this.
   Recommendation: a. The overflow comes only from the list's wording, and that wording is task 233's.
   (The work is on pushed branch `park/task-240`, commit 616236f; its unpark may conflict with task 223 on index.html, css/style.css, css/components.css.)
+- 2026-10-21 unparked with answer: Q1 a
 
 ```prompt
 /task-implement 240 --review
