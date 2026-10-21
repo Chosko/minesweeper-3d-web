@@ -1,5 +1,5 @@
 // DOM menus, HUD and overlays. No game rules here.
-// Every help surface — the pause card, the Settings page's Controls panel, the H panel, the HUD strip,
+// Every help surface — the pause card, the Settings page's bindings panel, the H panel, the HUD strip,
 // the hint strip and the main menu's key hints — is drawn from the bindings source
 // (js/settings/bindings.js) for the active mode and the active device (the controller in the
 // connected controller's glyphs).
@@ -7,8 +7,8 @@ import {
   formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote, setButtonIcon,
 } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
-import { bindingsHtml, helpListHtml, readyListHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys, reminderKeys } from './settings/bindings.js';
-import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './settings/page.js';
+import { helpListHtml, readyListHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys, reminderKeys } from './settings/bindings.js';
+import { settingsPageHtml, bindingsSectionHtml, bindResetPanel, bindSettingsLayout } from './settings/page.js';
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
 import { LEARN_TITLE, learnStepOf } from './mode3d/learn.js';
 import { formatTime } from './results/view.js';
@@ -74,7 +74,7 @@ export const TOUCH_MSG = 'Both modes play by touch: 3D and Classic 2D.';
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onTapMode, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer, onTouchMode }
+    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onTapMode, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onTouchMode }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       hudCounters: $('hud-counters'), hudFigures: $('hud-figures'), hudHead: $('hud-figures').querySelector('.ui-figures__head'), hudTitle: $('hud-title'),
@@ -82,7 +82,6 @@ export class UI {
       help: $('help'), helpList: $('help').querySelector('.ui-controls'), helpFoot: $('help-foot'), readyKeys: $('ready-keys'),
       hintStrip: $('hint-strip'), hintStripText: $('hint-strip-text'), hintStep: $('hint-strip-step'),
       readyRules: $('ready-rules'), pauseBoard: $('pause-board'), pauseControls: $('pause-controls'),
-      controlsBody: $('controls-body'),
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'), readyBlocked: $('ready-blocked'),
       readyLearn: $('ready-learn'), hintClose: $('hint-strip-close'), timeStat: $('hud-time').closest('.ui-counter'),
       learnEnd: $('learn-end'), learnEndTitle: $('learn-end-title'), learnEndLine: $('learn-end-line'), learnEndPrimary: $('learn-end-primary'),
@@ -90,7 +89,6 @@ export class UI {
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
       settings: $('settings'), settingsBindings: null, records: $('records'), daily: $('daily'),
       crosshair: $('crosshair'), crosshairArrow: $('crosshair-arrow'), aimReadout: $('aim-readout'), aimCubes: $('aim-cubes'), aimFlagPart: $('aim-flag-part'), aimFlags: $('aim-flags'),
-      controlsModal: $('controls-modal'),
       pause: $('pause'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
       resume: $('p-resume'), home: $('p-home'), restart: $('p-restart'), restartLabel: $('p-restart').querySelector('[data-label]'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
       confirm: $('pause-confirm'), confirmTitle: $('pause-confirm-title'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
@@ -116,7 +114,6 @@ export class UI {
     this._mapping = 'standard';
     this._muted = false;
     this._hint = false; // the hint strip shows
-    this._controlsTab = 'classic-2d'; // the Controls panel's tab
     this._touch = false; // a coarse-only device: both modes play by touch, and every help surface speaks touch (`_bindDevice`)
     this._stick = ''; // the touch stick's place shown, '' while hidden
     this._boardText = '';
@@ -132,6 +129,8 @@ export class UI {
     for (const id of ['coming-soon-back', 'coming-soon-menu', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
     // The Settings page's controls are generated from the settings schema and bound by the shell.
     $('settings-body').innerHTML = settingsPageHtml();
+    // Its sections in the window size's columns, each an independent stack.
+    bindSettingsLayout($('settings-columns'));
     this.el.settingsBindings = $('settings-bindings');
     // Its bindings panel: one mode's list for one device, each picked by its choice; the device opens on the active one.
     this._settingsBind = { mode: 'classic-2d', device: 'keyboard' };
@@ -141,12 +140,7 @@ export class UI {
     this._reset = bindResetPanel({
       open: $('set-reset'), panel: $('set-reset-confirm'), yes: $('set-reset-yes'), no: $('set-reset-no'), note: $('set-reset-note'),
     }, { reset: () => cb.onResetAll?.() });
-    // Controls panel (the Settings page's Controls action): Classic 2D and 3D tabs over the bindings component.
-    bindSegmented($('controls-tabs'), { horizontal: true, onChange: (mode) => { this._controlsTab = mode; this._renderBindings(); } });
     this._renderBindings();
-    $('set-controls').addEventListener('click', () => this.openControls());
-    $('controls-close').addEventListener('click', () => this.closeControls());
-    this.el.controlsModal.addEventListener('click', (e) => { if (e.target === this.el.controlsModal) this.closeControls(); });
     $('ready-back').addEventListener('click', () => cb.onReadyBack?.());
     $('hint-strip-close').addEventListener('click', () => this.dismissHint());
     $('ready-btn').addEventListener('click', () => cb.onReadyClick());
@@ -284,28 +278,6 @@ export class UI {
     $('menu-build').textContent = text;
   }
 
-  // ---------- controls modal ----------
-  /** Open the controls reference over the Settings page; closing it gives the focus back to what opened it. */
-  openControls() {
-    const opener = document.activeElement;
-    this._controlsOpener = opener && opener !== document.body ? opener : null;
-    this._renderBindings();
-    this.el.controlsModal.classList.remove('hidden');
-    this.cb.onLayer?.();
-    $('controls-close').focus({ preventScroll: true });
-  }
-  /** Close the modal; the containment lifts before the control that opened it takes focus back. */
-  closeControls() {
-    if (this.el.controlsModal.classList.contains('hidden')) return false;
-    this.el.controlsModal.classList.add('hidden');
-    this.cb.onLayer?.();
-    const back = this._controlsOpener?.isConnected ? this._controlsOpener : $('set-controls');
-    this._controlsOpener = null;
-    back.focus({ preventScroll: true });
-    return true;
-  }
-  isControlsOpen() { return !this.el.controlsModal.classList.contains('hidden'); }
-
   // ---------- screens ----------
   /** Hide the menu screens (main menu, board choices, placeholder, records, settings) before another screen shows. */
   _hideMenus() {
@@ -332,7 +304,6 @@ export class UI {
     this.el.pause.classList.add('hidden');
     this.el.hud.classList.add('hidden');
     this.el.help.classList.add('hidden');
-    this.el.controlsModal.classList.add('hidden');
     this._helpByUser = false;
     this.setHintStrip(false);
     this._figuresLive3D.stop();
@@ -917,7 +888,6 @@ export class UI {
     this._renderReminder();
     this._renderHelp();
     this._renderHudStrip();
-    this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._bindDevice(this._controlsTab), this._glyphs, this._camera);
     this.el.pauseControls.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
     this.el.readyKeys.innerHTML = readyListHtml(this._touch ? 'touch' : 'keyboard', this._glyphs, this._camera);
     if (this._hint) this.setHintStrip(true, { scroll: this._hintKind === 'scroll', learn: this._learnHint });

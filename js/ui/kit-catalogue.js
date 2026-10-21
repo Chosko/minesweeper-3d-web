@@ -344,7 +344,7 @@ export const REQUIRED_TOKENS = Object.freeze([
   // the replay viewer's Show 3BV tints (js/replay/viewer-2d.js BBBV_TINT_TOKENS)
   '--color-confetti-2', '--color-confetti-3', '--color-confetti-5',
   // the Settings theme list's swatch (js/settings/page.js SWATCH_TOKENS) beyond the contrast roles
-  '--color-accent-fill',
+  '--color-head', '--color-accent-fill', '--color-blue', '--color-teal',
   // a slider's filled share of its range, which the kit sets on the input (bindSliderFill); a theme
   // declares it before the kit first sets it
   '--slider-fill',

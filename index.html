@@ -391,18 +391,6 @@
     </section>
   </section>
 
-  <!-- Controls modal (main menu) -->
-  <section id="controls-modal" class="overlay modal hidden" role="dialog" aria-modal="true" aria-labelledby="controls-title">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3 id="controls-title">Controls</h3>
-        <button type="button" id="controls-close" class="hint-close modal-close" aria-label="Close">&times;</button>
-      </div>
-      <div id="controls-tabs" class="ui-segmented" role="radiogroup" aria-label="Mode"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="classic-2d">Classic 2D</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="3d" tabindex="-1">3D</button></div>
-      <dl id="controls-body" class="ui-controls"></dl>
-    </div>
-  </section>
-
   <!-- WebGL context lost -->
   <section id="ctx-lost" class="overlay hidden" aria-label="Graphics context lost">
     <section class="ui-card ui-screen" role="alertdialog" aria-labelledby="ctx-lost-title" aria-describedby="ctx-lost-text">
@@ -420,7 +408,7 @@
     <section class="ui-frame" id="settings-frame" aria-labelledby="settings-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
+        <div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
         <h2 class="ui-frame__title" id="settings-title">Settings</h2>
         <div class="ui-frame__end"></div>
       </header>

@@ -363,7 +363,7 @@ test('the shell mirrors its stack in window.history and routes popstate to the b
   assert.match(MAIN, /HISTORY\.start\(performance\.getEntriesByType\?\.\('navigation'\)\[0\]\?\.type\)/);
   const back = MAIN.slice(MAIN.indexOf('function historyBack('), MAIN.indexOf('\n}\n', MAIN.indexOf('function historyBack(')));
   assert.match(back, /if \(endDelay\(\)\) return;/, 'nothing during an end delay');
-  assert.match(back, /ui\.closeControls\(\) \|\| ui\.closeConfirm\(\)/, 'the controls modal or the confirmation closes first');
+  assert.match(back, /ui\.closeConfirm\(\) \|\| ui\.closeResetConfirm\(\)/, 'an open confirmation closes first');
   assert.match(back, /S\.mode === 'playing' \|\| S\.mode === 'classic-2d'\) \{ pauseGame\('button'\)/, 'the board pauses as an asked-for pause');
   assert.match(back, /S\.mode === 'paused'/, 'the pause card holds the game');
   assert.match(back, /S\.mode === 'ready' && S\.game && S\.started/, 'a started game\'s ready card holds it');

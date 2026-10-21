@@ -1156,12 +1156,12 @@ test('each Back that Esc triggers holds its back key hint, and no "Esc: Back" te
   assert.doesNotMatch(read('css/style.css'), /data-esc-hint|\.esc-row/);
   assert.doesNotMatch(THEME_RAW, /data-esc-hint|\.esc-row/);
   assert.match(html, /id="p-menu"[^>]*>Main menu<\/button>/, 'none in the pause card\'s Main menu, where Esc resumes');
-  for (const id of ['r-menu', 'settings-back']) {
+  for (const id of ['r-menu']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the Back holds its key hint (#${id})`);
   }
-  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'records-back', 'coming-soon-menu']) {
+  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'records-back', 'coming-soon-menu', 'settings-back']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`),
-      `the board choices', Daily's, Records' and the placeholder's Back holds its key hint, reading Back on a phone (#${id})`);
+      `the board choices', Daily's, Records', the placeholder's and Settings' Back holds its key hint, reading Back on a phone (#${id})`);
   }
   assert.match(read('css/style.css'), /#records-back:not\(\[data-to-menu\]\) \[data-label="wide"\]/, 'Records\' Back reads Back unless it returns to the menu');
   for (const id of ['coming-soon-back', 'rp-back', 'replay-message-back', 'ready-back']) {
@@ -1582,7 +1582,7 @@ test('in a browser, the gallery\'s surfaces draw as J-Components: the plain, war
   }
 });
 
-test('the column composition has one breakpoint, 1024 px, stated once, used by Records and Settings', () => {
+test('the column composition has one breakpoint, 1024 px, stated once, used by Records and Settings', async () => {
   const breakpoints = [...CSS.matchAll(/@media[^{]*min-width:\s*(\d+)px/g)].map((m) => m[1]);
   assert.deepEqual(breakpoints, ['1024'], 'one breakpoint block in the kit');
   assert.doesNotMatch(read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, ''), /min-width:\s*1024px/, 'no second copy in the shell stylesheet');
@@ -1592,7 +1592,8 @@ test('the column composition has one breakpoint, 1024 px, stated once, used by R
   const block = CSS.slice(CSS.indexOf('@media (min-width: 1024px)'));
   assert.match(block.slice(0, block.indexOf('\n}')), /#records-columns \{ grid-template-columns: [^}]+ auto [^}]+; \}/, 'Records\' rule between its columns, inside the one breakpoint');
   assert.match(INDEX, /<section class="ui-frame" id="settings-frame" aria-labelledby="settings-title">[\s\S]*?<div class="ui-frame__body" id="settings-body"><\/div>/);
-  assert.match(block.slice(0, block.indexOf('\n}')), /#settings-columns \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/, 'Settings\' two columns, inside the one breakpoint');
+  const { SETTINGS_LAYOUTS } = await import('../js/settings/page.js');
+  assert.equal(SETTINGS_LAYOUTS.find((l) => l.columns.length === 2).media, `(min-width: ${breakpoints[0]}px)`, 'Settings places its two stacks from the same breakpoint');
 });
 
 test('the gallery shows the stat tile, the pager in each state and the column composition', () => {
@@ -2465,7 +2466,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   const records = screens.slice(screens.indexOf('<section id="records"'), screens.indexOf('<section id="replay"'));
   const settings = screens.slice(screens.indexOf('<section id="settings"'), screens.indexOf('<section id="records"'));
   const replay = screens.slice(screens.indexOf('<section id="replay"'), screens.indexOf('<section id="results"'));
-  const ready = screens.slice(screens.indexOf('<section id="ready"'), screens.indexOf('<section id="controls-modal"'));
+  const ready = screens.slice(screens.indexOf('<section id="ready"'), screens.indexOf('<section id="ctx-lost"'));
   const ctxLost = screens.slice(screens.indexOf('<section id="ctx-lost"'), screens.indexOf('<section id="settings"'));
   const learnEnd = screens.slice(screens.indexOf('<section id="learn-end"'), screens.indexOf('<section id="pause"'));
   const noscript = screens.slice(screens.indexOf('<noscript>'), screens.indexOf('</noscript>'));
@@ -3980,7 +3981,7 @@ test('the message card: ink text, the canvas\'s type, and an even 14 px gap betw
 });
 
 test('the scrim: the plain backdrop colour, no blur, the same over 2D and 3D; behind the ready card, the pause card and results only the board or the scene and the window\'s title', () => {
-  const scrim = bodyOf(THEME_RULES, ':is(#pause, #ready, #results, #learn-end, #ctx-lost, .modal)');
+  const scrim = bodyOf(THEME_RULES, ':is(#pause, #ready, #results, #learn-end, #ctx-lost)');
   assert.match(scrim, /background: var\(--color-backdrop\);/);
   assert.doesNotMatch(THEME_CSS, /backdrop-filter/, 'no blur over any screen');
   assert.doesNotMatch(THEME_CSS, /var\(--color-backdrop-strong\)/, 'no stronger scrim over 3D or a lost context');

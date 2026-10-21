@@ -209,39 +209,64 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
   #records-averages-table th { grid-column: 1 / -1; font-weight: var(--font-weight-heavy); }
   #records-averages-table td[data-label]::before { content: attr(data-label); display: block; }
 }
-/* The Settings page (#settings): its window on the backdrop at the canvas's size, Back in its head,
-   the body scrolling. The widest window's three columns (js/settings/page.js SETTINGS_COLUMNS)
-   regroup by placement alone: two from the kit breakpoint (css/components.css), one below it in the
-   phone's order. Each setting is a row, its name (and note) at the start and its control at the end,
-   a slider's value before its track so every control ends on the row's edge for the focus moves;
-   on a phone the window is full-bleed and the bindings device choice spans the panel, each option
-   wrapping its label. */
-#settings-frame { width: 1640px; height: 100%; }
-#settings-columns [data-section="controls"] { grid-area: controls; }
-#settings-columns [data-section="graphics"] { grid-area: graphics; }
-#settings-columns [data-section="theme"] { grid-area: theme; }
-#settings-columns [data-section="audio"] { grid-area: audio; }
-#settings-columns [data-section="bindings"] { grid-area: bindings; }
-#settings-columns [data-section="data"] { grid-area: data; }
-@media (min-width: 1600px) { #settings-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: none; } }
-@media (max-width: 1599px) { #settings-columns > .ui-column { display: contents; } }
-@media (max-width: 1023px) { #settings-columns { grid-template-areas: "controls" "graphics" "theme" "audio" "bindings" "data"; } }
-#settings-columns [data-setting-row] { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: 1fr auto; align-items: center; gap: 0 var(--space-3); }
+/* The Settings page (#settings): its window inset on the backdrop at each window step's canvas size
+   (J-Settings-xl, -l, -m), Back in its head ("Back" on a phone), the body scrolling on a window too
+   short for it. The sections stand in independent stacks, one ui-column each, which
+   js/settings/page.js places for the window (SETTINGS_LAYOUTS): three on the widest windows, two from
+   the kit breakpoint, one below it in the phone's order; the stack gap is the column gap. Each
+   setting is a row ruled above (its theme draws the rule), its name (and note) at the start and its
+   control at the end, a slider's value before its track so every control ends on the row's edge for
+   the focus moves. Its choices' options take their text's height, as the canvas draws them (40 px
+   on a phone, upright or sideways). On a phone the window is full-bleed, the bindings device choice spans the panel,
+   each option wrapping its label, and the exports stack. */
+#settings { align-items: flex-start; padding: 66px 24px 24px; }
+#settings-frame { width: 1640px; height: 940px; }
+#settings-body { padding: 24px; }
+#settings-columns { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+#settings-columns, #settings-columns > .ui-column { gap: 24px; }
+#settings-columns .ui-panel { gap: 0; padding: 16px 18px; }
+#settings-back [data-label="phone"] { display: none; }
+#settings-columns [data-setting-row] { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: 1fr auto; align-items: center; gap: 2px 16px; padding: 10px 0; }
 #settings-columns [data-setting-row] > :is(.ui-slider, .ui-toggle) { display: contents; }
-#settings-columns [data-setting-row] :is(.ui-slider__label, .ui-toggle__label, .ui-text) { grid-area: 1 / 1; }
+#settings-columns [data-setting-row] :is(.ui-slider__label, .ui-toggle__label, .ui-text) { grid-area: 1 / 1; font-size: 16px; font-weight: var(--font-weight-bold); }
 #settings-columns [data-setting-row]:has(> .ui-text--muted) :is(.ui-slider__label, .ui-toggle__label, .ui-text) { align-self: end; }
-#settings-columns [data-setting-row] > .ui-text--muted { grid-area: 2 / 1; align-self: start; }
+#settings-columns [data-setting-row] > .ui-text--muted { grid-area: 2 / 1; align-self: start; font-size: 13px; font-weight: var(--font-weight-regular); }
 #settings-columns [data-setting-row] .ui-slider__value { grid-area: 1 / 2 / span 2; justify-self: end; }
 #settings-columns [data-setting-row] .ui-slider__input { grid-area: 1 / 3 / span 2; width: 220px; }
 #settings-columns [data-setting-row] :is(.ui-toggle__input, .ui-segmented) { grid-area: 1 / 2 / span 2 / span 2; justify-self: end; }
-#set-bind-choices { align-items: flex-start; }
+#settings-columns .ui-segmented__option { min-height: 0; }
+#set-theme { margin-top: 10px; }
+#set-bind-choices { align-items: flex-start; gap: 10px; margin: 10px 0 4px; }
+#set-data-body { gap: 12px; margin-top: 10px; }
+#set-data-body > .ui-text { font-size: 15px; }
+#set-data-body > .ui-button { align-self: flex-start; }
+#set-export-actions { gap: 10px; }
+@media (max-width: 1439px) {
+  #settings { padding-top: 24px; }
+  #settings-frame { width: 1302px; height: 712px; }
+  #settings-body { padding: 18px; }
+  #settings-columns, #settings-columns > .ui-column { gap: 18px; }
+}
+@media (max-width: 1199px) {
+  #settings { padding: 16px 20px 20px; }
+  #settings-frame { width: 984px; height: 728px; }
+  #settings-body { padding: 14px; }
+  #settings-columns, #settings-columns > .ui-column { gap: 14px; }
+}
+@media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
+  #settings-columns .ui-segmented__option { min-height: 40px; }
+}
 @media (max-width: 719px) {
   #settings { padding: 0; }
-  #settings-frame { width: 100%; border-radius: 0; box-shadow: none; }
-  #settings-body { padding: var(--space-4); }
+  #settings-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+  #settings-back [data-label="wide"] { display: none; }
+  #settings-back [data-label="phone"] { display: inline; }
+  #settings-body { padding: 14px 14px 30px; }
+  #settings-columns, #settings-columns > .ui-column { gap: 16px; }
   #settings-columns [data-setting-row] .ui-slider__input { width: 170px; }
   #set-bind-device { display: flex; width: 100%; }
   #set-bind-device > .ui-segmented__option { flex: 1 1 0; min-width: 0; padding-inline: var(--space-2); white-space: normal; }
+  #set-export-actions { flex-direction: column; align-items: flex-start; }
 }
 /* The ready card waiting unseen for a pointer lock the player's own Play again asked for. */
 #ready.ready--pending { visibility: hidden; }
@@ -366,17 +391,11 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
   .ready-board { text-align: start; }
 }
 
-/* ---------- controls modal ---------- */
-.modal { z-index: var(--z-modal); }
-.modal-card { width: min(520px, 100%); margin: auto; padding: 18px 22px 20px; }
-.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.modal-head h3 { margin: 0; font-size: 13px; font-weight: var(--font-weight-bold); text-transform: uppercase; letter-spacing: 0.1em; }
-#controls-tabs { margin-bottom: var(--space-3); }
+/* ---------- a hint's dismiss button ---------- */
 .hint-close {
   appearance: none; border: 0; padding: 0;
   font-size: 18px; font-weight: var(--font-weight-bold); line-height: 1; width: 28px; height: 28px; cursor: pointer;
 }
-.modal-close { font-size: 24px; width: 34px; height: 34px; }
 
 /* ---------- first-use hint strip ---------- */
 /* Centred above the HUD strip in 3D; in Classic 2D over the board in its column (below). Its inputs in

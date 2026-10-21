@@ -29,8 +29,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleTap`,
   `onDismissHint(mode, kind)`, `on{Retry,Standard,OfferMenu,Cancel}{2D,3D}`,
   `onStandardWait3D`, `onLearnEnd(won)`, `onLearnBack`, `onBackToStart`,
-  `onResetAll`, `onLayer` — the Controls modal opened or closed, for the
-  containment). Method groups:
+  `onResetAll`). Method groups:
   - screens: `showMenu`, `showBoardChoice`, `showBoardChoice2D`,
     `showComingSoon(title)`, `showDaily`, `showRecords`, `showSettings`, `showReady(board, msg,
     {rules, blocked})`, `setReadyPending`, `showPlaying`, `showClassic2D`,
@@ -131,8 +130,8 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   [app-shell-help.md](app-shell-help.md).
 - **Controller menus.** `LAYER_SCREEN` maps each overlay to its screen,
   topmost first; the topmost visible, non-inert one takes input
-  (`topLayer`), focusing `SHELL.defaultFocus`. Every router change and
-  controls-modal toggle calls `layerChanged`, which suppresses buttons held
+  (`topLayer`), focusing `SHELL.defaultFocus`. Every router change
+  calls `layerChanged`, which suppresses buttons held
   at the last poll until released and resets the menu repeats. The D-pad
   (`padNav`) and the arrow keys (`keyNav`) move focus through `navStep`
   ([app-shell-focus.md](app-shell-focus.md) § Focus walk); the

@@ -22,13 +22,12 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
 
 - **One bindings source.** The help panel's list and foot line, the pause
   card's list, the 3D ready card's list `#ready-keys`, the HUD strip
-  `#hud-tools`, the hint strip, the main menu's Controls panel
-  (`#controls-tabs`, Classic 2D | 3D) and the Settings page's bindings are
+  `#hud-tools`, the hint strip and the Settings page's bindings are
   all drawn from `js/settings/bindings.js`
   ([settings-bindings.md](settings-bindings.md)), every list in the kit's
   controls list `ui-controls`: the help panel and the pause card the help
-  rows (`helpListHtml`), the Controls panel and the Settings page the full
-  rows (`bindingsHtml`), the ready card its short rows (`readyListHtml`,
+  rows (`helpListHtml`), the Settings page the full rows
+  (`bindingsSectionHtml`), the ready card its short rows (`readyListHtml`,
   touch's under `#ready.ready--touch`); edit a binding's text in the
   source only.
   They show the mode the last screen method set (`showReady` /

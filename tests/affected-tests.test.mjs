@@ -46,7 +46,7 @@ test('a slow-tagged test is a browser test, and the long walks and the timing an
   for (const [f, n] of slow) assert.ok(n.startsWith('[slow] ') && n.includes('in a browser'), `${f}: ${n}`);
   const tagged = (file, part) => testNames(file).some((n) => n.startsWith('[slow] ') && n.includes(part));
   assert.ok(tagged('tests/shell-pad-walk.test.mjs', 'the D-pad walks every control'), 'the controller walk');
-  assert.ok(tagged('tests/shell-focus-containment.test.mjs', 'focus stays inside the Controls modal'), 'the focus walk');
+  assert.ok(tagged('tests/shell-focus-containment.test.mjs', 'focus stays inside the pause card'), 'the focus walk');
   assert.ok(tagged('tests/shell-menu.test.mjs', 'the backdrop orbits and draws every frame'), 'the frame count');
   assert.ok(tagged('tests/mode3d-end.test.mjs', 'the loss wave reaches the far side'), 'the wave timing');
   assert.ok(tagged('tests/render-3d-flag-flash.test.mjs', 'flashes the cubes it changed'), 'the flash');

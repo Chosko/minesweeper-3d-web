@@ -220,8 +220,8 @@ const LOOK_SCREEN = 'look';
 function looking() { return S.mode === LOOK_SCREEN; }
 /** Back on the board (Esc, the controller's back button): cancels a board being generated, else pauses. */
 function backGame(source) { return endDelay() ? false : PAUSE.back(source === 'pointer' ? 'button' : source); }
-/** F2, Start + Y and R do nothing during an end delay or while a confirmation or the controls modal shows. */
-function restartBlocked() { return endDelay() || ui.isConfirmOpen() || ui.isControlsOpen(); }
+/** F2, Start + Y and R do nothing during an end delay or while a confirmation shows. */
+function restartBlocked() { return endDelay() || ui.isConfirmOpen(); }
 /**
  * F2 (in play and on the pause card: restart) and R (on the results screen: Play again), without
  * Ctrl, Alt or Meta; whether the key acted. F2's browser default is always prevented.
@@ -419,7 +419,6 @@ const ui = new UI({
   onCancel3D: () => cancelGeneration(),
   onStandardWait3D: () => standardFromWait3D(),
   onOfferMenu3D: () => PAUSE.toMenu(),
-  onLayer: () => applyContainment(), // the Controls modal opened or closed: the menu is inert behind it, live before it takes focus back
   onTouchMode: (mode) => { controls.toggle(mode); ui.setTouchModes(controls.touch); needRender = true; },
 });
 ui.setNoMouse(NO_MOUSE, COARSE_ONLY);
@@ -1216,7 +1215,7 @@ window.addEventListener('keydown', (e) => {
 // panel and below the Records screen's lists; both give the same files.
 const RECORDS_EXPORT = createRecordsExport({ records: RECORDS, replays: REPLAYS });
 const SETTINGS_EXPORT = bindExportActions({
-  csv: document.getElementById('set-export-csv'), json: document.getElementById('set-export-json'), note: document.getElementById('set-export-note'),
+  csv: document.getElementById('set-export-csv'), json: document.getElementById('set-export-json'),
 }, { onExport: (format) => RECORDS_EXPORT.save(format) });
 
 // ---------- records screen ----------
@@ -1320,7 +1319,7 @@ ui.setBuild(buildLabel(VERSION));
 /** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
 function shellBack(source) {
   if (endDelay()) return;
-  if (ui.closeControls() || ui.closeConfirm() || ui.closeResetConfirm() || RECORDS_PAGE.closeConfirm()) return;
+  if (ui.closeConfirm() || ui.closeResetConfirm() || RECORDS_PAGE.closeConfirm()) return;
   SHELL.back(source);
 }
 /**
@@ -1331,7 +1330,7 @@ function shellBack(source) {
  */
 function historyBack() {
   if (endDelay()) return;
-  if (ui.closeControls() || ui.closeConfirm() || ui.closeResetConfirm() || RECORDS_PAGE.closeConfirm()) return;
+  if (ui.closeConfirm() || ui.closeResetConfirm() || RECORDS_PAGE.closeConfirm()) return;
   if (S.mode === 'playing' || S.mode === 'classic-2d') { pauseGame('button'); return; }
   if (S.mode === 'paused' && !gameOver()) return;
   if (S.mode === 'ready' && S.game && S.started) return;
@@ -1700,7 +1699,7 @@ canvas.addEventListener('webglcontextlost', (e) => {
   if (MODES.active === '3d') mode3d.contextLost();
   else SHELL.go('ctxlost');
 });
-const CTX_LOST_INERT = ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'c2d-status', 'm3d-status', 'controls-modal'];
+const CTX_LOST_INERT = ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'c2d-status', 'm3d-status'];
 /** Dead canvas: leave every game mode (so lock changes/keys can't resume) and disable other overlays. */
 function showContextLost() {
   mouse.reset();
@@ -1755,14 +1754,13 @@ function padClick(el) {
   try { el.click(); } finally { padGesture = false; }
 }
 
-// Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
+// Spatial focus navigation inside the topmost visible overlay (its screen, or a board status card).
 // The board status cards sit above the pause card, and take their default focus from the card.
 const LAYER_SCREEN = {
-  'ctx-lost': 'ctxlost', 'controls-modal': null, 'c2d-status': null, 'm3d-status': null, replay: 'replay', pause: 'paused', ready: 'ready', 'learn-end': 'learn-end', results: 'results', look: 'look',
+  'ctx-lost': 'ctxlost', 'c2d-status': null, 'm3d-status': null, replay: 'replay', pause: 'paused', ready: 'ready', 'learn-end': 'learn-end', results: 'results', look: 'look',
   'coming-soon': 'coming-soon', daily: 'daily', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
-const MODAL_FOCUS = '#controls-close';
 const STATUS_LAYERS = { 'c2d-status': ['c2d', board2d], 'm3d-status': ['m3d', board3d] };
 function layerOpen(id) {
   const el = document.getElementById(id);
@@ -1788,7 +1786,7 @@ function isInert(el) {
   return false;
 }
 /** The overlays that contain focus while they are the topmost visible layer. */
-const CONTAINED = new Set(['controls-modal', 'pause', 'learn-end', 'results', 'replay']);
+const CONTAINED = new Set(['pause', 'learn-end', 'results', 'replay']);
 /** Top-level elements that are not page content, never made inert by an overlay. */
 const NOT_SECTIONS = new Set(['SCRIPT', 'NOSCRIPT', 'TEMPLATE']);
 /** The open overlay that contains focus (the topmost visible layer, when it is one of CONTAINED), or null. */
@@ -1807,7 +1805,7 @@ function containedArea(layer) {
 /**
  * Re-apply the containment: every other top-level section inert behind the open overlay (the toast
  * kept live), and the rest of the pause card inert behind its confirmation. Runs on every router
- * change and focus hand-off, on the Controls modal's toggle, and on any overlay's show or hide.
+ * change and focus hand-off, and on any overlay's show or hide.
  */
 function applyContainment() {
   const layer = containedLayer();
@@ -1853,11 +1851,11 @@ function padFocusables(layer, selector = FOCUSABLE) {
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
   });
 }
-/** The layer's declared default target: its screen's (SHELL), a board status card's, or the controls modal's close button. */
+/** The layer's declared default target: its screen's (SHELL) or a board status card's. */
 function padDefault(layer, items) {
   const screen = LAYER_SCREEN[layer.id];
   const status = STATUS_LAYERS[layer.id];
-  const target = status ? statusFocus(...status) : screen ? SHELL.defaultFocus(screen) : MODAL_FOCUS;
+  const target = status ? statusFocus(...status) : SHELL.defaultFocus(screen);
   return resolveFocus(target && layer.querySelector(target), items);
 }
 /** The router's focus hand-off: the screen's default target, or its layer's first control. */
@@ -1990,7 +1988,6 @@ function handlePad(p, dt, now) {
   if (END_SKIP.pad(anyPressed)) { controls.releasePad(); return; }
   // The look: a button pressed brings the results card back and does nothing else; the sticks fly.
   if (LOOK_END.pad(anyPressed)) { if (looking()) padLook(p, dt); else controls.releasePad(); return; }
-  const modal = ui.isControlsOpen();
   // Start + Y: Y pressed while Start is held restarts, in play and on the pause card. Start's own
   // press already paused (or resumed), so Start is read unsuppressed; the buttons still held are
   // suppressed so Y does not act on the new board.
@@ -2004,8 +2001,6 @@ function handlePad(p, dt, now) {
   else if (S.mode === 'classic-2d') padBoard2D(p, held, pressed, now);
   else if (S.mode === REPLAY_SCREEN) padReplay(p, held, pressed, dt, now);
   else padMenus(p, held, pressed, now);
-
-  if (ui.isControlsOpen() !== modal) layerChanged(); // screen changes report through the router
 }
 
 function padPlaying(p, held, pressed, dt, now) {
@@ -2091,16 +2086,14 @@ function padStatus3D(p, held, pressed, now) {
 
 function padMenus(p, held, pressed, now) {
   controls.releasePad();
-  const modal = ui.isControlsOpen();
-  if (pressed(BTN.START) && (S.mode === 'ready' || S.mode === 'paused') && !modal && !ui.isConfirmOpen()) { padResume(); return; }
+  if (pressed(BTN.START) && (S.mode === 'ready' || S.mode === 'paused') && !ui.isConfirmOpen()) { padResume(); return; }
   if (backButtons(S.mode).some(pressed)) { shellBack('pad'); return; }
   if (pressed(BTN.X)) {
-    if (modal) ui.closeControls();
-    else if (S.mode === 'ready' || S.mode === 'paused') ui.userToggleHelp();
+    if (S.mode === 'ready' || S.mode === 'paused') ui.userToggleHelp();
     return;
   }
   if (pressed(BTN.A)) { padActivate(); return; }
-  if (S.mode === 'records' && !modal && !ui.isConfirmOpen() && !RECORDS_PAGE.confirmOpen && padRecords(pressed)) return;
+  if (S.mode === 'records' && !ui.isConfirmOpen() && !RECORDS_PAGE.confirmOpen && padRecords(pressed)) return;
   const [ax, ay] = p.ls, ver = Math.abs(ay) >= Math.abs(ax);
   const dirs = {
     up: held(BTN.UP) || (ver && ay < -0.5), down: held(BTN.DOWN) || (ver && ay > 0.5),

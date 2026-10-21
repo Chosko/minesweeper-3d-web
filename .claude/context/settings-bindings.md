@@ -5,8 +5,7 @@
 `js/settings/bindings.js` is the one source of each mode's controls per
 input device, in the canvas's short wording, read by the Settings page's
 Bindings panel ([settings-page.md](settings-page.md)) and by every help
-surface in `js/ui.js` — the pause card, the Controls panel the Settings page
-opens, the H panel, the 3D ready card, the HUD strip, the first-use hint
+surface in `js/ui.js` — the pause card, the H panel, the 3D ready card, the HUD strip, the first-use hint
 strips and the one-time hints — plus the active device those surfaces
 follow. DOM-free; rebinding is not offered. The module's head comment lists
 every function.
@@ -72,8 +71,7 @@ every function.
   help foot, key caps in the HUD and hint strips.
 - **Bindings are one source, three lists.** The Settings page shows one
   mode × device's full rows at a time, picked by its Mode and Device
-  choices, and the Controls panel the full rows of its Classic 2D | 3D tab
-  for the active device; the pause card and the H panel (with its foot
+  choices; the pause card and the H panel (with its foot
   line) show the active mode's help rows for the active device, and the HUD
   strip that mode's strip; the ready card its short rows, touch's on a
   coarse-only device; the hint strip its mode's strip — on a coarse-only

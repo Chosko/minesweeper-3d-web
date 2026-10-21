@@ -180,6 +180,15 @@ test('the export actions: both call the one exporter; disabled with a line when 
   assert.deepEqual(asked, ['csv', 'json']);
 });
 
+test('the export actions without a note line: only the buttons follow, as on the Settings page', () => {
+  const els = { csv: element(), json: element() };
+  const actions = bindExportActions(els, { onExport: () => {} });
+  actions.show(false);
+  assert.deepEqual([els.csv.disabled, els.json.disabled], [true, true]);
+  actions.show(true);
+  assert.deepEqual([els.csv.disabled, els.json.disabled], [false, false]);
+});
+
 test('the export module reads through the summary derivations and keeps no rank, no storage write', () => {
   const src = read('js/records/export.js').replace(/\/\/[^\n]*/g, '');
   assert.match(src, /import \{[^}]*bbbvPerSecond[^}]*efficiency[^}]*\} from '\.\/summary\.js'/);

@@ -67,9 +67,10 @@ Export (`js/records/export.js`)
   switch under it and each averages row is a card; a time never wraps.
 - **Export.** `js/main.js` builds one `RECORDS_EXPORT` over the store and
   the library; the screen's actions under the mode's overall figures and
-  the Settings Data panel's both save through it, disabled with `NOTHING_TO_EXPORT` until a
-  game is recorded.
-- **Controller.** `padRecords` in `js/main.js` (off while a modal or a
+  the Settings Data panel's both save through it, disabled until a game is
+  recorded — the screen's with `NOTHING_TO_EXPORT` in its note line, the
+  Settings panel's with no line.
+- **Controller.** `padRecords` in `js/main.js` (off while a
   confirmation is open): LT / RT choose the mode (`TRIGGER_MODES`), LB / RB
   step the board (`stepBoard`); `[data-pad-glyph]` hints beside the switch
   and the picker show the active pad's glyphs (`UI.setPad`). The arrow keys

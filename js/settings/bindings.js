@@ -1,12 +1,12 @@
 // The bindings source: each mode's controls per input device, as shown read-only by the Settings
-// page (js/settings/page.js) and by the in-game help surfaces (js/ui.js): the pause card, the main
-// menu's Controls panel, the H panel, the 3D ready card, the HUD strip and the first-use hint strips.
+// page (js/settings/page.js) and by the in-game help surfaces (js/ui.js): the pause card, the H
+// panel, the 3D ready card, the HUD strip and the first-use hint strips.
 // One source, so they never disagree; rebinding is not offered here. DOM-free.
 //
 // A row is [input, action], in the canvas's short wording. In either text, `[Key]` is a keyboard key
 // and `{name}` a controller button, named by its position in the standard mapping (a, b, x, y, lb,
 // rb, lt, rt, start, back) and drawn with the active controller's glyphs (js/gamepad.js GLYPHS).
-// Three lists read the rows: the full list (the Settings page and the Controls panel), the help list
+// Three lists read the rows: the full list (the Settings page), the help list
 // (the pause card and the H panel: HELP_BINDINGS where it is shorter, otherwise the full rows) and the
 // 3D ready card's (READY_BINDINGS).
 //

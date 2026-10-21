@@ -25,10 +25,11 @@
 //   (objectUrl: { create(blob), revoke(url) }, URL's by default) and calls trigger({ url, name,
 //   blob }) — by default a link click in the page — then revokes the URL; it returns the file, or
 //   null when no game is recorded, saving nothing.
-// bindExportActions({ csv, json, note }, { onExport }) → { show(exportable) }: the two export
+// bindExportActions({ csv, json, note? }, { onExport }) → { show(exportable) }: the two export
 //   buttons call onExport('csv') and onExport('json'); show(false) disables both and shows
-//   NOTHING_TO_EXPORT in the note line, show(true) enables them and hides it. Settings' Data panel
-//   and the Records screen bind theirs through it, over the one createRecordsExport.
+//   NOTHING_TO_EXPORT in the note line, show(true) enables them and hides it; without a note line
+//   only the buttons follow. Settings' Data panel (no note line) and the Records screen bind theirs
+//   through it, over the one createRecordsExport.
 
 import { CLICK_KINDS } from '../engine/metrics.js';
 import { boardLabel, parseBoardKey } from './board.js';
@@ -37,7 +38,7 @@ import { bbbvPerSecond, countedClicks, efficiency } from './summary.js';
 export const EXPORT_FORMAT = 1;
 export const EXPORT_MODES = Object.freeze(['classic-2d', '3d']);
 export const NOTHING_TO_EXPORT = 'Nothing to export yet: no game is recorded.';
-export const EXPORT_LINE = 'Save your game history as a spreadsheet table (CSV), or your history and the list of kept replays as one file (JSON).';
+export const EXPORT_LINE = 'Save every recorded game as a spreadsheet, or the history and the list of kept replays as one file.';
 export const CSV_HEADERS = Object.freeze([
   'ended_at', 'mode', 'board_key', 'board_label', 'no_guess', 'outcome', 'time_s', 'bbbv', 'bbbv_solved', 'bbbv_per_s', 'efficiency_pct',
   'counted_clicks', ...CLICK_KINDS.flatMap((k) => [`${k}_effective`, `${k}_wasted`]), 'replay_kept', 'replay_pins',
@@ -143,13 +144,14 @@ export function createRecordsExport({ records, replays = null, now = () => new D
   };
 }
 
-export function bindExportActions({ csv, json, note }, { onExport }) {
+export function bindExportActions({ csv, json, note = null }, { onExport }) {
   csv.addEventListener('click', () => onExport('csv'));
   json.addEventListener('click', () => onExport('json'));
   return {
     show(exportable) {
       csv.disabled = !exportable;
       json.disabled = !exportable;
+      if (!note) return;
       note.textContent = exportable ? '' : NOTHING_TO_EXPORT;
       note.classList.toggle('hidden', !!exportable);
     },

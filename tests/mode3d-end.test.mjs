@@ -425,7 +425,7 @@ test('the results screen shows over a 3D game on a dimmed translucent surface, t
   assert.doesNotMatch(css, /results--takeover/, 'the opaque takeover surface is gone');
   const theme = read('themes/joyful-tiles/theme.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.doesNotMatch(theme, /#results\.results--over3d/, 'over the 3D scene the results take the one scrim, as over 2D');
-  const rule = theme.match(/:is\(#pause, #ready, #results, #learn-end, #ctx-lost, \.modal\)\s*\{([^}]*)\}/);
+  const rule = theme.match(/:is\(#pause, #ready, #results, #learn-end, #ctx-lost\)\s*\{([^}]*)\}/);
   assert.ok(rule, 'the scrim has its rule');
   assert.match(rule[1], /background:\s*var\(--color-backdrop\)/, 'a translucent scrim of the theme');
   assert.doesNotMatch(rule[1], /backdrop-filter/, 'the scene reads behind it, unblurred');

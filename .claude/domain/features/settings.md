@@ -96,8 +96,7 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   "Export history (CSV)" and "Export all (JSON)", with a line saying what
   they save — before "Reset all data…", so the player can keep a copy
   before deleting; both call the one export module the Records screen
-  uses, and with no game recorded they are disabled with a line saying
-  there is nothing to export yet.
+  uses, and with no game recorded they are disabled.
 - **Reset all data.** The Data panel's last action. Its confirmation, in the
   panel, names what goes — records, game history, replays, settings, the
   last board choices (Classic 2D and 3D) and the first-use hints — and says

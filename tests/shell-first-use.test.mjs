@@ -340,7 +340,7 @@ const MAIN = read('js/main.js');
 const UI = read('js/ui.js');
 
 test('the ready card holds the "How 3D works" block and the view modes\' row', () => {
-  const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
+  const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<section id="ctx-lost"'));
   const rules = ready.slice(ready.indexOf('id="ready-rules"'), ready.indexOf('id="ready-keys"'));
   assert.match(rules, /class="ui-panel ui-panel--muted[^"]*"/, 'a muted panel');
   assert.match(rules, /<div class="ui-section-label"><h3 class="ui-section-label__text" id="ready-rules-title">How 3D works<\/h3><\/div>/, 'under its section label');
@@ -352,7 +352,7 @@ test('the ready card holds the "How 3D works" block and the view modes\' row', (
 });
 
 test('on a coarse-only device the "How 3D works" block names the toolbar\'s Ctrl button and the ready card\'s Back shows no key hint', () => {
-  const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
+  const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<section id="ctx-lost"'));
   const keys = ready.match(/<span class="ready-rules-keys">([\s\S]*?)<\/span>\n/);
   const touch = ready.match(/<span class="ready-rules-touch">([\s\S]*?)<\/span>\n/);
   assert.ok(keys && touch, 'the hidden-cubes line in a keyboard and a touch form');

@@ -189,10 +189,10 @@ test('the shown screen is current while its show runs', () => {
 // ---------------------------------------------------------------- navigation
 
 test('the topmost visible layer takes input', () => {
-  const open = new Set(['menu', 'controls-modal']);
-  const order = ['ctx-lost', 'controls-modal', 'pause', 'ready', 'menu'];
-  assert.equal(topLayer(order, (id) => open.has(id)), 'controls-modal');
-  open.delete('controls-modal');
+  const open = new Set(['menu', 'learn-end']);
+  const order = ['ctx-lost', 'learn-end', 'pause', 'ready', 'menu'];
+  assert.equal(topLayer(order, (id) => open.has(id)), 'learn-end');
+  open.delete('learn-end');
   assert.equal(topLayer(order, (id) => open.has(id)), 'menu');
   open.clear();
   assert.equal(topLayer(order, (id) => open.has(id)), null);
@@ -263,9 +263,9 @@ test('inside a group (a table, a menu) Down / Up step through it in DOM order; L
 });
 
 test('an open overlay makes every other top-level section inert, except the status toast', () => {
-  const sections = ['scene-ui', 'c2d', 'hud', 'toast', 'menu', 'controls-modal', 'replay', 'results', 'pause'];
-  assert.deepEqual(inertSections(sections, 'controls-modal'), ['scene-ui', 'c2d', 'hud', 'menu', 'replay', 'results', 'pause']);
-  assert.deepEqual(inertSections(sections, 'pause'), ['scene-ui', 'c2d', 'hud', 'menu', 'controls-modal', 'replay', 'results']);
+  const sections = ['scene-ui', 'c2d', 'hud', 'toast', 'menu', 'learn-end', 'replay', 'results', 'pause'];
+  assert.deepEqual(inertSections(sections, 'learn-end'), ['scene-ui', 'c2d', 'hud', 'menu', 'replay', 'results', 'pause']);
+  assert.deepEqual(inertSections(sections, 'pause'), ['scene-ui', 'c2d', 'hud', 'menu', 'learn-end', 'replay', 'results']);
   assert.ok(!inertSections(sections, 'results').includes('toast'), 'the toast stays live');
   assert.deepEqual(inertSections(sections, null), [], 'no overlay open: nothing inert');
   // The confirmation inside the pause card: the card's other parts, with nothing kept live.
@@ -474,7 +474,7 @@ test('in a browser, the keyboard walks menu → screen → Back with the default
     assert.equal(await active(), 'menu-entry-3d', 'Back returns to the menu with the entry it opened selected');
     assert.equal(first, 'menu-entry-classic-2d');
 
-    // Esc while playing pauses; the controls reference over Settings closes on Esc before anything else.
+    // Esc while playing pauses; the reset confirmation on Settings closes on Esc before anything else.
     await page.evaluate(() => { globalThis.__ms.start(5, 5, 5, 5); globalThis.__ms.forcePlay(); });
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'paused', 'Esc while playing means Pause');
@@ -482,10 +482,10 @@ test('in a browser, the keyboard walks menu → screen → Back with the default
     await page.evaluate(() => globalThis.__ms.state.game && document.getElementById('p-menu').click());
     assert.equal(await mode(), 'menu');
     await page.click('#menu-entry-settings');
-    await page.click('#set-controls');
+    await page.click('#set-reset');
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'settings');
-    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
+    assert.equal(await page.evaluate(() => document.getElementById('set-reset-confirm').classList.contains('hidden')), true);
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
 
@@ -609,7 +609,7 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
     assert.notEqual((await focus()).id, on, 'Down moves focus off the choice');
     assert.equal(await choice(), was, 'without changing it');
     // At 1280 px the sections sit in two placed columns: Down walks them as they show.
-    await page.focus('#set-controls');
+    await page.focus('#set-confirmRestart');
     await page.keyboard.press('ArrowDown');
     assert.equal((await focus()).id, 'set-fullscreen', 'Down from Controls reaches Graphics, below it');
     // Down into a choice lands on its checked option, wherever that sits.
@@ -631,6 +631,7 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
     }, key);
     for (const size of [{ width: 1280, height: 800 }, { width: 1920, height: 1080 }]) {
       await page.setViewportSize(size);
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       await page.focus('#set-lookSensitivity');
       const seen = new Set([await keyOf()]);
       const queue = [...seen];
@@ -658,6 +659,8 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
     });
     for (const size of [{ width: 1280, height: 800 }, { width: 390, height: 700 }]) {
       await page.setViewportSize(size);
+      // The page places its sections for the window size on the frame the resize renders.
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       for (const top of [0, 1e6]) {
         await page.evaluate((y) => { document.getElementById('settings-body').scrollTop = y; }, top);
         assert.equal(await backInView(), true, `Back is in view at ${size.width}×${size.height}, scrolled to ${top ? 'the bottom' : 'the top'}`);
@@ -674,15 +677,6 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
     assert.equal(shown, true, 'the focused control is in view under the head');
     await page.setViewportSize({ width: 1280, height: 800 });
 
-    // The Controls action's panel: its tabs keep Left/Right, and Up leaves them for Close.
-    await page.click('#set-controls');
-    const inTabs = () => page.evaluate(() => !!document.activeElement.closest('#controls-tabs'));
-    for (let i = 0; i < 4 && !(await inTabs()); i++) await page.keyboard.press('ArrowDown');
-    assert.equal(await inTabs(), true, 'Down reaches the tabs');
-    await page.keyboard.press('ArrowUp');
-    assert.equal((await focus()).id, 'controls-close', 'Up leaves the tabs');
-    await page.keyboard.press('Escape');
-    assert.equal((await focus()).id, 'set-controls', 'closing gives the focus back to the action');
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu', 'Back returns to the screen Settings was opened from');
     assert.deepEqual(errors, []);

@@ -31,7 +31,7 @@ const CARD = {
 };
 
 const INDEX = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const READY = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
+const READY = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<section id="ctx-lost"'));
 
 test('the ready card\'s markup: the canvas\'s icons, the plain Learn line, the phone-landscape title and the rules with Ctrl as text', () => {
   assert.match(READY, /<button type="button" id="ready-back" class="ui-button ui-button--secondary ui-button--sm" data-icon="arrow-left">/, 'Back leads with the arrow');
