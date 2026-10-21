@@ -1171,7 +1171,7 @@ Feature: shared-screen-layout
 
 ## 230. Board choice screens to the canvas
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/style.css, themes/joyful-tiles/theme.css, css/components.css, js/classic2d/board-choice.js, js/mode3d/board-choice.js, .claude/context/app-shell-2d.md, .claude/context/app-shell-3d.md
 Preconditions: 219, 221, 222, 223

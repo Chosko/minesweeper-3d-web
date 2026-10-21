@@ -556,14 +556,14 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
     await page.keyboard.press('Space');
     assert.equal(await page.evaluate(() => document.querySelector('#c2d-choice [aria-pressed="true"]').dataset.size), 'custom');
     assert.equal(await mode(), 'classic-2d-choice', 'choosing starts nothing');
-    await walkTo('ArrowRight', 'c2d-random');
-    await walkTo('ArrowUp', 'c2d-width');
+    await walkTo('ArrowRight', 'c2d-width');
     const before = await page.inputValue('#c2d-width');
     await page.keyboard.press('ArrowLeft');
     assert.equal((await focus()).id, 'c2d-width', 'Left stays in the field for its caret');
     await page.keyboard.press('ArrowUp');
     assert.notEqual((await focus()).id, 'c2d-width', 'Up moves focus out of the field');
     assert.equal(await page.inputValue('#c2d-width'), before, 'and leaves its value alone');
+    await walkTo('ArrowDown', 'c2d-random');
     await walkTo('ArrowDown', 'c2d-play');
     await walkTo('ArrowUp', 'c2d-choice-back');
     await page.keyboard.press('Enter');

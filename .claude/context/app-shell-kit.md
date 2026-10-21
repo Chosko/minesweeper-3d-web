@@ -36,7 +36,8 @@ inked while the switch is locked) and the shared layout's components: `ui-button
 `status`, `summary`; variant `ui-frame__foot--action`, the white action
 foot; slot `window-chrome`), `ui-mode-entry` (`entry`,
 `icon`, `label`, `reason`, `last`, `lock`), `ui-option` (`option`,
-`badge`, `name`, `last`, `meta`, `size`, `density`, `check`; variant
+`badge`, `line` — the name and its Last played chip, the chip wrapping
+under the name —, `name`, `last`, `meta`, `size`, `density`, `check`; variant
 `ui-option--learn`), `ui-section-label`, `ui-key-hint`, `ui-chip`,
 `ui-list-row`, `ui-scene-panel` (`stage`, `tag`, `card`, `badge`, `name`,
 `note`; variant `ui-scene-panel--live`), `ui-divider`, `ui-tabs`,

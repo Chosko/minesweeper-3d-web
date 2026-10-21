@@ -89,10 +89,14 @@ board; the skin owns how a tile looks.
 - **Stored choice.** One that does not normalise reads as
   `DEFAULT_CHOICE`; an invalid one is never saved.
 - **The board choice screen** (`css/components.css` head comment, *Classic
-  2D board choice*): the options on the left; on the right a preset's
-  no-guess switch and the board's three bests, Custom's switch, form,
-  Random and refusal (a warn note) with the bests for that size, or Insert Board
-  Code's field alone; the bottom bar's summary, Records and Play. Choosing
+  2D board choice*): the options on the left, each name with its Last
+  played chip in a name line that wraps the chip before the check; on the
+  right a preset's no-guess switch row and the board's three bests,
+  Custom's switch row, form (a muted panel: the fields filling one row over
+  the info line and Random) and refusal (a warn note) with the bests for
+  that size, or Insert Board Code's field alone; the bottom bar's summary,
+  Records and Play. Back, Records, Play and Random lead with their icons;
+  on a phone Back reads "Back". Choosing
   an option is a click (a tap, the controller's A); Enter plays. The info
   line, refusal line, density hint, bests, summary and Play follow the
   fields and the switch live; Play is disabled on a refused custom board

@@ -1167,7 +1167,8 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   assert.match(CHOICE, /^<section id="c2d-choice" class="overlay ui-backdrop hidden" aria-label="Classic 2D board choice">/);
   assert.match(CHOICE, /<h1 class="ui-wordmark" id="c2d-choice-wordmark" aria-label="Minesweeper 3D">/, 'the game\'s title, as on the menu');
   assert.match(CHOICE, /<section class="ui-frame" id="c2d-choice-frame" aria-labelledby="c2d-choice-title">/);
-  assert.match(CHOICE, /<div class="ui-frame__start"><button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/);
+  assert.match(CHOICE, /<div class="ui-frame__start"><button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
+    'Back led by its arrow, named Back to Main menu, reading Main menu on a desktop and Back on a phone');
   assert.match(CHOICE, /<h2 class="ui-frame__title" id="c2d-choice-title">Classic 2D<\/h2>/);
 
   // Left: Board, the presets and Custom, a divider, Insert Board Code with no icon.
@@ -1178,7 +1179,7 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   const unescape = (t) => t.replace(/&times;/g, '×').replace(/&middot;/g, '·').replace(/&ndash;/g, '–');
   for (const size of CHOICE_SIZES) {
     const b = unescape(left.slice(left.indexOf(`data-size="${size}"`), left.indexOf('</button>', left.indexOf(`data-size="${size}"`))));
-    assert.match(b, /<span class="ui-option__name">[A-Z]\w+<\/span><span class="ui-chip hidden" data-last>Last played<\/span><span class="ui-option__meta">/, `${size}: its name, then its Last played chip`);
+    assert.match(b, /<span class="ui-option__line"><span class="ui-option__name">[A-Z]\w+<\/span><span class="ui-chip hidden" data-last>Last played<\/span><\/span><span class="ui-option__meta">/, `${size}: its name, then its Last played chip, in its name line`);
     assert.ok(b.includes(`<span class="ui-option__size">${sizeLabel(size)}</span> · <span class="ui-option__density">${mineDensity(STANDARD_SIZES[size])}</span>`), `${size}: its size line and density`);
   }
   assert.ok(unescape(left).includes(`<span class="ui-option__meta" data-custom-meta>${CUSTOM_HINT}</span>`));
@@ -1191,13 +1192,15 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
 
   // Right: the settings, the custom form, the bests, the code panel.
   const right = between(CHOICE, '<div class="ui-column" id="c2d-choice-detail">', '<footer class="ui-frame__foot ui-frame__foot--action">');
-  assert.match(right, /<div id="c2d-settings" data-settings>\s*<div class="ui-section-label"><h3 class="ui-section-label__text">Board settings<\/h3><\/div>\s*<label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess<\/span><\/label>/);
-  assert.ok(right.includes(`<p id="c2d-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`));
+  assert.ok(right.includes('<div id="c2d-settings" data-settings>\n            <div class="ui-section-label"><h3 class="ui-section-label__text">Board settings</h3></div>\n'
+    + `            <div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="c2d-noguess">No-guess</label><span class="ui-switchrow__help" id="c2d-noguess-help">${NOGUESS_HELP_TEXT}</span></span>`
+    + '<input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess aria-describedby="c2d-noguess-help"></div>'),
+  'the no-guess switch row: its label and help line on the left, the switch at the right');
   assert.ok(right.indexOf('data-density-hint') > right.indexOf('c2d-noguess-help') && right.indexOf('data-density-hint') < right.indexOf('<form id="c2d-custom"'), 'the density hint under the switch');
   assert.match(right, /<p id="c2d-density-hint" class="ui-note ui-note--warn hidden" data-icon="warning" data-density-hint><span class="ui-note__text"><\/span><\/p>\s*<\/div>/,
     'the density hint, a warn note with its warning icon, inside the board settings');
   const form = right.slice(right.indexOf('<form id="c2d-custom"'), right.indexOf('</form>'));
-  assert.match(form, /^<form id="c2d-custom" class="ui-panel hidden"/, 'the form shows for Custom only');
+  assert.match(form, /^<form id="c2d-custom" class="ui-panel ui-panel--muted hidden"/, 'the form, a muted panel, shows for Custom only');
   for (const f of ['width', 'height', 'mines']) {
     assert.match(form, new RegExp(`<label class="ui-field"><span class="ui-field__label">[^<]+</span><input id="c2d-${f}" data-field="${f}" class="ui-field__input" type="number"`), f);
   }
@@ -1205,7 +1208,8 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   assert.match(form, /id="c2d-mines"[^>]*min="1"/, 'a custom board takes at least one mine');
   const [info, random, refusal] = ['data-info', 'id="c2d-random"', 'data-refusal'].map((x) => form.indexOf(x));
   assert.ok(info > form.indexOf('id="c2d-mines"') && random > info && refusal > random, 'the fields, the info line, Random, the refusal line');
-  assert.match(form, /<button type="button" id="c2d-random" class="ui-button ui-button--secondary ui-button--sm" data-random>Random<\/button>/);
+  assert.match(form, /<div class="ui-actions ui-actions--row"><p id="c2d-info" class="ui-text ui-text--muted" data-info>[^<]*<\/p><button type="button" id="c2d-random" class="ui-button ui-button--secondary ui-button--sm" data-random data-icon="shuffle">Random<\/button><\/div>/,
+    'the info line and Random, with its shuffle icon, on one row');
   assert.match(form, /<p id="c2d-refusal" class="ui-note ui-note--warn hidden" data-icon="warning" data-refusal><span class="ui-note__text"><\/span><\/p>/, 'the refusal, a warn note with its warning icon');
   assert.doesNotMatch(CHOICE, /c2d-start|type="submit"/, 'Play starts a custom board');
   const bests = right.slice(right.indexOf('<div id="c2d-bests"'), right.indexOf('<div id="c2d-code-panel"'));
@@ -1223,21 +1227,34 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
 
   // The bottom bar: the summary, Records and Play with its Enter hint.
   const foot = between(CHOICE, '<footer class="ui-frame__foot ui-frame__foot--action">', '</footer>');
-  assert.match(foot, /<p class="ui-frame__summary" id="c2d-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="c2d-records" class="ui-button ui-button--secondary" data-records>Records<\/button>\s*<button type="button" id="c2d-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
+  assert.match(foot, /<p class="ui-frame__summary" id="c2d-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="c2d-records" class="ui-button ui-button--secondary" data-records data-icon="chart">Records<\/button>\s*<button type="button" id="c2d-play" class="ui-button ui-button--primary ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/,
+    'Records with its chart icon, Play with its play icon');
   for (const [, cls] of CHOICE.matchAll(/class="([^"]+)"/g)) {
     for (const c of cls.split(/\s+/)) assert.ok(c.startsWith('ui-') || ['overlay', 'hidden'].includes(c), `kit class: ${c}`);
   }
 });
 
-test('the shell stylesheet lays the board choice out: the window under the title, centred unless the page is too short, denser rows, one column on a phone', () => {
+test('the shell stylesheet lays the board choice out: the wordmark pinned at the top, the window centred under it unless the page is too short, denser rows on the smaller desktops only, one column on a phone', () => {
   // The rules are the 3D board choice's too (tests/mode3d-board-choice.test.mjs).
   const css = read('css/style.css');
-  assert.match(css, /\n#c2d-choice-top, #board-choice-top \{ flex: 1 1 0;/, 'the space above the window grows with the page');
-  assert.match(css, /\n#c2d-choice::after, #board-choice::after \{ content: ""; flex: 1 1 0;/, 'as much as the space below it');
+  assert.match(css, /\n#c2d-choice-top, #board-choice-top \{ position: absolute; top: 44px;/, 'the wordmark pinned at the top');
+  assert.match(css, /\n#c2d-choice::before, #board-choice::before \{ content: ""; flex: 1 1 0; min-height: 176px; \}/, 'the space above the window grows with the page, never shorter than the wordmark\'s band');
+  assert.match(css, /\n#c2d-choice::after, #board-choice::after \{ content: ""; flex: 1 1 0; min-height: 14px; \}/, 'as much as the space below it');
   assert.match(css, /\n#c2d-choice-frame, #board-choice-frame \{ flex: 0 1 auto; width: 1120px; \}/);
-  assert.match(css, /@media \(max-width: 1439px\) \{\n  #c2d-choice-frame, #board-choice-frame \{ width: 1080px; \}[\s\S]*?#c2d-choice \.ui-option, #board-choice \.ui-option \{ min-height: 46px;/);
-  assert.match(css, /@media \(max-width: 1199px\) \{ #c2d-choice-frame, #board-choice-frame \{ width: 984px; \} \}/);
-  assert.match(css, /@media \(max-width: 719px\) \{\n  #c2d-choice, #board-choice \{ padding: 0; \}\n  #c2d-choice-top, #board-choice-top, #c2d-choice-body > \.ui-divider--vertical, #board-choice-body > \.ui-divider--vertical,\n  #c2d-bests, #bc-bests, #c2d-summary, #bc-summary, #c2d-choice::after, #board-choice::after \{ display: none; \}/);
+  assert.match(css, /@media \(max-width: 1439px\) \{\n  #c2d-choice-top, #board-choice-top \{ top: 26px; \}\n  #c2d-choice-wordmark, #board-choice-wordmark \{ font-size: 58px; \}\n  #c2d-choice::before, #board-choice::before \{ min-height: 106px; \}\n  #c2d-choice-frame, #board-choice-frame \{ width: 1080px; \}\n  #c2d-play, #bc-play \{ min-height: 54px; padding: 12px 22px; font-size: 21px; \}/,
+    'compact: the wordmark, the band above the window, the window and Play');
+  assert.match(css, /@media \(max-width: 1199px\) \{\n  #c2d-choice-top, #board-choice-top \{ top: 24px; \}\n  #c2d-choice-wordmark, #board-choice-wordmark \{ font-size: 50px; \}\n  #c2d-choice::before, #board-choice::before \{ min-height: 96px; \}\n  #c2d-choice-frame, #board-choice-frame \{ width: 984px; \}/);
+  const dense = css.match(/@media \(min-width: 720px\) and \(max-width: 1439px\) \{\n([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.match(dense, /#c2d-choice \.ui-option, #board-choice \.ui-option \{ min-height: 46px; padding: 6px 14px; \}/, 'the denser rows, never on a phone');
+  assert.doesNotMatch(css, /@media \(max-width: 1439px\) \{[^}]*\.ui-option[^}]*min-height: 46px/, 'no dense rule reaching a phone');
+  const phone = css.match(/@media \(max-width: 719px\) \{\n  #c2d-choice, #board-choice \{ padding: 0; \}\n([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.match(phone, /#c2d-choice-top, #board-choice-top, #c2d-bests, #bc-bests, #c2d-summary, #bc-summary,\n  #c2d-choice::before, #board-choice::before, #c2d-choice::after, #board-choice::after \{ display: none; \}/);
+  assert.match(phone, /#c2d-choice-body, #board-choice-body \{ display: flex; flex-direction: column; gap: 18px; padding: 16px 18px 112px; \}/, 'one column, its foot clear of the bar');
+  assert.match(phone, /#c2d-choice-body > \.ui-divider--vertical, #board-choice-body > \.ui-divider--vertical \{ width: 100%; height: 1px; \}/, 'a rule between the options and the settings');
+  assert.match(phone, /#c2d-choice \.ui-option, #board-choice \.ui-option \{ min-height: 56px; padding: 9px 14px; \}/);
+  assert.match(phone, /#c2d-choice-frame > \.ui-frame__foot, #board-choice-frame > \.ui-frame__foot \{ position: absolute; left: 0; right: 0; bottom: 0; \}/, 'the bar pinned over the column\'s foot');
+  assert.match(css, /#c2d-custom > \.ui-row \{ display: grid; grid-template-columns: repeat\(3, minmax\(0, 1fr\)\); gap: var\(--space-3\); \}/, 'the three fields fill one row');
+  assert.match(css, /:is\(#c2d-custom, #custom\) \.ui-field__input::-webkit-inner-spin-button,\n:is\(#c2d-custom, #custom\) \.ui-field__input::-webkit-outer-spin-button \{ -webkit-appearance: none; margin: 0; \}/, 'no number spinners');
 });
 
 test('index.html holds the Classic 2D board layer with its generating and failure card', () => {
@@ -1521,7 +1538,7 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
   }
 });
 
-test('in a browser, the board choice at every supported window size: its window\'s width, centred under the title, no horizontal scroll, the presets unscrolled at 768 px high, one column on a phone', async (t) => {
+test('in a browser, the board choice at every supported window size: its window\'s width, centred under the title, no horizontal scroll, the presets unscrolled at 768 px high, one column on a phone under Back and over the pinned bar', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1542,7 +1559,8 @@ test('in a browser, the board choice at every supported window size: its window\
             scroll: document.documentElement.scrollWidth, layer: document.getElementById('c2d-choice').scrollWidth,
             frame: r('c2d-choice-frame'), title: r('c2d-choice-wordmark'), body: [body.scrollHeight, body.clientHeight, body.scrollWidth, body.clientWidth],
             bests: getComputedStyle(document.getElementById('c2d-bests')).display, summary: getComputedStyle(document.getElementById('c2d-summary')).display,
-            play: r('c2d-play'),
+            play: r('c2d-play'), back: r('c2d-choice-back'), backText: document.getElementById('c2d-choice-back').innerText.split('\n')[0],
+            option: r('c2d-code-option'), rule: document.querySelector('#c2d-choice-body > .ui-divider--vertical').getBoundingClientRect(),
           };
         });
         assert.ok(m.scroll <= width && m.layer <= width && m.body[2] <= m.body[3], `${at} ${size}: no horizontal scroll`);
@@ -1550,14 +1568,22 @@ test('in a browser, the board choice at every supported window size: its window\
         assert.ok(m.frame.bottom <= height + 0.5 && m.play.bottom <= height, `${at} ${size}: the window and Play in the page`);
         if (width > 719) {
           assert.ok(m.frame.top >= m.title.bottom, `${at} ${size}: the window under the title`);
+          const band = width >= 1440 ? 176 : width >= 1200 ? 106 : 96;
           const centred = Math.abs((m.frame.top + m.frame.bottom) / 2 - height / 2) <= 1;
-          assert.ok(centred || m.frame.top - m.title.bottom <= 40, `${at} ${size}: centred, or pushed just below the title`);
+          assert.ok(m.frame.top >= band - 0.5 && (centred || m.frame.top - band <= 0.5), `${at} ${size}: centred, or held at the band under the wordmark`);
           if (size !== 'custom' && height <= 900) assert.ok(m.body[0] <= m.body[1], `${at} ${size}: the window fits the page unscrolled`);
+          if (width === 1366 && size === 'intermediate') assert.ok(Math.abs(m.frame.height - 506) <= 2 && Math.abs(m.frame.top - 131) <= 1, `${at}: the canvas's window, 506 px tall at 131`);
+          assert.equal(m.backText, 'Main menu');
         } else {
           assert.equal(m.title.height, 0, 'no title on a phone');
           assert.equal(m.bests, 'none', 'no bests on a phone');
           assert.equal(m.summary, 'none');
           assert.ok(Math.abs(m.play.bottom - height) <= 24, 'Play pinned at the bottom');
+          assert.equal(Math.round(m.play.height), 54, 'Play compact');
+          assert.equal(m.backText, 'Back', 'Back reads Back');
+          assert.ok(m.back.height >= 44, 'a 44 px Back');
+          assert.ok(m.option.height >= 56, 'the options at least 56 px');
+          assert.ok(m.rule.height === 1 && m.rule.width > 300, 'a rule between the options and the settings');
         }
       }
       await page.close();

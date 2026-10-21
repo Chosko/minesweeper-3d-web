@@ -189,6 +189,7 @@ export const KIT_CATALOGUE = Object.freeze([
     parts: [
       selectable('option', '.ui-option', { chosen: '.ui-option[aria-pressed="true"]' }),
       part('badge', '.ui-option__badge', { optional: true }),
+      part('line', '.ui-option__line', { optional: true }),
       part('name', '.ui-option__name'),
       part('last', '.ui-option .ui-chip', { optional: true, as: 'ui-chip' }),
       part('meta', '.ui-option__meta', { optional: true }),

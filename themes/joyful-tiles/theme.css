@@ -869,6 +869,7 @@
   box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 var(--edge-sm) 0 var(--color-edge);
   transition: transform var(--duration-fast) var(--easing-out);
 }
+:root[data-theme="joyful-tiles"] .ui-option__line { color: inherit; }
 :root[data-theme="joyful-tiles"] .ui-option__name { font-size: 22px; }
 :root[data-theme="joyful-tiles"] .ui-option__meta { font-size: 15px; color: var(--color-ink-muted); }
 :root[data-theme="joyful-tiles"] :is(.ui-option__size, .ui-option__density) { color: inherit; }

@@ -95,7 +95,7 @@ test('each no-guess switch says once that no-guess boards keep separate records'
   ];
   let switches = 0;
   for (const html of sections) {
-    for (const m of html.matchAll(/<label class="ui-toggle"><input type="checkbox" role="switch" id="([\w-]+)"[^>]*data-noguess[^>]*><span class="ui-toggle__label">([^<]+)<\/span><\/label>(\s*<p id="[\w-]+-help"[^>]*>([^<]+)<\/p>)?/g)) {
+    for (const m of html.matchAll(/<div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="([\w-]+)">([^<]+)<\/label>(<span class="ui-switchrow__help" id="[\w-]+-help">([^<]+)<\/span>)?<\/span><input type="checkbox" role="switch" id="\1"[^>]*data-noguess[^>]*><\/div>/g)) {
       switches++;
       const [, id, raw, , help] = m;
       const label = raw.replace(/&middot;/g, '·');
@@ -180,7 +180,7 @@ test('in a browser, both board choices\' bests follow the records and the switch
     assert.equal(await best3d(), '45.000 s');
     await page.click('#bc-noguess');
     assert.equal(await best3d(), '—', 'the guessing twin has no game');
-    assert.equal(await text('#c-noguess + .ui-toggle__label'), 'No-guess');
+    assert.equal(await text('label[for="c-noguess"]'), 'No-guess');
     await page.click('#board-choice-back');
 
     // Play an Expert no-guess game to its first click, then leave it: the last board played.

@@ -66,21 +66,22 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
     const { page, errors, ms, tap, focused, walk } = await open(browser, base);
 
     // Classic 2D: Down walks the options, then the switch on the right, then the bar's Records and Play;
-    // Up retraces the walk, and from the first option reaches Back.
+    // Up from Play reaches the switch above it, retraces the options, and from the first option reaches Back.
     await page.click('#menu-entry-classic-2d');
     await ms(() => document.querySelector('#c2d-choice [data-size="beginner"]').focus());
     assert.equal(await focused(), 'beginner');
     assert.deepEqual(await walk(['down', 'down', 'down', 'down', 'down', 'down', 'down', 'down']),
       ['intermediate', 'expert', 'custom', 'c2d-code-option', 'c2d-noguess', 'c2d-records', 'c2d-play', 'c2d-play'], 'no wrap past Play');
     assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up', 'up', 'up']),
-      ['c2d-records', 'c2d-noguess', 'c2d-code-option', 'custom', 'expert', 'intermediate', 'beginner', 'c2d-choice-back']);
+      ['c2d-noguess', 'c2d-code-option', 'custom', 'expert', 'intermediate', 'beginner', 'c2d-choice-back', 'c2d-choice-back'], 'no wrap past Back');
     // A on Custom chooses it: its form joins the walk, Left / Right walk its row.
     await ms(() => document.querySelector('#c2d-choice [data-size="custom"]').focus());
     await tap(BTN.A);
     assert.equal(await ms(() => document.querySelector('#c2d-choice [aria-pressed="true"]').dataset.size), 'custom');
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'classic-2d-choice', 'A chooses, and starts nothing');
     await ms(() => document.getElementById('c2d-noguess').focus());
-    assert.deepEqual(await walk(['down', 'right', 'right', 'left', 'left']), ['c2d-width', 'c2d-height', 'c2d-mines', 'c2d-height', 'c2d-width']);
+    assert.deepEqual(await walk(['down', 'left', 'left', 'right', 'right']), ['c2d-mines', 'c2d-height', 'c2d-width', 'c2d-height', 'c2d-mines'],
+      'Down from the switch at the right edge reaches the field under it');
     assert.deepEqual(await walk(['down', 'down', 'down']), ['c2d-random', 'c2d-records', 'c2d-play']);
     // Every focusable control on the screen is reached by the D-pad alone.
     const all = await ms(() => [...document.querySelectorAll('#c2d-choice button:not(:disabled), #c2d-choice input')]
@@ -125,7 +126,8 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
     assert.equal(await ms(() => document.querySelector('#board-choice [aria-pressed="true"]').dataset.preset), 'custom');
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'board-choice', 'A chooses, and starts nothing');
     await ms(() => document.getElementById('c-noguess').focus());
-    assert.deepEqual(await walk(['down', 'right', 'right', 'right', 'left', 'left', 'left']), ['c-x', 'c-y', 'c-z', 'c-m', 'c-z', 'c-y', 'c-x']);
+    assert.deepEqual(await walk(['down', 'left', 'left', 'left', 'right', 'right', 'right']), ['c-m', 'c-z', 'c-y', 'c-x', 'c-y', 'c-z', 'c-m'],
+      'Down from the switch at the right edge reaches the field under it');
     assert.deepEqual(await walk(['down', 'down', 'down']), ['c-random', 'bc-records', 'bc-play']);
     // Every focusable control on the screen is reached by the D-pad alone.
     const all3d = await ms(() => [...document.querySelectorAll('#board-choice button:not(:disabled), #board-choice input:not(:disabled)')]

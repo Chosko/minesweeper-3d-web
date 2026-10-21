@@ -382,7 +382,8 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
   assert.match(BOARD, /^<section id="board-choice" class="overlay ui-backdrop hidden" aria-label="3D board choice">/);
   assert.match(BOARD, /<h1 class="ui-wordmark" id="board-choice-wordmark" aria-label="Minesweeper 3D">/, 'the game\'s title, as on the menu');
   assert.match(BOARD, /<section class="ui-frame" id="board-choice-frame" aria-labelledby="board-choice-title">/);
-  assert.match(BOARD, /<div class="ui-frame__start"><button type="button" id="board-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/);
+  assert.match(BOARD, /<div class="ui-frame__start"><button type="button" id="board-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
+    'Back led by its arrow, named Back to Main menu, reading Main menu on a desktop and Back on a phone');
   assert.match(BOARD, /<h2 class="ui-frame__title" id="board-choice-title">3D<\/h2>/);
   // The Classic 2D composition: the same parts in the same order.
   const parts = (html, prefix) => [...html.matchAll(/class="(ui-[\w-]+(?: ui-[\w-]+)*)" id="([\w-]+)"/g)]
@@ -402,8 +403,8 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
   for (const p of PRESETS) {
     const key = presetKey(p);
     const b = unescape(left.slice(left.indexOf(`data-preset="${key}"`), left.indexOf('</button>', left.indexOf(`data-preset="${key}"`))));
-    assert.ok(b.includes(`<span class="ui-option__name">${presetTitle(p)}</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-option__meta"><span class="ui-option__size">${boxLine(p)}</span> · <span class="ui-option__density">${mineDensity(p)}</span></span>`),
-      `${p.id}: its name, its Last played chip, its size line and density`);
+    assert.ok(b.includes(`<span class="ui-option__line"><span class="ui-option__name">${presetTitle(p)}</span><span class="ui-chip hidden" data-last>Last played</span></span><span class="ui-option__meta"><span class="ui-option__size">${boxLine(p)}</span> · <span class="ui-option__density">${mineDensity(p)}</span></span>`),
+      `${p.id}: its name and its Last played chip in its name line, its size line and density`);
   }
   assert.ok(unescape(left).includes(`<span class="ui-option__meta" data-custom-meta>${CUSTOM_HINT}</span>`));
   const divider = left.indexOf('<hr class="ui-divider">');
@@ -421,18 +422,20 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
   assert.deepEqual([...lesson.matchAll(/<p class="ui-text">([^<]+)<\/p>/g)].map((m) => m[1]), [
     'A number counts the mines among the 26 cubes around it.', 'Empty and solved cubes hide themselves; hold Ctrl to show them.', 'The first click is always safe.',
   ], 'How 3D works, its three lines');
-  assert.match(lesson, /<div class="ui-panel" role="group" aria-labelledby="bc-rules-title">\s*<div class="ui-section-label"><h4 class="ui-section-label__text" id="bc-rules-title">How 3D works<\/h4><\/div>/);
+  assert.match(lesson, /<div class="ui-panel ui-panel--muted" role="group" aria-labelledby="bc-rules-title">\s*<div class="ui-section-label"><h4 class="ui-section-label__text" id="bc-rules-title">How 3D works<\/h4><\/div>/);
   assert.doesNotMatch(lesson, /data-noguess|data-best/, 'no switch and no bests');
   const settings = between(right, '<div id="bc-settings"', '<form id="custom"');
   assert.match(settings, /^<div id="bc-settings" data-settings>\s*<div class="ui-section-label"><h3 class="ui-section-label__text">Board settings<\/h3><\/div>/);
-  assert.match(settings, /<div id="bc-preset-settings" data-preset-settings>\s*<label class="ui-toggle"><input type="checkbox" role="switch" id="bc-noguess" class="ui-toggle__input" data-noguess="presets"><span class="ui-toggle__label">No-guess<\/span><\/label>/);
-  assert.ok(settings.includes(`<p id="bc-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`));
+  assert.ok(settings.includes('<div id="bc-preset-settings" data-preset-settings>\n'
+    + `              <div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="bc-noguess">No-guess</label><span class="ui-switchrow__help" id="bc-noguess-help">${NOGUESS_HELP_TEXT}</span></span>`
+    + '<input type="checkbox" role="switch" id="bc-noguess" class="ui-toggle__input" data-noguess="presets" aria-describedby="bc-noguess-help"></div>'),
+  'the presets\' no-guess switch row: its label and help line on the left, the switch at the right');
   assert.equal(NOGUESS_HELP_TEXT, 'Solvable by logic alone, no 50/50 guesses. Separate records.');
   const customSettings = settings.slice(settings.indexOf('<div id="bc-custom-settings"'));
-  assert.match(customSettings, /^<div id="bc-custom-settings" class="hidden" data-custom-settings>\s*<p id="c-noguess-reason" class="ui-note ui-note--warn hidden" data-icon="info" data-noguess-reason><span class="ui-note__text"><\/span><\/p>\s*<label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess<\/span><\/label>\s*<p id="c-noguess-help" class="ui-text ui-text--muted">Keeps separate records\.<\/p>\s*<p id="c-density-hint" class="ui-note ui-note--warn hidden" data-icon="warning" data-density-hint><span class="ui-note__text"><\/span><\/p>/,
+  assert.match(customSettings, /^<div id="bc-custom-settings" class="hidden" data-custom-settings>\s*<p id="c-noguess-reason" class="ui-note ui-note--warn hidden" data-icon="info" data-noguess-reason><span class="ui-note__text"><\/span><\/p>\s*<div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="c-noguess">No-guess<\/label><span class="ui-switchrow__help" id="c-noguess-help">Keeps separate records\.<\/span><\/span><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom" aria-describedby="c-noguess-help"><\/div>\s*<p id="c-density-hint" class="ui-note ui-note--warn hidden" data-icon="warning" data-density-hint><span class="ui-note__text"><\/span><\/p>/,
     'the custom switch under its reason line (a warn note, the info icon), over the density hint (a warn note, the warning icon)');
   const form = right.slice(right.indexOf('<form id="custom"'), right.indexOf('</form>'));
-  assert.match(form, /^<form id="custom" class="ui-panel hidden" aria-label="Custom board" novalidate>/, 'the form shows for Custom only');
+  assert.match(form, /^<form id="custom" class="ui-panel ui-panel--muted hidden" aria-label="Custom board" novalidate>/, 'the form, a muted panel, shows for Custom only');
   for (const [f, id] of [['X', 'c-x'], ['Y', 'c-y'], ['Z', 'c-z'], ['mines', 'c-m']]) {
     assert.match(form, new RegExp(`<label class="ui-field"><span class="ui-field__label">[^<]+</span><input id="${id}" data-field="${f}" class="ui-field__input" type="number"`), f);
   }
@@ -440,8 +443,8 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
   assert.match(form, /id="c-x"[^>]*min="1" max="100"/);
   const [info, random, refusal] = ['data-info', 'id="c-random"', 'data-refusal'].map((x) => form.indexOf(x));
   assert.ok(info > form.indexOf('id="c-m"') && random > info && refusal > random, 'the fields, the info line, Random, the refusal line');
-  assert.match(form, /<p id="c-info" class="ui-text ui-text--muted" data-info>/);
-  assert.match(form, /<button type="button" id="c-random" class="ui-button ui-button--secondary ui-button--sm" data-random>Random<\/button>/);
+  assert.match(form, /<div class="ui-actions ui-actions--row"><p id="c-info" class="ui-text ui-text--muted" data-info>[^<]*<\/p><button type="button" id="c-random" class="ui-button ui-button--secondary ui-button--sm" data-random data-icon="shuffle">Random<\/button><\/div>/,
+    'the info line and Random, with its shuffle icon, on one row');
   assert.match(form, /<p id="c-refusal" class="ui-note ui-note--warn hidden" data-icon="warning" data-refusal><span class="ui-note__text"><\/span><\/p>/, 'the refusal, a warn note with its warning icon');
   assert.doesNotMatch(BOARD, /c-start|type="submit"/, 'Play starts a custom board');
   const bests = between(right, '<div id="bc-bests"', '<div id="bc-code-panel"');
@@ -457,22 +460,23 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
 
   // The bottom bar: the summary, Records and Play with its Enter hint.
   const foot = between(BOARD, '<footer class="ui-frame__foot ui-frame__foot--action">', '</footer>');
-  assert.match(foot, /<p class="ui-frame__summary" id="bc-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="bc-records" class="ui-button ui-button--secondary" data-records>Records<\/button>\s*<button type="button" id="bc-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
+  assert.match(foot, /<p class="ui-frame__summary" id="bc-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="bc-records" class="ui-button ui-button--secondary" data-records data-icon="chart">Records<\/button>\s*<button type="button" id="bc-play" class="ui-button ui-button--primary ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/,
+    'Records with its chart icon, Play with its play icon');
   for (const [, cls] of BOARD.matchAll(/class="([^"]+)"/g)) {
     for (const c of cls.split(/\s+/)) assert.ok(c.startsWith('ui-') || ['overlay', 'hidden'].includes(c), `kit class: ${c}`);
   }
 });
 
-test('the shell stylesheet lays both board choices out alike: the window under the title, the 3D one starting just under it, denser rows, one column on a phone', () => {
+test('the shell stylesheet lays both board choices out alike: the wordmark pinned at the top, the window centred under it, the 3D one placed as the Classic 2D one, one column on a phone', () => {
+  // The rules themselves are pinned by tests/classic2d-mode.test.mjs; here, that both screens share them.
   const css = read('css/style.css');
   assert.match(css, /\n#c2d-choice, #board-choice \{ flex-direction: column; justify-content: flex-start;/);
-  assert.match(css, /\n#c2d-choice-top, #board-choice-top \{ flex: 1 1 0;/, 'the space above the Classic 2D window grows with the page');
-  assert.match(css, /\n#board-choice-top \{ flex: none; \}/, 'the 3D window starts just under the title');
+  assert.match(css, /\n#c2d-choice-top, #board-choice-top \{ position: absolute; top: 44px;/);
+  assert.match(css, /\n#c2d-choice::before, #board-choice::before \{ content: ""; flex: 1 1 0; min-height: 176px; \}/, 'the 3D window centres as the Classic 2D one');
   assert.match(css, /\n#c2d-choice::after, #board-choice::after \{ content: ""; flex: 1 1 0;/);
   assert.match(css, /\n#c2d-choice-frame, #board-choice-frame \{ flex: 0 1 auto; width: 1120px; \}/);
-  assert.match(css, /@media \(max-width: 1439px\) \{\n  #c2d-choice-frame, #board-choice-frame \{ width: 1080px; \}[\s\S]*?#c2d-choice \.ui-option, #board-choice \.ui-option \{ min-height: 46px;/);
-  assert.match(css, /@media \(max-width: 1199px\) \{ #c2d-choice-frame, #board-choice-frame \{ width: 984px; \} \}/);
-  assert.match(css, /@media \(max-width: 719px\) \{\n  #c2d-choice, #board-choice \{ padding: 0; \}\n  #c2d-choice-top, #board-choice-top, #c2d-choice-body > \.ui-divider--vertical, #board-choice-body > \.ui-divider--vertical,\n  #c2d-bests, #bc-bests, #c2d-summary, #bc-summary, #c2d-choice::after, #board-choice::after \{ display: none; \}/);
+  assert.match(css, /#custom > \.ui-row \{ display: grid; grid-template-columns: repeat\(4, minmax\(0, 1fr\)\); gap: 10px; \}/, 'the four fields fill one row');
+  assert.doesNotMatch(css, /\n#board-choice-top \{|\n#board-choice::before \{/, 'no placement of its own');
   assert.doesNotMatch(css, /\n#c2d-choice-frame \{|\n#c2d-choice-top \{/, 'no rule for one board choice that the other repeats');
 });
 
@@ -514,7 +518,7 @@ test('the shell wires the 3D board choice, its last choice and every control', (
     'Records opens on the chosen board and switch, Back returning to what the screen held');
   assert.doesNotMatch(MAIN, /presetDetails|CHOICE_ITEMS/, 'no detail lines on the options');
   const head = read('css/components.css').match(/^\/\*([\s\S]*?)\*\//)[1];
-  assert.match(head, /3D board choice \(index\.html #board-choice\): the Classic 2D board choice's composition[\s\S]*?Learn 3D[\s\S]*?no-guess ui-toggle[\s\S]*?Default focus: the last board choice/);
+  assert.match(head, /3D board choice \(index\.html #board-choice\): the Classic 2D board choice's composition[\s\S]*?Learn 3D[\s\S]*?no-guess ui-switchrow[\s\S]*?Default focus: the last board choice/);
 });
 
 // ---------------------------------------------------------------- browser
@@ -547,7 +551,9 @@ test('in a browser, the custom board validates, the switch follows the limit and
     // Each preset carries its name, its Last played chip, its size line and density, and nothing from the records.
     assert.deepEqual(await ms(() => [...document.querySelectorAll('#board-choice [data-preset]')].filter((b) => /,/.test(b.dataset.preset))
       .map((b) => [...b.children].map((c) => `${c.className}${c.classList.contains('ui-option__meta') ? `: ${c.textContent}` : ''}`))),
-    PRESETS.map((p) => ['ui-option__name', 'ui-chip hidden', `ui-option__meta: ${boxLine(p)} · ${mineDensity(p)}`, 'ui-option__check']));
+    PRESETS.map((p) => ['ui-option__line', `ui-option__meta: ${boxLine(p)} · ${mineDensity(p)}`, 'ui-option__check']));
+  assert.deepEqual(await ms(() => [...document.querySelectorAll('#board-choice [data-preset] > .ui-option__line')].map((l) => [...l.children].map((c) => c.className))),
+    [...PRESETS, 'custom'].map(() => ['ui-option__name', 'ui-chip hidden']), 'each name line: the name, then its Last played chip');
     assert.equal(await ms(() => document.querySelectorAll('#board-choice [data-detail]').length), 0, 'no detail lines');
 
     // The fields name what is out of range, under Random; the info line keeps the size's line.
@@ -848,7 +854,7 @@ test('in a browser, the 3D board choice: a click chooses, Play or Enter plays; L
   }
 });
 
-test('in a browser, the 3D board choice at every supported window size: its window\'s width, just under the title, no horizontal scroll, Play in the page, one column on a phone that scrolls past the fold', async (t) => {
+test('in a browser, the 3D board choice at every supported window size: its window\'s width, centred under the title, no horizontal scroll, Play in the page, one column on a phone that scrolls past the fold', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -875,7 +881,11 @@ test('in a browser, the 3D board choice at every supported window size: its wind
         assert.equal(Math.round(m.frame.width), frame, `${at}: the window's width`);
         assert.ok(m.frame.bottom <= height + 0.5 && m.play.bottom <= height, `${at} ${option}: the window and Play in the page`);
         if (width > 719) {
-          assert.ok(m.frame.top >= m.title.bottom && m.frame.top - m.title.bottom <= 40, `${at} ${option}: the window just under the title`);
+          const band = width >= 1440 ? 176 : width >= 1200 ? 106 : 96;
+          const centred = Math.abs((m.frame.top + m.frame.bottom) / 2 - height / 2) <= 1;
+          assert.ok(m.frame.top >= m.title.bottom, `${at} ${option}: the window under the title`);
+          assert.ok(m.frame.top >= band - 0.5 && (centred || m.frame.top - band <= 0.5), `${at} ${option}: centred, or held at the band under the wordmark`);
+          if ([1920, 1366, 1024].includes(width)) assert.ok(Math.abs(m.frame.top - band) <= 0.5, `${at} ${option}: the canvas's window, its top at ${band}`);
         } else {
           assert.equal(m.title.height, 0, 'no title on a phone');
           assert.equal(m.bests, 'none', 'no bests on a phone');
@@ -883,6 +893,17 @@ test('in a browser, the 3D board choice at every supported window size: its wind
           assert.ok(Math.abs(m.play.bottom - height) <= 24, 'Play pinned at the bottom');
           if (option === 'custom') assert.ok(m.body[0] > m.body[1], 'the column scrolls past the fold');
         }
+      }
+      if (width <= 719) {
+        // The Last played chip of the longest name wraps under it, clear of the check.
+        const chip = await page.evaluate(() => {
+          const option = document.querySelector('#board-choice [data-preset="8,8,8,40"]');
+          option.querySelector('[data-last]').classList.remove('hidden');
+          const r = (el) => el.getBoundingClientRect();
+          return { chip: r(option.querySelector('[data-last]')), name: r(option.querySelector('.ui-option__name')), check: r(option.querySelector('.ui-option__check')) };
+        });
+        assert.ok(chip.chip.right <= chip.check.left, 'the chip clear of the check');
+        assert.ok(chip.chip.top >= chip.name.bottom - 0.5, 'the chip wrapped under the name');
       }
       await page.close();
     }

@@ -542,8 +542,10 @@
    ui-option — a board option: a preset, Custom, Insert Board Code, Learn 3D
      Element: <div class="ui-options" role="group" aria-label="…">
                 <button type="button" class="ui-option" aria-pressed="false" data-value="…">
-                  <span class="ui-option__name">Intermediate</span>
-                  <span class="ui-chip">Last played</span>
+                  <span class="ui-option__line">
+                    <span class="ui-option__name">Intermediate</span>
+                    <span class="ui-chip">Last played</span>
+                  </span>
                   <span class="ui-option__meta"><span class="ui-option__size">16 × 16 · 40 mines</span>
                     · <span class="ui-option__density">15.6 % mines</span></span>
                   <span class="ui-option__check" aria-hidden="true"><svg>…</svg></span>
@@ -553,7 +555,11 @@
      Name:    group: aria-label; option: its text
      Chosen:  aria-pressed="true" on the board the screen holds: a fill and
               the check, apart from the selected (focused) option.
-     Parts:   the Last played ui-chip beside the name; the meta line holds
+     Parts:   the Last played ui-chip beside the name, the two in a name
+              line (ui-option__line) where the chip wraps under the name
+              before it would reach the check; an option with no chip
+              may hold the bare name, and a chip that is no Last played
+              chip may follow the name directly; the meta line holds
               the size line and the mine density, or a one-line
               description instead (Insert Board Code); no 3BV and no best.
               ui-option--learn (Learn 3D) leads with
@@ -743,21 +749,20 @@
      from the menu when Back returns to it, else the last mode played's,
      else the first available entry.
    3D board choice (index.html #board-choice): the Classic 2D board choice's composition
-     (below), with the title "3D", and, its window taller, starting just
-     under the wordmark at every desktop size. Its left ui-options: Learn
+     (below), with the title "3D", its window placed as Classic 2D's. Its left ui-options: Learn
      3D first (ui-option--learn, its cube badge, no Last played ui-chip),
      the four presets (data-preset, each named with its family — Cube
      Beginner — its size and density meta) and Custom (its meta its board
      once chosen), one group with no group label; then the ui-divider and
      Insert Board Code. On the right, for Learn 3D only a ui-section-label
-     with its "keeps no records" aside, a ui-panel "How 3D works" of its
+     with its "keeps no records" aside, a ui-panel--muted "How 3D works" of its
      three lines and a ui-text--muted line on the lesson; a preset shows the
-     presets' no-guess ui-toggle; Custom its own no-guess ui-toggle, under a
+     presets' no-guess ui-switchrow; Custom its own no-guess ui-switchrow, under a
      ui-note--warn (info icon) giving why while it is disabled (a side of 2
      cells, or the cell-count limit) and over its density hint, a
      ui-note--warn (warning icon), and the form's four fields (width,
-     height, depth, mines) with its refusal, a ui-note--warn (warning
-     icon). Play on Learn 3D starts it without saving a
+     height, depth, mines) in one row over its info line and Random, and
+     its refusal, a ui-note--warn (warning icon). Play on Learn 3D starts it without saving a
      choice.
      Default focus: the last board choice, the chosen option.
    Daily (index.html #daily, filled by js/shell/daily.js): the Classic 2D
@@ -872,35 +877,39 @@
      each option wrapping its label.
      Default focus: the look sensitivity slider.
    Classic 2D board choice (index.html #c2d-choice): ui-backdrop holding
-     the ui-wordmark over a ui-frame (Back, a secondary "Main menu" with
-     its back key hint, and the title "Classic 2D") sized to its content
-     and centred on the page, pushed below the wordmark only when the page
-     is too short for both. Its body: on the left a ui-section-label
+     the ui-wordmark over a ui-frame (Back, a secondary "Main menu" led by
+     the arrow-left icon with its back key hint, named "Back to Main menu",
+     and the title "Classic 2D") sized to its content and centred on the
+     page, pushed below the wordmark only when the page is too short for
+     both. Its body: on the left a ui-section-label
      (Board), a ui-options of the standard sizes and Custom (data-size;
-     each a ui-option with its Last played ui-chip, the presets' size and
+     each a ui-option with its Last played ui-chip in its name line, the presets' size and
      density meta, Custom's meta its board once chosen), a ui-divider and a
      ui-options of Insert Board Code; a ui-divider--vertical; on the right
      what the chosen option needs — for a preset the Board settings
-     ui-section-label, the no-guess ui-toggle with its ui-text--muted helper
-     line, then a ui-divider and the board's bests: a ui-section-label
+     ui-section-label, the no-guess ui-switchrow with its help line, then a
+     ui-divider and the board's bests: a ui-section-label
      naming the board and the switch, a ui-stat-row--tiles of Time, 3BV/s
      and Efficiency as ui-stat--tile, each with its date or a dash and "no
      best yet"; for Custom the same with, between the switch (and its
      density hint, a ui-note--warn with the warning icon, above 25 % mines
-     with no-guess on) and the bests, a ui-panel of ui-field entries
-     (width, height, mines), a ui-text--muted info line, a Random
-     secondary button and the refusal, a ui-note--warn with the warning
-     icon; for Insert Board Code only a ui-section-label, a text ui-field
+     with no-guess on) and the bests, a ui-panel--muted of ui-field entries
+     (width, height, mines) filling one row, under them a ui-text--muted
+     info line beside a Random secondary small button with its shuffle
+     icon, and the refusal, a ui-note--warn with the warning icon, its
+     field marked is-invalid; for Insert Board Code only a ui-section-label, a text ui-field
      (placeholder "EN-…") and its line: ui-text--muted while empty,
      ui-text--success for an accepted code, a ui-note--warn (info icon)
      for a code of the other mode, a ui-note--err (warning icon) for a
      refused code, its field marked is-invalid. The
      foot is a bottom bar: a ui-frame__summary of the chosen board, and
-     ui-actions--row of Records (secondary) and Play (primary, large, with
-     its select key hint), disabled on a refused custom board and on an
-     empty or refused code. On the smaller desktop windows the option rows
-     are denser. On a phone: one full-bleed column, no wordmark, no bests
-     and no summary, Records and Play pinned at the bottom.
+     ui-actions--row of Records (secondary, its chart icon) and Play
+     (primary, large, its play icon and select key hint), disabled on a
+     refused custom board and on an empty or refused code. On the smaller
+     desktop windows the option rows, Play and the tiles are denser. On a
+     phone: one full-bleed column, no wordmark, no bests and no summary, a
+     ui-divider between the options and the settings, Back reading "Back"
+     after its arrow, Records and Play pinned at the bottom.
      Default focus: the last board choice, the chosen option.
    Classic 2D game window (index.html #c2d): ui-backdrop holding a
      ui-frame filling it; its head Swap clicks (a latched toggle, a fine
@@ -1678,19 +1687,22 @@
   align-items: center;
   box-sizing: border-box;
   width: 100%;
-  min-height: 62px;
+  min-height: 64px;
   margin: 0;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) 18px;
   border: 0;
   text-align: left;
   cursor: pointer;
 }
 .ui-option:disabled { cursor: not-allowed; }
-.ui-option__badge { grid-area: badge; display: grid; place-items: center; width: 40px; height: 40px; margin-inline-end: var(--space-3); }
+.ui-option__badge { grid-area: badge; display: grid; place-items: center; width: 40px; height: 40px; margin-inline-end: 14px; }
 .ui-option__name { grid-area: name; font-size: var(--font-size-lg); font-weight: var(--font-weight-heavy); line-height: 1.1; }
 .ui-option > .ui-chip { grid-area: chip; justify-self: start; margin-inline-start: var(--space-3); }
+/* The name line: the name with its chip beside it, the chip wrapping under the name before it would
+   reach the check. */
+.ui-option__line { grid-row: name; grid-column: name-start / chip-end; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) 10px; min-width: 0; }
 .ui-option__meta { grid-area: meta; margin-top: var(--space-1); font-size: var(--font-size-sm); }
-.ui-option__check { grid-area: check; display: grid; place-items: center; width: 28px; height: 28px; margin-inline-start: var(--space-3); }
+.ui-option__check { grid-area: check; display: grid; place-items: center; width: 28px; height: 28px; margin-inline-start: 14px; }
 .ui-option__check > svg { width: 16px; height: 16px; }
 .ui-option:not([aria-pressed="true"]) .ui-option__check > * { visibility: hidden; }
 

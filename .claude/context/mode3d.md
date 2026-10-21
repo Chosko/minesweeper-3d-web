@@ -81,8 +81,8 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   saves the choice (a failed save never stops the game) and starts
   `MODES.start('3d', boardOf(choice))`; `show` marks it `data-last`, with
   its Last played chip only once a choice was played or loaded.
-- **The screen.** The Classic 2D board choice's composition, its window
-  taller (`css/components.css` head comment, *3D board choice*): Learn 3D
+- **The screen.** The Classic 2D board choice's composition and placement
+  (`css/components.css` head comment, *3D board choice*): Learn 3D
   shows only its panel (how 3D works, no records), a preset the presets'
   switch and the board's bests, Custom its own switch, the form with Random
   and the bests for that size, Insert Board Code its field alone; the

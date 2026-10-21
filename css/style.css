@@ -515,24 +515,25 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 #help h3 { margin: 0 0 10px; font-size: 13px; font-weight: var(--font-weight-bold); text-transform: uppercase; letter-spacing: 0.1em; }
 #help .controls { font-size: 13px; }
 /* The board choices, Classic 2D (#c2d-choice) and 3D (#board-choice), on the page's backdrop: the
-   wordmark at the top and the window under it, sized to its content. The Classic 2D window is
-   centred on the page — the space above it never less than the wordmark's, so a page too short for
-   both pushes it down; the 3D one, taller, starts just under the wordmark. The window holds the
-   options (left) beside what the chosen one needs (right); its option rows grow denser on the
-   smaller desktop windows. On a phone: one full-bleed column, no wordmark, no bests and no summary,
-   the bar pinned at the bottom and the column scrolling above it. The Daily screen (#daily) is the
-   Classic 2D board choice's composition: every mode on the left, the selected one's board in its
-   scene panel — the Classic 2D board framed on the body, the panel showing none of itself —, its
-   state and code on the right; on a phone no preview either. */
+   wordmark pinned at the top and the window sized to its content, centred on the page between two
+   spacers — the one above never shorter than the wordmark's band, so a page too short for both
+   pushes the window down. The window holds the options (left) beside what the chosen one needs
+   (right): the no-guess switch row, the custom form's fields filling a row over its info line and
+   Random, the bests; its option rows, Play and the tiles grow denser on the smaller desktop windows.
+   On a phone: one full-bleed column, no wordmark, no bests and no summary, a rule between the
+   options and the settings, Back reading "Back", the bar pinned over the column's foot. The Daily
+   screen (#daily) is the Classic 2D board choice's composition: every mode on the left, the selected
+   one's board in its scene panel — the Classic 2D board framed on the body, the panel showing none
+   of itself —, its state and code on the right; on a phone no preview either. */
 #c2d-choice, #board-choice { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
-#c2d-choice-top, #board-choice-top { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; }
-#board-choice-top { flex: none; }
-#c2d-choice-wordmark, #board-choice-wordmark { margin: clamp(24px, 4vh, 44px) 0 var(--space-6); }
-#c2d-choice::after, #board-choice::after { content: ""; flex: 1 1 0; min-height: var(--space-4); }
+#c2d-choice-top, #board-choice-top { position: absolute; top: 44px; left: 0; right: 0; display: flex; justify-content: center; }
+#c2d-choice::before, #board-choice::before { content: ""; flex: 1 1 0; min-height: 176px; }
+#c2d-choice::after, #board-choice::after { content: ""; flex: 1 1 0; min-height: 14px; }
 #c2d-choice-frame, #board-choice-frame { flex: 0 1 auto; width: 1120px; }
+#c2d-choice-back [data-label="phone"], #board-choice-back [data-label="phone"] { display: none; }
 #c2d-choice-body, #board-choice-body { display: grid; grid-template-columns: minmax(0, 480fr) auto minmax(0, 640fr); padding: 0; }
-#c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: var(--space-6); }
-#c2d-choice-detail, #board-choice-detail { gap: var(--space-5); }
+#c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 24px 26px; }
+#c2d-choice-detail, #board-choice-detail { gap: 18px; }
 #c2d-choice-options .ui-divider, #board-choice-options .ui-divider { margin: var(--space-1) 0; }
 #daily { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
 #daily-top { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; }
@@ -548,22 +549,48 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 #daily-preview-stage > [data-preview][hidden] { display: none; }
 #daily-preview[data-shows="daily"] { background: none; box-shadow: none; }
 #daily-status { flex-wrap: wrap; align-items: center; gap: var(--space-3); }
-#c2d-choice-detail > :where([data-settings], [data-bests], [data-code-panel], form),
-#board-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel], form),
-#board-choice :where([data-preset-settings], [data-custom-settings]) { display: flex; flex-direction: column; gap: var(--space-3); }
-#c2d-choice form > .ui-actions, #board-choice form > .ui-actions { margin: 0; }
+#c2d-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel]),
+#board-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel]) { display: flex; flex-direction: column; gap: var(--space-3); }
+#board-choice :where([data-preset-settings], [data-custom-settings]) { display: flex; flex-direction: column; gap: var(--space-2); }
+#bc-learn-panel > .ui-text--muted { font-size: 15px; }
+#c2d-custom, #custom { gap: 10px; }
+#c2d-custom > .ui-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+#custom > .ui-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+:is(#c2d-custom, #custom) .ui-field { gap: 6px; min-width: 0; }
+:is(#c2d-custom, #custom) .ui-field__input { width: 100%; -moz-appearance: textfield; }
+:is(#c2d-custom, #custom) .ui-field__input::-webkit-inner-spin-button,
+:is(#c2d-custom, #custom) .ui-field__input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+:is(#c2d-custom, #custom) > .ui-actions { flex-wrap: nowrap; justify-content: space-between; gap: 10px; margin: 0; }
+:is(#c2d-custom, #custom) [data-random] { flex: none; margin-inline-start: auto; }
+:is(#c2d-info, #c-info, #c2d-code-info, #bc-code-info) { font-size: 14px; }
 #c2d-choice [data-code-panel] > .ui-field, #c2d-code, #board-choice [data-code-panel] > .ui-field, #bc-code { width: 100%; box-sizing: border-box; }
+:is(#c2d-bests, #bc-bests) .ui-stat--tile { gap: 3px; padding: var(--space-3) var(--space-4); }
 @media (max-width: 1439px) {
+  #c2d-choice-top, #board-choice-top { top: 26px; }
+  #c2d-choice-wordmark, #board-choice-wordmark { font-size: 58px; }
+  #c2d-choice::before, #board-choice::before { min-height: 106px; }
   #c2d-choice-frame, #board-choice-frame { width: 1080px; }
-  #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { padding: var(--space-5) var(--space-6); }
-  #c2d-choice-detail, #board-choice-detail { gap: var(--space-4); }
+  #c2d-play, #bc-play { min-height: 54px; padding: 12px 22px; font-size: 21px; }
+  :is(#c2d-bests, #bc-bests) .ui-stat--tile { padding: 10px 14px; }
+  :is(#c2d-bests, #bc-bests) .ui-stat__value { font-size: 26px; }
+}
+@media (max-width: 1199px) {
+  #c2d-choice-top, #board-choice-top { top: 24px; }
+  #c2d-choice-wordmark, #board-choice-wordmark { font-size: 50px; }
+  #c2d-choice::before, #board-choice::before { min-height: 96px; }
+  #c2d-choice-frame, #board-choice-frame { width: 984px; }
+}
+/* The denser rows of the smaller desktop windows, never a phone's. */
+@media (min-width: 720px) and (max-width: 1439px) {
+  #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { gap: 10px; padding: 18px 22px; }
+  #c2d-choice-detail, #board-choice-detail { gap: 14px; }
+  #c2d-choice-options > .ui-options, #board-choice-options > .ui-options { gap: var(--space-2); }
   #c2d-choice .ui-option, #board-choice .ui-option { min-height: 46px; padding: 6px 14px; }
   #c2d-choice .ui-option__name, #board-choice .ui-option__name { font-size: 18px; }
   #c2d-choice .ui-option__meta, #board-choice .ui-option__meta { font-size: 13px; }
-  #c2d-choice .ui-option__check, #board-choice .ui-option__check { width: 24px; height: 24px; }
-  #board-choice .ui-option__badge { width: 32px; height: 32px; }
+  #c2d-choice .ui-option__check, #board-choice .ui-option__check { width: 24px; height: 24px; margin-inline-start: 10px; }
+  #board-choice .ui-option__badge { width: 32px; height: 32px; margin-inline-end: 10px; }
 }
-@media (max-width: 1199px) { #c2d-choice-frame, #board-choice-frame { width: 984px; } }
 @media (max-width: 1439px) {
   #daily-frame { width: 1080px; }
   #daily-modes, #daily-detail { padding: var(--space-5) var(--space-6); }
@@ -585,12 +612,20 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 @media (max-width: 1199px) { #coming-soon-frame { width: 760px; } }
 @media (max-width: 719px) {
   #c2d-choice, #board-choice { padding: 0; }
-  #c2d-choice-top, #board-choice-top, #c2d-choice-body > .ui-divider--vertical, #board-choice-body > .ui-divider--vertical,
-  #c2d-bests, #bc-bests, #c2d-summary, #bc-summary, #c2d-choice::after, #board-choice::after { display: none; }
-  #c2d-choice-frame, #board-choice-frame { flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }
-  #c2d-choice-body, #board-choice-body { display: block; }
-  #c2d-choice-options, #board-choice-options { padding-bottom: var(--space-3); }
-  #c2d-choice-detail, #board-choice-detail { padding-top: var(--space-3); }
+  #c2d-choice-top, #board-choice-top, #c2d-bests, #bc-bests, #c2d-summary, #bc-summary,
+  #c2d-choice::before, #board-choice::before, #c2d-choice::after, #board-choice::after { display: none; }
+  #c2d-choice-frame, #board-choice-frame { position: relative; flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }
+  #c2d-choice-back [data-label="wide"], #board-choice-back [data-label="wide"] { display: none; }
+  #c2d-choice-back [data-label="phone"], #board-choice-back [data-label="phone"] { display: inline; }
+  #c2d-choice-body, #board-choice-body { display: flex; flex-direction: column; gap: 18px; padding: 16px 18px 112px; }
+  #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { gap: var(--space-3); padding: 0; }
+  #c2d-choice-detail, #board-choice-detail { gap: 18px; }
+  #c2d-choice-body > .ui-divider--vertical, #board-choice-body > .ui-divider--vertical { width: 100%; height: 1px; }
+  #c2d-choice-options > .ui-options, #board-choice-options > .ui-options { gap: 10px; }
+  #c2d-choice .ui-option, #board-choice .ui-option { min-height: 56px; padding: 9px 14px; }
+  #c2d-choice .ui-option__name, #board-choice .ui-option__name { font-size: 19px; }
+  #c2d-choice .ui-option__meta, #board-choice .ui-option__meta { font-size: 14px; }
+  #c2d-choice-frame > .ui-frame__foot, #board-choice-frame > .ui-frame__foot { position: absolute; left: 0; right: 0; bottom: 0; }
   #daily { padding: 0; }
   #daily-top, #daily-preview, #daily-summary, #daily-body > .ui-divider--vertical, #daily::after { display: none; }
   #daily-frame { flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }
