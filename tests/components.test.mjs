@@ -697,7 +697,7 @@ test('bindFigures writes each figure only when its text changes, hides a figure 
     bbbv: { text: '54 / 118', detail: null, progress: 54 / 118 },
     pace: null,
     rate: { text: '2.70', detail: null },
-    clicks: { text: '61', detail: 'Efficiency 88.5%' },
+    clicks: { text: '61', detail: 'efficiency 88.5%' },
     flags: { text: '16', detail: '24 mines left' },
   };
   shown.show(figures);
@@ -706,14 +706,14 @@ test('bindFigures writes each figure only when its text changes, hides a figure 
   assert.equal(bbbv.parts['.ui-figure__bar'].attrs['aria-valuenow'], '46');
   assert.equal(pace.classList.contains('hidden'), true, 'no pace: hidden');
   assert.equal(rate.parts['.ui-figure__detail'].classList.contains('hidden'), true, 'no best 3BV/s: no detail line');
-  assert.equal(clicks.parts['.ui-figure__detail'].textContent, 'Efficiency 88.5%');
+  assert.equal(clicks.parts['.ui-figure__detail'].textContent, 'efficiency 88.5%');
   const writes = roots.map((r) => r.parts['.ui-figure__value'].writes);
   shown.show(figures);
   assert.deepEqual(roots.map((r) => r.parts['.ui-figure__value'].writes), writes, 'the same text is not written again');
-  shown.show({ ...figures, pace: { text: '−2.063 s', detail: 'Best 48.213 s', ahead: true }, rate: { text: '2.71', detail: 'Best 2.91' } }, ['pace', 'rate']);
+  shown.show({ ...figures, pace: { text: '−2.063 s', detail: 'ahead of 48.213 s', ahead: true }, rate: { text: '2.71', detail: 'PB 2.91' } }, ['pace', 'rate']);
   assert.equal(pace.classList.contains('hidden'), false, 'pace shows once the model gives it');
   assert.equal(pace.parts['.ui-figure__value'].textContent, '−2.063 s');
-  assert.equal(rate.parts['.ui-figure__detail'].textContent, 'Best 2.91');
+  assert.equal(rate.parts['.ui-figure__detail'].textContent, 'PB 2.91');
   assert.equal(rate.parts['.ui-figure__detail'].classList.contains('hidden'), false);
   assert.equal(clicks.parts['.ui-figure__value'].writes, writes[3], 'a figure not named is left alone');
 });

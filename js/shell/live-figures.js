@@ -9,11 +9,13 @@
 //   bbbv    "60 / 120", no detail, with `progress` 0..1 for the bar;
 //   pace    pace vs PB: elapsed − best time × (3BV solved ÷ 3BV), signed, in the results time
 //           format ("−5.000 s" ahead, "+5.000 s" behind, "0.000 s" on pace), `ahead` true when
-//           negative, the best time as its detail; null — not shown — when the board has no best
-//           time or before the first 3BV is solved;
-//   rate    3BV/s, the best 3BV/s as its detail, no detail when the board has none;
-//   clicks  the counted clicks, the live efficiency as its detail (js/records/summary.js's
-//           definitions, so the figure matches the game summary for the same counts);
+//           negative, the best time as its detail ("ahead of 48.213 s", "behind 48.213 s", on pace
+//           ahead of); null — not shown — when the board has no best time or before the first 3BV
+//           is solved;
+//   rate    3BV/s, the best 3BV/s as its detail ("PB 2.91"), no detail when the board has none;
+//   clicks  the counted clicks, the live efficiency as its detail ("efficiency 88.5%";
+//           js/records/summary.js's definitions, so the figure matches the game summary for the
+//           same counts);
 //   flags   the flags placed, the mines left as its detail.
 // The formats are the results screen's (js/results/view.js); a figure the inputs cannot yet produce
 // — no time elapsed, no click counted, no 3BV yet — shows PLACEHOLDER, never NaN or Infinity.
@@ -39,7 +41,7 @@ function paceFigure(bbbv, bbbvSolved, elapsedMs, bestTime) {
   const magnitude = formatTime(Math.abs(ms));
   const zero = magnitude === formatTime(0);
   const sign = zero ? '' : ms < 0 ? MINUS : '+';
-  return { text: `${sign}${magnitude}`, detail: `Best ${formatTime(bestTime)}`, ahead: !zero && ms < 0 };
+  return { text: `${sign}${magnitude}`, detail: `${ms > 0 && !zero ? 'behind' : 'ahead of'} ${formatTime(bestTime)}`, ahead: !zero && ms < 0 };
 }
 
 export function liveFigures({ bbbv = null, bbbvSolved = 0, clicks, flags = 0, mines = 0, elapsedMs = 0, bests } = {}) {
@@ -53,8 +55,8 @@ export function liveFigures({ bbbv = null, bbbvSolved = 0, clicks, flags = 0, mi
   return {
     bbbv: { text: `${solved} / ${total ?? PLACEHOLDER}`, detail: null, progress: total ? Math.min(1, solved / total) : 0 },
     pace: paceFigure(total, solved, elapsed, bestTime),
-    rate: { text: formatRate(bbbvPerSecond(counts)), detail: bestRate === null ? null : `Best ${formatRate(bestRate)}` },
-    clicks: { text: String(countedClicks(clicks)), detail: `Efficiency ${formatEfficiency(efficiency(counts))}` },
+    rate: { text: formatRate(bbbvPerSecond(counts)), detail: bestRate === null ? null : `PB ${formatRate(bestRate)}` },
+    clicks: { text: String(countedClicks(clicks)), detail: `efficiency ${formatEfficiency(efficiency(counts))}` },
     flags: { text: String(flags), detail: `${left} mine${left === 1 ? '' : 's'} left` },
   };
 }

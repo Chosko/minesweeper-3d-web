@@ -32,7 +32,7 @@
 //   customInfo(board)        the custom form's info line from its size: '1,000 cells · up to 999 mines'
 //                            (with a warning past the very large board), '1 cell · no room for a
 //                            mine', or '' while a side is invalid.
-//   customStatus(board)      { ok, field, max, text, warn? }: a refusal's reason as a sentence, or the
+//   customStatus(board)      { ok, field, max, text, warn? }: a refusal's reason, with no final period, or the
 //                            info line; `max` the mine limit (null while the size is invalid).
 //   noGuessAvailable(choice) whether the switch is offered for that choice.
 //   noGuessReason(choice?)   the line shown above the disabled switch: the side-of-2 line when a
@@ -179,7 +179,7 @@ export function customStatus(board) {
   const { X, Y, Z } = board ?? {};
   const v = validateCustom(board);
   const max = dim(X) && dim(Y) && dim(Z) ? X * Y * Z - 1 : null;
-  if (!v.ok) return { ok: false, field: v.field, max, text: `${v.reason}.` };
+  if (!v.ok) return { ok: false, field: v.field, max, text: v.reason };
   const status = { ok: true, field: null, max, text: customInfo(board) };
   return X * Y * Z > LARGE_BOARD ? { ...status, warn: true } : status;
 }

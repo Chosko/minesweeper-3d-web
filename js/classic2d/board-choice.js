@@ -12,7 +12,7 @@
 //   mineDensity(board)       '20.6 % mines': mines ÷ cells, one decimal.
 //   customStatus(custom)     { ok, field, max, text } for a custom { width, height, mines }, validated
 //                            against CUSTOM_LIMITS (js/classic2d/board-setup.js validateCustom): a
-//                            refusal's reason as a sentence, or the info line; `max` is the mine
+//                            refusal's reason capitalised, with no final period, or the info line; `max` is the mine
 //                            limit for that width and height (null while the size is invalid).
 //   customInfo(custom)       the custom form's info line from its width and height: '480 cells · up to
 //                            99 mines', '1 cell · no room for a mine', or '' while a side is invalid.
@@ -110,7 +110,7 @@ export function customStatus(custom) {
   const { width, height } = custom ?? {};
   const v = validateCustom(custom);
   const max = side(width) && side(height) ? maxMines(width, height) : null;
-  if (!v.ok) return { ok: false, field: v.field, max, text: `${v.reason[0].toUpperCase()}${v.reason.slice(1)}.` };
+  if (!v.ok) return { ok: false, field: v.field, max, text: `${v.reason[0].toUpperCase()}${v.reason.slice(1)}` };
   return { ok: true, field: null, max, text: customInfo(custom) };
 }
 

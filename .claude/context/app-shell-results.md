@@ -41,7 +41,8 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 - `resultsContent({summary, comparison?, saved?, notSaved?, watch?, rank?,
   streak?, standing?, watchBest?, swapped?})` → `{outcome, title, board, rank, label,
   tiles, details, code, notes, watch, watchBest, compact, look, over3d}`
-  (fields in the head comment): `rank` the chip on a ranked win, `label` a
+  (fields in the head comment): `board` the mode and the board's label,
+  `rank` the chip on a ranked win, `label` a
   challenge's chip in its place; `tiles` the four figure tiles (a win's
   time, 3BV/s, efficiency and 3BV; a loss's time, 3BV solved with its
   progress, 3BV/s and efficiency), each with its comparison and `newBest`;

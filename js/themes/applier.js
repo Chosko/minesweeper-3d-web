@@ -24,7 +24,7 @@ const RETIRED = { light: DEFAULT_THEME_ID, dark: DEFAULT_THEME_ID };
 
 export const SITE_ROOT = new URL('../../', import.meta.url).href;
 
-export const START_FALLBACK = `The saved theme could not be loaded — showing ${themeById(DEFAULT_THEME_ID).name} instead.`;
+export const START_FALLBACK = `The theme could not be loaded. The game uses ${themeById(DEFAULT_THEME_ID).name}.`;
 export const SWITCH_FAILED = 'That theme could not be loaded — the current theme stays.';
 
 /** The registered theme a stored or requested value applies: light, dark and unknown ids are the default. */

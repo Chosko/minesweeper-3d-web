@@ -95,6 +95,7 @@ for (const [size, device] of SIZES) {
           heading: shown($('ready-heading')) ? [$('ready-heading').textContent, css($('ready-heading')).fontSize] : null,
           left: ['ready-heading', 'ready-board', 'ready-btn', 'ready-learn'].map((id) => box($(id)).right),
           keys: box($('ready-keys')).x, keysTop: box($('ready-keys')).y, bodyTop: box(body).y,
+          tip: (() => { const t = document.querySelector('#ready .ready-tip'); return shown(t) ? [t.textContent, css(t).fontSize, t.querySelectorAll('kbd').length, t.classList.contains('ui-text--muted')] : null; })(),
         };
       });
       const [width, padding] = CARD[size];
@@ -104,6 +105,7 @@ for (const [size, device] of SIZES) {
       assert.deepEqual(card.learnIcon, ['cube', 18], `${size}: Learn 3D leads with the cube`);
       assert.deepEqual(card.board, [true, '14px', '700'], `${size}: the board line in the mono face, 14 px bold`);
       assert.deepEqual(card.learn, [true, '12px', '8px 8px 8px 14px', '15px', '700'], `${size}: the Learn line a plain success box, its text 15 px bold`);
+      if (!touch) assert.deepEqual(card.tip, ['Tip: press F for fullscreen, so the browser passes Ctrl+W to the game.', '14px', 0, true], `${size}: the tip in 14 px muted plain text`);
       if (size === 'ls') {
         assert.equal(card.back, null, 'ls: no Back');
         assert.equal(card.rules, null, 'ls: no "How 3D works" panel');

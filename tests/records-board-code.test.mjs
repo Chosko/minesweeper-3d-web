@@ -94,6 +94,18 @@ test('board code: malformed text is refused, never thrown', () => {
   }
 });
 
+test('board code: a code cut off before its check is refused as incomplete', () => {
+  assert.match(CODE_REASONS.incomplete, /^This code is incomplete: it is missing its last part\.$/);
+  const full = encodeBoardCode({ board: sq(16, 16, 40, true), seed: 3, startCell: 40, generatorVersion: V });
+  const daily = encodeBoardCode({ board: sq(30, 16, 99, true), generatorVersion: V, daily: '20261011' });
+  for (const text of [full.split('-').slice(0, 3).join('-'), `${full.split('-').slice(0, 3).join('-')}-`, daily.split('-').slice(0, 2).join('-'),
+    `${daily.split('-').slice(0, 2).join('-')}-`, 'EN-9C41D07A-1486', ' i-00000003-40 ']) {
+    assert.deepEqual(parseBoardCode(text), { ok: false, reason: CODE_REASONS.incomplete }, text);
+  }
+  assert.equal(parseBoardCode(full).ok, true);
+  assert.equal(parseBoardCode(daily).ok, true, 'a daily code is complete in three parts');
+});
+
 // A code with a valid check over any text, the version chosen.
 const withCheck = (canonical, version = V) => `${canonical}-${version}${(fnv1a(`${canonical}-${version}`) & 0xfff).toString(16).toUpperCase().padStart(3, '0')}`;
 
@@ -126,10 +138,10 @@ test('board code: a start cell outside the board is refused', () => {
 
 test('board code: an unknown generator version is refused in both directions', () => {
   assert.deepEqual(parseBoardCode(withCheck('EN-20261011', V + 1)), { ok: false, reason: CODE_REASONS.newer });
-  assert.equal(CODE_REASONS.newer, 'This board code comes from a newer version of the game. Reload the page to update.');
+  assert.equal(CODE_REASONS.newer, 'This board code is from a newer version of the game. Reload the page to update.');
   const old = withCheck('EN-20261011', 1);
   assert.deepEqual(parseBoardCode(old, { generatorVersion: 2 }), { ok: false, reason: CODE_REASONS.older });
-  assert.equal(CODE_REASONS.older, 'This board code was made by an older board generator and can no longer be rebuilt.');
+  assert.equal(CODE_REASONS.older, 'This board code is from an older version of the game. It cannot be played here.');
   assert.equal(parseBoardCode(old, { generatorVersion: 1 }).ok, true);
 });
 

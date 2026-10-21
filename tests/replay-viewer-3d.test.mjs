@@ -257,12 +257,12 @@ test('a 3D replay shows the live figures of its frame, following a seek forward 
   assert.deepEqual(asked, [createSimulator(blobOf(CUBE)).replay.header.board], 'the box board\'s bests');
   const at = () => ['bbbv', 'clicks', 'flags'].map((name) => [last.live[name].text, last.live[name].detail]);
   viewer.seek(6559);
-  assert.deepEqual(at(), [['4 / 35', null], ['8', 'Efficiency 50.0%'], ['1', '9 mines left']]);
-  assert.deepEqual([last.live.pace.text, last.live.rate.text, last.live.rate.detail], ['+4.273 s', '0.61', 'Best 0.50']);
+  assert.deepEqual(at(), [['4 / 35', null], ['8', 'efficiency 50.0%'], ['1', '9 mines left']]);
+  assert.deepEqual([last.live.pace.text, last.live.rate.text, last.live.rate.detail], ['+4.273 s', '0.61', 'PB 0.50']);
   viewer.seek(5000);
-  assert.deepEqual(at(), [['1 / 35', null], ['5', 'Efficiency 20.0%'], ['0', '10 mines left']], 'a seek back');
+  assert.deepEqual(at(), [['1 / 35', null], ['5', 'efficiency 20.0%'], ['0', '10 mines left']], 'a seek back');
   viewer.seek(13578);
-  assert.deepEqual(at(), [['11 / 35', null], ['14', 'Efficiency 78.6%'], ['1', '9 mines left']], 'the end');
+  assert.deepEqual(at(), [['11 / 35', null], ['14', 'efficiency 78.6%'], ['1', '9 mines left']], 'the end');
 });
 
 test('a 3D replay draws its scene in the board area of the frame, which keeps its white body and its layout', () => {

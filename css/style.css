@@ -378,7 +378,7 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 .ready-pad-note { margin: 0; font-size: 15px; }
 .ready-pad b { font-weight: var(--font-weight-bold); }
 .ready--touch .ready-tip { display: none; }
-.ready-tip { font-size: var(--font-size-xs); }
+.ready-tip { font-size: var(--font-size-sm); }
 @media (max-width: 1439px) { .ready-body { width: min(580px, 100%); } }
 @media (max-width: 1199px) { .ready-body { width: min(560px, 100%); } }
 @media (max-width: 719px) { .ready-body { width: min(360px, 100%); padding: 16px 18px; } }

@@ -74,7 +74,9 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   through `startForced` (`MODES.start`, then `enterPlay3D` for 3D);
   `playChallenge` the same from a parsed code. Both board choices' code
   fields go through `checkCode` / `playCode` (today's daily code routes to
-  `daily`), and `LINKS` follows `#board=` links. A daily or challenge saves
+  `daily`; an accepted challenge's line names its board through
+  `codeBoardLine` and its marked start cell or cube, that board line its
+  label for the summary), and `LINKS` follows `#board=` links. A daily or challenge saves
   no last choice; the results flow's Play again after one, once its mode
   was left, starts `freeStart(summary.board)`, whose 2D choice carries
   `remember: false`, so it saves none either. A challenge route's parse has

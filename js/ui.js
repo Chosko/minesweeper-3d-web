@@ -45,8 +45,10 @@ export function boardLine3D(s, { mines = false } = {}) {
   const count = mines ? ` · ${s.mines} mine${s.mines === 1 ? '' : 's'}` : '';
   return `${fmtDims(s)}${count}${s.noGuess ? NO_GUESS : ''}`;
 }
-/** The Classic 2D window's foot line: the board's size, mines and no-guess, never a cell ("16 × 16 · 40 mines · no-guess"). */
-export const boardFoot2D = (b) => `${b.width} × ${b.height} · ${b.mines} mine${b.mines === 1 ? '' : 's'}${b.noGuess ? NO_GUESS : ''}`;
+/** A Classic 2D board's size, mines and no-guess, as the pause card names it ("16 × 16 · 40 mines · no-guess"). */
+export const boardLine2D = (b) => `${b.width} × ${b.height} · ${b.mines} mine${b.mines === 1 ? '' : 's'}${b.noGuess ? NO_GUESS : ''}`;
+/** The Classic 2D window's foot line: the board's line with No-guess capitalised, never a cell ("16 × 16 · 40 mines · No-guess"). */
+export const boardFoot2D = (b) => `${boardLine2D({ ...b, noGuess: false })}${b.noGuess ? ' · No-guess' : ''}`;
 /** The Classic 2D window's title: the mode and the board — a standard board's name, a daily, or Custom. */
 export function boardTitle2D(b) {
   const id = b.identity;
@@ -470,10 +472,10 @@ export class UI {
     if (over > 0) place(b.height - over);
     return stage.style.width !== before[0] || stage.style.height !== before[1];
   }
-  /** The Classic 2D board the window's title and foot line and the pause card's board line (the two joined) name; { width, height, mines, noGuess, identity }. */
+  /** The Classic 2D board the window's title and foot line and the pause card's board line (the title and boardLine2D joined) name; { width, height, mines, noGuess, identity }. */
   setBoard2D(board) { this._board2D(board); this._sizeMines(board.mines, this.el.c2dMines); }
   _board2D(board) {
-    this._boardText = `${boardTitle2D(board)} · ${boardFoot2D(board)}`;
+    this._boardText = `${boardTitle2D(board)} · ${boardLine2D(board)}`;
     this.el.c2dTitle.textContent = boardTitle2D(board);
     this.el.c2dSize.textContent = boardFoot2D(board);
   }

@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { SCHEMA, SETTING_KEYS, DEFAULTS, isValid } from '../js/settings/schema.js';
@@ -469,4 +470,9 @@ test('a newer settings document is left untouched; defaults apply and saving rep
 test('the store registers its document with platform storage once', () => {
   const { storage } = setup();
   assert.throws(() => storage.register(SETTINGS_DOC, SETTINGS_VERSION), /already registered|registered/);
+});
+
+test('the page tells the player once, in the canvas\'s words, that settings are not being saved', () => {
+  const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  assert.match(main, /onNotKept: \(\) => ui\.toast\('Settings could not be saved in this browser\. They last until you close the page\.', \d+\)/);
 });

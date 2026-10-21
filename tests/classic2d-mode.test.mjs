@@ -1073,11 +1073,11 @@ test('the board choice offers the three standard sizes and a validated custom bo
 
   // At least one mine: the 1-to-max range line, the no-room line, and both counts pluralised.
   assert.deepEqual(customStatus({ width: 30, height: 16, mines: 0 }), {
-    ok: false, field: 'mines', max: maxMines(30, 16), text: 'Mines must be a whole number from 1 to 168 on a 30 × 16 board.',
+    ok: false, field: 'mines', max: maxMines(30, 16), text: 'Mines must be a whole number from 1 to 168 on a 30 × 16 board',
   });
-  assert.deepEqual(customStatus({ width: 100, height: 100, mines: 0 }).text, 'Mines must be a whole number from 1 to 2,480 on a 100 × 100 board.');
+  assert.deepEqual(customStatus({ width: 100, height: 100, mines: 0 }).text, 'Mines must be a whole number from 1 to 2,480 on a 100 × 100 board');
   assert.deepEqual(customStatus({ width: 1, height: 1, mines: 0 }), {
-    ok: false, field: 'mines', max: 0, text: 'A 1 × 1 board has no room for a mine beside the safe first click — make it at least 2 cells.',
+    ok: false, field: 'mines', max: 0, text: 'A 1 × 1 board has no room for a mine beside the safe first click — make it at least 2 cells',
   });
   assert.equal(customStatus({ width: 1, height: 1, mines: 1 }).field, 'mines');
   assert.deepEqual(customStatus({ width: 1, height: 2, mines: 1 }), { ok: true, field: null, max: 1, text: '2 cells · up to 1 mine' });
@@ -1523,13 +1523,14 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     const other = await ms(async () => (await import('/js/records/board-code.js')).encodeBoardCode({ board: { mode: '3d', width: 6, height: 6, depth: 6, mines: 10, noGuess: false }, seed: 9, startCell: 129, generatorVersion: 1 }));
     await page.fill('#c2d-code', other);
     assert.deepEqual(await codeLine(), { cls: 'ui-note ui-note--warn', icon: 'info', invalid: false, aria: null }, 'a code of the other mode: a warn note, the field left valid');
-    assert.match(await text('c2d-code-info'), /3D board code/);
+    assert.equal(await text('c2d-code-info'), 'This is a 3D board code. Paste it in the 3D board choice.');
     assert.equal(await ms(() => document.getElementById('c2d-play').disabled), true);
     const code = await ms(async () => (await import('/js/records/board-code.js')).encodeBoardCode({ board: { mode: 'classic-2d', grid: 'square', width: 16, height: 16, mines: 40, noGuess: true }, seed: 3, startCell: 40, generatorVersion: 1 }));
     await page.fill('#c2d-code', code);
     assert.equal(await ms(() => document.getElementById('c2d-play').disabled), false);
     assert.deepEqual(await codeLine(), { cls: 'ui-text ui-text--success', icon: null, invalid: false, aria: null }, 'an accepted code: the success line');
-    assert.equal(await text('c2d-summary'), 'Board code · Intermediate · no-guess');
+    assert.equal(await text('c2d-code-info'), 'Intermediate · 16 × 16 · 40 mines · no-guess · starts on the marked cell');
+    assert.equal(await text('c2d-summary'), 'Board code · Intermediate · 16 × 16 · 40 mines · no-guess');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d', 'Play plays the code\'s challenge');
     assert.equal(await ms(() => globalThis.__ms.modes.state.mode), 'classic-2d');
@@ -1542,7 +1543,7 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     await ms(() => document.querySelector('#c2d-choice [data-size="expert"]').focus());
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'classic-2d');
-    assert.equal(await text('c2d-size'), '30 × 16 · 99 mines · no-guess');
+    assert.equal(await text('c2d-size'), '30 × 16 · 99 mines · No-guess');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
@@ -2070,7 +2071,7 @@ test('in a browser, a few moves on a board with a best: the figures panel follow
     }])));
     const before = await figures();
     assert.equal(before.pace.shown, false, 'no pace before the first 3BV');
-    assert.equal(before.rate.detail, 'Best 0.67', 'the board\'s best 3BV/s, read at the game\'s start');
+    assert.equal(before.rate.detail, 'PB 0.67', 'the board\'s best 3BV/s, read at the game\'s start');
     assert.equal(before.clicks.value, '0');
     assert.equal(before.flags.value, '0');
     assert.equal(before.flags.detail, '10 mines left');
@@ -2095,11 +2096,11 @@ test('in a browser, a few moves on a board with a best: the figures panel follow
     const after = await figures();
     assert.equal(after.flags.detail, '9 mines left');
     assert.equal(after.clicks.value, '2', 'both clicks counted');
-    assert.match(after.clicks.detail, /^Efficiency /);
+    assert.match(after.clicks.detail, /^efficiency /);
     assert.equal(after.bbbv.value, `1 / ${BEST_BOARD.bbbv}`, 'the first click\'s opening is one 3BV of the board\'s');
     assert.equal(after.pace.shown, true, 'pace against the best once a 3BV is solved');
     assert.match(after.pace.value, /^[−+]?\d+\.\d{3} s$/);
-    assert.equal(after.pace.detail, 'Best 10.500 s');
+    assert.equal(after.pace.detail, `${after.pace.value.startsWith('+') ? 'behind' : 'ahead of'} 10.500 s`, 'the best time, ahead of or behind it');
     const fill = await ms(() => document.querySelector('#c2d-figures .ui-figure__fill').style.width);
     assert.match(fill, /^\d+%$/);
     assert.notEqual(fill, '0%', 'the bar fills as 3BV is solved');

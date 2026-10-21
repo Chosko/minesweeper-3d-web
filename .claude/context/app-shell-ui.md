@@ -20,10 +20,11 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
 - `fmtDims`, `pauseLine(time, minesLeft)`, `NO_MOUSE_MSG`, `TOUCH_MSG`,
   `boardLine3D(s, {mines?})` (`"6 × 6 × 6 · 10 mines · no-guess"`);
   Classic 2D's `boardTitle2D`
-  (`"Classic 2D · Expert"`) and foot line `boardFoot2D`; 3D's `boardTitle3D`
-  (`"3D · Cube Intermediate"`) and `shortTitle3D` (`"3D"`);
+  (`"Classic 2D · Expert"`), its size line `boardLine2D` and foot line
+  `boardFoot2D` (the size line with *No-guess* capitalised); 3D's
+  `boardTitle3D` (`"3D · Cube Intermediate"`) and `shortTitle3D` (`"3D"`);
   `figuresLine` (re-exported). The pause card's board line joins a mode's
-  title to its size line (`boardFoot2D`, `boardLine3D` with mines).
+  title to its size line (`boardLine2D`, `boardLine3D` with mines).
 - `UI(cb)` — callbacks are named after the control they serve
   (`onMenuEntry`, `onBack`, `onReady*`, `onResume`, `onRestart`,
   `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleTap`,

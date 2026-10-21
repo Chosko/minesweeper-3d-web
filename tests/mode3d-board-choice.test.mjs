@@ -86,7 +86,7 @@ test('custom validates each dimension 1 to 100, naming the field out of range', 
       const s = customStatus(board);
       assert.equal(s.ok, false);
       assert.equal(s.field, field);
-      assert.equal(s.text, `${label} must be a whole number from 1 to 100.`);
+      assert.equal(s.text, `${label} must be a whole number from 1 to 100`);
       assert.equal(s.max, null, 'no mine limit while the size is invalid');
     }
   }
@@ -100,7 +100,7 @@ test('custom validates mines 1 to cells minus one, naming the mines field', () =
     assert.equal(s.ok, false, `mines = ${bad}`);
     assert.equal(s.field, 'mines');
     assert.equal(s.max, 999, 'one cell stays free for the safe first click');
-    assert.equal(s.text, 'Mines must be a whole number from 1 to 999 on a 10 × 10 × 10 board.');
+    assert.equal(s.text, 'Mines must be a whole number from 1 to 999 on a 10 × 10 × 10 board');
   }
   const ok = customStatus({ X: 10, Y: 10, Z: 10, mines: 25 });
   assert.deepEqual(ok, { ok: true, field: null, max: 999, text: '1,000 cells · up to 999 mines' });
@@ -111,7 +111,7 @@ test('a one-cell custom board is refused: no mine count fits beside the safe fir
   assert.equal(s.ok, false);
   assert.equal(s.field, 'mines');
   assert.equal(s.max, 0);
-  assert.equal(s.text, 'A 1 × 1 × 1 board has no room for a mine beside the safe first click — make it at least 2 cells.');
+  assert.equal(s.text, 'A 1 × 1 × 1 board has no room for a mine beside the safe first click — make it at least 2 cells');
   assert.doesNotMatch(s.text, /1–0|1 to 0/);
   assert.equal(customStatus({ X: 1, Y: 1, Z: 1, mines: 0 }).field, 'mines');
   assert.equal(customStatus({ X: 1, Y: 1, Z: 2, mines: 1 }).ok, true, 'two cells take one mine');
@@ -559,7 +559,7 @@ test('in a browser, the custom board validates, the switch follows the limit and
     // The fields name what is out of range, under Random; the info line keeps the size's line.
     await page.click('#board-choice [data-preset="custom"]');
     await page.fill('#c-y', '0');
-    assert.equal(await refusal(), 'Height must be a whole number from 1 to 100.');
+    assert.equal(await refusal(), 'Height must be a whole number from 1 to 100');
     assert.equal(await info(), '', 'no size line while a side is out of range');
     assert.ok(await ms(() => document.getElementById('c-y').classList.contains('is-invalid')), 'the refused field is marked invalid');
     assert.equal(await ms(() => document.getElementById('c-y').getAttribute('aria-invalid')), 'true');
@@ -720,8 +720,8 @@ test('in a browser, a board code in a board choice: validated live, the other mo
     await page.fill('#bc-code', three.toLowerCase());
     assert.equal((await field('bc')).disabled, false);
     assert.equal((await field('bc')).line, 'ui-text ui-text--success', 'accepted: the success line');
-    assert.match((await field('bc')).info, /^Cube Intro · a challenge, not eligible for bests$/);
-    assert.equal(await ms(() => document.getElementById('bc-summary').textContent), 'Board code · Cube Intro');
+    assert.match((await field('bc')).info, /^Cube Intro · 6 × 6 × 6 · 10 mines · starts on the marked cube$/);
+    assert.equal(await ms(() => document.getElementById('bc-summary').textContent), 'Board code · Cube Intro · 6 × 6 × 6 · 10 mines');
     await page.click('#bc-play');
     await page.waitForFunction(() => globalThis.__ms.modes.active === '3d');
     assert.equal(await ms(() => globalThis.__ms.renderer.mark), 129, 'the start cell is tinted');
@@ -820,7 +820,7 @@ test('in a browser, the 3D board choice: a click chooses, Play or Enter plays; L
     assert.equal(await text('c-info'), '1,000 cells · up to 999 mines');
     await page.fill('#c-m', '1000');
     assert.equal(await ms(() => document.getElementById('bc-play').disabled), true);
-    assert.equal(await text('c-refusal'), 'Mines must be a whole number from 1 to 999 on a 10 × 10 × 10 board.');
+    assert.equal(await text('c-refusal'), 'Mines must be a whole number from 1 to 999 on a 10 × 10 × 10 board');
     assert.equal(await text('c-info'), '1,000 cells · up to 999 mines', 'the info line keeps the size\'s line');
     assert.equal(await text('bc-summary'), 'Custom · 10 × 10 × 10 · 1,000 mines · no-guess', 'the refused board summarised');
     await page.fill('#c-y', '2');

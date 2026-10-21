@@ -241,6 +241,7 @@ test('a non-default theme whose stylesheet fails at start-up falls back to the d
   assert.equal(root.getAttribute('data-theme'), THEME_ID);
   assert.deepEqual(sheets(), [THEME_ID], 'the failed stylesheet is gone');
   assert.deepEqual(notices, [START_FALLBACK], 'the player is told once');
+  assert.equal(START_FALLBACK, 'The theme could not be loaded. The game uses Joyful tiles.');
   assert.deepEqual(handed.map(([id]) => id), [THEME_ID]);
   await applier.setTheme(FIXTURE_ID);
   assert.deepEqual(notices, [START_FALLBACK], 'the stored value applied at load is not retried or told again');

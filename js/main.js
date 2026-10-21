@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { BoardRenderer } from './render.js';
 import { FlyCamera, OrbitCamera, orbitRange, MouseActions, Input, KeyLook, SPACING_MIN, SPACING_MAX, SPACING_START, spacingStep, spacingToggle, spawnPose, offscreenArrow, escResumes } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
-import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
+import { UI, clampSettings, NO_MOUSE_MSG, boardLine3D, boardLine2D } from './ui.js';
 import * as audio from './audio.js';
 import { Controls } from './controls.js';
 import { createTouch3D, mountTouch3D, applyTouchStick, touchZone, VIBRATE_MS } from './touch-3d.js';
@@ -456,7 +456,7 @@ THEME.start({ notice: (text) => ui.toast(text, 4000) }).catch(() => showFatal())
 // The store loads before the first screen shows; each setting's owner applies it by subscribing.
 const SETTINGS = createSettingsStore({
   storage,
-  onNotKept: () => ui.toast('Settings cannot be saved in this browser — changes last until you close the game.', 4000),
+  onNotKept: () => ui.toast('Settings could not be saved in this browser. They last until you close the page.', 4000),
 });
 const settingsLoaded = SETTINGS.load();
 applySettings(SETTINGS, {
@@ -784,12 +784,21 @@ function playDaily(id, source) {
   startForced(gameStart({ board: game.board, seed: game.seed, startCell: game.startCell, daily: date, pregenerated: DAILY_BOARDS_HELD.take(game.code) }), source);
 }
 function playChallenge({ board, seed, startCell }, source) { startForced(gameStart({ board, seed, startCell }), source); }
+/** A code's board as its line names it: the name of a standard board or cube preset, the size, the mines and no-guess ("Intermediate · 16 × 16 · 40 mines · no-guess"). */
+function codeBoardLine(board) {
+  const name = boardLabel({ ...board, noGuess: false });
+  const size = board.mode === MODE_3D
+    ? boardLine3D({ X: board.width, Y: board.height, Z: board.depth, mines: board.mines }, { mines: true })
+    : boardLine2D({ ...board, noGuess: false });
+  return `${name === size ? size : `${name} · ${size}`}${board.noGuess ? ' · no-guess' : ''}`;
+}
 /** A board choice's code field, validated live: the reason a code is refused, or what it opens. */
 function checkCode(text, mode) {
   const r = resolveCode(text, { mode });
   if (r.kind === 'refused') return { ok: false, reason: r.reason, otherMode: !!r.otherMode };
   if (r.kind === 'daily') return { ok: true, text: 'Today\'s daily board — it opens the Daily screen.', label: 'Today\'s daily board' };
-  return { ok: true, text: `${boardLabel(r.parsed.board)} · a challenge, not eligible for bests`, label: boardLabel(r.parsed.board) };
+  const label = codeBoardLine(r.parsed.board);
+  return { ok: true, text: `${label} · starts on the marked ${r.parsed.board.mode === MODE_3D ? 'cube' : 'cell'}`, label };
 }
 function playCode(text, mode) {
   const r = resolveCode(text, { mode });

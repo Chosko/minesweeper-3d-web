@@ -19,7 +19,8 @@ grammar)
   the game form `EN-9C41D07A-247-1486` or, with `daily` (YYYYMMDD), the daily
   form `EN-20261011-184A`; `parseBoardCode(text, { generatorVersion? })` →
   `{ ok: true, board, seed, startCell, generatorVersion, daily? }` or `{ ok:
-  false, reason }` (`CODE_REASONS`), never throwing; `codeOf(game)` — a
+  false, reason }` (`CODE_REASONS`, among them `incomplete` for a code cut
+  off before its check), never throwing; `codeOf(game)` — a
   summary's or history entry's code, null without what one needs.
 - `boardToken`, `graphOf(identity)`, `fnv1a`, `dailySeed(date, token)`,
   `dateText(now)` (the local date), `isDateText`.

@@ -1291,7 +1291,7 @@ Feature: shared-screen-layout
 
 ## 242. Copy alignment with the canvas
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/themes/applier.js, js/main.js, js/records/board-code.js, js/classic2d/board-choice.js, js/mode3d/board-choice.js, js/ui.js, index.html, js/results/view.js, js/shell/live-figures.js, .claude/context/records-board-code.md
 Preconditions: 230, 237

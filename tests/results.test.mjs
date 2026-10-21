@@ -52,8 +52,8 @@ test('times show to the thousandth of a second, truncated, never rounded', () =>
   assert.equal(formatTime(Number.NaN), DASH);
 });
 
-test('a time difference shows the same precision, signed, truncated toward zero; none at that precision is "= best"', () => {
-  assert.equal(EQUAL_BEST, '= best');
+test('a time difference shows the same precision, signed, truncated toward zero; none at that precision is "equal"', () => {
+  assert.equal(EQUAL_BEST, 'equal');
   assert.equal(formatTimeDifference(2280), '+2.280 s');
   assert.equal(formatTimeDifference(-1270), '−1.270 s');
   assert.equal(formatTimeDifference(-50), '−0.050 s');
@@ -64,7 +64,7 @@ test('a time difference shows the same precision, signed, truncated toward zero;
   assert.equal(formatTimeDifference(null), DASH);
 });
 
-test('3BV/s shows two decimals and efficiency one decimal; a difference of zero at that precision is "= best"', () => {
+test('3BV/s shows two decimals and efficiency one decimal; a difference of zero at that precision is "equal"', () => {
   assert.equal(formatRate(2.5327), '2.53');
   assert.equal(formatRate(0), '0.00');
   assert.equal(formatRate(null), DASH);
@@ -121,7 +121,7 @@ test('a won game shows its outcome, board, rank chip and four figure tiles, each
   const c = resultsContent({ summary: summary(), mode: 'classic-2d', comparison, saved: true, notSaved: false, rank: { position: 3, of: 12 } });
   assert.equal(c.outcome, 'won');
   assert.equal(c.title, 'You won!');
-  assert.equal(c.board, 'Beginner');
+  assert.equal(c.board, 'Classic 2D · Beginner');
   assert.equal(c.rank, '#3 of 12 wins on this board');
   assert.deepEqual(c.tiles.map(tileRow), [
     ['time', 'Time', '47.380 s', 'best 45.120 s · +2.260 s', 'worse', false],
@@ -141,7 +141,7 @@ test('the best time and its difference are truncated like every other time', () 
   assert.deepEqual([tile(c, 'time').value, tile(c, 'time').detail, tile(c, 'time').newBest], ['46.010 s', 'was 47.389 s · −1.379 s', true]);
 });
 
-test('delta direction: lower is better for time, higher for 3BV/s and efficiency; none at display precision is "= best"', () => {
+test('delta direction: lower is better for time, higher for 3BV/s and efficiency; none at display precision is "equal"', () => {
   const cmp = {
     time: { best: { id: 'a', value: 50000, endedAt: 'x' }, value: 47380, difference: -2620, newBest: true },
     bbbvPerSecond: { best: { id: 'b', value: 2.6, endedAt: 'x' }, value: 2.5327, difference: -0.0673, newBest: false },
@@ -151,7 +151,7 @@ test('delta direction: lower is better for time, higher for 3BV/s and efficiency
   assert.deepEqual(c.tiles.slice(0, 3).map((t) => [t.key, t.direction, t.detail, t.newBest]), [
     ['time', 'better', 'was 50.000 s · −2.620 s', true],
     ['bbbvPerSecond', 'worse', 'best 2.60 · −0.07', false],
-    ['efficiency', 'equal', 'best 87.0% · = best', false],
+    ['efficiency', 'equal', 'best 87.0% · equal', false],
   ]);
   // A new best whose difference is zero at display precision gives the best it replaced alone.
   const tiny = { ...cmp, time: { best: { id: 'a', value: 47380.4, endedAt: 'x' }, value: 47380, difference: -0.4, newBest: true } };
@@ -359,7 +359,7 @@ test('the board code on results: the game form from the seed and start cell, a d
   const expert = createBoardIdentity({ mode: 'classic-2d', grid: 'square', width: 30, height: 16, mines: 99, noGuess: true });
   const daily = summary({ board: { ...expert, daily: true }, daily: '20261011', startCell: 255 });
   assert.equal(resultsContent({ summary: daily }).code, 'EN-20261011-184A');
-  assert.equal(resultsContent({ summary: daily }).board, 'Daily · Expert · no-guess');
+  assert.equal(resultsContent({ summary: daily }).board, 'Classic 2D · Daily · Expert · no-guess');
   assert.equal(resultsContent({ summary: summary() }).code, null, 'an older summary with no start cell shows no code');
   assert.equal(resultsContent({ summary: won }).label, null);
 });
@@ -453,11 +453,11 @@ test('the Esc hint sits on what Esc does: Look at the board on a 3D card that of
   assert.equal(look(), true, 'a 3D results card: Main menu without its Esc hint');
   assert.equal(root.el('r-look').classList.contains('hidden'), false, 'Look at the board, with its own');
   assert.equal(root.el('results-rank').classList.contains('hidden'), true, 'no rank chip over the scene');
-  assert.equal(root.el('results-board').textContent, 'Cube Intermediate · #9 of 42 wins on this board', 'the rank at the end of the board line');
+  assert.equal(root.el('results-board').textContent, '3D · Cube Intermediate · #9 of 42 wins on this board', 'the rank at the end of the board line');
   view.show(resultsContent({ summary: summary(), comparison, rank: { position: 9, of: 42 } }));
   assert.equal(look(), false, 'a Classic 2D results card: Esc is Main menu');
   assert.equal(root.el('results-rank').classList.contains('hidden'), false);
-  assert.equal(root.el('results-board').textContent, 'Beginner', 'the rank in its chip, not on the board line');
+  assert.equal(root.el('results-board').textContent, 'Classic 2D · Beginner', 'the rank in its chip, not on the board line');
   view.show({ ...resultsContent({ summary: summary({ board: { ...BOARD_3D } }), comparison }), look: false });
   assert.equal(look(), false, 'a 3D card whose board can no longer be looked at: Esc goes back to the menu');
   assert.match(read('css/style.css'), /#results\.results--look #r-menu \.ui-key-hint\s*\{\s*display:\s*none;\s*\}/, 'which hides Main menu\'s Esc hint');
@@ -998,7 +998,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
       };
     });
     assert.equal(shown.title, 'You won!');
-    assert.equal(shown.board, 'Beginner');
+    assert.equal(shown.board, 'Classic 2D · Beginner');
     assert.match(shown.time, /^\d+\.\d{3} s$/);
     assert.match(shown.bbbv, /^\d+$/);
     assert.match(shown.rate, /^\d+\.\d\d$/);

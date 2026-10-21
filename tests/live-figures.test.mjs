@@ -39,7 +39,7 @@ test('pace vs PB is elapsed minus the best time scaled by the share solved: behi
   const f = liveFigures(input());
   assert.equal(f.pace.text, '+5.000 s');
   assert.equal(f.pace.ahead, false);
-  assert.equal(f.pace.detail, 'Best 50.000 s');
+  assert.equal(f.pace.detail, 'behind 50.000 s');
 });
 
 test('pace vs PB ahead of the best is negative, shown with a minus sign', () => {
@@ -47,12 +47,14 @@ test('pace vs PB ahead of the best is negative, shown with a minus sign', () => 
   const f = liveFigures(input({ elapsedMs: 20000 }));
   assert.equal(f.pace.text, '−5.000 s');
   assert.equal(f.pace.ahead, true);
+  assert.equal(f.pace.detail, 'ahead of 50.000 s');
 });
 
 test('pace vs PB exactly on the best pace is unsigned zero', () => {
   const f = liveFigures(input({ elapsedMs: 25000 }));
   assert.equal(f.pace.text, '0.000 s');
   assert.equal(f.pace.ahead, false);
+  assert.equal(f.pace.detail, 'ahead of 50.000 s', 'on pace is not behind');
 });
 
 test('pace vs PB truncates toward zero like the results time format', () => {
@@ -71,13 +73,13 @@ test('pace vs PB is absent without a best time and before the first 3BV is solve
 test('a best may be handed as its plain value', () => {
   const f = liveFigures(input({ bests: { time: 50000, bbbvPerSecond: 2.5 } }));
   assert.equal(f.pace.text, '+5.000 s');
-  assert.equal(f.rate.detail, 'Best 2.50');
+  assert.equal(f.rate.detail, 'PB 2.50');
 });
 
 test('3BV/s is 3BV solved per elapsed second with the best 3BV/s as its detail', () => {
   const f = liveFigures(input());
   assert.equal(f.rate.text, '2.00');
-  assert.equal(f.rate.detail, 'Best 2.50');
+  assert.equal(f.rate.detail, 'PB 2.50');
 });
 
 test('3BV/s has no detail line on a board with no best 3BV/s', () => {
@@ -94,13 +96,13 @@ test('3BV/s at zero elapsed time is the placeholder, never NaN or Infinity', () 
 test('clicks are the counted clicks with the live efficiency as their detail', () => {
   const f = liveFigures(input({ clicks: clicks(50, 10, 5, 5) }));
   assert.equal(f.clicks.text, '70');
-  assert.equal(f.clicks.detail, `Efficiency ${formatEfficiency((100 * 60) / 70)}`);
+  assert.equal(f.clicks.detail, `efficiency ${formatEfficiency((100 * 60) / 70)}`);
 });
 
 test('clicks before any click show zero and the placeholder efficiency', () => {
   const f = liveFigures(input({ bbbvSolved: 0, clicks: clicks(0) }));
   assert.equal(f.clicks.text, '0');
-  assert.equal(f.clicks.detail, `Efficiency ${PLACEHOLDER}`);
+  assert.equal(f.clicks.detail, `efficiency ${PLACEHOLDER}`);
 });
 
 test('the live efficiency matches the game summary for the same counts', () => {
@@ -108,7 +110,7 @@ test('the live efficiency matches the game summary for the same counts', () => {
   const counts = { bbbv: 30, bbbvSolved: 17, clicks: clicks(19, 3, 2, 4) };
   const summary = buildSummary({ engine: counts, elapsedMs: 12345, board, seed: 1, generatorVersion: 1 });
   const f = liveFigures({ ...counts, flags: 3, mines: 10, elapsedMs: 12345, bests: {} });
-  assert.equal(f.clicks.detail, `Efficiency ${formatEfficiency(summary.efficiency)}`);
+  assert.equal(f.clicks.detail, `efficiency ${formatEfficiency(summary.efficiency)}`);
 });
 
 test('flags are flags placed with mines left as their detail', () => {

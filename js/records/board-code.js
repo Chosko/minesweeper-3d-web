@@ -23,8 +23,8 @@
 //   daily seed   dailySeed(date, token) — the 32-bit FNV-1a hash of daily-<YYYYMMDD>-<token>
 //
 // parseBoardCode(text, { generatorVersion? }) → { ok: true, board, seed, startCell,
-// generatorVersion, daily? } or { ok: false, reason }; it never throws. It refuses malformed text
-// and a failed check, a generator version other than this build's (a newer or an older one, each
+// generatorVersion, daily? } or { ok: false, reason }; it never throws. It refuses malformed text,
+// a code cut off before its check (incomplete), a failed check, a generator version other than this build's (a newer or an older one, each
 // with its own reason, and nothing is generated), a board outside its mode's custom limits, a 3D
 // no-guess board the 3D board choice refuses, and a start cell outside the board. A code always
 // spells its board canonically: a standard 2D board spelled out is malformed.
@@ -41,9 +41,10 @@ import { validateCustom as validate3D, noGuessAvailable, noGuessReason } from '.
 
 export const CODE_REASONS = Object.freeze({
   malformed: 'This isn\'t a board code.',
+  incomplete: 'This code is incomplete: it is missing its last part.',
   typo: 'This board code has a typo — check it and try again.',
-  newer: 'This board code comes from a newer version of the game. Reload the page to update.',
-  older: 'This board code was made by an older board generator and can no longer be rebuilt.',
+  newer: 'This board code is from a newer version of the game. Reload the page to update.',
+  older: 'This board code is from an older version of the game. It cannot be played here.',
   start: 'This board code\'s start cell is outside the board.',
 });
 
@@ -179,11 +180,23 @@ function limitsReason(b) {
 
 const refuse = (reason) => ({ ok: false, reason });
 
+// Whether `parts` are a code cut off before its check (a trailing hyphen allowed): a game code's
+// board, seed and start cell, or a daily code's board and date, with nothing after. Eight digits
+// and a check-shaped last part read as a daily code, whose date is then checked.
+function incomplete(parts) {
+  const p = parts.at(-1) === '' ? parts.slice(0, -1) : parts;
+  if (!boardOfToken(p[0])) return false;
+  if (p.length === 2) return isDateText(p[1]);
+  if (p.length === 3) return SEED.test(p[1]) && START.test(p[2]) && !(/^[0-9]{8}$/.test(p[1]) && CHECK.test(p[2]));
+  return false;
+}
+
 // text → { ok: true, board, seed, startCell, generatorVersion, daily? } or { ok: false, reason }.
 // `generatorVersion` is this build's (GENERATOR_VERSION), the only one whose boards it rebuilds.
 export function parseBoardCode(text, { generatorVersion: build = GENERATOR_VERSION } = {}) {
   if (typeof text !== 'string') return refuse(CODE_REASONS.malformed);
   const parts = text.trim().toUpperCase().split('-');
+  if (incomplete(parts)) return refuse(CODE_REASONS.incomplete);
   if (parts.length !== 3 && parts.length !== 4) return refuse(CODE_REASONS.malformed);
   const fields = boardOfToken(parts[0]);
   const check = CHECK.exec(parts[parts.length - 1]);

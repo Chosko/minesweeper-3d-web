@@ -11,7 +11,7 @@
 //   { kind: 'challenge', parsed } any other code: a challenge in parsed.board.mode — its parse
 //                                 without `daily`, so another day's daily code plays as a
 //                                 challenge, never as a daily.
-// otherModeHint(mode) → "This is a 3D board code — enter it on the 3D board choice.".
+// otherModeHint(mode) → "This is a 3D board code. Paste it in the 3D board choice.".
 // gameStart({ board, seed, startCell, daily?, pregenerated? }) → { mode, choice }: the mode host's
 //   start for a daily (its `daily` date) or else a challenge, forcing that start cell and seed —
 //   Classic 2D's choice carries `fixed` (js/classic2d/mode.js), the 3D board `forced`
@@ -40,7 +40,7 @@ import { DEFAULT_CHOICE } from '../classic2d/board-setup.js';
 export const MODE_NAMES = Object.freeze({ 'classic-2d': 'Classic 2D', [MODE_3D]: '3D' });
 export const STARTED_TOAST = 'Finish or leave this game to open the board link.';
 
-export const otherModeHint = (mode) => `This is a ${MODE_NAMES[mode]} board code — enter it on the ${MODE_NAMES[mode]} board choice.`;
+export const otherModeHint = (mode) => `This is a ${MODE_NAMES[mode]} board code. Paste it in the ${MODE_NAMES[mode]} board choice.`;
 
 export function resolveCode(text, { today = dateText(), mode = null, parse = parseBoardCode } = {}) {
   const parsed = parse(text);

@@ -9,11 +9,13 @@
 // the records keep the full milliseconds. 3BV/s shows two decimals and efficiency one decimal
 // ("94.7%"); a stat that is not available shows DASH. A difference from a best carries the same
 // precision and a sign, truncated toward zero for time; one that is zero at that precision reads
-// EQUAL_BEST ("= best"), with no sign and no number.
+// EQUAL_BEST ("equal": "best 94.7% · equal"), with no sign and no number.
 //
 // resultsContent({ summary, comparison, saved, notSaved, watch, watchBest, rank, streak, standing, swapped }) →
 // the screen's content, top to bottom:
-//   { outcome, title, board,
+//   { outcome, title,
+//     board       the mode and the board's label: "Classic 2D · Intermediate · no-guess",
+//                 "3D · Cube Intermediate · no-guess";
 //     rank        on a ranked win the chip "#3 of 12 wins on this board", from the flow's rank
 //                 { position, of }; null on a loss, a challenge or without a rank;
 //     label       a challenge's CHALLENGE_LABEL ("Challenge · not eligible for bests"), shown in the
@@ -24,7 +26,7 @@
 //                 efficiency. With a comparison, a won tile's detail is the standing best and the
 //                 difference ("best 45.120 s · +2.260 s"), or, when the game set that best, the best
 //                 it replaced ("was 48.213 s · −0.833 s", newBest marking its "New best" badge); a
-//                 difference that is a dash or "= best" at display precision is left off a replaced
+//                 difference that is a dash or EQUAL_BEST at display precision is left off a replaced
 //                 best. direction is 'better', 'worse' or 'equal' (lower is better for time, higher
 //                 for 3BV/s and efficiency; null without a difference). A challenge sets no best: its
 //                 tiles show the standing best and the game's own difference, uncoloured and never
@@ -59,7 +61,7 @@
 // { show(content), hide(), noteLook(text) }: fills the #results markup by id and calls back on its
 // actions. The frame (#results-frame) carries data-outcome, which gives a loss its neutral head; the
 // head the trophy tile on a win (#results-trophy), the title, the board line, the rank chip
-// (#results-rank) — at the end of the board line instead ("… · #9 of 42 wins on this board") over
+// (#results-rank) — at the end of the board line instead ("3D · … · #9 of 42 wins on this board") over
 // the 3D scene — or the challenge chip (#results-label); the tiles (#rs-<key>) each their value,
 // detail line (data-delta its direction), the tile's data-new-best and its "New best"
 // ui-chip--best, and 3BV solved its <progress>; the detail rows (#rd-clicks, #rd-target,
@@ -83,7 +85,7 @@ import { codeOf } from '../records/board-code.js';
 import { bindCodeChip } from '../ui/components.js';
 
 export const DASH = '—';
-export const EQUAL_BEST = '= best';
+export const EQUAL_BEST = 'equal';
 export const FIRST_BEST = 'Win this board to set a best';
 /** The 3BV tile's detail line on a win. */
 export const BOARD_DIFFICULTY = 'board difficulty';
@@ -105,7 +107,7 @@ export const NOTES = Object.freeze({
 });
 
 const missing = (v) => v === null || v === undefined || !Number.isFinite(v);
-/** A best difference: "= best" when its magnitude shows as zero, else signed. */
+/** A best difference: EQUAL_BEST when its magnitude shows as zero, else signed. */
 const difference = (v, magnitude, zero) => {
   if (missing(v)) return DASH;
   const text = magnitude(Math.abs(v));
@@ -233,7 +235,7 @@ export function resultsContent({
   return {
     outcome: summary.outcome,
     title: won ? 'You won!' : 'Game over',
-    board: boardLabel(summary.board),
+    board: `${summary.board?.mode === MODE_3D ? '3D' : 'Classic 2D'} · ${boardLabel(summary.board)}`,
     rank: ranked ? `#${rank.position} of ${rank.of} wins on this board` : null,
     label: challenge ? CHALLENGE_LABEL : null,
     tiles,

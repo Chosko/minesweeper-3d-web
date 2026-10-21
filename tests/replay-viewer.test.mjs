@@ -746,21 +746,21 @@ test('the live figures follow the playback position, a seek back or forward incl
   assert.deepEqual(asked, [createSimulator(blobOf(WON)).replay.header.board], 'the bests of the replay\'s board');
   const at = () => Object.fromEntries(FIGURES.map((name) => [name, view.last.live[name] && [view.last.live[name].text, view.last.live[name].detail]]));
   assert.deepEqual(at(), {
-    bbbv: ['0 / 15', null], pace: null, rate: [DASH, 'Best 2.00'], clicks: ['0', `Efficiency ${DASH}`], flags: ['0', '10 mines left'],
+    bbbv: ['0 / 15', null], pace: null, rate: [DASH, 'PB 2.00'], clicks: ['0', `efficiency ${DASH}`], flags: ['0', '10 mines left'],
   }, 'the start position: nothing solved, no time elapsed');
   viewer.seek(5000);
   assert.deepEqual(at(), {
-    bbbv: ['7 / 15', null], pace: ['+0.800 s', 'Best 9.000 s'], rate: ['1.40', 'Best 2.00'], clicks: ['19', 'Efficiency 36.8%'], flags: ['3', '7 mines left'],
+    bbbv: ['7 / 15', null], pace: ['+0.800 s', 'behind 9.000 s'], rate: ['1.40', 'PB 2.00'], clicks: ['19', 'efficiency 36.8%'], flags: ['3', '7 mines left'],
   }, '5 s in: behind the best\'s pace');
   assert.equal(view.last.live.bbbv.progress, 7 / 15);
   viewer.seek(3932);
   assert.deepEqual(at(), {
-    bbbv: ['7 / 15', null], pace: ['\u22120.268 s', 'Best 9.000 s'], rate: ['1.78', 'Best 2.00'], clicks: ['15', 'Efficiency 46.7%'], flags: ['2', '8 mines left'],
+    bbbv: ['7 / 15', null], pace: ['\u22120.268 s', 'ahead of 9.000 s'], rate: ['1.78', 'PB 2.00'], clicks: ['15', 'efficiency 46.7%'], flags: ['2', '8 mines left'],
   }, 'a seek back: the figures of the earlier frame, ahead of the pace');
   assert.equal(view.last.live.pace.ahead, true);
   viewer.command('end');
   assert.deepEqual(at(), {
-    bbbv: ['15 / 15', null], pace: ['+0.971 s', 'Best 9.000 s'], rate: ['1.50', 'Best 2.00'], clicks: ['28', 'Efficiency 53.6%'], flags: ['5', '5 mines left'],
+    bbbv: ['15 / 15', null], pace: ['+0.971 s', 'behind 9.000 s'], rate: ['1.50', 'PB 2.00'], clicks: ['28', 'efficiency 53.6%'], flags: ['5', '5 mines left'],
   }, 'a seek forward to the end');
   viewer.command('start');
   assert.equal(view.last.live.bbbv.text, '0 / 15', 'back at the start position');
@@ -776,7 +776,7 @@ test('the figures compare against the bests stored now, read each time a replay 
   stored = { time: { value: 4000 }, bbbvPerSecond: { value: 3.5 } };
   await viewer.show({ replay: blobOf(WON) });
   viewer.seek(5000);
-  assert.deepEqual([view.last.live.pace.detail, view.last.live.rate.detail], ['Best 4.000 s', 'Best 3.50'], 'the bests as they stand when the replay opens');
+  assert.deepEqual([view.last.live.pace.detail, view.last.live.rate.detail], ['behind 4.000 s', 'PB 3.50'], 'the bests as they stand when the replay opens');
   const { viewer: plain, view: shown } = viewerOver({ bests: () => { throw new Error('no records'); } });
   await plain.show({ replay: blobOf(WON) });
   plain.seek(5000);
