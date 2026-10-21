@@ -34,7 +34,8 @@ file runs only before a milestone closes (`run-browser-tests.sh` and
 through these scripts — one Chromium per run, one file at a time, one run
 on the machine at a time — never through a bare `node --test`. The tag, the
 mapping, the runner and the hook that enforces this are
-`.claude/context/testing.md`'s.
+`.claude/context/testing.md`'s; what earns a browser test is
+`.claude/context/testing-browser.md`'s.
 
 <!-- chosko-llm:editing-discipline:begin v0.1.0 -->
 

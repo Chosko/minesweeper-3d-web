@@ -150,5 +150,6 @@ Data beside the tests:
 - A test that trips on an unrelated-looking change: the tripwires in
   [testing-conventions.md](testing-conventions.md) § WHEN TO READ THE
   SOURCE.
-- Choosing where a new test goes: the prefix table above, then the area's
-  existing file.
+- Choosing where a new test goes: its tier by
+  [testing-browser.md](testing-browser.md)'s rules for what earns a browser
+  test, then the prefix table above, then the area's existing file.

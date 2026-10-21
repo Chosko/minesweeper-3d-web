@@ -2,8 +2,9 @@
 
 ## OVERVIEW
 
-How the Playwright tests (those named "in a browser") are written: the
-shared helper every browser test file goes through, the local server, the browser environment they run in, the 3D backdrop kept out
+How the Playwright tests (those named "in a browser") are written: what
+earns a test a place in the browser tier, the shared helper every browser
+test file goes through, the local server, the browser environment they run in, the 3D backdrop kept out
 of their way, inputs a round trip cannot stretch, fixed boards for a game
 state, and `window.__ms`. Conventions every test follows, and the
 tripwires, are [testing-conventions.md](testing-conventions.md); where
@@ -36,6 +37,38 @@ an HTML string the server returns in place of a file.
 
 ## INTERNAL PATTERNS
 
+What earns a browser test — the rules every new or extended browser test
+meets, so the tier stays light:
+- **A test is a browser test only when it needs a real browser**: real
+  layout and computed geometry, WebGL or canvas pixels, real input events
+  and focus, a user flow across screens, a platform API. Pure logic, string
+  and state computation, markup and CSS rules are pinned in the fast tier
+  (static checks, [testing-conventions.md](testing-conventions.md)), and a
+  browser test never re-asserts what a fast test pins: a DOM-free assertion
+  goes to the fast tier.
+- **Every browser test proves behaviour.** A test that only finds an element
+  present or visible, a class set or a text shown is not written.
+- **Each behaviour is proven once in the tier.** A user flow — a game played
+  to its end, a screen's main flow — has one walk across the whole suite; a
+  new check on a flow already walked extends the file that walks it.
+- **One page load per file where the facts allow**: facts about the same
+  page go in one test or share its page, each assertion with its own message
+  naming what failed.
+- **A window-size loop covers only the sizes whose layout differs** (the
+  breakpoints), not a spread of sizes.
+- **A state is reached by driving it** — the `__ms` hook, a fixed board, a
+  stub that answers at once — never by a fixed wait or a stub's delay; waits
+  follow [testing-conventions.md](testing-conventions.md)'s timing slack. A
+  check that can only be written by waiting stays out of the suite.
+- **`[slow]` takes only the long walks and flavour checks of timing and
+  motion** that [testing.md](testing.md) § OVERVIEW's tiers name, one
+  flavour check per behaviour.
+- **A new browser test file reaches its code through its import closure**,
+  so the affected-tests mapping ([testing.md](testing.md) § OVERVIEW) runs
+  it only when a change reaches that code. The smoke sets stay the fewest
+  files and change only in `affected-tests.mjs`, which defines them.
+
+How a browser test is built:
 - **Local static server**: the helper's `serveRoot()` — an in-process
   `node:http` server on a free port over the repo root (ES modules fail on
   `file://`). Artefact
