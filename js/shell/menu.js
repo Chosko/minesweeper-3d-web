@@ -93,6 +93,14 @@ export function entryReason(entry, missing = []) {
 }
 
 /**
+ * The reason line `entry`'s menu entry shows under its label: its entryReason, except for a feature
+ * the web build always lacks (WEB_MISSING) — Quit shows its lock alone, its reason left to its preview.
+ */
+export function entryReasonLine(entry, missing = []) {
+  return WEB_MISSING.includes(entry.needs) ? null : entryReason(entry, missing);
+}
+
+/**
  * Where `entry` leads now: null for an unavailable entry (entryReason), { mode } for a registered
  * mode's board choice, { screen } for a screen the router has, else
  * { screen: PLACEHOLDER_SCREEN, data: { entry, title } }.

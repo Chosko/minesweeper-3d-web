@@ -35,34 +35,69 @@ kbd {
   z-index: var(--z-overlay);
   overflow-y: auto;
 }
-/* The main menu, on the page's backdrop: the wordmark over the entries (left) and the preview (right),
-   the key hints and the build label under them. The entries share the preview's height, the selected
-   one taller (its theme's flex-grow); a gap opens before each block's first entry. On a phone the
-   preview goes and the entries fill the screen. */
+/* The main menu, on the page's backdrop, in each window size's fixed place (the J-Menu artboards):
+   the wordmark in its band over the entries (left) and the preview (right), the key hints and the
+   build label at the foot; the columns centred in a window wider than the artboard, the preview
+   narrower in one narrower. The entries share the preview's height, the selected one taller (its
+   theme's flex-grow and min-height, a size's own below), a block's first entry after a spacer as
+   well as the gap; every entry at least a finger tall, the floor below which a short window scrolls
+   the menu. The
+   preview's board layer is inset to pin its tile. On a phone the preview goes and the entries fill
+   the screen. */
 #menu {
   display: grid;
-  grid-template-columns: minmax(0, 590fr) minmax(0, 964fr);
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: 590px minmax(0, 964px);
+  grid-template-rows: 132px minmax(auto, 804px) minmax(auto, 1fr);
   grid-template-areas: "title title" "entries preview" "foot foot";
+  justify-content: space-between;
   align-items: stretch;
-  justify-content: stretch;
-  gap: clamp(20px, 4.4vh, 48px) clamp(24px, 4vw, 96px);
-  padding: clamp(24px, 4vh, 44px) clamp(20px, 5vw, 96px) clamp(16px, 3.3vh, 36px);
-  overflow: hidden;
+  column-gap: 56px;
+  padding: 44px max(96px, calc((100% - 1728px) / 2)) 36px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
-#menu-title { grid-area: title; }
-#menu-entries { grid-area: entries; min-height: 0; }
-#menu-entries > .ui-mode-entry { flex-basis: 0; min-height: 0; }
-#menu-entries > [data-block-start] { margin-top: var(--space-3); }
+#menu-title { grid-area: title; align-self: start; }
+#menu-entries { grid-area: entries; }
+#menu-entries > .ui-mode-entry { flex-basis: 0; }
+#menu-entries > .ui-mode-entry:not(:focus, [data-force~="focus"]) { min-height: 44px; }
+#menu-entries > [data-block-start] { margin-top: 24px; }
 #menu-preview { grid-area: preview; min-height: 0; }
-#menu-preview-stage > [data-preview] { position: absolute; inset: var(--space-8); display: grid; place-items: center; }
+#menu-preview .ui-scene-panel__badge { width: 200px; height: 200px; }
+#menu-preview-stage > [data-preview] { position: absolute; inset: 36px; display: grid; place-items: center; }
 #menu-preview-stage > [data-preview][hidden] { display: none; }
-#menu-foot { grid-area: foot; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-6); }
+#menu-foot { grid-area: foot; align-self: end; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-6); }
 #menu-foot > p { margin: 0; }
-#menu-foot > #menu-build { margin-inline-start: auto; }
+#menu-foot > #menu-build { margin-inline-start: auto; font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); letter-spacing: 0.15em; text-transform: uppercase; }
+#touch-note { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: var(--font-weight-bold); }
+#touch-note[data-icon="hand"] { white-space: nowrap; }
+#touch-note > .ui-icon { width: 20px; height: 20px; }
+@media (max-width: 1439px) {
+  #menu { grid-template-columns: 450px minmax(0, 748px); grid-template-rows: 88px minmax(auto, 580px) minmax(auto, 1fr); padding: 30px max(56px, calc((100% - 1254px) / 2)) 21px; }
+  #menu-entries { gap: 10px; }
+  #menu-entries > [data-block-start] { margin-top: 20px; }
+  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) { flex-grow: 1.4; min-height: 44px; }
+  #menu-entries .ui-mode-entry__icon { width: 36px; height: 36px; }
+  #menu-entries .ui-mode-entry__icon > svg { width: 20px; height: 20px; }
+  #menu-entries .ui-mode-entry__label { font-size: 22px; }
+  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__icon { width: 48px; height: 48px; }
+  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__icon > svg { width: 26px; height: 26px; }
+  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__label { font-size: 27px; }
+  #menu-preview-stage > [data-preview] { inset: 48px; }
+}
+@media (max-width: 1199px) {
+  #menu { grid-template-columns: 390px minmax(0, 526px); grid-template-rows: 78px minmax(auto, 596px) minmax(auto, 1fr); padding: 28px max(36px, calc((100% - 952px) / 2)) 20px; column-gap: 36px; }
+  #menu-entries .ui-mode-entry__label { font-size: 20px; }
+  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__icon > svg { width: 24px; height: 24px; }
+  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__label { font-size: 25px; }
+  #menu-preview-stage > [data-preview] { inset: 56px; }
+}
 @media (max-width: 719px) {
-  #menu { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "entries" "foot"; gap: var(--space-6); padding: 34px 20px 24px; }
+  #menu { grid-template-columns: minmax(0, 1fr); grid-template-rows: 66px minmax(auto, 1fr) minmax(auto, 72px); grid-template-areas: "title" "entries" "foot"; padding: 34px 20px 24px; }
   #menu-preview { display: none; }
+  #menu-entries > [data-block-start] { margin-top: 18px; }
+  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) { flex-grow: 1.35; }
+  #menu-entries .ui-mode-entry__label { font-size: 19px; }
+  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__label { font-size: 24px; }
   #menu-foot { flex-direction: column; align-items: flex-start; }
   #menu-foot > #menu-build { margin-inline-start: 0; }
 }
@@ -741,6 +776,4 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
   #c2d-restart::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #c2d-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #touch-modes .ui-button { min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-3); }
-  /* every main menu entry at least a finger tall, the selected one still taller */
-  #menu-entries > .ui-mode-entry { min-height: 44px; }
 }

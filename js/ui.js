@@ -202,10 +202,14 @@ export class UI {
     $('p-confirm-no').addEventListener('click', () => this._closeConfirm('onNo'));
   }
 
-  /** Show the "needs mouse and keyboard" banner on the menu; on a coarse-only device (`touch`) it says both modes play by touch. */
+  /**
+   * Show the "needs mouse and keyboard" warning on the menu; on a coarse-only device (`touch`) it is
+   * the touch note instead: both modes play by touch, in ink after the hand icon.
+   */
   setNoMouse(on, touch = false) {
     const note = $('touch-note');
-    note.textContent = touch ? TOUCH_MSG : NO_MOUSE_MSG;
+    setNote(note, touch ? TOUCH_MSG : NO_MOUSE_MSG, { icon: touch ? 'hand' : null });
+    note.classList.toggle('ui-text--warning', !touch);
     note.classList.toggle('hidden', !on);
   }
   /**
@@ -240,13 +244,18 @@ export class UI {
 
   /**
    * Disable main menu entry `id`, which cannot open here: aria-disabled, so it stays selectable and
-   * its preview shows, its reason under its label and its lock shown; a click opens nothing.
+   * its preview shows, its lock shown and, when `reason` is given, that line under its label; a click
+   * opens nothing.
    */
-  setEntryUnavailable(id, reason) {
+  setEntryUnavailable(id, reason = null) {
     const b = document.querySelector(`#menu [data-entry="${id}"]`);
     if (!b) return;
     b.setAttribute('aria-disabled', 'true');
     let line = b.querySelector('.ui-mode-entry__reason');
+    if (!reason) {
+      line?.remove();
+      return;
+    }
     if (!line) {
       line = document.createElement('span');
       line.className = 'ui-mode-entry__reason';

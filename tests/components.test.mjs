@@ -2627,9 +2627,15 @@ test('the base gives the frame, backdrop and slots their structure: the frame bo
 test('the theme draws the mode entry taller when selected, the chosen board option as a fill and check apart from selected, and no hover on either', () => {
   const focusRules = (cls) => THEME_RULES.filter(([sel]) => /:focus(-visible)?,/.test(sel) && sel.includes(`.${cls}:focus`) && sel.includes(`.${cls}[data-force~="focus"]`)).map(([, b]) => b).join(';');
   assert.match(focusRules('ui-mode-entry'), /flex-grow:\s*1\.45/, 'the selected entry takes a larger share of the list');
-  assert.match(focusRules('ui-mode-entry'), /min-height:/, 'and is taller');
-  assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__label') && /font-size:\s*var\(--font-size-2xl\)/.test(b)), 'with a bigger label');
-  assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__icon') && /width:/.test(b)), 'and a bigger icon');
+  assert.match(focusRules('ui-mode-entry'), /padding:\s*10px 24px/, 'and is roomier');
+  assert.match(focusRules('ui-mode-entry'), /min-height:\s*101px/, 'and at least 101 px tall');
+  assert.match(read('css/style.css'), /#menu-entries > \.ui-mode-entry:not\(:focus, \[data-force~="focus"\]\) \{ min-height: 44px; \}/, 'the menu\'s floor leaves the selected entry\'s to the theme');
+  assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__label') && /font-size:\s*30px/.test(b)), 'with a bigger label');
+  assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__icon') && /width:\s*56px/.test(b)), 'and a bigger icon');
+  assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__icon > svg') && /width:\s*30px/.test(b)), 'and glyph');
+  const entry = rulesFor('.ui-mode-entry').filter(([sel]) => sel === '.ui-mode-entry').map(([, b]) => b).join(';');
+  assert.match(entry, /min-height:\s*70px/, 'an entry at rest at least 70 px tall');
+  assert.match(entry, /padding:\s*6px 20px/, 'padded 6 × 20 px');
   const chosen = THEME_RULES.filter(([sel]) => sel === '.ui-option[aria-pressed="true"]').map(([, b]) => b).join(';');
   assert.match(chosen, /background:\s*var\(--color-blue\)/, 'the chosen option is a blue fill');
   assert.match(focusRules('ui-option'), /transform:\s*translateY/, 'the selected option sits level with the surface');

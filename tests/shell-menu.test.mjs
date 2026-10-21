@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   MENU_ENTRIES, PLACEHOLDER_SCREEN, LAST_MODE_DOC, LAST_MODE_VERSION, UNAVAILABLE_REASONS, WEB_MISSING, COMING_SOON, entryRoute, entryReason,
-  createMenu, createLastMode, openingEntry, menuPreview, buildLabel, DEMO_BOARD_3D,
+  createMenu, createLastMode, openingEntry, menuPreview, entryReasonLine, buildLabel, DEMO_BOARD_3D,
 } from '../js/shell/menu.js';
 import { VERSION } from '../js/version.js';
 import { demoBoard2D, dailyBoard2D, bindMenuPreview } from '../js/shell/menu-preview.js';
@@ -365,6 +365,17 @@ test('the 3D preview\'s tag names the demo board the shell builds, from one size
   assert.doesNotMatch(demo, /\b(343|=== 6)\b|X: 7/, 'and states no size of its own');
 });
 
+test('the locked Quit entry shows no reason line; any other unavailable entry keeps its reason', () => {
+  const quit = MENU_ENTRIES.find((e) => e.id === 'quit');
+  const cube = MENU_ENTRIES.find((e) => e.id === '3d');
+  const missing = [...WEB_MISSING, 'webgl2'];
+  assert.equal(entryReasonLine(quit, missing), null, 'Quit: the lock alone');
+  assert.equal(entryReason(quit, missing), 'Desktop build only', 'its reason still the preview\'s note');
+  assert.equal(entryReasonLine(cube, missing), UNAVAILABLE_REASONS.webgl2, '3D without WebGL 2 keeps its reason line');
+  assert.equal(entryReasonLine(cube, WEB_MISSING), null, 'an available entry has none');
+  assert.equal(menuPreview('quit', { missing }).note, 'Desktop build only');
+});
+
 test('the build label is the web build and the release version js/version.js holds', () => {
   assert.match(VERSION, /^\d+\.\d+\.\d+$/, 'a release version, major.minor.patch');
   assert.equal(buildLabel('0.2.0'), 'Web · v0.2.0');
@@ -397,7 +408,7 @@ test('index.html: the wordmark, one mode list of the nine entries in their block
   assert.deepEqual([...MENU.matchAll(/class="ui-key-hint" data-action="(\w+)"><span class="ui-key-hint__label">(\w+)</g)].map((m) => [m[1], m[2]]),
     [['move', 'Move'], ['select', 'Select']], 'move and select, no Back');
   assert.match(MENU, /<p class="ui-text ui-text--muted" id="menu-build"><\/p>/, 'the build label');
-  assert.match(MENU, /<p id="touch-note" class="ui-text ui-text--warning hidden" role="alert">/);
+  assert.match(MENU, /<p id="touch-note" class="ui-text hidden" data-icon="hand" role="alert"><span class="ui-note__text">/, 'the touch note, after its hand icon');
   assert.doesNotMatch(MENU, /ui-menu|ui-card|menu-again|menu-strip|menu-help|menu-sound|menu-vol|data-setting|ui-link|Leaderboards/,
     'no Play again, session strip, Controls, Sound, Volume, credit line or Leaderboards');
   assert.doesNotMatch(MENU, /data-preset|id="custom"/, 'the 3D presets and custom board left the main menu');
@@ -514,7 +525,8 @@ test('in a browser, the menu shows the nine entries with the selected one\'s pre
     assert.deepEqual(labels, ['Classic 2D', 'Hexagon', 'Triangle', 'Surface', '3D', 'Daily', 'Records', 'Settings', 'Quit']);
     assert.equal(await active(), 'menu-entry-classic-2d');
     assert.deepEqual(await ms(() => [...document.querySelectorAll('#menu [data-entry]')].filter((b) => b.getAttribute('aria-disabled') === 'true')
-      .map((b) => [b.dataset.entry, b.querySelector('.ui-mode-entry__reason').textContent])), [['quit', 'Desktop build only']], 'on the web only Quit is disabled');
+      .map((b) => [b.dataset.entry, b.innerText.trim(), !!b.querySelector('.ui-mode-entry__reason'), getComputedStyle(b.querySelector('.ui-mode-entry__lock')).display !== 'none'])),
+    [['quit', 'Quit', false, true]], 'on the web only Quit is disabled: its label and lock, no reason line');
     assert.equal(await ms(() => document.querySelectorAll('#menu .ui-chip:not(.hidden)').length), 0, 'nothing played: no Last played chip');
 
     // The preview follows the selection.
@@ -656,8 +668,17 @@ test('in a browser, the menu fits each window: the title\'s size, the entries as
   if (!env) return;
   const { browser, base } = env;
   try {
-    // [width, height, title px] per artboard (J-Menu-xl, -l, -m, -p)
-    for (const [width, height, title, phone] of [[1920, 1080, 84], [1366, 768, 58], [1024, 768, 50], [390, 844, 31, true]]) {
+    // Per artboard (J-Menu-xl, -l, -m, -p): the title, the entries' column (left, width, top, height; a phone's from
+    // its sides), the preview's (left, width), the list's gap and its blocks' spacing, the selected entry's share,
+    // and the rest / selected label, icon box and glyph sizes.
+    const SIZES = [
+      { width: 1920, height: 1080, title: 84, entries: [96, 590, 176, 804], preview: [860, 964], gap: 12, block: 36, grow: 1.45, label: [24, 30], icon: [42, 56], glyph: [24, 30], minSelected: 101 },
+      { width: 1366, height: 768, title: 58, entries: [56, 450, 118, 580], preview: [562, 748], gap: 10, block: 30, grow: 1.4, label: [22, 27], icon: [36, 48], glyph: [20, 26] },
+      { width: 1024, height: 768, title: 50, entries: [36, 390, 106, 596], preview: [462, 526], gap: 10, block: 30, grow: 1.4, label: [20, 25], icon: [36, 48], glyph: [20, 24] },
+      { width: 390, height: 844, title: 31, entries: [20, 350, 100], phone: true, gap: 10, block: 28, grow: 1.35, label: [19, 24], icon: [36, 48], glyph: [20, 24] },
+    ];
+    for (const size of SIZES) {
+      const { width, height, title, phone } = size;
       const context = await browser.newContext({ viewport: { width, height }, ...(phone ? { hasTouch: true, isMobile: true } : {}) });
       const page = await context.newPage();
       await page.goto(`${base}/index.html?still-backdrop`);
@@ -665,17 +686,26 @@ test('in a browser, the menu fits each window: the title\'s size, the entries as
       await page.waitForTimeout(300); // the selected entry's move
       const m = await page.evaluate(() => {
         const rect = (el) => el.getBoundingClientRect();
+        const px = (el, prop) => parseFloat(getComputedStyle(el)[prop]);
         const title = document.getElementById('menu-title');
-        const entries = [...document.querySelectorAll('#menu-entries .ui-mode-entry')].map(rect);
+        const buttons = [...document.querySelectorAll('#menu-entries .ui-mode-entry')];
         const list = rect(document.getElementById('menu-entries'));
         const preview = rect(document.getElementById('menu-preview'));
+        const sizes = (b) => ({
+          label: px(b.querySelector('.ui-mode-entry__label'), 'fontSize'),
+          icon: px(b.querySelector('.ui-mode-entry__icon'), 'width'),
+          glyph: px(b.querySelector('.ui-mode-entry__icon > svg'), 'width'),
+        });
         return {
-          title: parseFloat(getComputedStyle(title).fontSize),
-          titleLines: Math.round(rect(title).height / parseFloat(getComputedStyle(title).lineHeight || getComputedStyle(title).fontSize)),
+          title: px(title, 'fontSize'),
           titleCentre: rect(title).left + rect(title).width / 2,
-          heights: entries.map((r) => r.height),
-          first: entries[0].top, last: entries[entries.length - 1].bottom, list: [list.top, list.bottom],
-          preview: [preview.top, preview.bottom, preview.width],
+          // the selected entry (the first) is moved down by its transform: only the others' places are read
+          heights: buttons.map((b) => rect(b).height),
+          tops: buttons.map((b) => rect(b).top),
+          list: [list.left, list.width, list.top, list.height],
+          preview: [preview.left, preview.width, preview.top, preview.height],
+          gap: px(document.getElementById('menu-entries'), 'rowGap'),
+          selected: sizes(buttons[0]), rest: sizes(buttons[1]),
           scroll: document.documentElement.scrollWidth,
           bottom: Math.max(...[...document.querySelectorAll('#menu-foot > :not(.hidden)')].map((e) => rect(e).bottom)),
         };
@@ -684,19 +714,156 @@ test('in a browser, the menu fits each window: the title\'s size, the entries as
       assert.ok(Math.abs(m.title - title) <= 3, `${label}: the title at ${title} px (${m.title})`);
       assert.ok(Math.abs(m.titleCentre - width / 2) < 2, `${label}: the title centred`);
       const [selected, ...rest] = m.heights;
-      assert.ok(rest.every((h) => Math.abs(h - rest[0]) < 1), `${label}: every other entry the same height (${rest})`);
-      assert.ok(selected > rest[0] * 1.2, `${label}: the selected entry taller (${selected} vs ${rest[0]})`);
+      assert.ok(rest.every((h) => Math.abs(h - rest[0]) <= 1), `${label}: every other entry the same height (${rest})`);
+      // flex-basis 0 on a border box: each entry its vertical padding (20 px selected, 12 px at rest) plus its share
+      assert.ok(Math.abs((selected - 20) / (rest[0] - 12) - size.grow) < 0.01, `${label}: the selected entry a ${size.grow} share (${selected} vs ${rest[0]})`);
+      if (size.minSelected) assert.ok(selected >= size.minSelected, `${label}: the selected entry at least ${size.minSelected} px (${selected})`);
+      assert.equal(m.gap, size.gap, `${label}: the entries ${size.gap} px apart`);
+      assert.ok(Math.abs(m.tops[5] - (m.tops[4] + m.heights[4]) - size.block) < 0.5, `${label}: a block ${size.block} px after the last`);
+      assert.ok(Math.abs(m.tops[8] - (m.tops[7] + m.heights[7]) - size.block) < 0.5, `${label}: Quit's block ${size.block} px after Settings`);
+      assert.deepEqual([m.rest.label, m.selected.label], size.label, `${label}: the labels at rest and selected`);
+      assert.deepEqual([m.rest.icon, m.selected.icon], size.icon, `${label}: the icon boxes at rest and selected`);
+      assert.deepEqual([m.rest.glyph, m.selected.glyph], size.glyph, `${label}: the glyphs at rest and selected`);
       assert.ok(m.scroll <= width, `${label}: no sideways scroll (${m.scroll})`);
       assert.ok(m.bottom <= height, `${label}: the foot inside the window (${m.bottom})`);
+      const [left, w, top, h] = size.entries;
+      assert.ok(Math.abs(m.list[0] - left) <= 1 && Math.abs(m.list[1] - w) <= 1 && Math.abs(m.list[2] - top) <= 1,
+        `${label}: the entries at x ${left}, ${w} px wide, from y ${top} (${m.list})`);
       if (phone) {
-        assert.equal(m.preview[2], 0, `${label}: no preview`);
-        assert.ok(m.last <= m.list[1] + 1 && m.first >= m.list[0] - 1, `${label}: the entries fill their place`);
+        assert.equal(m.preview[1], 0, `${label}: no preview`);
+        assert.ok(Math.abs(m.list[2] + m.list[3] - (height - 96)) <= 1, `${label}: the entries fill the screen down to the foot (${m.list})`);
       } else {
-        assert.ok(Math.abs(m.list[0] - m.preview[0]) <= 1 && Math.abs(m.list[1] - m.preview[1]) <= 1 && Math.abs(m.last - m.list[1]) <= 1,
-          `${label}: the entries together as tall as the preview (${m.list}, last ${m.last} vs ${m.preview})`);
+        assert.ok(Math.abs(m.list[3] - h) <= 1, `${label}: the entries ${h} px tall (${m.list[3]})`);
+        assert.ok(Math.abs(m.preview[0] - size.preview[0]) <= 1 && Math.abs(m.preview[1] - size.preview[1]) <= 1,
+          `${label}: the preview at x ${size.preview[0]}, ${size.preview[1]} px wide (${m.preview})`);
+        assert.ok(Math.abs(m.list[2] - m.preview[2]) <= 1 && Math.abs(m.list[3] - m.preview[3]) <= 1, `${label}: the entries together as tall as the preview`);
+        assert.ok(Math.abs(m.tops[8] + m.heights[8] - (m.preview[2] + m.preview[3])) <= 1, `${label}: the last entry ends with the preview`);
       }
       await context.close();
     }
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, a window too short for the menu scrolls it, every entry still a finger tall', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    for (const [width, height] of [[1366, 520], [1024, 480], [390, 480]]) {
+      const context = await browser.newContext({ viewport: { width, height } });
+      const page = await context.newPage();
+      await page.goto(`${base}/index.html?still-backdrop`);
+      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
+      const m = await page.evaluate(() => {
+        const menu = document.getElementById('menu');
+        return {
+          overflow: getComputedStyle(menu).overflowY, scrollHeight: menu.scrollHeight, clientHeight: menu.clientHeight,
+          heights: [...document.querySelectorAll('#menu-entries .ui-mode-entry')].map((b) => b.offsetHeight),
+          sideways: menu.scrollWidth - menu.clientWidth,
+        };
+      });
+      const label = `${width} × ${height}`;
+      assert.equal(m.overflow, 'auto', `${label}: the menu scrolls`);
+      assert.ok(m.scrollHeight > m.clientHeight, `${label}: its content is taller than the window (${m.scrollHeight} > ${m.clientHeight})`);
+      assert.ok(m.heights.every((h) => h >= 44), `${label}: no entry squeezed below 44 px (${m.heights})`);
+      assert.equal(m.sideways, 0, `${label}: no sideways scroll`);
+      await page.evaluate(() => { const menu = document.getElementById('menu'); menu.scrollTop = menu.scrollHeight; });
+      const foot = await page.evaluate(() => document.getElementById('menu-build').getBoundingClientRect().bottom);
+      assert.ok(foot <= height, `${label}: scrolled down, the build label shows (${foot})`);
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the build label is the canvas\'s mono caption and the phone\'s touch note one ink line after its hand icon', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const page = await context.newPage();
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    const m = await page.evaluate(() => {
+      const ink = getComputedStyle(document.documentElement).getPropertyValue('--color-ink').trim();
+      const probe = document.createElement('span');
+      probe.style.color = ink;
+      document.body.append(probe);
+      const inkRgb = getComputedStyle(probe).color;
+      probe.remove();
+      const build = document.getElementById('menu-build');
+      const b = getComputedStyle(build);
+      const note = document.getElementById('touch-note');
+      const n = getComputedStyle(note);
+      const icon = note.querySelector(':scope > .ui-icon');
+      const text = note.querySelector('.ui-note__text');
+      return {
+        build: [build.textContent, b.fontFamily.includes('JetBrains Mono'), b.fontSize, b.fontWeight, b.letterSpacing, b.textTransform],
+        note: [note.classList.contains('hidden'), n.fontSize, n.fontWeight, n.color === inkRgb, text.textContent],
+        icon: icon && [icon.dataset.icon, icon.getBoundingClientRect().width, icon.getBoundingClientRect().height, text.getBoundingClientRect().left - icon.getBoundingClientRect().right],
+        oneLine: text.getBoundingClientRect().height < parseFloat(n.fontSize) * 2,
+      };
+    });
+    assert.deepEqual(m.build, [buildLabel(VERSION), true, '12px', '700', '1.8px', 'uppercase'], 'JetBrains Mono 12 px, bold, .15em apart, uppercase; the version as content');
+    assert.deepEqual(m.note, [false, '14px', '700', true, 'Both modes play by touch: 3D and Classic 2D.'], 'the touch note: 14 px bold ink');
+    assert.deepEqual(m.icon, ['hand', 20, 20, 10], 'after a 20 px hand icon, 10 px before its text');
+    assert.ok(m.oneLine, 'on one line');
+    await context.close();
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the menu\'s scene panel: radius 30, its tag at 26 × 22, a card a veiled sky with the large badge, a locked badge keeping its highlight', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const page = await context.newPage();
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
+    const look = () => page.evaluate(() => {
+      const panel = document.getElementById('menu-preview');
+      const p = getComputedStyle(panel);
+      const r = panel.getBoundingClientRect();
+      const tag = document.getElementById('menu-preview-tag').getBoundingClientRect();
+      const card = panel.querySelector('[data-preview="card"]:not([hidden]) .ui-scene-panel__card');
+      const badge = card?.querySelector('.ui-scene-panel__badge');
+      const svg = badge?.querySelector('svg');
+      const note = card?.querySelector('.ui-scene-panel__note');
+      return {
+        radius: p.borderTopLeftRadius, image: p.backgroundImage, size: p.backgroundSize, tag: [Math.round(tag.left - r.left), Math.round(tag.top - r.top)],
+        card: card && {
+          gap: getComputedStyle(card).rowGap,
+          badge: [badge.getBoundingClientRect().width, badge.getBoundingClientRect().height, getComputedStyle(badge).borderTopLeftRadius, getComputedStyle(badge).boxShadow],
+          glyph: [svg.getBoundingClientRect().width, getComputedStyle(svg).strokeWidth],
+          note: note && [getComputedStyle(note).fontSize, getComputedStyle(note).fontWeight, getComputedStyle(note).color],
+        },
+        sceneInk: getComputedStyle(document.documentElement).getPropertyValue('--color-scene-ink').trim(),
+      };
+    });
+    const board = await look();
+    assert.equal(board.radius, '30px', 'the panel\'s radius');
+    assert.deepEqual(board.tag, [26, 22], 'the tag at left 26, top 22');
+    assert.doesNotMatch(board.image, /1\.4px/, 'a board preview: the sky alone');
+    await page.focus('#menu-entry-hexagon');
+    const hex = await look();
+    assert.match(hex.image, /radial-gradient\(circle, [^)]*\) 1\.4px, rgba\(0, 0, 0, 0\) 1\.6px\)/, 'a card: a veil of dots over the sky');
+    assert.match(hex.size, /^22px 22px/, 'the dots 22 px apart');
+    assert.equal(hex.card.gap, '18px', 'the card\'s parts 18 px apart');
+    assert.deepEqual(hex.card.badge.slice(0, 3), [200, 200, '44px'], 'the large badge: 200 px, radius 44');
+    assert.deepEqual(hex.card.glyph, [100, '2px'], 'its glyph half the badge, stroke 2');
+    const probe = await page.evaluate((c) => { const s = document.createElement('span'); s.style.color = c; document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return v; }, hex.sceneInk);
+    assert.deepEqual(hex.card.note, ['18px', '700', probe], 'the note 18 px bold in the scene ink');
+    await page.focus('#menu-entry-quit');
+    const quit = await look();
+    assert.match(quit.card.badge[3], /inset/, 'the locked badge keeps its inset highlight');
+    await context.close();
   } finally {
     await browser.close();
   }
@@ -707,9 +874,8 @@ test('in a browser, the menu\'s Classic 2D and Daily previews draw the whole boa
   if (!env) return;
   const { browser, base } = env;
   try {
-    // [width, height, the Classic 2D preview's tile, the Daily preview's tile] per artboard (J-Menu-xl, -l; J-Menu-extra);
-    // at 1024 × 768 the tile is the menu's panel's to set, the frame's alone checked.
-    for (const [width, height, classic, daily] of [[1920, 1080, 41, 27], [1366, 768, 27, null], [1024, 768, null, null]]) {
+    // [width, height, the Classic 2D preview's tile, the Daily preview's tile] per artboard (J-Menu-xl, -l, -m; J-Menu-extra).
+    for (const [width, height, classic, daily] of [[1920, 1080, 41, 27], [1366, 768, 27, null], [1024, 768, 23, null]]) {
       const context = await browser.newContext({ viewport: { width, height } });
       const page = await context.newPage();
       await page.goto(`${base}/index.html?still-backdrop`);
@@ -737,13 +903,13 @@ test('in a browser, the menu\'s Classic 2D and Daily previews draw the whole boa
       const label = `${width} × ${height}`;
       const c = await framed('board');
       const ct = tileOf(16, c.width);
-      assert.ok(ct && (classic === null || Math.abs(ct - classic) <= 2), `${label}: the Classic 2D preview at about ${classic} px (${ct}, frame ${c.width} px)`);
+      assert.equal(ct, classic, `${label}: the Classic 2D preview at ${classic} px (frame ${c.width} px)`);
       assert.deepEqual([c.inside, c.height, c.background, Math.round(c.radius)], [true, c.width, 'rgb(255, 255, 255)', Math.round(ct * 0.3)], `${label}: the whole Intermediate board in its white frame`);
       await page.focus('#menu-entry-daily');
       const d = await framed('daily');
       const dt = tileOf(30, d.width);
       assert.ok(dt && d.inside, `${label}: the whole daily Expert board in its frame (${dt} px)`);
-      if (daily !== null) assert.ok(Math.abs(dt - daily) <= 2 && Math.abs(d.width - 872) <= 70, `${label}: the Daily preview at about ${daily} px, about 872 px wide (${dt}, ${d.width})`);
+      if (daily !== null) assert.deepEqual([dt, d.width], [daily, 872], `${label}: the Daily preview at ${daily} px, 872 px wide`);
       await context.close();
     }
   } finally {

@@ -1151,7 +1151,7 @@ Feature: themed-board-art-and-motion
 
 ## 228. Main menu: mode entries, scene panel, per-size layout, build label and scroll
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/style.css, themes/joyful-tiles/theme.css, css/components.css, index.html, js/shell/menu.js, js/ui.js, .claude/context/app-shell-menu.md
 Preconditions: 220, 223

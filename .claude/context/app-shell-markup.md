@@ -122,8 +122,8 @@ bind.
   `ui-checkbox__input` a 44 px hit square (`::after`) and `ui-slider__input`
   a 44 px height; the shell's shows `#hud-tap` in Classic 2D at 44 px, gives
   `#hud-pause`, `#hud-restart` and `#c2d-restart` a 44 px band (`::after`),
-  `#touch-modes` buttons 44 px and
-  every main menu entry at least 44 px, and hides `#hud-swap`. Every
+  `#touch-modes` buttons 44 px, and hides `#hud-swap` (every main menu
+  entry is at least 44 px on any pointer, [app-shell-menu.md](app-shell-menu.md)). Every
   fine-pointer hit area stays as above (`tests/components.test.mjs` pins
   both).
 

@@ -16,7 +16,7 @@ import { create3DMode, createFiguresFeed } from './shell/mode-3d.js';
 import { createSession, create3DGame } from './mode3d/session.js';
 import { createSampler3D } from './replay/sampler-3d.js';
 import { createGenerationClient } from './generation/client.js';
-import { createMenu, createLastMode, createLastBoardChoice, openingEntry, menuPreview, buildLabel, DEMO_BOARD_3D, UNAVAILABLE_REASONS, WEB_MISSING } from './shell/menu.js';
+import { createMenu, createLastMode, createLastBoardChoice, openingEntry, menuPreview, entryReasonLine, buildLabel, DEMO_BOARD_3D, UNAVAILABLE_REASONS, WEB_MISSING } from './shell/menu.js';
 import { VERSION } from './version.js';
 import { bindMenuPreview, demoBoard2D, dailyBoard2D } from './shell/menu-preview.js';
 import { boardBests } from './shell/returning.js';
@@ -1234,12 +1234,11 @@ const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, r
 
 // ---------- main menu ----------
 // Each entry is a route; the last mode played is kept through platform storage and marked on the menu.
-// An entry that cannot open here (3D without WebGL 2, Quit on the web) is disabled with its reason.
+// An entry that cannot open here (3D without WebGL 2, Quit on the web) is disabled with its reason line (none for Quit).
 const MISSING = [...WEB_MISSING, ...(WEBGL2 ? [] : ['webgl2'])];
 const MENU = createMenu({ router: SHELL, modes: MODES, missing: MISSING });
-for (const { id } of MENU.entries) {
-  const reason = MENU.unavailable(id);
-  if (reason) ui.setEntryUnavailable(id, reason);
+for (const entry of MENU.entries) {
+  if (MENU.unavailable(entry.id)) ui.setEntryUnavailable(entry.id, entryReasonLine(entry, MISSING));
 }
 // The guided board is never the last mode played: its game started is not passed on.
 const LAST_MODE = createLastMode({ storage, modes: { on: (type, fn) => MODES.on(type, (e) => { if (!learnGame()) fn(e); }) } });

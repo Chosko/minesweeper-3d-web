@@ -532,8 +532,9 @@
               entry stays selectable and its preview shows; its screen
               opens nothing on it) and a
               <span class="ui-mode-entry__reason">…</span> after the label
-              saying why it cannot open here (3D without WebGL 2, Quit on
-              the web); the lock shows only while disabled. There is no
+              saying why it cannot open here where there is one to give
+              (3D without WebGL 2; Quit on the web has the lock alone); the
+              lock shows only while disabled. There is no
               locked state: a mode not built yet is an ordinary entry.
      Selected: the selected entry is taller than the others, with a bigger
               icon and label. In a ui-mode-list the entries share the
@@ -634,7 +635,8 @@
                 </div>
               the badge in the accent its data-entry names, as the mode
               entry's (the places neutral), locked grey with data-unavailable
-              for an entry that cannot open here; the note optional.
+              for an entry that cannot open here; the note optional. A
+              screen may draw it as a large card, a bigger badge.
 
    ui-board-frame — the frame a Classic 2D board sits in, drawn behind
               the board's canvas
@@ -740,12 +742,13 @@
      entry of the second and third, no group labels; each a ui-mode-entry
      route, data-entry naming it, the last mode played marked with the Last
      played ui-chip, an entry that cannot open here aria-disabled with its
-     reason), the entries together as tall as the preview; on the right the
+     lock and any reason line), the entries together as tall as the
+     preview; on the right the
      preview of the selected entry, a ui-scene-panel (a board drawn by its
      board view, the 3D scene live, or a card); under them the
      ui-key-hints (move, select) and the build label, a ui-text--muted line,
-     with the touch note on a coarse-only device. On a phone: no preview,
-     the entries filling the screen. Default focus: the entry last opened
+     with the touch note on a coarse-only device, a ui-text line after its
+     hand ui-icon. On a phone: no preview, the entries filling the screen. Default focus: the entry last opened
      from the menu when Back returns to it, else the last mode played's,
      else the first available entry.
    3D board choice (index.html #board-choice): the Classic 2D board choice's composition
@@ -1654,17 +1657,18 @@
   column-gap: var(--space-4);
   box-sizing: border-box;
   width: 100%;
-  min-height: 64px;
+  min-height: 70px;
   margin: 0;
-  padding: var(--space-2) var(--space-5);
+  padding: 6px 20px;
   border: 0;
   text-align: left;
   cursor: pointer;
 }
 .ui-mode-entry[aria-disabled="true"] { cursor: not-allowed; }
-.ui-mode-entry__icon { grid-area: icon; display: grid; place-items: center; width: 44px; height: 44px; }
-.ui-mode-entry__icon > svg, .ui-option__badge > svg { width: 60%; height: 60%; }
-.ui-mode-entry__label { grid-area: label; font-size: var(--font-size-xl); font-weight: var(--font-weight-heavy); line-height: 1.05; }
+.ui-mode-entry__icon { grid-area: icon; display: grid; place-items: center; width: 42px; height: 42px; }
+.ui-mode-entry__icon > svg { width: 24px; height: 24px; }
+.ui-option__badge > svg { width: 60%; height: 60%; }
+.ui-mode-entry__label { grid-area: label; font-size: 24px; font-weight: var(--font-weight-heavy); line-height: 1.05; }
 .ui-mode-entry__reason { grid-area: reason; margin-top: var(--space-1); font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
 .ui-mode-entry > .ui-chip { grid-area: chip; }
 .ui-mode-entry__lock { grid-area: lock; display: grid; margin-inline-start: var(--space-3); }
@@ -1810,17 +1814,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
+  gap: 18px;
   text-align: center;
 }
-.ui-scene-panel__badge { display: grid; place-items: center; width: 200px; height: 200px; max-width: 40vmin; max-height: 40vmin; }
-.ui-scene-panel__badge > svg { width: 45%; height: 45%; }
+.ui-scene-panel__badge { display: grid; place-items: center; width: 102px; height: 102px; }
+.ui-scene-panel__badge > svg { width: 50%; height: 50%; stroke-width: 2; }
 .ui-scene-panel__name { font-size: var(--font-size-2xl); font-weight: var(--font-weight-heavy); }
-.ui-scene-panel__note { font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
+.ui-scene-panel__note { font-size: 18px; font-weight: var(--font-weight-bold); }
 .ui-scene-panel__tag {
   position: absolute;
-  top: var(--space-4);
-  left: var(--space-5);
+  top: 22px;
+  left: 26px;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.18em;

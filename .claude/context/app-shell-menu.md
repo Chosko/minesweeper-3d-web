@@ -25,7 +25,9 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   lacks); `PLACEHOLDER_SCREEN` = `'coming-soon'`; `COMING_SOON`.
 - `buildLabel(version)` → `'Web · v<version>'`, from `VERSION` in
   `js/version.js`, the one place the release version is written.
-- `entryReason(entry, missing?)` → reason or null;
+- `entryReason(entry, missing?)` → reason or null; `entryReasonLine(entry,
+  missing?)` → the line its menu entry shows: the reason, but none for what
+  the web build always lacks (`WEB_MISSING`: Quit shows its lock alone);
   `entryRoute(entry, {hasMode, hasScreen, missing?})` → null (unavailable),
   `{mode}`, `{screen}` or `{screen: 'coming-soon', data: {entry, title}}`.
 - `createMenu({router, modes, entries?, missing?})` → `entries`, `route(id)`,
@@ -73,8 +75,10 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   Hexagon, Triangle and Surface, whose modes are not registered — goes to
   `coming-soon`, titled with the entry's label. `MISSING` is `WEB_MISSING`
   plus `webgl2` without WebGL 2; each unavailable entry gets
-  `ui.setEntryUnavailable(id, reason)` (aria-disabled, its reason line, the
-  lock) and stays selectable so its preview shows.
+  `ui.setEntryUnavailable(id, entryReasonLine(…))` (aria-disabled, the lock,
+  and its reason line when it has one — 3D without WebGL 2, not Quit) and
+  stays selectable so its preview shows, the preview's card noting the
+  reason.
 - **Opening selection.** `menuFocusEntry()` is the menu's default focus:
   the entry last opened from the menu (`menuOpened`, kept while Back
   returns to it, forgotten when a game starts), else
@@ -83,15 +87,25 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   its entry, and at boot, once `LAST_MODE.load()` settles, the menu
   refocuses if the player has not moved yet. That mode's board choice opens
   on its last board, so Enter then Play replays it.
-- **Layout.** `#menu` is a grid (`css/style.css`): the wordmark over the
-  entries (left) and the preview (right), the key hints and the build label
-  under them. The entries and the preview share one grid row, so the
-  `ui-mode-list` takes exactly the preview's height; every entry has
-  `flex-basis: 0` and grows to an equal share, the selected one by the
-  theme's larger `flex-grow`, and a gap opens before each block's first
-  entry (`data-block-start`). With a coarse pointer every entry is at least
-  the coarse-pointer touch target tall. At phone widths the preview goes and
-  the entries fill the screen.
+- **Layout.** `#menu` is a grid (`css/style.css`) holding each window
+  size's fixed values from the J-Menu artboards — xl, and l, m and p at the
+  shell's breakpoints: the wordmark in its band, the entries' column and
+  the preview's column with the gap between them, the foot with the key
+  hints and the build label. The columns centre in a window wider than the
+  artboard and the preview narrows in a narrower one; the entries' row
+  shrinks on a shorter window down to its entries' floor, below which the
+  menu scrolls (`overflow-y: auto`). The entries and the preview share that
+  row, so the `ui-mode-list` takes exactly the preview's height; every entry
+  has `flex-basis: 0` and grows to an equal share, at least 44 px (the
+  floor, a finger tall on any pointer), the selected one by a larger
+  `flex-grow` and to a minimum height (the theme's at xl, the shell's per
+  size below it); a block's first entry (`data-block-start`) sits a
+  spacer further than the list's gap. Below xl the shell sizes the labels,
+  icon boxes and glyphs at rest and selected; the theme rounds the icon box
+  to match. The preview's board layer (`[data-preview]`) is inset per size
+  so the board view's fit lands on the artboard's tile, and its card is the
+  large card (a bigger badge). At phone widths the preview goes and the
+  entries fill the screen above a fixed foot band.
 - **Preview.** `MENU_PREVIEW` follows the focus among the entries
   (`focusin` → `showPreview`, the focused entry's or, with none focused,
   the opening entry's): `menuPreview` gives the kind and `previewOf` names
@@ -111,7 +125,10 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   / `playCode`.
 - **Key hints and build label.** `#menu-hints` holds the move and select
   hints for the active device (no Back); `ui.setBuild(buildLabel(VERSION))`
-  fills `#menu-build`; `#touch-note` shows on a coarse-only device.
+  fills `#menu-build`, drawn uppercase in the theme's mono caption style;
+  `#touch-note` shows on a coarse-only device, one ink line after the hand
+  icon (`ui.setNoMouse` through `setNote`), and on a device with no mouse
+  and no touch as the needs-a-mouse warning, no icon.
 
 ## DOMAIN DEPENDENCIES
 
