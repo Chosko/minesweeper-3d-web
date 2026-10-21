@@ -43,7 +43,7 @@ Several feature documents under .claude/domain/features/ say hexagonal and trian
 
 Done: 2026-10-21, commit `ac9442a` (12 files, +37/-21). Twelve documents amended, four more than step 2 listed (replay-playback, theme-system, square-tile-skin, design-tokens-and-themes); all editorial, no task went [STALE].
 
-## [ ] 4. Place the m2c-flat-grids features in the production plan
+## [x] 4. Place the m2c-flat-grids features in the production plan
 
 Depends on: 2, 3
 
@@ -52,6 +52,8 @@ Context: none
 ```prompt
 /production-plan m2c-flat-grids is a new milestone between m2b-themes (active) and m3-on-steam; place every feature whose FEATURES.md Source line names m2c-flat-grids in it, confirm their dependency edges from their documents, and keep m2b-themes active — m2c follows it.
 ```
+
+Done: 2026-10-21, commit `b8b3a62` (1 file, +17/-2). The feature documents had a cycle between flat-grid-modes and flat-grid-records-replays; the plan keeps only records-replays → modes, and the modes document's Dependencies prose still names records-replays.
 
 ## [ ] 5. Write the tasks of every m2c-flat-grids feature
 
@@ -68,7 +70,8 @@ For each feature in .claude/PLAN.md under m2c-flat-grids, in plan order, run `/t
 
 Depends on: 5
 
-Context: none
+Context:
+- 2026-10-21 (from step 4): plan order in m2c-flat-grids is flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, flat-grid-modes, flat-grid-records-replays, flat-grid-menu-entries; flat-grid-records-replays depends on flat-grid-modes, not the reverse (the modes document's Dependencies prose still lists records-replays).
 
 ```prompt
 /runbook-create flat-grids-tasks-implementation — implement every task of milestone m2c-flat-grids. One step per task in .claude/TASKS.md belonging to an m2c-flat-grids feature, in .claude/PLAN.md order and each feature's task order, each prompt `/task-implement <N> --review`, with Depends on: lines from the tasks' Preconditions. If no task covers bringing the Joyful tiles hex/tri board art in from the Claude Design canvas, add a step `/theme-implement https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC joyful-tiles` right after the task that makes the theme board module hold hexagonal and triangle tiles, depending on it.
