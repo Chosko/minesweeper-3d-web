@@ -1351,7 +1351,7 @@ Feature: theme-system
 
 ## 248. Flat grid geometry contract and the square geometry
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/geometry/index.js, js/geometry/square.js, tests/geometry-square.test.mjs
 Preconditions: none
