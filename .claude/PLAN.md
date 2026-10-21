@@ -32,7 +32,7 @@ Features: theme-system, shared-screen-layout, in-game-layout, themed-board-art-a
 ## m2c-flat-grids — Hexagon and Triangle join the game
 
 Status: [PLANNED]
-Covers: product-design.md § Hexagon, product-design.md § Triangle, product-design.md § Main menu and game shell, product-design.md § Visual design system
+Covers: product-design.md § Hexagon, product-design.md § Triangle, product-design.md § Main menu and game shell, product-design.md § Daily board, product-design.md § Visual design system
 Features: flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, flat-grid-modes, flat-grid-records-replays, flat-grid-menu-entries
 
 ---
@@ -72,7 +72,7 @@ Features: none
 ## m7-after-launch — New ways to play
 
 Status: [PLANNED]
-Covers: product-design.md § Endless board, product-design.md § Marathon and Zen
+Covers: product-design.md § Endless board, product-design.md § Marathon and Zen, product-design.md § Main menu and game shell
 Features: none
 
 ---
