@@ -312,7 +312,7 @@ Context:
 
 Done: 2026-10-21, commit `7159569` (24 files, +384/-177). Decisions: Watch replay takes the canvas's `film` icon, not the task's "grid"; a first-use toast is hidden (`toast--first-use`) while results show; a loss with no streak ended reads "beat <time>"; the 3D rank joins the board line; "Board code" is a section label outside the chip. Three feature documents were edited to match (`shared-screen-layout`, `results-screen`, `3d-results-records-screens`).
 
-## [~] 25. Implement task 238 — Records screen to the canvas
+## [x] 25. Implement task 238 — Records screen to the canvas
 
 Depends on: 8, 9
 
@@ -321,6 +321,8 @@ Context: none
 ```prompt
 /task-implement 238 --review
 ```
+
+Done: 2026-10-21, commit `9ab8099` (25 files, +741/-518). Decisions: Back reads "Main menu" only when it returns to the menu, else "Back" (the task asked for "← Main menu" always); the board code column shows at 1440 px and wider only, narrower tables scroll sideways; Download is icon-only; the phone has a second linked 2D | 3D switch; `records-screen.md` and `3d-results-records-screens.md` were edited to match.
 
 ## [~] 26. Implement task 239 — Replay viewer to the canvas
 
@@ -334,7 +336,7 @@ Context:
 /task-implement 239 --review
 ```
 
-## [ ] 27. Implement task 240 — Settings screen to the canvas
+## [~] 27. Implement task 240 — Settings screen to the canvas
 
 Depends on: 2, 6, 8
 
