@@ -64,7 +64,10 @@ Both modules are pure; their rules are documented in their head comments.
   `#p-restart` Restart (with its restart key hint) or, once the game ended,
   Play again. Its Settings panel is muted and bound like the Settings
   page's controls (`data-setting`: Sound, volume, then the look controls
-  on a 3D game's card only) through `bindSettingControls`.
+  on a 3D game's card only) through `bindSettingControls`. Its Controls
+  panel `#pause-list` (the inset border alone, no edge) holds the controls
+  list `#pause-controls`: the active mode's help rows for the device
+  ([app-shell-help.md](app-shell-help.md)).
 - **Confirmation.** Back to menu during a started, unfinished game calls
   `confirm` → `ui.showConfirm` on the pause card (`#pause-confirm`, a
   `ui-confirm` with its heading, in place of `#pause-actions`, its action

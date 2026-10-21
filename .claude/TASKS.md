@@ -1201,7 +1201,7 @@ Feature: in-game-layout
 
 ## 233. Controls and bindings lists as one ruled two-column part
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/settings/bindings.js, js/settings/page.js, index.html, css/style.css, themes/joyful-tiles/theme.css, .claude/context/settings-bindings.md, .claude/context/app-shell-help.md
 Preconditions: 223

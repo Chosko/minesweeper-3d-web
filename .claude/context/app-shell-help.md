@@ -21,10 +21,16 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
 ## INTERNAL PATTERNS
 
 - **One bindings source.** The help panel's list and foot line, the pause
-  card's list, the HUD strip `#hud-tools`, the hint strip, the main menu's
-  Controls panel (`#controls-tabs`, Classic 2D | 3D) and the Settings
-  page's bindings are all drawn from `js/settings/bindings.js`
-  ([settings-bindings.md](settings-bindings.md)); edit a binding's text in `BINDINGS` only.
+  card's list, the 3D ready card's list `#ready-keys`, the HUD strip
+  `#hud-tools`, the hint strip, the main menu's Controls panel
+  (`#controls-tabs`, Classic 2D | 3D) and the Settings page's bindings are
+  all drawn from `js/settings/bindings.js`
+  ([settings-bindings.md](settings-bindings.md)), every list in the kit's
+  controls list `ui-controls`: the help panel and the pause card the help
+  rows (`helpListHtml`), the Controls panel and the Settings page the full
+  rows (`bindingsHtml`), the ready card its short rows (`readyListHtml`,
+  touch's under `#ready.ready--touch`); edit a binding's text in the
+  source only.
   They show the mode the last screen method set (`showReady` /
   `showPlaying` 3D, `showClassic2D` 2D, `showPause`'s `mode`) for the
   device `setDevice` set (touch in either mode on a coarse-only device
@@ -34,7 +40,8 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   key hints, filled by `showKeyHints`) and the camera `setCamera` set, and every change of
   any of them, or of the pad's glyphs, redraws them. A HUD strip with no
   entries (Classic 2D on touch) hides `#hud-tools`.
-- **Help panel.** `_helpByUser` keeps an H-opened panel open across
+- **Help panel.** `#help` is a card: its title `#help-title`, the help
+  list, the foot line `#help-foot`. `_helpByUser` keeps an H-opened panel open across
   screens; screen methods otherwise hide it. `H` toggles it and `M` sets
   `muted` in both modes; the store's `muted` subscription updates the HUD
   strip (`ui.setSound`), and the Sound switches follow through their

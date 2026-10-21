@@ -881,8 +881,8 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
       const ready = document.getElementById('ready');
       return {
         btn: shown(btn), title: btn.querySelector('.ready-title').textContent,
-        touch: shown(ready.querySelector('.ready-touch')), keys: shown(ready.querySelector('.ready-keys')),
-        list: ready.querySelector('.ready-touch')?.textContent ?? '', back: shown(document.getElementById('ready-back')),
+        keys: shown(ready.querySelector('.ready-keys')),
+        list: [...ready.querySelectorAll('.ready-keys dt')].map((dt) => dt.textContent), back: shown(document.getElementById('ready-back')),
         notice: !!document.getElementById('ready-notice'),
         rules: shown(document.getElementById('ready-rules')) ? document.getElementById('ready-rules').innerText : '',
         escHint: shown(document.querySelector('#ready-back .ui-key-hint')),
@@ -893,8 +893,8 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
     assert.equal(card.escHint, false, 'no Esc key hint in the touch card\'s Back');
     assert.ok(card.btn, 'the ready card\'s play button shows');
     assert.equal(card.title, 'Tap to play');
-    assert.ok(card.touch && !card.keys, 'the touch gestures in place of the key list');
-    for (const gesture of [/stick/i, /[Dd]rag/, /[Tt]ap/, /[Ll]ong-press/, /[Tt]wo-finger/, /[Pp]inch/]) assert.match(card.list, gesture);
+    assert.ok(card.keys, 'the controls list shows');
+    assert.deepEqual(card.list, ['Left thumb', 'Drag', 'Tap', 'Long-press', 'Two-finger tap', 'Pinch'], 'the touch gestures in place of the keys');
     assert.ok(card.back, 'Back stays');
     assert.equal(card.notice, false, 'no notice');
     await ms(() => globalThis.__ms.settings.set('fullscreen', true)).catch(() => {});
@@ -1114,8 +1114,8 @@ test('in a browser with a mouse at 1280 × 800, 3D starts with pointer lock and 
     assert.equal(await ms(() => document.getElementById('touch-note').classList.contains('hidden')), true);
     await ms(() => { globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10 }); });
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
-    const card = await ms(() => ({ title: document.querySelector('#ready-btn .ready-title').textContent, keys: getComputedStyle(document.querySelector('#ready .ready-keys')).display, touch: getComputedStyle(document.querySelector('#ready .ready-touch')).display }));
-    assert.deepEqual(card, { title: 'Click to play', keys: 'flex', touch: 'none' });
+    const card = await ms(() => ({ title: document.querySelector('#ready-btn .ready-title').textContent, keys: getComputedStyle(document.querySelector('#ready .ready-keys')).display, first: document.querySelector('#ready .ready-keys dt').textContent }));
+    assert.deepEqual(card, { title: 'Click to play', keys: 'grid', first: 'Mouse' }, 'the keyboard and mouse rows');
     await page.click('#ready-btn');
     assert.equal(await ms(() => globalThis.__locks), 1, 'the click asks for pointer lock');
     await ms(() => globalThis.__ms.forcePlay());
@@ -1135,7 +1135,7 @@ test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two c
   if (!env) return;
   const { browser, base } = env;
   // The card's layout, measured in the page: its rectangle, the scroll of the card, its overlay and the
-  // document, where its two panels sit, its key cap rows and the font size of each kind of text.
+  // document, where its two panels sit, its key rows and the font size of each kind of text.
   const measure = () => {
     const c = document.getElementById('pause-card');
     const box = (el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; };
@@ -1152,9 +1152,11 @@ test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two c
       settings: box(document.getElementById('p-settings-title').closest('.ui-panel')),
       look: ['p-sens', 'p-invert'].every((id) => document.getElementById(id).closest('[data-setting]').getBoundingClientRect().height > 0),
       innerRight: c.getBoundingClientRect().right - parseFloat(getComputedStyle(c).paddingRight) + 0.5,
-      rows: [...c.querySelectorAll('#pause-controls dt')].filter((dt) => dt.querySelector('kbd')).map((dt) => {
-        const caps = [...dt.querySelectorAll('kbd')].map((k) => k.getBoundingClientRect());
-        return { right: Math.max(...caps.map((k) => k.right)), tops: caps.map((k) => k.top) };
+      rows: [...c.querySelectorAll('#pause-controls dt')].map((dt) => {
+        const range = document.createRange();
+        range.selectNodeContents(dt);
+        const lines = [...range.getClientRects()];
+        return { right: Math.max(...lines.map((k) => k.right)), tops: lines.map((k) => k.top) };
       }),
       fonts: {
         title: size('#pause-title'), status: size('#pause-sub'), button: size('#p-menu'), slider: size('.ui-slider__label'),
@@ -1164,7 +1166,7 @@ test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two c
     };
   };
   // The card's font sizes with a fine pointer, which its two columns leave as they are.
-  const FONTS = { title: 24, status: 16, button: 17, slider: 16, switch: 16, heading: 13, list: 14, keyName: 14, kbd: 11, statLabel: null };
+  const FONTS = { title: 24, status: 16, button: 17, slider: 16, switch: 16, heading: 13, list: 15, keyName: 15, kbd: null, statLabel: null };
   const fits = (m, at) => {
     assert.ok(m.columns, `${at}: the card composed with ui-screen--wide and a ui-columns--two`);
     assert.ok(m.card.top >= 0 && m.card.left >= 0 && m.card.right <= 1024 && m.card.bottom <= 768,
@@ -1172,10 +1174,10 @@ test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two c
     assert.deepEqual(m.scrolls, { card: false, overlay: false, document: false }, `${at}: nothing scrolls`);
     assert.ok(m.list.left >= m.settings.right && m.list.left >= m.actions.right, `${at}: the controls list in the second column`);
     assert.ok(m.actions.bottom <= m.settings.top, `${at}: the first column runs the actions, then Settings`);
-    assert.ok(m.rows.length > 0, `${at}: the controls list key caps`);
+    assert.ok(m.rows.length > 0, `${at}: the controls list's keys`);
     for (const row of m.rows) {
-      assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key cap row on one line`);
-      assert.ok(row.right <= m.innerRight, `${at}: a key cap row unclipped`);
+      assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key on one line`);
+      assert.ok(row.right <= m.innerRight, `${at}: a key unclipped`);
     }
     assert.deepEqual(m.fonts, FONTS, `${at}: every font size on the card as it was`);
   };

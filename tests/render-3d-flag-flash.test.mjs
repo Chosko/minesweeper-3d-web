@@ -135,12 +135,11 @@ test('[slow] in a browser, a flag click on a number flashes the cubes it changed
     await act(5, 'left');
     await act(6, 'left');
 
-    // The ready card and every help surface say what a right-click on a number does.
-    const readyKeys = await ms(() => document.querySelector('#ready .ready-keys').textContent.replace(/\s+/g, ' '));
-    assert.match(readyKeys, /Right on a number flags all its closed cubes · Right again takes back only those/);
-    const rightRow = 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags';
-    for (const sel of ['#pause-controls', '#help .controls']) {
-      assert.ok((await ms((s) => document.querySelector(s).textContent, sel)).includes(rightRow), `${sel} shows the 3D right-click row`);
+    // The ready card and every help surface name the right button's flag, in the canvas's short rows.
+    const readyKeys = await ms(() => document.querySelector('#ready .ready-keys').textContent);
+    assert.match(readyKeys, /Left \/ Rightreveal \/ flag/);
+    for (const sel of ['#pause-controls', '#help .ui-controls']) {
+      assert.ok((await ms((s) => document.querySelector(s).textContent, sel)).includes('Right clickFlag / unflag'), `${sel} shows the 3D right-click row`);
     }
 
     await ms(() => globalThis.__ms.aimAt(6));

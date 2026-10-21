@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GLYPHS } from '../js/gamepad.js';
 import {
-  BINDING_MODES, BINDING_DEVICES, bindingRows, bindingsListHtml, bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml,
+  BINDING_MODES, BINDING_DEVICES, bindingRows, helpRows, bindingsListHtml, bindingsHtml, helpListHtml, hudStripHtml, hintStripHtml, helpFootHtml,
   HUD_STRIP, HINT_STRIP, HELP_FOOT, HINT_TEXT, hintText, createActiveDevice,
 } from '../js/settings/bindings.js';
 import { TapToggle, SPACE_TAP_MS } from '../js/input.js';
@@ -36,21 +36,22 @@ test('the bindings component shows the rows of a given mode for a given device, 
   assert.match(bindingsHtml('classic-2d', 'keyboard'), /Move the cursor/);
   assert.doesNotMatch(bindingsHtml('classic-2d', 'keyboard'), /Look around|Fly/, 'no 3D row in Classic 2D');
   assert.match(bindingsHtml('3d', 'keyboard'), /Look around/);
-  assert.match(bindingsHtml('3d', 'controller', GLYPHS.playstation), /<kbd class="pad">R2<\/kbd>/);
-  assert.match(bindingsHtml('classic-2d', 'controller', GLYPHS.xbox), /<kbd class="pad">A<\/kbd>/);
-  assert.doesNotMatch(bindingsHtml('3d', 'controller', GLYPHS.xbox), /<kbd>[WASD]<\/kbd>/, 'no keyboard row on the controller list');
+  assert.match(bindingsHtml('3d', 'controller', GLYPHS.playstation), /<dt class="ui-controls__key">R2 \/ L2<\/dt>/);
+  assert.match(bindingsHtml('classic-2d', 'controller', GLYPHS.xbox), /<dt class="ui-controls__key">A \/ RT<\/dt>/);
+  assert.doesNotMatch(text(bindingsHtml('3d', 'controller', GLYPHS.xbox)), /W A S D/, 'no keyboard row on the controller list');
+  for (const mode of BINDING_MODES) {
+    for (const device of BINDING_DEVICES) {
+      assert.equal(helpListHtml(mode.id, device.id, GLYPHS.xbox), bindingsListHtml(helpRows(mode.id, device.id), GLYPHS.xbox), `${mode.id} × ${device.id}: the help list is the source's help rows`);
+    }
+  }
 });
 
-test('H and M are listed in both modes; F only in 3D, where it is fullscreen', () => {
+test('the 3D lists name H, M and F (Help, Sound, Fullscreen) and Space\'s hold; F is not fullscreen in Classic 2D', () => {
   const keys2d = bindingRows('classic-2d', 'keyboard').map((r) => r.join(' ')).join('\n');
   const keys3d = bindingRows('3d', 'keyboard').map((r) => r.join(' ')).join('\n');
-  assert.match(keys2d, /\[H\][^\n]*Help/);
-  assert.match(keys2d, /\[M\][^\n]*sound/);
-  assert.match(keys3d, /\[H\][^\n]*Help/);
-  assert.match(keys3d, /\[M\][^\n]*sound/);
-  assert.match(keys3d, /\[F\][^\n]*[Ff]ullscreen/);
+  assert.match(keys3d, /\[H\] · \[M\] · \[F\] Help · Sound · Fullscreen/);
   assert.doesNotMatch(keys2d, /[Ff]ullscreen/);
-  assert.match(keys3d, /tap \[Space\]|\[Space\][^\n]*tap/, 'the Space row names the tap');
+  assert.match(helpRows('3d', 'keyboard').map((r) => r.join(' ')).join('\n'), /Hold \[Space\] Aim through numbers/, 'the H panel names Space\'s hold');
 });
 
 test('the HUD strip lists only the keys the mode binds, and the controller\'s buttons while it is the active device', () => {
@@ -74,11 +75,11 @@ test('the HUD strip lists only the keys the mode binds, and the controller\'s bu
   assert.doesNotMatch(pad2d, /help|sound|Esc/);
 });
 
-test('the H panel\'s foot line names the release rule only in 3D', () => {
-  assert.match(text(helpFootHtml('3d', 'keyboard')), /Actions fire when the mouse button is released\. H hides this panel\./);
-  assert.match(text(helpFootHtml('3d', 'controller', GLYPHS.xbox)), /released\. X hides this panel\./);
-  assert.equal(text(helpFootHtml('classic-2d', 'keyboard')), 'H hides this panel.');
-  assert.doesNotMatch(helpFootHtml('classic-2d', 'controller', GLYPHS.xbox), /released/);
+test('the H panel\'s foot line names the key that hides it, in plain words', () => {
+  assert.equal(helpFootHtml('3d', 'keyboard'), 'H hides this panel.');
+  assert.equal(helpFootHtml('3d', 'controller', GLYPHS.xbox), 'X hides this panel.');
+  assert.equal(helpFootHtml('classic-2d', 'keyboard'), 'H hides this panel.');
+  assert.doesNotMatch(helpFootHtml('classic-2d', 'controller', GLYPHS.xbox), /released|<kbd/);
 });
 
 // ---------------------------------------------------------------- the active device
@@ -160,21 +161,22 @@ const between = (src, start, end) => src.slice(src.indexOf(start), src.indexOf(e
 
 test('the pause card, the Controls panel and the H panel have no hard-coded bindings list', () => {
   const pause = between(INDEX, '<section id="pause"', '<noscript>');
-  assert.match(pause, /<dl id="pause-controls" class="controls"><\/dl>/);
+  assert.match(pause, /<dl id="pause-controls" class="ui-controls"><\/dl>/);
   assert.doesNotMatch(pause, /<dt>/, 'the 3D list is gone from the markup');
   assert.match(pause, /<p id="pause-board" class="ui-text">/, 'the pause card names the board');
   const modal = between(INDEX, '<section id="controls-modal"', '</section>');
   assert.match(modal, /<div id="controls-tabs" class="ui-segmented" role="radiogroup" aria-label="Mode">/);
   assert.match(modal, /data-value="classic-2d">Classic 2D<\/button>/);
   assert.match(modal, /data-value="3d"[^>]*>3D<\/button>/);
-  assert.match(modal, /<dl id="controls-body" class="controls"><\/dl>/);
+  assert.match(modal, /<dl id="controls-body" class="ui-controls"><\/dl>/);
   assert.doesNotMatch(modal + INDEX, /id="modal-pad"|id="help-pad"/);
   const help = between(INDEX, '<aside id="help"', '</aside>');
-  assert.match(help, /<dl class="controls"><\/dl>/);
+  assert.match(help, /<h3 class="ui-card__title" id="help-title">Controls<\/h3>\s*<dl class="ui-controls"><\/dl>/);
   assert.match(help, /<p id="help-foot" class="help-foot"><\/p>/);
   assert.doesNotMatch(UI, /cloneNode/, 'the Controls panel is not a copy of the help list');
   assert.doesNotMatch(UI, /bindingRows\('3d', 'keyboard'\)/, 'no surface is fixed to the 3D keyboard rows');
   assert.match(UI, /bindingsHtml\(/);
+  assert.match(UI, /helpListHtml\(/);
 });
 
 test('on a touch device Classic 2D\'s touch rows reach the H panel, the pause card and the Controls panel as 3D\'s do; no table is read for touch without a touch entry', () => {
@@ -183,8 +185,8 @@ test('on a touch device Classic 2D\'s touch rows reach the H panel, the pause ca
   assert.match(touch2d, /Tap a number/);
   assert.doesNotMatch(bindingsHtml('classic-2d', 'touch'), /<kbd/, 'a touch row names no key or button');
   assert.doesNotMatch(touch2d, /Move the cursor|Look around/, 'neither the keyboard rows nor a 3D row');
-  assert.match(UI, /this\.el\.helpList\.innerHTML = bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\)/);
-  assert.match(UI, /this\.el\.pauseControls\.innerHTML = bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\)/);
+  assert.match(UI, /this\.el\.helpList\.innerHTML = helpListHtml\(this\._mode, this\._bindDevice\(this\._mode\)/);
+  assert.match(UI, /this\.el\.pauseControls\.innerHTML = helpListHtml\(this\._mode, this\._bindDevice\(this\._mode\)/);
   assert.match(UI, /this\.el\.controlsBody\.innerHTML = bindingsHtml\(this\._controlsTab, this\._bindDevice\(this\._controlsTab\)/);
   // The foot line, the HUD strip, the mode's hint strip and the scroll hint follow the same device.
   assert.match(UI, /helpFootHtml\(this\._mode, this\._bindDevice\(this\._mode\),/);
@@ -237,7 +239,7 @@ test('on a mouse and keyboard and with a controller the three surfaces read as b
   assert.equal(plain(hintStripHtml('classic-2d', 'keyboard')), 'Arrows move · Space reveal · F flag · D chord');
   assert.equal(plain(hintStripHtml('3d', 'controller', GLYPHS.xbox)), 'RT reveal · LT flag · Hold RB aim through · Hold LB neighbours');
   assert.equal(text(helpFootHtml('classic-2d', 'keyboard')), 'H hides this panel.');
-  assert.equal(text(helpFootHtml('3d', 'controller', GLYPHS.xbox)), 'Actions fire when the trigger is released. X hides this panel.');
+  assert.equal(text(helpFootHtml('3d', 'controller', GLYPHS.xbox)), 'X hides this panel.');
 });
 
 test('the HUD strip is generated and shows in Classic 2D; the hint strip shows there too', () => {
@@ -289,7 +291,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     await page.click('#set-controls');
     assert.ok(await shown('controls-modal'));
     assert.match(await textOf('#controls-body'), /Move the cursor/, 'Classic 2D first');
-    assert.match(await textOf('#controls-body'), /Help/, 'H is named');
+    assert.match(await textOf('#controls-body'), /Pause · Restart/, 'Esc and F2 are named');
     await page.click('#controls-tabs [data-value="3d"]');
     assert.match(await textOf('#controls-body'), /Look around/);
     assert.doesNotMatch(await textOf('#controls-body'), /Move the cursor/);
@@ -312,7 +314,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     assert.equal(await textOf('#c2d-size'), '9 × 9 · 10 mines');
     await page.keyboard.press('KeyH');
     assert.ok(await shown('help'));
-    assert.match(await textOf('#help .controls'), /Move the cursor/);
+    assert.match(await textOf('#help .ui-controls'), /Move the cursor/);
     assert.doesNotMatch(await textOf('#help-foot'), /released/);
     await page.keyboard.press('KeyH');
     assert.equal(await shown('help'), false);
@@ -355,8 +357,8 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     assert.ok(await shown('p-sens'), 'look sensitivity on a 3D game\'s pause card');
     assert.ok(await shown('p-invert'));
     await page.keyboard.press('KeyH');
-    assert.match(await textOf('#help .controls'), /Look around/);
-    assert.match(await textOf('#help-foot'), /Actions fire when the mouse button is released/);
+    assert.match(await textOf('#help .ui-controls'), /Look around/);
+    assert.equal(await textOf('#help-foot'), 'H hides this panel.');
     await page.keyboard.press('KeyH');
     await ms(() => globalThis.__ms.pauser.toMenu());
     assert.deepEqual(errors, []);
@@ -402,7 +404,7 @@ test('in a browser: the controller as the active device redraws every shown surf
     assert.doesNotMatch(await textOf('#hud-tools'), /Esc|fullscreen/);
     assert.match(await htmlOf('#hint-strip-text'), /<kbd class="pad">RT<\/kbd> reveal/);
     await tap(BTN.X);
-    assert.match(await textOf('#help .controls'), /Fly \/ look around/, 'the H panel shows the controller rows');
+    assert.match(await textOf('#help .ui-controls'), /Fly \/ look around/, 'the H panel shows the controller rows');
     await tap(BTN.X);
     await tap(BTN.START);
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'paused');

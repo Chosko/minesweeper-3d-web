@@ -39,7 +39,9 @@ foot; slot `window-chrome`), `ui-mode-entry` (`entry`,
 `badge`, `line` — the name and its Last played chip, the chip wrapping
 under the name —, `name`, `last`, `meta`, `size`, `density`, `check`; variant
 `ui-option--learn`), `ui-section-label`, `ui-key-hint`, `ui-chip`,
-`ui-list-row`, `ui-scene-panel` (`stage`, `tag`, `card`, `badge`, `name`,
+`ui-list-row`, the controls list `ui-controls` (`key`, `action`: the key in
+plain words, its action at the right edge, a rule over each row),
+`ui-scene-panel` (`stage`, `tag`, `card`, `badge`, `name`,
 `note`; variant `ui-scene-panel--live`), `ui-divider`, `ui-tabs`,
 `ui-checkbox`, `ui-table` (`heading`, `label` — a `th scope="row"` —,
 `cell`, `figure`, `rank`, `date`, `code`; variant `ui-table--recent`),

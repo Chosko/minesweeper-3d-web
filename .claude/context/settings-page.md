@@ -54,7 +54,7 @@ Page (`js/settings/page.js`)
   and the hidden confirm box `#set-reset-confirm` with `#set-reset-yes`
   (its trash icon) beside `#set-reset-no`);
   `bindingsSectionHtml(glyphs?, camera?, {mode?, device?})` — the
-  `dl.controls` of one mode for one device (default Classic 2D and the
+  controls list `dl.ui-controls` of one mode's full rows for one device (default Classic 2D and the
   keyboard; a device the mode does not list falls back to its first), 3D's
   rows for the Camera setting's `camera`; `UI` redraws it on each Mode or
   Device change.

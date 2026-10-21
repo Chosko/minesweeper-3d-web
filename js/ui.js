@@ -7,7 +7,7 @@ import {
   formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote, setButtonIcon,
 } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
-import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys, reminderKeys } from './settings/bindings.js';
+import { bindingsHtml, helpListHtml, readyListHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys, reminderKeys } from './settings/bindings.js';
 import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './settings/page.js';
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
 import { LEARN_TITLE, learnStepOf } from './mode3d/learn.js';
@@ -80,7 +80,7 @@ export class UI {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       hudCounters: $('hud-counters'), hudFigures: $('hud-figures'), hudHead: $('hud-figures').querySelector('.ui-figures__head'), hudTitle: $('hud-title'),
       hudReminder: $('hud-reminder'),
-      help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
+      help: $('help'), helpList: $('help').querySelector('.ui-controls'), helpFoot: $('help-foot'), readyKeys: $('ready-keys'),
       hintStrip: $('hint-strip'), hintStripText: $('hint-strip-text'), hintStep: $('hint-strip-step'),
       readyRules: $('ready-rules'), pauseBoard: $('pause-board'), pauseControls: $('pause-controls'),
       controlsBody: $('controls-body'),
@@ -845,11 +845,10 @@ export class UI {
     this._device = device;
     this._renderBindings();
   }
-  /** The Camera setting ('fly' | 'orbit'): the 3D rows and the ready card's movement line follow it. */
+  /** The Camera setting ('fly' | 'orbit'): the 3D rows, the ready card's among them, follow it. */
   setCamera(camera) {
     if (camera === this._camera) return;
     this._camera = camera;
-    for (const el of this.el.ready.querySelectorAll('[data-camera]')) el.classList.toggle('hidden', el.dataset.camera !== camera);
     this._renderBindings();
   }
   _setMode(mode) {
@@ -870,7 +869,7 @@ export class UI {
     return this._touch && this._device === 'keyboard' ? 'touch' : this._device;
   }
   _renderHelp() {
-    this.el.helpList.innerHTML = bindingsHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
+    this.el.helpList.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
     this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._bindDevice(this._mode), this._glyphs)}${this._note()}`;
   }
   /** Each figures panel's controls reminder: its mode's main bindings for the active device. */
@@ -896,7 +895,8 @@ export class UI {
     this._renderHelp();
     this._renderHudStrip();
     this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._bindDevice(this._controlsTab), this._glyphs, this._camera);
-    this.el.pauseControls.innerHTML = bindingsHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
+    this.el.pauseControls.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
+    this.el.readyKeys.innerHTML = readyListHtml(this._touch ? 'touch' : 'keyboard', this._glyphs, this._camera);
     if (this._hint) this.setHintStrip(true, { scroll: this._hintKind === 'scroll', learn: this._learnHint });
     if (!this.el.settings.classList.contains('hidden')) this._renderSettingsBindings();
   }

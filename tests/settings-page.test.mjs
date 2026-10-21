@@ -10,7 +10,8 @@ import { SCHEMA, SETTING_KEYS } from '../js/settings/schema.js';
 import { GLYPHS } from '../js/gamepad.js';
 import { CURSOR_KEYS } from '../js/classic2d/cursor-input.js';
 import {
-  BINDING_MODES, BINDING_DEVICES, TOUCH_DEVICE, bindingDevices, BINDINGS, bindingRows, bindingsListHtml, bindingsHtml,
+  BINDING_MODES, BINDING_DEVICES, TOUCH_DEVICE, bindingDevices, BINDINGS, HELP_BINDINGS, READY_BINDINGS, bindingRows, helpRows, readyRows,
+  bindingsListHtml, bindingsHtml, helpListHtml, readyListHtml,
 } from '../js/settings/bindings.js';
 import {
   SETTINGS_SECTIONS, SETTINGS_COLUMNS, SETTING_LABELS, SETTING_NOTES, CONTROLS_ACTION, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
@@ -77,24 +78,25 @@ test('3D lists a touch device\'s rows: the stick, the look drag, tap, long-press
   const rows = bindingRows('3d', 'touch');
   assert.equal(rows, BINDINGS['3d'].touch);
   const row = (input) => rows.find(([i]) => i === input);
-  assert.match(row('Left thumb: stick')[1], /^Fly/);
-  assert.match(row('Right half: drag')[1], /Look around/);
-  assert.match(row('Tap')[1], /Reveal the aimed cube/);
-  assert.match(row('Long-press')[1], /Flag \/ unflag/);
-  assert.match(row('Two-finger tap')[1], /Chord/);
-  assert.match(row('Pinch')[1], /spacing/);
-  assert.match(row('Shift button')[1], /neighbours/);
-  assert.match(row('Space button')[1], /[Aa]im through/);
-  assert.match(row('Ctrl button')[1], /hidden cells/);
-  assert.match(row('Pause button')[1], /Pause/);
+  assert.equal(row('Left thumb')[1], 'Fly');
+  assert.equal(row('Drag')[1], 'Look around');
+  assert.equal(row('Tap')[1], 'Reveal');
+  assert.equal(row('Long-press')[1], 'Flag / unflag');
+  assert.equal(row('Two-finger tap')[1], 'Chord');
+  assert.equal(row('Pinch')[1], 'Spacing');
+  assert.equal(row('Shift button')[1], 'Neighbours only');
+  assert.equal(row('Space button')[1], 'Aim through numbers');
+  assert.equal(row('Ctrl button')[1], 'Show hidden');
+  assert.equal(row('Pause button')[1], 'Pause');
   const orbit = bindingRows('3d', 'touch', 'orbit');
   const orow = (input) => orbit.find(([i]) => i === input);
-  assert.match(orow('Right half: drag')[1], /[Rr]otate around the board/);
-  assert.match(orow('Left thumb: stick ↑ ↓')[1], /[Mm]ove in \/ out/);
-  assert.equal(orow('Left thumb: stick'), undefined);
+  assert.equal(orow('Drag')[1], 'Rotate');
+  assert.equal(orow('Left thumb ↑ ↓')[1], 'In / out');
+  assert.equal(orow('Left thumb'), undefined);
   assert.deepEqual(orow('Pinch'), row('Pinch'), 'pinch changes the spacing in both cameras');
   assert.deepEqual(orow('Tap'), row('Tap'));
-  assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: '3d', device: 'touch' }), `<dl class="controls">${bindingsListHtml(rows, GLYPHS.xbox)}</dl>`, 'the Settings page lists them');
+  assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: '3d', device: 'touch' }), `<dl class="ui-controls">${bindingsListHtml(rows, GLYPHS.xbox)}</dl>`, 'the Settings page lists them');
+  assert.equal(helpRows('3d', 'touch'), rows, 'the help list shows the full touch rows');
   const ui = read('js/ui.js');
   assert.match(ui, /_bindDevice\(mode\)/, 'the help surfaces show the touch rows on a touch device');
 });
@@ -105,18 +107,18 @@ test('Classic 2D lists a touch device\'s rows: tap, the 400 ms long-press, the t
   assert.equal(rows, BINDINGS['classic-2d'].touch);
   assert.equal(bindingRows('classic-2d', 'touch', 'orbit'), rows, 'the camera does not reach Classic 2D');
   const row = (input) => rows.find(([i]) => i === input);
-  assert.match(row('Tap')[1], /Reveal a closed cell/);
-  assert.match(row('Tap')[1], /Flag/, 'a tap flags while the switch is on Flag');
-  assert.match(row('Long-press')[1], /Flag \/ unflag/);
-  assert.match(row('Long-press')[1], /0\.4 s|400 ms/, 'the long-press names its hold');
-  assert.match(row('Tap a number')[1], /^Chord/);
-  assert.match(row('Tap: Reveal / Flag')[1], /what a tap does/);
-  assert.match(row('One finger: drag')[1], /[Pp]an/);
-  assert.match(row('Two fingers')[1], /[Pp]an/);
-  assert.match(row('Two fingers')[1], /[Pp]inch to zoom/);
-  assert.match(row('Pause button')[1], /Pause menu/);
+  assert.equal(row('Tap')[1], 'Reveal (or flag on Tap: Flag)', 'a tap flags while the switch is on Flag');
+  assert.equal(row('Long-press')[1], 'Flag / unflag');
+  assert.equal(row('Tap a number')[1], 'Chord');
+  assert.match(row('Tap: Reveal / Flag')[1], /[Ww]hat a tap does/);
+  assert.equal(row('One finger')[1], 'Pan a large board');
+  assert.equal(row('Pinch')[1], 'Zoom');
+  assert.equal(row('Pause button')[1], 'Pause');
   for (const [input, action] of rows) assert.doesNotMatch(`${input} ${action}`, /\[|\{|[Cc]lick|[Ww]heel|[Mm]ouse/, 'no key, button or mouse in a touch row');
-  assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: 'classic-2d', device: 'touch' }), `<dl class="controls">${bindingsListHtml(rows, GLYPHS.xbox)}</dl>`, 'the Settings page lists them');
+  assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: 'classic-2d', device: 'touch' }), `<dl class="ui-controls">${bindingsListHtml(rows, GLYPHS.xbox)}</dl>`, 'the Settings page lists them');
+  // The pause card on a phone (J-Pause-p): the five gesture rows.
+  assert.deepEqual(helpRows('classic-2d', 'touch').map((r) => r.join(' — ')),
+    ['Tap — Reveal (or flag on Tap: Flag)', 'Long-press — Flag / unflag', 'Tap a number — Chord', 'One finger — Pan a large board', 'Pinch — Zoom']);
   const ui = read('js/ui.js');
   assert.match(ui, /_bindDevice\(mode\) \{\n    return this\._touch && this\._device === 'keyboard' \? 'touch' : this\._device;/,
     'on a touch device both modes\' help surfaces show the touch rows, unless a controller is in use');
@@ -131,26 +133,67 @@ test('the Classic 2D keyboard bindings name every key the cursor input acts on',
   }
 });
 
-test('the 3D keyboard bindings name Home and R, which return the camera to the start view', () => {
-  const rows = bindingRows('3d', 'keyboard').filter(([input]) => input.includes('[Home]'));
-  assert.equal(rows.length, 1, 'one row');
-  assert.match(rows[0][0], /^\[Home\] \/ \[R\]$/);
-  assert.match(rows[0][1], /[Bb]ack to the start view/);
-  assert.equal(bindingRows('classic-2d', 'keyboard').some(([input]) => input.includes('[Home]')), false, 'not in Classic 2D');
+// The canvas's short rows (J-Settings-states, J-Pause-xl, J-Game3D-states "H help panel", J-Ready-xl and J-Ready-p), as plain words.
+const shown = (list) => list.map(([input, action]) => `${input.replace(/\[([^\]]+)\]/g, '$1')} — ${action}`);
+
+test('the Settings bindings are the canvas\'s short rows: Classic 2D\'s and 3D\'s on the keyboard and mouse, no Middle click row', () => {
+  assert.deepEqual(shown(bindingRows('classic-2d', 'keyboard')), [
+    'Left / middle button — Reveal', 'Right button — Flag', 'Left + Right — Chord', 'Arrow keys — Move the cursor',
+    'Space / Enter — Reveal', 'F — Flag', 'D — Chord', 'Esc · F2 — Pause · Restart',
+  ]);
+  assert.deepEqual(shown(bindingRows('3d', 'keyboard')), [
+    'Mouse — Look around (click to capture)', 'Arrow keys — Look around', 'W A S D — Fly', 'Q / E — Down / up',
+    'Left click — Reveal', 'Right click — Flag / unflag', 'Left + Right — Chord', 'Wheel — Spacing', 'X — Spacing 1.1 / 2.0',
+    'Hold Shift / Space / Ctrl — View modes', 'H · M · F — Help · Sound · Fullscreen', 'Esc · F2 — Pause · Restart',
+  ]);
+  for (const mode of BINDING_MODES) {
+    for (const device of bindingDevices(mode.id)) assert.ok(!bindingRows(mode.id, device.id).some(([input]) => /Middle click/.test(input)), `${mode.id} ${device.id}: no Middle click row`);
+  }
+});
+
+test('the help list is the canvas\'s: the pause card\'s nine Classic 2D rows and the H panel\'s eleven 3D rows; the other pairs show their full rows', () => {
+  assert.deepEqual(shown(helpRows('classic-2d', 'keyboard')), [
+    'Left / middle button — Reveal', 'Right button — Flag / unflag', 'Left + Right — Chord', 'Arrow keys — Move the cursor',
+    'Space / Enter — Reveal under the cursor', 'F — Flag under the cursor', 'D — Chord under the cursor', 'Esc — Pause', 'F2 — Restart',
+  ]);
+  assert.deepEqual(shown(helpRows('3d', 'keyboard')), [
+    'Mouse — Look around', 'W A S D — Fly', 'Q / E — Down / up', 'Left click — Reveal', 'Right click — Flag / unflag', 'Left + Right — Chord',
+    'Wheel — Spacing', 'Hold Shift — Neighbours only', 'Hold Space — Aim through numbers', 'Hold Ctrl — Show hidden', 'Esc — Pause',
+  ]);
+  assert.equal(helpRows('3d', 'keyboard'), HELP_BINDINGS['3d'].fly.keyboard);
+  assert.deepEqual(shown(helpRows('3d', 'keyboard', 'orbit')).slice(0, 2), ['Mouse — Rotate', 'W / S — In / out'], 'Orbit\'s help rows rotate and dolly');
+  for (const mode of BINDING_MODES) assert.equal(helpRows(mode.id, 'controller'), bindingRows(mode.id, 'controller'), `${mode.id}: the controller's full rows`);
+  assert.equal(helpListHtml('3d', 'keyboard', GLYPHS.xbox), bindingsListHtml(helpRows('3d', 'keyboard'), GLYPHS.xbox));
+});
+
+test('the 3D ready card lists the canvas\'s six short rows on the keyboard and mouse and on touch, Orbit\'s following the camera', () => {
+  assert.deepEqual(shown(readyRows('keyboard')), ['Mouse — look around', 'W A S D — fly', 'Q / E — down / up', 'Left / Right — reveal / flag', 'Wheel — spacing', 'Shift · Space · Ctrl — view modes']);
+  assert.deepEqual(shown(readyRows('touch')), ['Left thumb — fly', 'Drag — look', 'Tap — reveal', 'Long-press — flag', 'Two-finger tap — chord', 'Pinch — spacing']);
+  assert.equal(readyRows('keyboard'), READY_BINDINGS.fly.keyboard);
+  assert.deepEqual(shown(readyRows('keyboard', 'orbit')), ['Mouse — rotate', 'W / S — in / out', 'Left / Right — reveal / flag', 'Wheel — in / out', 'Shift · Space · Ctrl — view modes']);
+  assert.deepEqual(shown(readyRows('touch', 'orbit')).slice(0, 2), ['Left thumb ↑ ↓ — in / out', 'Drag — rotate']);
+  assert.throws(() => readyRows('controller'), /unknown/);
+  assert.throws(() => readyRows('keyboard', 'free'), /unknown/);
+  assert.equal(readyListHtml('touch', GLYPHS.xbox, 'orbit'), bindingsListHtml(readyRows('touch', 'orbit'), GLYPHS.xbox));
+  const index = read('index.html');
+  const ready = index.slice(index.indexOf('<section id="ready"'), index.indexOf('<!-- Controls modal'));
+  assert.match(ready, /<dl id="ready-keys" class="ui-controls ready-keys"><\/dl>/, 'the list is filled from the bindings source, not written in the markup');
+  assert.doesNotMatch(ready, /data-camera=|class="ready-touch"/, 'no hard-coded key lines');
+  assert.match(read('js/ui.js'), /this\.el\.readyKeys\.innerHTML = readyListHtml\(this\._touch \? 'touch' : 'keyboard', this\._glyphs, this\._camera\);/);
 });
 
 test('both modes list F2 as Restart on the keyboard and Start + Y on the controller', () => {
   for (const mode of BINDING_MODES) {
-    const key = bindingRows(mode.id, 'keyboard').find(([input]) => input === '[F2]');
+    const key = bindingRows(mode.id, 'keyboard').find(([input]) => input === '[Esc] · [F2]');
     assert.ok(key, `${mode.id} keyboard lists F2`);
-    assert.match(key[1], /^Restart/);
+    assert.equal(key[1], 'Pause · Restart');
     const pad = bindingRows(mode.id, 'controller').find(([input]) => input === '{start} + {y}');
     assert.ok(pad, `${mode.id} controller lists Start + Y`);
     assert.match(pad[1], /^Restart/);
   }
-  assert.match(bindingsHtml('classic-2d', 'controller', GLYPHS.xbox), /<kbd class="pad">Menu<\/kbd> \+ <kbd class="pad">Y<\/kbd>/);
+  assert.match(bindingsHtml('classic-2d', 'controller', GLYPHS.xbox), /<dt class="ui-controls__key">Menu \+ Y<\/dt><dd class="ui-controls__action">Restart<\/dd>/);
   for (const mode of BINDING_MODES) {
-    assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: mode.id }).match(/<kbd>F2<\/kbd>/g).length, 1, `the Settings bindings show F2 for ${mode.id}`);
+    assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: mode.id }).match(/>Esc · F2</g).length, 1, `the Settings bindings show F2 for ${mode.id}`);
   }
 });
 
@@ -184,29 +227,23 @@ test('the field of view is a degree slider in the Graphics section, 45 to 90 in 
   assert.match(graphics, /<div class="ui-slider" data-setting="fieldOfView"><label class="ui-slider__label" for="set-fieldOfView">Field of view<\/label><output class="ui-slider__value" id="set-fieldOfView-val" for="set-fieldOfView">60°<\/output><input type="range" id="set-fieldOfView" class="ui-slider__input" min="45" max="90" step="1" value="60" data-format="number" data-unit="°"><\/div>/);
 });
 
-test('the 3D keyboard bindings name X, the spacing toggle, and say that forward follows the view and the wheel carries the camera', () => {
+test('the 3D keyboard bindings name X, the spacing toggle, W A S D to fly and the wheel\'s spacing', () => {
   const rows = bindingRows('3d', 'keyboard');
   const x = rows.find(([input]) => input === '[X]');
-  assert.deepEqual([...x], ['[X]', 'Toggle spacing 1.1 / 2.0']);
-  const wasd = rows.find(([input]) => input === '[W][A][S][D]');
-  assert.match(wasd[1], /forward follows the view/);
+  assert.deepEqual([...x], ['[X]', 'Spacing 1.1 / 2.0']);
+  const wasd = rows.find(([input]) => input === '[W] [A] [S] [D]');
+  assert.equal(wasd[1], 'Fly');
   const wheel = rows.find(([input]) => input === 'Wheel');
-  assert.match(wheel[1], /spacing/);
-  assert.match(wheel[1], /camera/);
+  assert.equal(wheel[1], 'Spacing');
   assert.equal(bindingRows('classic-2d', 'keyboard').some(([input]) => input === '[X]'), false, 'not in Classic 2D');
 });
 
-test('the 3D keyboard bindings list keyboard look on the arrows and Enter, \' and Enter + \' as reveal, flag and chord on release', () => {
+test('the 3D keyboard bindings list keyboard look on the arrows, beside mouse look', () => {
   const rows = bindingRows('3d', 'keyboard');
   const row = (input) => rows.find(([i]) => i === input);
   assert.deepEqual([...row('Arrow keys')], ['Arrow keys', 'Look around']);
-  assert.deepEqual([...row('[Enter]')], ['[Enter]', 'Reveal the aimed cube (on release)']);
-  assert.deepEqual([...row('[\']')], ['[\']', 'Flag / unflag (on release)']);
-  assert.deepEqual([...row('[Enter] + [\']')], ['[Enter] + [\']', 'Chord']);
   assert.ok(rows.indexOf(row('Arrow keys')) === rows.indexOf(row('Mouse')) + 1, 'beside mouse look');
-  const html = bindingsHtml('3d', 'keyboard');
-  assert.match(html, /<dt><kbd>Enter<\/kbd> \+ <kbd>'<\/kbd><\/dt><dd>Chord<\/dd>/);
-  assert.match(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: '3d' }), /<dt>Arrow keys<\/dt><dd>Look around<\/dd>/, 'the Settings page lists them');
+  assert.match(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: '3d' }), /<dt class="ui-controls__key">Arrow keys<\/dt><dd class="ui-controls__action">Look around<\/dd>/, 'the Settings page lists them');
 });
 
 test('the Camera setting is a Fly | Orbit choice in the Controls section, after look sensitivity and invert Y', () => {
@@ -222,67 +259,57 @@ test('the Camera setting is a Fly | Orbit choice in the Controls section, after 
   assert.ok(at('lookSensitivity') < at('camera') && at('invertY') < at('camera') && at('camera') < at('confirmRestart'));
 });
 
-test('the 3D bindings follow the Camera setting: Orbit rotates, dollies and leaves Q / E unused, from the one table', () => {
+test('the 3D bindings follow the Camera setting: Orbit rotates and dollies, from the one table', () => {
   assert.equal(bindingRows('3d', 'keyboard', 'fly'), BINDINGS['3d'].keyboard, 'Fly is the default rows');
   assert.equal(bindingRows('3d', 'keyboard'), bindingRows('3d', 'keyboard', 'fly'));
   const kb = bindingRows('3d', 'keyboard', 'orbit');
   const row = (rows, input) => rows.find(([i]) => i === input);
-  assert.match(row(kb, 'Mouse')[1], /[Rr]otate around the board/);
-  assert.match(row(kb, 'Arrow keys')[1], /[Rr]otate around the board/);
-  assert.match(row(kb, '[A] [D]')[1], /[Rr]otate/);
-  assert.match(row(kb, '[W] [S]')[1], /[Mm]ove in \/ out/);
-  assert.match(row(kb, 'Wheel')[1], /[Mm]ove in \/ out/);
-  assert.match(row(kb, '[Q] [E]')[1], /[Uu]nused/);
-  assert.equal(row(kb, '[W][A][S][D]'), undefined, 'no flight row');
-  assert.match(row(kb, '[X]')[1], /spacing/, 'spacing stays on X');
-  for (const input of ['Left click', 'Right click', '[Enter]', "[']", '[Home] / [R]', 'Hold [Shift]', '[F2]']) {
+  assert.equal(row(kb, 'Mouse')[1], 'Rotate (click to capture)');
+  assert.equal(row(kb, 'Arrow keys · [A] [D]')[1], 'Rotate');
+  assert.equal(row(kb, '[W] / [S]')[1], 'In / out');
+  assert.equal(row(kb, 'Wheel')[1], 'In / out');
+  assert.equal(row(kb, '[Q] / [E]'), undefined, 'Q / E unused');
+  assert.equal(row(kb, '[W] [A] [S] [D]'), undefined, 'no flight row');
+  assert.match(row(kb, '[X]')[1], /Spacing/, 'spacing stays on X');
+  for (const input of ['Left click', 'Right click', 'Left + Right', 'Hold [Shift] / [Space] / [Ctrl]', '[Esc] · [F2]']) {
     assert.deepEqual(row(kb, input), row(bindingRows('3d', 'keyboard'), input), `${input} as in Fly`);
   }
   const pad = bindingRows('3d', 'controller', 'orbit');
-  assert.match(row(pad, 'Right stick')[1], /[Rr]otate around the board/);
-  assert.match(row(pad, 'Left stick ↑ ↓')[1], /[Mm]ove in \/ out/);
+  assert.equal(row(pad, 'Right stick')[1], 'Rotate');
+  assert.equal(row(pad, 'Left stick ↑ ↓')[1], 'In / out');
   assert.equal(row(pad, 'Left / right stick'), undefined);
   assert.equal(row(pad, '{a} / {b}'), undefined, 'A / B unused');
   assert.deepEqual(row(pad, '{rt} / {lt}'), row(bindingRows('3d', 'controller'), '{rt} / {lt}'), 'the triggers act as in Fly');
-  assert.match(row(pad, 'D-pad ↑ ↓')[1], /spacing/);
+  assert.equal(row(pad, 'D-pad ↑ ↓')[1], 'Spacing');
   assert.equal(bindingRows('classic-2d', 'keyboard', 'orbit'), bindingRows('classic-2d', 'keyboard'), 'Classic 2D has no camera');
   assert.throws(() => bindingRows('3d', 'keyboard', 'free'), /unknown/);
   assert.equal(bindingsHtml('3d', 'keyboard', GLYPHS.generic, 'orbit'), bindingsListHtml(kb, GLYPHS.generic));
   const section = bindingsSectionHtml(GLYPHS.xbox, 'orbit', { mode: '3d' });
   assert.ok(section.includes(bindingsListHtml(kb, GLYPHS.xbox)), 'the Settings page lists the chosen camera\'s rows');
-  assert.ok(!section.includes('Fly forward'));
+  assert.ok(!section.includes('>Fly<'));
   const ui = read('js/ui.js');
   assert.match(ui, /setCamera\(camera\)/, 'the help surfaces follow the setting');
   assert.match(ui, /bindingsSectionHtml\(this\._glyphs, this\._camera, \{ mode, device \}\)/);
-  const index = read('index.html');
-  const ready = index.slice(index.indexOf('<span class="ready-keys">'), index.indexOf('<span id="ready-pad"'));
-  assert.match(ready, /data-camera="fly"/);
-  assert.match(ready, /<span data-camera="orbit" class="hidden">/, 'the ready card\'s Orbit movement line, hidden in Fly');
 });
 
-test('the 3D bindings say what a right-click and {lt} on a number do, and that a second one takes back only those flags', () => {
-  const right = bindingRows('3d', 'keyboard').find(([input]) => input === 'Right click');
-  assert.deepEqual([...right], ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags']);
-  const lt = bindingRows('3d', 'controller').find(([input]) => input === '{lt} on a number');
-  assert.deepEqual([...lt], ['{lt} on a number', 'Flag all its closed neighbours; {lt} on it again takes back only those flags']);
-  assert.ok(bindingRows('3d', 'controller').findIndex((r) => r === lt) > bindingRows('3d', 'controller').findIndex(([input]) => input === '{rt} / {lt}'), 'after the flag button\'s own row');
-});
-
-test('bindingsListHtml renders keys as <kbd>, controller buttons as the pad\'s glyphs, and escapes text', () => {
-  const html = bindingsListHtml([['[W][A] then Left & right', 'Fly <fast>'], ['{rt} / {lt}', 'Reveal with {a}']], GLYPHS.playstation);
+test('bindingsListHtml renders keys in plain words, controller buttons as the pad\'s glyphs, no key caps, and escapes text', () => {
+  const html = bindingsListHtml([['[W] [A] then Left & right', 'Fly <fast>'], ['{rt} / {lt}', 'Reveal with {a}']], GLYPHS.playstation);
   assert.equal(html,
-    '<dt><kbd>W</kbd><kbd>A</kbd> then Left &amp; right</dt><dd>Fly &lt;fast&gt;</dd>'
-    + '<dt><kbd class="pad">R2</kbd> / <kbd class="pad">L2</kbd></dt><dd>Reveal with <kbd class="pad">✕</kbd></dd>');
-  assert.match(bindingsListHtml([['{a}', 'x']]), /<kbd class="pad">A<\/kbd>/, 'generic glyphs by default');
+    '<dt class="ui-controls__key">W A then Left &amp; right</dt><dd class="ui-controls__action">Fly &lt;fast&gt;</dd>'
+    + '<dt class="ui-controls__key">R2 / L2</dt><dd class="ui-controls__action">Reveal with ✕</dd>');
+  assert.match(bindingsListHtml([['{a}', 'x']]), /<dt class="ui-controls__key">A<\/dt>/, 'generic glyphs by default');
+  for (const mode of BINDING_MODES) {
+    for (const device of bindingDevices(mode.id)) assert.doesNotMatch(bindingsHtml(mode.id, device.id, GLYPHS.xbox) + helpListHtml(mode.id, device.id, GLYPHS.xbox), /<kbd/, `${mode.id} ${device.id}: no key caps`);
+  }
 });
 
 test('the in-game help reads the same bindings source', () => {
   const index = read('index.html');
   const help = index.slice(index.indexOf('<aside id="help"'), index.indexOf('</aside>'));
-  assert.match(help, /<dl class="controls"><\/dl>/, 'the help list is filled from the bindings source, not written in the markup');
+  assert.match(help, /<dl class="ui-controls"><\/dl>/, 'the help list is filled from the bindings source, not written in the markup');
   const ui = read('js/ui.js');
   assert.match(ui, /from '\.\/settings\/bindings\.js'/);
-  assert.match(ui, /bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs, this\._camera\)/, 'the help panel shows the active mode\'s rows for the active device (touch on a touch device) and camera');
+  assert.match(ui, /helpListHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs, this\._camera\)/, 'the help panel shows the active mode\'s help rows for the active device (touch on a touch device) and camera');
   assert.match(ui, /helpFootHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs\)/, 'its foot line follows the same device');
   assert.equal(bindingsHtml('3d', 'controller', GLYPHS.xbox), bindingsListHtml(bindingRows('3d', 'controller'), GLYPHS.xbox), 'the component is the source\'s rows');
 });
@@ -408,12 +435,12 @@ test('the bindings panel picks a mode and a device and lists that one pair, in t
     assert.deepEqual(bindingDevices(mode.id).map((d) => d.id), ['keyboard', 'controller', 'touch'], `${mode.id} lists every device the choice offers`);
     for (const device of bindingDevices(mode.id)) {
       assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: mode.id, device: device.id }),
-        `<dl class="controls">${bindingsListHtml(bindingRows(mode.id, device.id), GLYPHS.xbox)}</dl>`, `${mode.id} / ${device.id}: that one list`);
+        `<dl class="ui-controls">${bindingsListHtml(bindingRows(mode.id, device.id), GLYPHS.xbox)}</dl>`, `${mode.id} / ${device.id}: that one list`);
     }
   }
-  assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'orbit', { mode: '3d', device: 'keyboard' }), `<dl class="controls">${bindingsListHtml(bindingRows('3d', 'keyboard', 'orbit'), GLYPHS.xbox)}</dl>`, 'the Camera setting\'s rows');
+  assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'orbit', { mode: '3d', device: 'keyboard' }), `<dl class="ui-controls">${bindingsListHtml(bindingRows('3d', 'keyboard', 'orbit'), GLYPHS.xbox)}</dl>`, 'the Camera setting\'s rows');
   assert.equal(bindingsSectionHtml(GLYPHS.xbox), bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: 'classic-2d', device: 'keyboard' }), 'Classic 2D with the keyboard by default');
-  assert.ok(bindingsSectionHtml(GLYPHS.playstation, 'fly', { mode: '3d', device: 'controller' }).includes('<kbd class="pad">R2</kbd>'), 'the glyphs follow the controller');
+  assert.ok(bindingsSectionHtml(GLYPHS.playstation, 'fly', { mode: '3d', device: 'controller' }).includes('<dt class="ui-controls__key">R2 / L2</dt>'), 'the glyphs follow the controller');
 });
 
 // ---------------------------------------------------------------- the column layout
@@ -1010,13 +1037,13 @@ test('in a browser: Settings from the menu, the theme list with its swatches, an
     assert.ok(await ms(() => document.getElementById('menu').classList.contains('hidden')));
     const headings = await ms(() => [...document.querySelectorAll('#settings-body h3')].map((h) => h.textContent));
     assert.deepEqual(headings, ['Controls', 'Audio', 'Graphics', 'Theme', 'Bindings', 'Data'], 'the columns\' sections, in order');
-    assert.equal(await ms(() => document.querySelectorAll('#settings-body dl.controls').length), 1, 'one bindings list');
+    assert.equal(await ms(() => document.querySelectorAll('#settings-body dl.ui-controls').length), 1, 'one bindings list');
 
     // The bindings panel: Classic 2D with the active device first; each pick lists that mode and device.
     const bindings = () => ms(() => ({
       mode: document.querySelector('#set-bind-mode [aria-checked="true"]').dataset.value,
       device: document.querySelector('#set-bind-device [aria-checked="true"]').dataset.value,
-      list: document.querySelector('#settings-bindings dl.controls').innerHTML,
+      list: document.querySelector('#settings-bindings dl.ui-controls').innerHTML,
     }));
     const listOf = (mode, device) => ms(([m, d]) => import('/js/settings/bindings.js').then((b) => b.bindingsHtml(m, d, undefined, globalThis.__ms.settings.get('camera'))), [mode, device]);
     assert.deepEqual(await bindings(), { mode: 'classic-2d', device: 'keyboard', list: await listOf('classic-2d', 'keyboard') });
@@ -1339,6 +1366,20 @@ test('in a browser, the Settings page takes the canvas\'s columns at each window
       assert.deepEqual(l.wide, [], `${width} × ${height}: nothing scrolls sideways`);
       assert.equal(l.scrolls, 'auto', `${width} × ${height}: the frame's body scrolls vertically`);
     }
+    // The largest window: everything fits without the body scrolling, the 3D bindings shown on each device.
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.click('#set-bind-mode [data-value="3d"]');
+    for (const device of ['keyboard', 'controller', 'touch']) {
+      await page.click(`#set-bind-device [data-value="${device}"]`);
+      const fit = await page.evaluate(() => {
+        const body = document.getElementById('settings-body');
+        return { body: body.scrollHeight - body.clientHeight, page: document.documentElement.scrollHeight - document.documentElement.clientHeight };
+      });
+      assert.deepEqual(fit, { body: 0, page: 0 }, `1920 × 1080, 3D on ${device}: nothing scrolls`);
+    }
+    await page.click('#set-bind-device [data-value="keyboard"]');
+    await page.click('#set-bind-mode [data-value="classic-2d"]');
+    await page.setViewportSize({ width: 390, height: 844 });
     // The phone: the device choice spans the panel, "Keyboard and mouse" on two lines inside its option.
     await page.click('#set-bind-mode [data-value="3d"]');
     const device = await page.evaluate(() => {

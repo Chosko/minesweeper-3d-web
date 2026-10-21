@@ -1184,7 +1184,7 @@ test('Restart discards an unfinished game; Play again starts the same choice onc
   assert.match(read('js/shell/pause.js'), /const ASK = \{ title: 'Leave this game\?', message: 'This game will count as a loss\.', confirmLabel: 'Confirm' \};/);
   assert.match(read('index.html'), /id="r-again"[^>]*>Play again </);
   const lines = read('js/settings/bindings.js').split('\n').filter((l) => /Restart|Play again|New game/.test(l));
-  assert.ok(lines.length > 0 && lines.every((l) => /^\s*\['(\[F2\]|\{start\} \+ \{y\})', 'Restart: a new board of the same choice'\],$/.test(l)),
+  assert.ok(lines.length > 0 && lines.every((l) => /^\s*\['(\[F2\]|\[Esc\] · \[F2\]|\{start\} \+ \{y\})', '(Pause · )?Restart'\],$/.test(l)),
     'only the F2 and Start + Y rows name a restart; no help line names Play again or a new game');
 });
 

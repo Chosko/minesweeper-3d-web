@@ -1745,7 +1745,7 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
   }
 });
 
-test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter strip keep one line each above the board, and the pause card\'s key cap rows whole', async (t) => {
+test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter strip keep one line each above the board, and the pause card\'s key rows whole', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1782,9 +1782,11 @@ test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter 
       const card = await ms(() => {
         const c = document.getElementById('pause-card');
         const r = c.getBoundingClientRect();
-        const capRows = [...document.querySelectorAll('#pause-controls dt')].filter((dt) => dt.querySelector('kbd')).map((dt) => {
-          const caps = [...dt.querySelectorAll('kbd')].map((k) => k.getBoundingClientRect());
-          return { right: Math.max(...caps.map((k) => k.right)), tops: caps.map((k) => k.top), cap: parseFloat(getComputedStyle(dt.querySelector('kbd')).fontSize) };
+        const capRows = [...document.querySelectorAll('#pause-controls dt')].map((dt) => {
+          const range = document.createRange();
+          range.selectNodeContents(dt);
+          const lines = [...range.getClientRects()];
+          return { right: Math.max(...lines.map((k) => k.right)), tops: lines.map((k) => k.top), cap: parseFloat(getComputedStyle(dt).fontSize) };
         });
         return {
           top: r.top, bottom: r.bottom, left: r.left, right: r.right,
@@ -1792,11 +1794,11 @@ test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter 
         };
       });
       assert.ok(card.top >= 0 && card.left >= 0 && card.right <= 1024, `${at}: the pause card inside the viewport's width`);
-      assert.ok(card.rows.length > 0, `${at}: the controls list key caps`);
+      assert.ok(card.rows.length > 0, `${at}: the controls list's keys`);
       for (const row of card.rows) {
-        assert.ok(row.cap >= 11, `${at}: a key cap at ${row.cap} px`);
-        assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key cap row on one line`);
-        assert.ok(row.right <= card.innerRight, `${at}: a key cap row unclipped`);
+        assert.ok(row.cap >= 15, `${at}: a key at ${row.cap} px`);
+        assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key on one line`);
+        assert.ok(row.right <= card.innerRight, `${at}: a key unclipped`);
       }
       await page.close();
     }
@@ -1806,16 +1808,18 @@ test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter 
 });
 
 // The pause card's layout, measured in the page: its rectangle, the scroll of the card, its overlay and
-// the document, where its two panels sit, its key cap rows and the font size of each kind of text.
+// the document, where its two panels sit, its key rows and the font size of each kind of text.
 function measurePauseCard() {
   const c = document.getElementById('pause-card');
   const box = (el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; };
   const scrolls = (el) => el.scrollHeight > el.clientHeight;
   const size = (sel) => { const el = c.querySelector(sel); return el ? parseFloat(getComputedStyle(el).fontSize) : null; };
   const innerRight = c.getBoundingClientRect().right - parseFloat(getComputedStyle(c).paddingRight) + 0.5;
-  const rows = [...c.querySelectorAll('#pause-controls dt')].filter((dt) => dt.querySelector('kbd')).map((dt) => {
-    const caps = [...dt.querySelectorAll('kbd')].map((k) => k.getBoundingClientRect());
-    return { right: Math.max(...caps.map((k) => k.right)), tops: caps.map((k) => k.top) };
+  const rows = [...c.querySelectorAll('#pause-controls dt')].map((dt) => {
+    const range = document.createRange();
+    range.selectNodeContents(dt);
+    const lines = [...range.getClientRects()];
+    return { right: Math.max(...lines.map((k) => k.right)), tops: lines.map((k) => k.top) };
   });
   const confirm = document.getElementById('pause-confirm');
   return {
@@ -1838,7 +1842,7 @@ function measurePauseCard() {
   };
 }
 // The pause card's font sizes with a fine pointer, which its two columns leave as they are.
-const PAUSE_FONTS_FINE = Object.freeze({ title: 24, status: 16, button: 17, slider: 16, switch: 16, heading: 13, list: 14, keyName: 14, kbd: 11, statLabel: null });
+const PAUSE_FONTS_FINE = Object.freeze({ title: 24, status: 16, button: 17, slider: 16, switch: 16, heading: 13, list: 15, keyName: 15, kbd: null, statLabel: null });
 
 test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
   const env = await suite.open(t);
@@ -1870,10 +1874,10 @@ test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in tw
         `${at}: the controls list in the second column, beside the title, the actions and the settings`);
       assert.ok(m.list.right - m.list.left > m.settings.right - m.settings.left, `${at}: the second column the wider`);
       assert.ok(m.title.bottom <= m.actions.top && m.actions.bottom <= m.settings.top, `${at}: the first column runs title, actions, Settings`);
-      assert.ok(m.rows.length > 0, `${at}: the controls list key caps`);
+      assert.ok(m.rows.length > 0, `${at}: the controls list's keys`);
       for (const row of m.rows) {
-        assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key cap row on one line`);
-        assert.ok(row.right <= m.innerRight, `${at}: a key cap row unclipped`);
+        assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key on one line`);
+        assert.ok(row.right <= m.innerRight, `${at}: a key unclipped`);
       }
       assert.deepEqual(m.fonts, PAUSE_FONTS_FINE, `${at}: every font size on the card as it was`);
 

@@ -43,7 +43,7 @@
 //                                the widest window's; narrower windows regroup the sections by
 //                                placement alone (css/style.css), and a section SETTINGS_COLUMNS does
 //                                not list joins the last column.
-// bindingsSectionHtml(glyphs?, camera?, { mode?, device? }) → the bindings list (dl.controls) of one
+// bindingsSectionHtml(glyphs?, camera?, { mode?, device? }) → the bindings list (dl.ui-controls) of one
 //                                mode (default Classic 2D) for one input device (default the keyboard;
 //                                one the mode does not list falls back to its first), controller
 //                                buttons in `glyphs`, 3D's for the Camera setting's `camera`.
@@ -311,7 +311,7 @@ export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
 export function bindingsSectionHtml(glyphs, camera, { mode = BINDING_MODES[0].id, device = 'keyboard' } = {}) {
   const devices = bindingDevices(mode);
   const shown = devices.some((d) => d.id === device) ? device : devices[0].id;
-  return `<dl class="controls">${bindingsListHtml(bindingRows(mode, shown, camera), glyphs)}</dl>`;
+  return `<dl class="ui-controls">${bindingsListHtml(bindingRows(mode, shown, camera), glyphs)}</dl>`;
 }
 
 const hasClass = (el, cls) => (el.getAttribute('class') ?? '').split(/\s+/).includes(cls);

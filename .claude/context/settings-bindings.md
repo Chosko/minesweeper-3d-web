@@ -2,29 +2,38 @@
 
 ## OVERVIEW
 
-`js/settings/bindings.js` is the one table of each mode's controls per input
-device, read by the Settings page's Bindings panel
-([settings-page.md](settings-page.md)) and by every help surface in
-`js/ui.js` — the pause card, the Controls panel the Settings page opens, the H panel,
-the HUD strip, the first-use hint strips and the one-time hints — plus the
-active device those surfaces follow. DOM-free; rebinding is not offered.
-The module's head comment lists every function.
+`js/settings/bindings.js` is the one source of each mode's controls per
+input device, in the canvas's short wording, read by the Settings page's
+Bindings panel ([settings-page.md](settings-page.md)) and by every help
+surface in `js/ui.js` — the pause card, the Controls panel the Settings page
+opens, the H panel, the 3D ready card, the HUD strip, the first-use hint
+strips and the one-time hints — plus the active device those surfaces
+follow. DOM-free; rebinding is not offered. The module's head comment lists
+every function.
 
 ## PUBLIC API
 
 - `BINDING_MODES` (`classic-2d`, `3d`), `BINDING_DEVICES` (`keyboard`,
   `controller`), `TOUCH_DEVICE` (`touch`, both modes), `bindingDevices(mode)`
   (the devices a mode lists), `BINDINGS[mode][device]` — frozen
-  `[input, action]` rows, 3D's being Fly's. `CAMERAS` (`fly`, `orbit`) and
-  `BINDINGS_3D[camera][device]` — the 3D rows per Camera setting.
-  Both modes list `[F2]` and `{start} + {y}` as Restart; 3D's keyboard rows
-  list the arrow keys (look, or rotate in Orbit) and Enter / ' (reveal /
-  flag on release, together a chord).
-- `bindingRows(mode, device, camera = 'fly')` (3D's for that camera; throws
-  on an unknown mode, device or camera),
-  `bindingsListHtml(rows, glyphs = GLYPHS.generic)` (`<dt>`/`<dd>` pairs,
-  keys as `<kbd>`, buttons as `<kbd class="pad">`, text escaped),
-  `bindingsHtml(mode, device, glyphs?, camera?)` — the bindings component.
+  `[input, action]` rows of the full list, 3D's being Fly's. `CAMERAS`
+  (`fly`, `orbit`) and `BINDINGS_3D[camera][device]` — the 3D rows per
+  Camera setting. Both modes list F2 and `{start} + {y}` as Restart; 3D's
+  keyboard rows list the arrow keys (look, or rotate in Orbit).
+- `HELP_BINDINGS` — the help list where the canvas draws it shorter than
+  the full one: Classic 2D's keyboard (J-Pause-xl) and touch (J-Pause-p)
+  rows, and 3D's keyboard rows per camera (the H panel); `READY_BINDINGS
+  [camera][keyboard | touch]` — the 3D ready card's rows.
+- `bindingRows(mode, device, camera = 'fly')` (the full rows, 3D's for that
+  camera; throws on an unknown mode, device or camera),
+  `helpRows(mode, device, camera?)` (`HELP_BINDINGS`' rows where it holds
+  the pair, the full rows otherwise), `readyRows(device, camera?)`;
+  `bindingsListHtml(rows, glyphs = GLYPHS.generic)` (the
+  `ui-controls__key` / `ui-controls__action` pairs of the kit's controls
+  list, keys and buttons in plain words with no key caps, text escaped),
+  `bindingsHtml(mode, device, glyphs?, camera?)` — the bindings component,
+  the full rows — `helpListHtml(mode, device, glyphs?, camera?)` and
+  `readyListHtml(device, glyphs?, camera?)`.
 - `HUD_STRIP`, `HINT_STRIP`, `hudStripHtml(mode, device, glyphs?, { muted,
   spacing })` (only the keys, buttons or gestures the mode binds on that
   device; F is not listed in Classic 2D, where it flags; 3D's first entry is
@@ -33,8 +42,8 @@ The module's head comment lists every function.
   is empty), `hintStripHtml(mode, device, glyphs?)` (touch: tap, long-press,
   the tap chord in Classic 2D, the Space and Shift buttons in 3D).
 - `HELP_FOOT`, `helpFootHtml(mode, device, glyphs?)` — the H panel's foot
-  line, naming the release rule in 3D only (on touch, the finger's lift;
-  Classic 2D's touch foot is empty).
+  line in plain words, naming the key that hides the panel (on touch, 3D's
+  release rule, the finger's lift; Classic 2D's touch foot is empty).
 - `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint` and the Learn 3D
   prompts `learnStart`, `learnShift`, `learnCtrl`, `learnFlag`,
   `learnChord`, `learnRest`, each for the keyboard, the controller and
@@ -56,22 +65,27 @@ The module's head comment lists every function.
 - **Row-text syntax.** `[Key]` is a keyboard key and `{name}` a controller
   button by its standard-mapping name (`a`, `b`, `x`, `y`, `lb`, `rb`, `lt`,
   `rt`, `start`, `back`), drawn in the connected pad's glyphs
-  (`js/gamepad.js` `GLYPHS`).
-- **Bindings are one table.** The Settings page shows one mode × device at
-  a time, picked by its Mode and Device choices; the pause card, the H
-  panel with its foot line and the HUD strip show the active mode's rows
-  for the active device, the Controls panel
-  the rows of its Classic 2D | 3D tab for the active device, and the hint
-  strip its mode's strip — on a coarse-only device all of them touch's,
-  unless a controller is in use (`UI._bindDevice`,
-  [app-shell-help.md](app-shell-help.md)). A row's text is edited in `BINDINGS` (`HUD_STRIP`, `HINT_STRIP`,
-  `HELP_FOOT`, `HINT_TEXT` for those surfaces), never in markup, so a later
-  rebinding feature reaches every surface through this source.
-- **Camera-selected rows.** 3D's rows are one table per device (`ROWS_3D`)
-  whose string entries are slots — `look`, `move`, `wheel` (keyboard),
-  `sticks`, `buttons` (controller), `stick`, `drag` (touch) — filled from
-  `CAMERA_ROWS[camera]`, so a row that does not change with the camera is
-  written once. Every 3D surface passes the Camera setting's value
+  (`js/gamepad.js` `GLYPHS`): plain words in the controls lists and the
+  help foot, key caps in the HUD and hint strips.
+- **Bindings are one source, three lists.** The Settings page shows one
+  mode × device's full rows at a time, picked by its Mode and Device
+  choices, and the Controls panel the full rows of its Classic 2D | 3D tab
+  for the active device; the pause card and the H panel (with its foot
+  line) show the active mode's help rows for the active device, and the HUD
+  strip that mode's strip; the ready card its short rows, touch's on a
+  coarse-only device; the hint strip its mode's strip — on a coarse-only
+  device all of them touch's, unless a controller is in use
+  (`UI._bindDevice`, [app-shell-help.md](app-shell-help.md)). A row's text
+  is edited in `BINDINGS`, `HELP_BINDINGS` or `READY_BINDINGS` (`HUD_STRIP`,
+  `HINT_STRIP`, `HELP_FOOT`, `HINT_TEXT` for those surfaces), never in
+  markup, so a later rebinding feature reaches every surface through this
+  source.
+- **Camera-selected rows.** 3D's rows are one table per device and list
+  (`ROWS_3D`, `HELP_3D`, `READY_3D`) whose string entries are slots —
+  `look`, `mouse`, `move`, `wheel` (keyboard), `sticks`, `buttons`
+  (controller), `stick`, `drag` (touch), the `ready…` ones for the ready
+  card — filled from `CAMERA_ROWS[camera]`, so a row that does not change
+  with the camera is written once. Every 3D surface passes the Camera setting's value
   (`UI.setCamera`, [app-shell-ui.md](app-shell-ui.md)); Classic 2D ignores
   `camera`.
 
@@ -95,7 +109,7 @@ The module's head comment lists every function.
 ## WHEN TO READ THE SOURCE
 
 - Changing a mode's listed bindings, a strip's or hint's words, or adding a
-  mode or device: `BINDINGS`, the strip and hint tables and the row-text
-  syntax in `bindings.js`.
+  mode or device: `BINDINGS`, `HELP_BINDINGS`, `READY_BINDINGS`, the strip
+  and hint tables and the row-text syntax in `bindings.js`.
 - Changing a 3D row for one camera, or adding a camera: `ROWS_3D`'s slots and
   `CAMERA_ROWS`.

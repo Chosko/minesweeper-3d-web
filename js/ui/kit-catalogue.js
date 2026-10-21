@@ -214,6 +214,8 @@ export const KIT_CATALOGUE = Object.freeze([
       part('outcome', '.ui-list-row .ui-chip', { as: 'ui-chip' }),
     ],
   }),
+  // The controls list: one binding per ruled row, the key in plain words and its action.
+  component('ui-controls', { parts: [part('key', '.ui-controls__key'), part('action', '.ui-controls__action')] }),
   // --live while the 3D renderer draws through it; a preview with no board is a card in the stage,
   // its badge in the accent its data-entry names.
   component('ui-scene-panel', {

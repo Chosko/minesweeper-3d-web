@@ -13,7 +13,7 @@ import {
   createFirstUse, stripShown, createDwell, aimHintCell, hidCube,
 } from '../js/shell/first-use.js';
 import { GLYPHS } from '../js/gamepad.js';
-import { hintStripHtml, hintText } from '../js/settings/bindings.js';
+import { hintStripHtml, hintText, readyRows } from '../js/settings/bindings.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
 
@@ -332,16 +332,15 @@ const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const UI = read('js/ui.js');
 
-test('the ready card holds the "How 3D works" block and the Space and Shift line', () => {
+test('the ready card holds the "How 3D works" block and the view modes\' row', () => {
   const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
-  const rules = ready.slice(ready.indexOf('id="ready-rules"'), ready.indexOf('class="ready-keys"'));
+  const rules = ready.slice(ready.indexOf('id="ready-rules"'), ready.indexOf('id="ready-keys"'));
   assert.match(rules, /class="ui-panel ui-panel--muted[^"]*"/, 'a muted panel');
   assert.match(rules, /<div class="ui-section-label"><h3 class="ui-section-label__text" id="ready-rules-title">How 3D works<\/h3><\/div>/, 'under its section label');
   assert.match(text(ready), /A number counts the mines among the 26 cubes around it/);
   assert.match(text(ready), /Empty and solved cubes hide themselves; hold Ctrl to show them/);
   assert.match(text(ready), /The first click is always safe/);
-  assert.match(text(ready), /Hold Space to aim through numbers, Shift to see a number's neighbours/);
-  assert.doesNotMatch(ready, /view modes/);
+  assert.deepEqual(readyRows('keyboard').find(([input]) => input.includes('[Space]')), ['[Shift] · [Space] · [Ctrl]', 'view modes'], 'Shift, Space and Ctrl as the view modes');
   assert.match(MAIN, /FIRST_USE\.rules3D/, 'the block shows until a 3D game is finished');
 });
 

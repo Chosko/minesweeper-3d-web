@@ -618,6 +618,19 @@
      Name:    list: aria-label
      Layout:  the rows share their columns; the board is optional.
 
+   ui-controls — the controls list: one binding per ruled row
+     Element: <dl class="ui-controls">
+                <dt class="ui-controls__key">W A S D</dt>
+                <dd class="ui-controls__action">Fly</dd> …
+              </dl>
+     Role:    a description list of term and definition
+     Name:    none of its own; the heading over it names it
+     Layout:  two columns, the key in plain words (no key caps) on the
+              left and its action at the right edge, a rule over each
+              row. Its rows come from the bindings source
+              (js/settings/bindings.js) on the pause card, the 3D ready
+              card, the H panel, the Controls panel and the Settings page.
+
    ui-scene-panel — a framed region a mode's own renderer draws into
      Element: <figure class="ui-scene-panel" aria-labelledby="T">
                 <div class="ui-scene-panel__stage">[the drawn preview]</div>
@@ -880,8 +893,8 @@
      its section label; Audio holds Sound, on while sound plays, then
      Volume; Controls ends in its Controls action. Bindings: a ui-row of
      the Mode (Classic 2D, 3D) and Device (Keyboard and mouse, Controller,
-     Touch) ui-segmented choices over the read-only list of that pair (the
-     help panel's controls list). Data: a ui-text--muted line saying what
+     Touch) ui-segmented choices over the read-only ui-controls list of
+     that pair, its full rows. Data: a ui-text--muted line saying what
      the export saves, a ui-text--muted nothing-to-export line and a
      ui-actions--row of "Export history (CSV)" and "Export all (JSON)"
      secondary buttons; a ui-divider; a ui-text--muted line, the "Reset
@@ -980,8 +993,8 @@
      Settings ui-panel--muted under its ui-section-label (the Sound switch
      and volume, then the look sensitivity and invert Y controls on a 3D
      game's card only; data-setting like the Settings page's), and the
-     Controls ui-panel (#pause-list: a ui-card__title over the active mode's
-     controls list for the active device, one binding per row). At 1024 px
+     Controls ui-panel (#pause-list: a ui-card__title over the ui-controls
+     help list of the active mode for the active device). At 1024 px
      and wider the Controls panel sits alone in the second, wider column and
      the Settings panel in the first, under the actions, so the card fits a
      1024 × 768 window unscrolled; below 1024 px everything is one column in
@@ -998,8 +1011,9 @@
      primary; once the browser blocks the lock, the drag-to-look primary
      and its controller line; a ui-panel--muted "How 3D works" under its
      ui-section-label and the ui-banner Learn 3D line with its
-     ui-button--sm, both until 3D is learned; the device's key list in
-     rows; the fullscreen tip. Narrower below 1200 px; on a phone held
+     ui-button--sm, both until 3D is learned; the ui-controls list of the
+     ready card's short rows, touch's on a coarse-only device; the
+     fullscreen tip. Narrower below 1200 px; on a phone held
      sideways the actions and the lists sit in two columns. Default
      focus: Click to play.
    Context lost (index.html #ctx-lost): a message ui-card at the canvas's width,
@@ -1800,6 +1814,12 @@
 .ui-list-row__board { grid-column: 2; min-width: 0; overflow-wrap: anywhere; }
 .ui-list-row__figure { grid-column: 3; font-variant-numeric: var(--font-numeric-tabular); text-align: right; white-space: nowrap; }
 .ui-list-row > .ui-chip { grid-column: 4; justify-self: start; }
+
+/* ---------- controls list: a key and its action per row ---------- */
+.ui-controls { display: grid; grid-template-columns: max-content minmax(0, 1fr); margin: 0; }
+.ui-controls__key, .ui-controls__action { margin: 0; padding: var(--space-1) 0; }
+.ui-controls__key { padding-inline-end: var(--space-3); }
+.ui-controls__action { text-align: end; }
 
 /* ---------- wordmark: one centred line, sized with the window ---------- */
 .ui-wordmark {

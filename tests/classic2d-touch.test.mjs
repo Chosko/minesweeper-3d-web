@@ -649,7 +649,7 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     const pauseRows = await ms(() => document.getElementById('pause-controls').textContent);
     assert.match(pauseRows, /Long-press/, 'the pause card shows the touch rows');
     assert.match(pauseRows, /Tap a number/);
-    assert.match(pauseRows, /Two fingers/);
+    assert.match(pauseRows, /PinchZoom/);
     assert.doesNotMatch(pauseRows, /Move the cursor|Right click|Wheel/, 'and no mouse or keyboard row');
     assert.deepEqual(errors, []);
   } finally {

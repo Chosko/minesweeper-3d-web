@@ -253,10 +253,10 @@ kbd {
 /* ---------- the 3D ready card ---------- */
 /* A kit card over the scene: Back with its key hint beside the board line, the refusal's warn note,
    Click to play as the one large action, the drag-to-look offer once the lock is blocked, the "How 3D
-   works" panel, the Learn 3D line, then the device's key list in rows and the fullscreen tip. Narrower
-   below a 1200 px window; on a phone held sideways the actions and the lists sit side by side. On a
-   coarse-only device (#ready.ready--touch, UI.setTouch3D) it reads Tap to play, lists the touch gestures
-   in place of the keys, and its rules name the toolbar's Ctrl button. */
+   works" panel, the Learn 3D line, then the controls list's short rows (#ready-keys) and the fullscreen
+   tip. Narrower below a 1200 px window; on a phone held sideways the actions and the lists sit side by
+   side. On a coarse-only device (#ready.ready--touch, UI.setTouch3D) it reads Tap to play, lists the
+   touch gestures in place of the keys, and its rules name the toolbar's Ctrl button. */
 .ready-body { width: min(640px, 100%); gap: var(--space-3); }
 .ready-main, .ready-aside { display: contents; }
 .ready-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
@@ -264,7 +264,7 @@ kbd {
 .ready-play { width: 100%; }
 #ready-rules { order: 1; }
 #ready-learn { order: 2; }
-.ready-keys, .ready-touch, .ready-pad, .ready-tip { order: 3; }
+.ready-keys, .ready-pad, .ready-tip { order: 3; }
 .ready-rules { display: flex; flex-direction: column; gap: var(--space-1); }
 .ready-rules .ui-text { font-size: var(--font-size-sm); }
 .ready-rules-touch, .ready--touch .ready-rules-keys { display: none; }
@@ -272,11 +272,8 @@ kbd {
 .ready-learn { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .ready-learn > .ui-button { flex: none; }
 .ready-blocked { display: flex; flex-direction: column; gap: var(--space-2); }
-.ready-keys, .ready--touch .ready-touch { display: flex; flex-direction: column; font-size: var(--font-size-sm); line-height: 1.5; }
-.ready-keys > span, .ready-touch > span { padding: var(--space-1) 0; }
-.ready-keys b, .ready-touch b, .ready-pad b { font-weight: var(--font-weight-bold); }
-.ready-touch { display: none; }
-.ready--touch .ready-keys, .ready--touch .ready-tip { display: none; }
+.ready-pad b { font-weight: var(--font-weight-bold); }
+.ready--touch .ready-tip { display: none; }
 .ready-tip { font-size: var(--font-size-xs); }
 @media (max-width: 1199px) { .ready-body { width: min(560px, 100%); } }
 @media (max-width: 719px) { .ready-body { padding: var(--space-4); } }
@@ -314,12 +311,6 @@ kbd {
 /* A Learn 3D step's place ("1 / 4") before its prompt. */
 .hint-step { font-weight: var(--font-weight-bold); font-variant-numeric: var(--font-numeric-tabular); white-space: nowrap; }
 
-
-/* ---------- controls list ---------- */
-.controls { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
-.controls dt { font-weight: var(--font-weight-bold); white-space: nowrap; }
-.controls dd { margin: 0; }
-.controls.compact { grid-template-columns: max-content 1fr max-content 1fr; font-size: 13px; }
 
 /* ---------- Classic 2D game window ---------- */
 /* The window covers the 3D scene on its backdrop and hugs its content, centred in the room above the
@@ -561,14 +552,14 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 .chip.on { display: inline-flex; }
 .chip__icon { flex: none; }
 
+/* The H help panel: a card of the help list under its title, the foot line under it. */
 #help {
   position: fixed; right: 16px; top: 64px; z-index: var(--z-help);
-  width: min(380px, calc(100vw - 32px));
-  padding: 14px 18px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 18px 20px;
   pointer-events: none;
 }
-#help h3 { margin: 0 0 10px; font-size: 13px; font-weight: var(--font-weight-bold); text-transform: uppercase; letter-spacing: 0.1em; }
-#help .controls { font-size: 13px; }
+#help-title { margin: 0 0 6px; }
 /* The board choices, Classic 2D (#c2d-choice) and 3D (#board-choice), on the page's backdrop: the
    wordmark pinned at the top and the window sized to its content, centred on the page between two
    spacers — the one above never shorter than the wordmark's band, so a page too short for both
@@ -700,7 +691,7 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
   #coming-soon { padding: 0; }
   #coming-soon-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
 }
-.help-foot { margin: 10px 0 0; font-size: 12px; }
+.help-foot { margin: 6px 0 0; }
 .help-foot .pad-note { display: block; margin: 8px 0 0; }
 
 #flash { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-flash); opacity: 0; }
@@ -710,7 +701,6 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 :is(.fatal, .noscript, .not-found) > .ui-card { width: min(560px, 100%); }
 
 @media (max-width: 760px) {
-  .controls.compact { grid-template-columns: max-content 1fr; }
   .hud-tools { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {

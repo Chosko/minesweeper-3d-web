@@ -218,9 +218,9 @@
   </div>
 
   <!-- Controls help (toggle with H) -->
-  <aside id="help" class="hud-panel hidden" aria-label="Controls">
-    <h3>Controls</h3>
-    <dl class="controls"></dl>
+  <aside id="help" class="hud-panel hidden" aria-labelledby="help-title">
+    <h3 class="ui-card__title" id="help-title">Controls</h3>
+    <dl class="ui-controls"></dl>
     <p id="help-foot" class="help-foot"></p>
   </aside>
 
@@ -382,21 +382,7 @@
           </p>
           <p class="ui-text">The first click is always safe.</p>
         </div>
-        <span class="ready-keys">
-          <span><b>Left</b> reveal &middot; <b>Right</b> flag &middot; <b>Left+Right</b> chord</span>
-          <span><b>Arrows</b> look &middot; <kbd>Enter</kbd> reveal &middot; <kbd>'</kbd> flag &middot; <kbd>Enter</kbd>+<kbd>'</kbd> chord</span>
-          <span><b>Right</b> on a number flags all its closed cubes &middot; <b>Right</b> again takes back only those</span>
-          <span>Hold <kbd>Space</kbd> to aim through numbers, <kbd>Shift</kbd> to see a number's neighbours</span>
-          <span data-camera="fly"><b>Mouse</b> look &middot; <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> fly &middot; <kbd>Q</kbd>/<kbd>E</kbd> down/up &middot; <kbd>Home</kbd>/<kbd>R</kbd> back to start &middot; <kbd>Esc</kbd> pause</span>
-          <span data-camera="orbit" class="hidden"><b>Mouse</b> / <b>Arrows</b> / <kbd>A</kbd><kbd>D</kbd> rotate &middot; <b>Wheel</b> / <kbd>W</kbd><kbd>S</kbd> in/out &middot; <kbd>Home</kbd>/<kbd>R</kbd> back to start &middot; <kbd>Esc</kbd> pause</span>
-        </span>
-        <span class="ready-touch">
-          <span><b>Tap</b> reveal &middot; <b>Long-press</b> flag &middot; <b>Two-finger tap</b> chord</span>
-          <span><b>Long-press</b> a number flags all its closed cubes &middot; again takes back only those</span>
-          <span data-camera="fly"><b>Left thumb</b> stick to fly &middot; <b>Drag</b> the right half to look</span>
-          <span data-camera="orbit" class="hidden"><b>Left thumb</b> stick up/down to move in/out &middot; <b>Drag</b> the right half to rotate</span>
-          <span><b>Pinch</b> spacing &middot; <b>Shift</b>, <b>Space</b> and <b>Ctrl</b> on the right: a tap turns each on or off &middot; <b>Pause</b> at the top</span>
-        </span>
+        <dl id="ready-keys" class="ui-controls ready-keys"></dl>
         <span id="ready-pad" class="ready-pad hidden"></span>
         <p class="ui-text ui-text--muted ready-tip">Tip: press <kbd>F</kbd> for fullscreen &mdash; keeps <kbd>Ctrl</kbd>+<kbd>W</kbd> from closing the tab</p>
       </div>
@@ -411,7 +397,7 @@
         <button type="button" id="controls-close" class="hint-close modal-close" aria-label="Close">&times;</button>
       </div>
       <div id="controls-tabs" class="ui-segmented" role="radiogroup" aria-label="Mode"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="classic-2d">Classic 2D</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="3d" tabindex="-1">3D</button></div>
-      <dl id="controls-body" class="controls"></dl>
+      <dl id="controls-body" class="ui-controls"></dl>
     </div>
   </section>
 
@@ -782,7 +768,7 @@
         </div>
         <aside id="pause-list" class="ui-panel" aria-labelledby="pause-list-title">
           <h3 class="ui-card__title" id="pause-list-title">Controls</h3>
-          <dl id="pause-controls" class="controls"></dl>
+          <dl id="pause-controls" class="ui-controls"></dl>
         </aside>
       </div>
     </section>

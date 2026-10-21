@@ -414,8 +414,8 @@ test('in a browser, a 3D board plays with the keyboard alone: arrows look, Enter
       window.addEventListener('keydown', (e) => globalThis.__prevented.push([e.code, e.defaultPrevented]));
     });
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'ready');
-    const readyKeys = await ms(() => document.querySelector('#ready .ready-keys').textContent.replace(/\s+/g, ' '));
-    assert.match(readyKeys, /Arrows look · Enter reveal · ' flag · Enter\+' chord/, 'the ready card lists the keyboard keys');
+    const readyKeys = await ms(() => document.querySelector('#ready .ready-keys').textContent);
+    assert.match(readyKeys, /W A S Dfly/, 'the ready card lists the keyboard keys');
 
     // Enter on the ready card asks for pointer lock as a click does; held into play, its release reveals nothing
     await ms(() => document.getElementById('ready-btn').focus());

@@ -94,7 +94,7 @@ bind.
     back key hint, `#ready-board`, `#ready-msg`, `#ready-btn` around
     `.ready-title`, `#ready-blocked` with `#ready-drag`, the `ui-banner`
     `#ready-learn` with `#ready-learn-btn` — and `.ready-aside` — the
-    `ui-panel--muted` `#ready-rules`, `.ready-keys`, `.ready-touch`,
+    `ui-panel--muted` `#ready-rules`, the controls list `#ready-keys`,
     `#ready-pad`, the tip — one column ordered as J-Ready draws it, two
     side by side on a phone held sideways); the context-lost card
     `#ctx-lost` (`#ctx-lost-btn` with the refresh icon, `#ctx-lost-menu`); the Learn 3D end card

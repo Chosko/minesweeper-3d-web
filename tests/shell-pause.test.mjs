@@ -551,7 +551,7 @@ test('the pause card in the shared layout: the card and its settings in one colu
   assert.ok(at('id="pause-title"') < at('id="pause-actions"') && at('id="pause-actions"') < at('id="p-settings-title"')
     && at('id="p-settings-title"') < at('<aside id="pause-list"'), 'the title and actions, then Settings, then the Controls card');
   assert.match(card, /<p id="pause-board" class="ui-text"><\/p>/, 'the board line in the ink');
-  assert.match(card, /<aside id="pause-list" class="ui-panel" aria-labelledby="pause-list-title">\s*<h3 class="ui-card__title" id="pause-list-title">Controls<\/h3>\s*<dl id="pause-controls" class="controls"><\/dl>\s*<\/aside>/,
+  assert.match(card, /<aside id="pause-list" class="ui-panel" aria-labelledby="pause-list-title">\s*<h3 class="ui-card__title" id="pause-list-title">Controls<\/h3>\s*<dl id="pause-controls" class="ui-controls"><\/dl>\s*<\/aside>/,
     'the Controls panel: its title over one binding per row');
   // The actions with the key hints of the keys that work on the card: Back (Esc) resumes, F2 restarts.
   const actions = card.slice(at('id="pause-actions"'), at('id="pause-confirm"'));

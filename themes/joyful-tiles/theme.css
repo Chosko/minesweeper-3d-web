@@ -1072,6 +1072,12 @@
   box-shadow: 0 0 0 10px var(--color-focus-halo) !important;
 }
 
+/* ---------- controls list: a rule over each row, the key in ink, its action muted ---------- */
+:root[data-theme="joyful-tiles"] .ui-controls { font-size: 15px; }
+:root[data-theme="joyful-tiles"] :is(.ui-controls__key, .ui-controls__action) { padding-block: 6px; border-top: 1px solid var(--color-line); }
+:root[data-theme="joyful-tiles"] .ui-controls__key { font-weight: var(--font-weight-bold); color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-controls__action { color: var(--color-ink-muted); }
+
 /* ---------- table ---------- */
 :root[data-theme="joyful-tiles"] .ui-table th { color: var(--color-ink-muted); }
 :root[data-theme="joyful-tiles"] .ui-table th[scope="row"] { color: var(--color-ink); }
@@ -1234,12 +1240,12 @@
 }
 
 /* the cards over the scene — the 3D ready card, the context-lost card and the Learn 3D end card — pop in;
-   the ready card's key list sits in ruled rows, keys in ink and their actions muted */
+   the ready card's controls list sits closer */
 @keyframes joyful-tiles-pop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
 :root[data-theme="joyful-tiles"] :is(#ready, #ctx-lost, #learn-end) > .ui-card { animation: joyful-tiles-pop var(--duration-slow) var(--easing-out); }
-:root[data-theme="joyful-tiles"] :is(.ready-keys, .ready-touch, .ready-pad, .ready-tip) { color: var(--color-ink-muted); }
-:root[data-theme="joyful-tiles"] :is(.ready-board, .ready-keys b, .ready-touch b, .ready-pad b) { color: var(--color-ink); }
-:root[data-theme="joyful-tiles"] :is(.ready-keys, .ready-touch) > span { border-top: 1px solid var(--color-line); }
+:root[data-theme="joyful-tiles"] :is(.ready-pad, .ready-tip) { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] :is(.ready-board, .ready-pad b) { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] #ready-keys :is(.ui-controls__key, .ui-controls__action) { padding-block: 5px; }
 
 /* the Controls modal and the H help panel */
 :root[data-theme="joyful-tiles"] .modal-card {
@@ -1249,8 +1255,16 @@
   box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2);
   animation: joyful-tiles-pop var(--duration-slow) var(--easing-out);
 }
-:root[data-theme="joyful-tiles"] :is(.modal-head h3, #help h3, .help-foot, .controls dd, .hud-tools) { color: var(--color-ink-muted); }
-:root[data-theme="joyful-tiles"] .controls dt { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] :is(.modal-head h3, .help-foot, .hud-tools) { color: var(--color-ink-muted); }
+/* the H help panel: a card, its title in heavy ink and its foot line under the list */
+:root[data-theme="joyful-tiles"] #help {
+  border-radius: 22px;
+  box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2);
+}
+:root[data-theme="joyful-tiles"] :is(#help-title, #pause-list-title) { font-size: 22px; font-weight: var(--font-weight-heavy); color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .help-foot { font-size: 14px; }
+/* the pause card's Controls panel: the inset border alone, no edge below it */
+:root[data-theme="joyful-tiles"] #pause-list { box-shadow: inset 0 0 0 2px var(--color-border); }
 :root[data-theme="joyful-tiles"] .hint-close {
   border-radius: var(--radius-sm);
   background: transparent;
