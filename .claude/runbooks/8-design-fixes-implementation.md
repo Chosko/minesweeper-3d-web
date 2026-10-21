@@ -178,7 +178,7 @@ Context: none
 
 Done: 2026-10-20, commits `4408553`, `f9e0595` (24 files, +405/-153). Decisions: previews and the replay viewer mount with `framed: true` and the view builds the frame; a scrolling board shows no frame and is clipped at `--board-viewport-radius`; the replay viewer always fits the whole board; the menu (1024×768) and replay (1920×1080) preview tile sizes are left unpinned for tasks 228 and 239.
 
-## [ ] 15. Implement task 228 — Main menu: mode entries, scene panel, per-size layout, build label and scroll
+## [~] 15. Implement task 228 — Main menu: mode entries, scene panel, per-size layout, build label and scroll
 
 Depends on: 7, 10
 
@@ -202,7 +202,7 @@ Context:
 /task-implement 229 --review
 ```
 
-## [ ] 17. Implement task 230 — Board choice screens to the canvas
+## [~] 17. Implement task 230 — Board choice screens to the canvas
 
 Depends on: 6, 8, 9, 10
 
@@ -212,7 +212,7 @@ Context: none
 /task-implement 230 --review
 ```
 
-## [ ] 18. Implement task 231 — Classic 2D window layout and HUD density
+## [~] 18. Implement task 231 — Classic 2D window layout and HUD density
 
 Depends on: 10, 14
 
@@ -232,7 +232,7 @@ Context: none
 /task-implement 232 --review
 ```
 
-## [ ] 20. Implement task 233 — Controls and bindings lists as one ruled two-column part
+## [~] 20. Implement task 233 — Controls and bindings lists as one ruled two-column part
 
 Depends on: 10
 
@@ -274,7 +274,7 @@ Context: none
 /task-implement 236 --review
 ```
 
-## [ ] 24. Implement task 237 — Results screen to the canvas
+## [~] 24. Implement task 237 — Results screen to the canvas
 
 Depends on: 9, 10
 
@@ -295,7 +295,7 @@ Context: none
 /task-implement 238 --review
 ```
 
-## [ ] 26. Implement task 239 — Replay viewer to the canvas
+## [~] 26. Implement task 239 — Replay viewer to the canvas
 
 Depends on: 9, 10, 14
 
@@ -307,11 +307,17 @@ Context:
 /task-implement 239 --review
 ```
 
-## [~] 27. Implement task 240 — Settings screen to the canvas
+## [P] 27. Implement task 240 — Settings screen to the canvas
 
 Depends on: 2, 6, 8
 
-Context: none
+Context:
+- 2026-10-21 parked: Q1. Task 240's Frame criterion says that at 1920 × 1080 everything fits without the body scrolling, with the 3D bindings shown. The shipped 3D keyboard list uses long sentence rows, and with it the body overflows by about 190 px. With the canvas's short rows, which task 233 owns and which have not landed, the page would fit. With the opening Classic 2D list it fits today, and the browser test asserts that. How should 240 close?
+  a. Move the "fits with 3D bindings shown" clause to task 233 (amend both through /pipeline-revise) and land 240 as it is.
+  b. Hold 240 until 233 lands, then assert the fit with 3D selected.
+  c. Make the Bindings panel scroll its list inside the panel, so the page never scrolls whatever the list. The canvas does not draw this.
+  Recommendation: a. The overflow comes only from the list's wording, and that wording is task 233's.
+  (The work is on pushed branch `park/task-240`, commit 616236f; its unpark may conflict with task 223 on index.html, css/style.css, css/components.css.)
 
 ```prompt
 /task-implement 240 --review

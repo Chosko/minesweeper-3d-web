@@ -41,5 +41,6 @@ File: .claude/runbooks/8-design-fixes-implementation.md
 Created: 2026-10-20
 Source: /runbook-create interview
 Steps: 15/34
+Parked: steps 27
 
 ---
