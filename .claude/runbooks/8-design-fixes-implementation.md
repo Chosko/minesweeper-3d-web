@@ -434,7 +434,7 @@ Context:
 
 Done: 2026-10-20, commit `a0771f1` (7 files, +41/-30).
 
-## [~] 34. Implement task 247 — Update documentation for feature `theme-system`
+## [x] 34. Implement task 247 — Update documentation for feature `theme-system`
 
 Depends on: 30
 
@@ -444,3 +444,5 @@ Context:
 ```prompt
 /task-implement 247 --review
 ```
+
+Done: 2026-10-21, commit `0bf3d39` (7 files, +36/-14).
