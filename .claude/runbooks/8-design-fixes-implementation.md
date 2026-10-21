@@ -351,6 +351,7 @@ Context:
   (The work is on pushed branch `park/task-240`, commit 616236f; its unpark may conflict with task 223 on index.html, css/style.css, css/components.css.)
 - 2026-10-21 unparked with answer: Q1 a
 - 2026-10-21 (from step 20): task 233 landed the short rows and a browser test that the Settings page fits at 1920 × 1080 with the 3D bindings shown; task 233's body does not yet carry that clause, so the /pipeline-revise amendment of both tasks is still to make.
+- 2026-10-21: the user chose to redo task 240 from scratch on the current base: the parked work was discarded (task back to `[MISSING]`, handoff removed); `park/task-240` (616236f) stays only as a reference for the Settings-specific changes, never to cherry-pick. Since task 233 landed the short rows, assert the Frame criterion's 3D fit as written; the Q1 a answer applies only if it still fails.
 
 ```prompt
 /task-implement 240 --review
