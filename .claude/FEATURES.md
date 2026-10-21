@@ -319,10 +319,10 @@ Tasks: 254, 255, 256, 257
 
 ## triangle-grid — Triangle grid: graph, generation kind, geometry, standard boards, limits, identity and code token
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/triangle-grid.md
 Source: product-design.md § Triangle (m2c-flat-grids)
-Tasks: none
+Tasks: 258, 259, 260, 261
 
 ---
 

@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 257
+Last task number: 261
 
 ---
 
@@ -1446,5 +1446,45 @@ Target: claude
 Files: .claude/context/engine.md, .claude/context/generation.md, .claude/context/records.md, .claude/context/records-board-code.md, .claude/context/classic2d.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/hexagon-grid.md
 Preconditions: 254, 255, 256
 Feature: hexagon-grid
+
+---
+
+## 258. Triangle graph provider and the `tri` generation description
+
+Status: [MISSING]
+Target: claude
+Files: js/engine/tri-grid.js, js/generation/generate.js, js/generation/start-cell.js, js/generation/worker.js, js/generation/solver.js, tests/engine-tri-grid.test.mjs, tests/generation-solver.test.mjs, tests/generation-noguess.test.mjs
+Preconditions: none
+Feature: triangle-grid
+
+---
+
+## 259. Triangle geometry
+
+Status: [MISSING]
+Target: claude
+Files: js/geometry/tri.js, js/geometry/index.js, tests/geometry-tri.test.mjs
+Preconditions: 248
+Feature: triangle-grid
+
+---
+
+## 260. Triangle boards, limits, identity and board-code token
+
+Status: [MISSING]
+Target: claude
+Files: js/triangle/board-setup.js, js/records/board.js, js/records/board-code.js, tests/triangle-board-setup.test.mjs, tests/records-board.test.mjs, tests/records-board-code.test.mjs
+Preconditions: 256, 258
+Feature: triangle-grid
+
+---
+
+## 261. Update documentation for feature `triangle-grid`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/engine.md, .claude/context/generation.md, .claude/context/records.md, .claude/context/records-board-code.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/triangle-grid.md
+Preconditions: 258, 259, 260
+Feature: triangle-grid
 
 ---
