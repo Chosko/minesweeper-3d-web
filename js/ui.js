@@ -214,16 +214,19 @@ export class UI {
     note.classList.toggle('hidden', !on);
   }
   /**
-   * On a coarse-only device both modes play by touch: the ready card reads "Tap to play" and lists the
-   * touch gestures in place of the key list, its rules name the toolbar's Ctrl button and its Back shows
-   * no key hint (the bindings source has none on touch), the help surfaces of either mode list its touch rows and
-   * the clipped Classic 2D board's hint names the touch gestures.
+   * On a coarse-only device both modes play by touch: the ready card reads "Tap to play" with the hand
+   * icon and lists the touch gestures in place of the key list, its rules name the toolbar's Ctrl button
+   * and its Back shows no key hint (the bindings source has none on touch), the help surfaces of either
+   * mode list its touch rows and the clipped Classic 2D board's hint names the touch gestures.
    */
   setTouch3D(on) {
     this._touch = !!on;
     const btn = $('ready-btn');
+    const title = this._touch ? 'Tap to play' : 'Click to play';
     this.el.ready.classList.toggle('ready--touch', this._touch);
-    btn.querySelector('.ready-title').textContent = this._touch ? 'Tap to play' : 'Click to play';
+    btn.querySelector('.ready-title').textContent = title;
+    $('ready-heading').textContent = title;
+    setButtonIcon(btn, this._touch ? 'hand' : 'mouse');
     this.el.ready.setAttribute('aria-label', this._touch ? 'Tap to play' : 'Click to play');
     this._renderBindings();
   }
@@ -231,16 +234,18 @@ export class UI {
   setTouchModes(modes) {
     for (const b of document.querySelectorAll('#touch-modes [data-mode]')) b.setAttribute('aria-pressed', String(!!modes[b.dataset.mode]));
   }
-  /** The touch stick under the thumb: { x0, y0, x, y } in scene pixels (base and knob), or null to hide it. */
+  /**
+   * The touch stick: under the thumb while it is used — { x0, y0, x, y } in scene pixels (base and
+   * knob) — or null to draw it at rest in its corner, the knob centred.
+   */
   setStick(view) {
     const key = view ? `${view.x0},${view.y0},${view.x},${view.y}` : '';
     if (key === this._stick) return;
     this._stick = key;
-    const el = $('touch-stick');
+    const el = $('touch-stick'), knob = $('touch-stick-knob');
     el.classList.toggle('on', !!view);
-    if (!view) return;
-    el.style.transform = `translate(${view.x0}px, ${view.y0}px)`;
-    $('touch-stick-knob').style.transform = `translate(${view.x - view.x0}px, ${view.y - view.y0}px)`;
+    el.style.transform = view ? `translate(${view.x0}px, ${view.y0}px) translate(-50%, -50%)` : '';
+    knob.style.transform = view ? `translate(${view.x - view.x0}px, ${view.y - view.y0}px)` : '';
   }
 
   /**
@@ -645,7 +650,7 @@ export class UI {
     this.el.crosshair.classList.toggle('off', !on);
   }
   /**
-   * The off-screen arrow on the crosshair ring: `angle` in radians on screen (0 = right, PI/2 = up)
+   * The off-screen arrow beside the crosshair, turned about its centre: `angle` in radians on screen (0 = right, PI/2 = up)
    * toward the box, or null to hide it. Touches the DOM only on change.
    */
   setArrow(angle) {

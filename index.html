@@ -198,8 +198,8 @@
     </div>
     <div id="hud-tools" class="hud-panel hud-tools"></div>
     <div id="crosshair" class="off" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 28 28"><path class="crosshair__halo" d="M14 2v8M14 18v8M2 14h8M18 14h8"/><path class="crosshair__line" d="M14 3v7M14 18v7M3 14h7M18 14h7"/></svg></div>
-    <div id="crosshair-arrow" class="hidden" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 40 40"><path class="crosshair-arrow__halo" d="M6 20h22M20 10l10 10-10 10"/><path class="crosshair-arrow__line" d="M6 20h22M20 10l10 10-10 10"/></svg></div>
-    <div id="aim-readout" class="hidden" aria-hidden="true"><svg class="aim-icon aim-icon--cube" viewBox="0 0 16 16" aria-label="cubes"><rect x="2" y="2" width="12" height="12" rx="2.5"/></svg> <span id="aim-cubes">0</span><span id="aim-flag-part" class="hidden"> - <svg class="aim-icon aim-icon--flag" viewBox="0 0 16 16" aria-label="flags"><path class="aim-icon__pole" d="M4.5 1.5v13"/><path class="aim-icon__cloth" d="M5 2l9 3.5L5 9z"/></svg> <span id="aim-flags">0</span></span></div>
+    <div id="crosshair-arrow" class="hidden" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 40 40"><path class="crosshair-arrow__halo" d="M6 20h22M20 10l10 10-10 10"/><path class="crosshair-arrow__line" d="M6 20h22M20 10l10 10-10 10"/></svg></div>
+    <div id="aim-readout" class="hidden" aria-hidden="true"><svg class="aim-icon aim-icon--cube" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-label="cubes"><path d="M12 2l9 5v10l-9 5-9-5V7z"/></svg> <span id="aim-cubes">0</span><span id="aim-flag-part" class="hidden"> <span class="aim-sep">-</span> <svg class="aim-icon aim-icon--flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-label="flags"><path d="M5 21V4"/><path d="M5 4h12l-3 4 3 4H5"/></svg> <span id="aim-flags">0</span></span></div>
     <div id="hint-strip" class="hud-panel hidden" role="note"><span id="hint-strip-step" class="hint-step hidden"></span><span id="hint-strip-text"></span><button type="button" id="hint-strip-close" class="hint-close" aria-label="Dismiss hint"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="mode-chips" aria-hidden="true">
       <span id="chip-shift" class="chip"><svg class="chip__icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Shift: neighbours only</span>
@@ -357,19 +357,20 @@
   <section id="ready" class="overlay hidden" aria-label="Click to play">
     <section class="ui-card ui-screen ready-body" aria-labelledby="ready-title">
       <div class="ready-main">
+        <h2 class="ui-card__title ready-heading" id="ready-heading" aria-hidden="true">Click to play</h2>
         <div class="ready-head">
-          <button type="button" id="ready-back" class="ui-button ui-button--secondary ui-button--sm">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+          <button type="button" id="ready-back" class="ui-button ui-button--secondary ui-button--sm" data-icon="arrow-left">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
           <span id="ready-board" class="ready-board">9 &times; 9 &times; 1 &middot; 10 mines</span>
         </div>
         <p id="ready-msg" class="ui-note ui-note--warn ready-msg hidden" data-icon="info"><span class="ui-note__text"></span></p>
-        <button id="ready-btn" class="ui-button ui-button--primary ui-button--lg ready-play" type="button"><span class="ready-title" id="ready-title">Click to play</span></button>
+        <button id="ready-btn" class="ui-button ui-button--primary ui-button--lg ready-play" type="button" data-icon="mouse"><span class="ready-title" id="ready-title">Click to play</span></button>
         <div id="ready-blocked" class="ready-blocked hidden" role="group" aria-label="Play without mouse capture">
-          <button type="button" id="ready-drag" class="ui-button ui-button--primary">Play with drag-to-look</button>
-          <p class="ui-text ui-text--muted">Or connect a controller and press <kbd class="pad">A</kbd>.</p>
+          <button type="button" id="ready-drag" class="ui-button ui-button--primary" data-icon="hand">Play with drag-to-look</button>
+          <p class="ui-text ui-text--muted ready-pad-note">Or connect a controller and press A.</p>
         </div>
-        <div id="ready-learn" class="ui-banner ready-learn hidden" role="group" aria-label="Learn 3D">
+        <div id="ready-learn" class="ready-learn hidden" role="group" aria-label="Learn 3D">
           <p class="ui-text">New to 3D? Learn 3D walks you through a small box.</p>
-          <button type="button" id="ready-learn-btn" class="ui-button ui-button--secondary ui-button--sm">Learn 3D</button>
+          <button type="button" id="ready-learn-btn" class="ui-button ui-button--secondary ui-button--sm" data-icon="cube">Learn 3D</button>
         </div>
       </div>
       <div class="ready-aside">
@@ -377,8 +378,8 @@
           <div class="ui-section-label"><h3 class="ui-section-label__text" id="ready-rules-title">How 3D works</h3></div>
           <p class="ui-text">A number counts the mines among the 26 cubes around it.</p>
           <p class="ui-text">
-            <span class="ready-rules-keys">Empty and solved cubes hide themselves; hold <kbd>Ctrl</kbd> to show them.</span>
-            <span class="ready-rules-touch">Empty and solved cubes hide themselves; tap <b>Ctrl</b> on the right to show them.</span>
+            <span class="ready-rules-keys">Empty and solved cubes hide themselves; hold Ctrl to show them.</span>
+            <span class="ready-rules-touch">Empty and solved cubes hide themselves; hold the Ctrl button to show them.</span>
           </p>
           <p class="ui-text">The first click is always safe.</p>
         </div>

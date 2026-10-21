@@ -1815,6 +1815,8 @@ test('the gallery shows the touch toolbar, a toggle pressed, and the stick', () 
   assert.ok(buttons.length >= 3);
   assert.ok(buttons.some((b) => b.attrs['aria-pressed'] === 'true'), 'a latched mode');
   assert.ok(TAGS.some((t) => t.attrs.class?.split(/\s+/).includes('touch-stick')), 'the gallery shows the stick');
+  assert.match(GALLERY, /\.stick-box \.touch-stick \{[^}]*width: 130px; height: 130px;/, 'the gallery\'s stick at the game\'s 130 px');
+  assert.match(GALLERY, /\.stick-box \.touch-stick__knob \{[^}]*width: 56px; height: 56px;/, 'its 56 px knob');
 });
 
 test('in a browser with touch, switches, sliders, labels and key caps reach their coarse sizes', async (t) => {
@@ -2472,9 +2474,10 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
     assert.match(game2d, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Classic 2D game window uses ${cls}`);
   }
   for (const html of [noscript, fatal]) for (const cls of ['ui-backdrop', 'ui-card', 'ui-card__icon', 'ui-card__title']) assert.match(html, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the message cards use ${cls}`);
-  for (const cls of ['ui-card', 'ui-screen', 'ui-button--lg', 'ui-button--sm', 'ui-key-hint', 'ui-section-label', 'ui-panel--muted', 'ui-banner', 'ui-note--warn']) {
+  for (const cls of ['ui-card', 'ui-screen', 'ui-button--lg', 'ui-button--sm', 'ui-key-hint', 'ui-section-label', 'ui-panel--muted', 'ui-note--warn']) {
     assert.match(ready, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the 3D ready card uses ${cls}`);
   }
+  assert.doesNotMatch(ready, /class="[^"]*\bui-banner\b/, 'the Learn 3D line is a plain success line, not a banner');
   for (const cls of ['ui-card', 'ui-screen', 'ui-card__title', 'ui-actions--row']) {
     assert.match(ctxLost, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the context-lost card uses ${cls}`);
   }

@@ -56,7 +56,8 @@ presses and releases Enter and ' through `input.actions` as their keys do;
   zones from `touchZone3D` (below the overlay's top row, `ui.overlayBottom3D()`): it drives the page's
   `mouse`, `view3D().look`, `setSpacing` through `spacingStep` (pinch), and
   the frame loop's `applyTouchStick` (Fly: `moveAxes`; Orbit: the dolly);
-  `ui.setStick` draws the stick each frame. `syncTouch3D` (every router
+  `ui.setStick` draws the stick each frame — at rest in the bottom-left
+  corner (J-Game3D-p, -ls), under the thumb while it is used. `syncTouch3D` (every router
   change) sets `body.touch-play` in 3D play and the look, which shows
   `#touch-3d` (the stick and the `#touch-modes` toolbar), and resets the
   machine off it; `stopPlayInput` and a failed board's offer drop held
@@ -91,9 +92,12 @@ presses and releases Enter and ' through `input.actions` as their keys do;
   from it: every `startGame`, `retry3D`, and the return to start (`Home` /
   `R` while `Input.isActive`, the pause card's "Back to start"
   `onBackToStart`, which then resumes). In play `updateArrow` hands
-  `ui.setArrow` the off-screen arrow's angle; `updatePick` keeps
+  `ui.setArrow` the off-screen arrow's angle (the arrow beside the
+  crosshair, turned about its centre); `updatePick` keeps
   `S.readout` (`aimReadout`, `js/readability.js`) and `updateReadout` shows
-  it only under the `aimReadout` setting in 3D play. Picking is cached by
+  it only under the `aimReadout` setting in 3D play; `ui.setCrosshair`
+  draws the crosshair's arms only while a cell is targeted, with no
+  ring. Picking is cached by
   `S.pickKey`. Spacing resets per game to `SPACING_START`; the menu demo (`makeDemo`,
   7³/30, decorative) uses 1.25 and an orbiting camera.
 - **Spacing.** Every change in play goes through `setSpacing(s)`: clamped

@@ -96,10 +96,21 @@ test('the readout is styled from tokens, with no literal colour', () => {
   assert.match(css, /#hud\.hud--2d[^{]*#aim-readout/, 'hidden in Classic 2D');
   const html = read('index.html');
   const markup = html.slice(html.indexOf('<div id="aim-readout"'), html.indexOf('</div>', html.indexOf('<div id="aim-readout"')));
-  assert.match(markup, /^<div id="aim-readout"[^>]*><svg class="aim-icon aim-icon--cube"[^]*<span id="aim-cubes">[^]*<span id="aim-flag-part"[^>]*> - <svg class="aim-icon aim-icon--flag"[^]*<span id="aim-flags">/,
+  assert.match(markup, /^<div id="aim-readout"[^>]*><svg class="aim-icon aim-icon--cube"[^]*<span id="aim-cubes">[^]*<span id="aim-flag-part"[^>]*> <span class="aim-sep">-<\/span> <svg class="aim-icon aim-icon--flag"[^]*<span id="aim-flags">/,
     'the cube icon and its count, then " - ", the flag icon and its count');
   assert.doesNotMatch(markup, /Nearby/, 'no label');
   assert.doesNotMatch(markup, /fill="#|stroke="#/, 'the icons take their colour from the stylesheet');
+  // the canvas's outline icons (J-Game3D-states): a hexagon cube and a flag, stroked in the text colour
+  const icons = markup.match(/<svg class="aim-icon[^"]*"[^>]*>/g);
+  assert.equal(icons.length, 2);
+  for (const svg of icons) assert.match(svg, /viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2\.3"/, 'an outline icon in currentColor');
+  assert.match(markup, /aim-icon--cube[^]*?<path d="M12 2l9 5v10l-9 5-9-5V7z"\/>/, 'the hexagon cube');
+  assert.match(markup, /aim-icon--flag[^]*?<path d="M5 21V4"\/><path d="M5 4h12l-3 4 3 4H5"\/>/, 'the flag');
+  const box = rules.find((r) => r.startsWith('#aim-readout {')) ?? '';
+  assert.match(box, /left:\s*calc\(50% \+ 22px\);\s*top:\s*calc\(50% \+ 18px\)/, 'below and right of the crosshair at the canvas\'s offsets');
+  assert.match(box, /padding:\s*4px 9px/);
+  assert.match(box, /gap:\s*6px/);
+  assert.match(css, /#aim-readout \.aim-icon \{[^}]*width:\s*14px;[^}]*height:\s*14px/, '14 px icons');
 });
 
 // ---------------------------------------------------------------- Shift: the neighbourhood over the faded cubes
@@ -209,15 +220,16 @@ test('in a browser, the readout shows on an aimed number and hides off it, while
     assert.deepEqual(await shown(), { seen: '', info: '' }, 'turned off: hidden at once');
     await ms(() => globalThis.__ms.settings.set('aimReadout', true));
 
-    // the crosshair stays clear: the readout's nearest point lies beyond the off-screen arrow's ring
+    // the crosshair stays clear: the readout starts 22 px right of and 18 px below its centre, past its arms
+    assert.equal((await shown()).seen, 'cubes 7', 'back on at once');
     const clear = await ms(() => {
       const r = document.getElementById('aim-readout').getBoundingClientRect();
       const c = document.getElementById('crosshair').getBoundingClientRect();
       const cx = (c.left + c.right) / 2, cy = (c.top + c.bottom) / 2;
-      const dx = Math.max(r.left - cx, 0, cx - r.right), dy = Math.max(r.top - cy, 0, cy - r.bottom);
-      return { distance: Math.hypot(dx, dy), ring: 46 }; // #crosshair-arrow svg: its tip 46 px from the crosshair's centre
+      return { dx: r.left - cx, dy: r.top - cy, arms: c.width / 2 };
     });
-    assert.ok(clear.distance > clear.ring, `the readout leaves the crosshair and its arrow ring clear (${clear.distance.toFixed(1)} px > ${clear.ring} px)`);
+    assert.ok(Math.abs(clear.dx - 22) < 1 && Math.abs(clear.dy - 18) < 1, `the readout at the crosshair's centre + 22 / + 18 px (${clear.dx}, ${clear.dy})`);
+    assert.ok(Math.hypot(clear.dx, clear.dy) > clear.arms, 'clear of the crosshair\'s arms');
 
     // paused: hidden; resumed: back
     await ms(() => globalThis.__ms.pause());

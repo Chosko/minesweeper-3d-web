@@ -89,11 +89,20 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
   status card.
 - **Ready card.** The HUD is hidden behind it
   ([app-shell-ui.md](app-shell-ui.md) § Behind a card). `showReady` gets
-  `rules` (the "How 3D works" block) and
+  `rules` (the "How 3D works" block, Ctrl named as plain text) and
   `learn` (the `#ready-learn` line "New to 3D? Learn 3D walks you through a
-  small box." with `#ready-learn-btn` → `startLearn`, outside the Click to
-  play button) while `FIRST_USE.rules3D`; neither on the guided board's own card,
-  and the line only before the game started.
+  small box." on the success fill, with `#ready-learn-btn` → `startLearn`,
+  outside the Click to play button) while `FIRST_USE.rules3D`; neither on
+  the guided board's own card, and the line only before the game started.
+  The card's width follows the window's size step (J-Ready-xl, -l, -m,
+  -p), its board line in the mono face; its buttons carry the canvas's
+  icons (Back the arrow, Click to play the mouse — `ui.setTouch3D` swaps
+  in the hand for Tap to play —, Learn 3D the cube, drag-to-look the
+  hand), and the blocked offer's controller line names A as text. On a
+  phone held sideways (J-Ready-ls) there is no Back and no "How 3D works":
+  the title `#ready-heading`, the board line, the play button and the
+  Learn line sit in the left column, the controls list alone in the
+  right.
 
 ## DOMAIN DEPENDENCIES
 

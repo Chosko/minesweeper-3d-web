@@ -251,35 +251,46 @@ kbd {
 }
 
 /* ---------- the 3D ready card ---------- */
-/* A kit card over the scene: Back with its key hint beside the board line, the refusal's warn note,
-   Click to play as the one large action, the drag-to-look offer once the lock is blocked, the "How 3D
-   works" panel, the Learn 3D line, then the controls list's short rows (#ready-keys) and the fullscreen
-   tip. Narrower below a 1200 px window; on a phone held sideways the actions and the lists sit side by
-   side. On a coarse-only device (#ready.ready--touch, UI.setTouch3D) it reads Tap to play, lists the
-   touch gestures in place of the keys, and its rules name the toolbar's Ctrl button. */
+/* A kit card over the scene: Back (its arrow and key hint) beside the board line, the refusal's warn
+   note, Click to play as the one large action, the drag-to-look offer and its controller line once the
+   lock is blocked, the "How 3D works" panel, the Learn 3D line on its success fill, then the controls
+   list's short rows (#ready-keys) and the fullscreen tip. Its width follows the window's size step. On a
+   phone held sideways it has no Back: the title (.ready-heading), the board line, the play button and the
+   Learn line in the left column, the controls list alone in the right. On a coarse-only device
+   (#ready.ready--touch, UI.setTouch3D) it reads Tap to play, lists the touch gestures in place of the
+   keys, and its rules name the toolbar's Ctrl button. */
+#ready { padding: 12px; }
 .ready-body { width: min(640px, 100%); gap: var(--space-3); }
 .ready-main, .ready-aside { display: contents; }
+.ready-heading { display: none; margin: 0; font-size: var(--font-size-xl); }
 .ready-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .ready-board { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); font-variant-numeric: var(--font-numeric-tabular); text-align: end; }
 .ready-play { width: 100%; }
 #ready-rules { order: 1; }
 #ready-learn { order: 2; }
 .ready-keys, .ready-pad, .ready-tip { order: 3; }
-.ready-rules { display: flex; flex-direction: column; gap: var(--space-1); }
-.ready-rules .ui-text { font-size: var(--font-size-sm); }
+.ready-rules { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; }
+.ready-rules .ui-text { margin: 0; font-size: 15px; }
 .ready-rules-touch, .ready--touch .ready-rules-keys { display: none; }
 .ready--touch .ready-rules-touch { display: inline; }
-.ready-learn { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ready-learn { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 8px 8px 8px 14px; }
+.ready-learn > .ui-text { margin: 0; font-size: 15px; font-weight: var(--font-weight-bold); }
 .ready-learn > .ui-button { flex: none; }
 .ready-blocked { display: flex; flex-direction: column; gap: var(--space-2); }
+.ready-pad-note { margin: 0; font-size: 15px; }
 .ready-pad b { font-weight: var(--font-weight-bold); }
 .ready--touch .ready-tip { display: none; }
 .ready-tip { font-size: var(--font-size-xs); }
+@media (max-width: 1439px) { .ready-body { width: min(580px, 100%); } }
 @media (max-width: 1199px) { .ready-body { width: min(560px, 100%); } }
-@media (max-width: 719px) { .ready-body { padding: var(--space-4); } }
+@media (max-width: 719px) { .ready-body { width: min(360px, 100%); padding: 16px 18px; } }
 @media (max-height: 500px) and (orientation: landscape) {
-  .ready-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; width: min(760px, 100%); padding: var(--space-4); }
-  .ready-main, .ready-aside { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+  .ready-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--space-4); width: min(760px, 100%); padding: 16px 18px; }
+  .ready-main, .ready-aside { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .ready-heading { display: block; }
+  .ready-head { justify-content: flex-start; }
+  #ready-back, #ready-rules { display: none; }
+  .ready-board { text-align: start; }
 }
 
 /* ---------- controls modal ---------- */
@@ -513,28 +524,31 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 .hud-tools { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); padding: 7px 16px; display: flex; gap: 16px; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .kbd-hint { white-space: nowrap; }
 
-/* The crosshair (J-Game3D-states): four arms around an open centre, each over a halo. */
+/* The crosshair (J-Game3D-states): four arms around an open centre, each over a halo, drawn only while
+   a cell is targeted (UI.setCrosshair). */
 #crosshair {
   position: absolute; left: 50%; top: 50%;
   width: 28px; height: 28px; margin: -14px 0 0 -14px;
 }
 #crosshair svg { display: block; }
-#crosshair.off { opacity: 0.4; }
-/* the off-screen arrow: a line and chevron on the crosshair's ring, its tip 46 px out, turned toward the box (UI.setArrow) */
+#crosshair.off { visibility: hidden; }
+/* the off-screen arrow: a line and chevron at the crosshair box's left 44 px, top -6 px, the box turned
+   about its centre toward the board (UI.setArrow) */
 #crosshair-arrow {
   position: absolute; left: 50%; top: 50%;
   width: 28px; height: 28px; margin: -14px 0 0 -14px;
   pointer-events: none;
 }
-#crosshair-arrow svg { position: absolute; left: calc(50% + 20px); top: calc(50% - 16px); }
-/* the aimed-cell readout (UI.setReadout): below and right of the crosshair, clear of the arrow's ring */
+#crosshair-arrow svg { position: absolute; left: 44px; top: -6px; }
+/* the aimed-cell readout (UI.setReadout): below and right of the crosshair */
 #aim-readout {
-  position: absolute; left: calc(50% + 40px); top: calc(50% + 28px);
-  padding: 3px 10px;
+  position: absolute; left: calc(50% + 22px); top: calc(50% + 18px);
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px;
   font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); font-variant-numeric: var(--font-numeric-tabular); white-space: nowrap;
 }
-/* its icons: an unrevealed cube and a flag, drawn in the theme's colours */
-#aim-readout .aim-icon { width: 1.15em; height: 1.15em; vertical-align: -0.22em; }
+#aim-flag-part { display: inline-flex; align-items: center; gap: 6px; }
+/* its icons: an outline cube and flag in the text colour */
+#aim-readout .aim-icon { display: block; flex: none; width: 14px; height: 14px; }
 
 /* The view chips above the HUD strip, centred. */
 #mode-chips { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: max-content; max-width: calc(100vw - 24px); }
@@ -726,11 +740,10 @@ body.lockless #scene { cursor: none; }
 #touch-3d { display: none; }
 body.touch-play #touch-3d { display: block; }
 body.touch-play #scene { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-#touch-stick { position: absolute; left: 0; top: 0; pointer-events: none; display: none; }
-#touch-stick.on { display: block; }
-.touch-stick { width: 0; height: 0; }
-.touch-stick::before { content: ""; position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; }
-.touch-stick__knob { position: absolute; left: -28px; top: -28px; width: 56px; height: 56px; }
+/* the stick: drawn at rest at the bottom left, under the thumb while it is used (UI.setStick) */
+#touch-stick { position: absolute; left: 24px; bottom: 28px; width: 130px; height: 130px; pointer-events: none; }
+#touch-stick.on { left: 0; top: 0; bottom: auto; }
+.touch-stick__knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; }
 .touch-modes {
   position: absolute; right: 16px; bottom: 40px;
   display: flex; flex-direction: column; gap: 10px; pointer-events: auto;
@@ -772,6 +785,7 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
   #hud-pause { width: 48px; height: 48px; min-height: 48px; padding: 0; gap: 0; font-size: 0; pointer-events: auto; }
   #hud-pause .ui-key-hint { display: none; }
   #hud:not(.hud--2d) .touch-modes { bottom: 20px; }
+  #touch-stick { width: 110px; height: 110px; bottom: 18px; }
   #hud:not(.hud--2d) #hint-strip { top: 76px; bottom: auto; }
 }
 

@@ -219,7 +219,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 :root[data-theme="joyful-tiles"] :is(button, input, select, textarea) { font-family: inherit; color: inherit; }
-:root[data-theme="joyful-tiles"] :is(.ui-code__value, .ui-stat__value, .ui-slider__value, .ui-field__input, kbd, #aim-readout) { font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] :is(.ui-code__value, .ui-stat__value, .ui-slider__value, .ui-field__input, kbd, #aim-readout, .ready-board) { font-family: var(--font-family-mono); }
 :root[data-theme="joyful-tiles"] .ui-stat__detail { font-family: var(--font-family-mono); }
 
 /* ---------- buttons: raised, selected level with the surface, pressed sunk below it ---------- */
@@ -1246,6 +1246,8 @@
 :root[data-theme="joyful-tiles"] :is(.ready-pad, .ready-tip) { color: var(--color-ink-muted); }
 :root[data-theme="joyful-tiles"] :is(.ready-board, .ready-pad b) { color: var(--color-ink); }
 :root[data-theme="joyful-tiles"] #ready-keys :is(.ui-controls__key, .ui-controls__action) { padding-block: 5px; }
+/* the Learn 3D line: a plain success box */
+:root[data-theme="joyful-tiles"] .ready-learn { border-radius: var(--radius-md); background: var(--color-success-fill); color: var(--color-ink); }
 
 /* the Controls modal and the H help panel */
 :root[data-theme="joyful-tiles"] .modal-card {
@@ -1255,7 +1257,7 @@
   box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2);
   animation: joyful-tiles-pop var(--duration-slow) var(--easing-out);
 }
-:root[data-theme="joyful-tiles"] :is(.modal-head h3, .help-foot, .hud-tools) { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] :is(.modal-head h3, .help-foot) { color: var(--color-ink-muted); }
 /* the H help panel: a card, its title in heavy ink and its foot line under the list */
 :root[data-theme="joyful-tiles"] #help {
   border-radius: 22px;
@@ -1361,24 +1363,17 @@
 :root[data-theme="joyful-tiles"] .replay-key__pad { opacity: 0.8; }
 
 /* the 3D game's crosshair, off-screen arrow and aimed-cell readout */
-:root[data-theme="joyful-tiles"] #crosshair {
-  border-radius: 50%;
-  transition: opacity var(--duration-base) var(--easing-out), box-shadow var(--duration-base) var(--easing-out);
-}
 :root[data-theme="joyful-tiles"] :is(#crosshair, #crosshair-arrow) path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 :root[data-theme="joyful-tiles"] :is(.crosshair__halo, .crosshair-arrow__halo) { stroke: var(--color-ink-inverse); stroke-width: 5; }
 :root[data-theme="joyful-tiles"] .crosshair__line { stroke: var(--color-ink); stroke-width: 2.5; }
 :root[data-theme="joyful-tiles"] .crosshair-arrow__line { stroke: var(--color-accent-fill); stroke-width: 3; }
-:root[data-theme="joyful-tiles"] #crosshair.on { box-shadow: 0 0 0 3px var(--color-surface), 0 0 0 5px var(--color-blue); }
 :root[data-theme="joyful-tiles"] #aim-readout {
   border-radius: 10px;
   background: var(--color-surface);
   color: var(--color-ink);
   box-shadow: 0 3px 0 var(--color-edge);
 }
-:root[data-theme="joyful-tiles"] #aim-readout .aim-icon--cube rect { fill: var(--color-tile-closed); stroke: var(--color-ink); stroke-width: 1; }
-:root[data-theme="joyful-tiles"] #aim-readout .aim-icon__pole { fill: none; stroke: var(--color-ink); stroke-width: 1.6; stroke-linecap: round; }
-:root[data-theme="joyful-tiles"] #aim-readout .aim-icon__cloth { fill: var(--color-danger); }
+:root[data-theme="joyful-tiles"] #aim-readout .aim-sep { color: var(--color-ink-muted); }
 
 /* the view chips (Shift, Space, Ctrl) */
 :root[data-theme="joyful-tiles"] .chip {
@@ -1399,12 +1394,11 @@
   color: var(--color-warning);
 }
 
-/* the 3D touch stick */
-:root[data-theme="joyful-tiles"] .touch-stick::before {
+/* the 3D touch stick: a veil with a light inset ring, its knob raised on its edge */
+:root[data-theme="joyful-tiles"] .touch-stick {
   border-radius: 50%;
   background: var(--veil);
-  box-shadow: inset 0 0 0 3px var(--color-surface);
-  opacity: 0.8;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.55);
 }
 :root[data-theme="joyful-tiles"] .touch-stick__knob {
   border-radius: 50%;

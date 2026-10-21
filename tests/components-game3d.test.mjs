@@ -76,6 +76,54 @@ for (const [size, device, panelWidth, density] of GAME_3D_SIZES) {
         const modes = await ms(() => [...document.querySelectorAll('#touch-modes .ui-button')].map((b) => { const r = b.getBoundingClientRect(); return [r.width >= 76, r.height >= 44, getComputedStyle(b).fontSize]; }));
         assert.deepEqual(modes, [[true, true, '15px'], [true, true, '15px'], [true, true, '15px']], `${size}: the view-mode buttons at least 76 × 44, 15 px`);
       }
+      // The crosshair set (J-Game3D-states, J-Components): the arms alone while a cell is targeted, no ring, nothing
+      // while none is; the off-screen arrow's 40 px svg at the crosshair box's left 44 px, top -6 px; the HUD key
+      // strip's labels in ink.
+      const aim = await ms(() => {
+        const cross = document.getElementById('crosshair'), arrow = document.getElementById('crosshair-arrow');
+        const was = [cross.className, arrow.className, arrow.style.transform];
+        const ink = (() => { const i = document.createElement('i'); i.style.color = 'var(--color-ink)'; document.body.append(i); const c = getComputedStyle(i).color; i.remove(); return c; })();
+        cross.className = 'on';
+        const on = [getComputedStyle(cross).boxShadow, getComputedStyle(cross).visibility, getComputedStyle(cross).opacity];
+        cross.className = 'off';
+        const off = getComputedStyle(cross).visibility;
+        arrow.className = ''; arrow.style.transform = 'none';
+        const c = cross.getBoundingClientRect(), a = arrow.querySelector('svg').getBoundingClientRect();
+        const out = { on, off, arrow: [a.width, a.height, a.left - c.left, a.top - c.top], strip: getComputedStyle(document.getElementById('hud-tools')).color === ink };
+        [cross.className, arrow.className, arrow.style.transform] = was;
+        return out;
+      });
+      assert.deepEqual(aim.on, ['none', 'visible', '1'], `${size}: a targeted cell shows the arms, with no ring`);
+      assert.equal(aim.off, 'hidden', `${size}: no arms while no cell is targeted`);
+      assert.deepEqual(aim.arrow, [40, 40, 44, -6], `${size}: the off-screen arrow's 40 × 40 svg at the crosshair box's left 44, top -6`);
+      if (panelWidth) assert.ok(aim.strip, `${size}: the HUD key strip's labels in ink`);
+      if (touch) {
+        // The touch stick (K35): drawn at rest at the bottom left, under the thumb while it is used.
+        const ls = size === 'ls';
+        const stick = () => ms(() => {
+          const el = document.getElementById('touch-stick'), knob = document.getElementById('touch-stick-knob');
+          const b = el.getBoundingClientRect(), k = knob.getBoundingClientRect();
+          return { left: b.left, bottom: innerHeight - b.bottom, cx: b.left + b.width / 2, cy: b.top + b.height / 2, size: b.width, kx: k.left + k.width / 2 - (b.left + b.width / 2), ky: k.top + k.height / 2 - (b.top + b.height / 2), knob: k.width, bg: getComputedStyle(el).backgroundColor, ring: getComputedStyle(el).boxShadow };
+        });
+        const rest = await stick();
+        assert.deepEqual([rest.left, rest.bottom, rest.size, rest.knob, rest.kx, rest.ky], [24, ls ? 18 : 28, ls ? 110 : 130, 56, 0, 0], `${size}: the stick at rest, ${ls ? 110 : 130} px at left 24 / bottom ${ls ? 18 : 28}, its 56 px knob centred`);
+        assert.equal(rest.bg, 'rgba(255, 255, 255, 0.22)', `${size}: the stick's veil`);
+        assert.match(rest.ring, /rgba\(255, 255, 255, 0\.55\) 0px 0px 0px 3px inset/, `${size}: its inset ring`);
+        await ms(() => {
+          const canvas = document.getElementById('scene');
+          const at = (type, x, y) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+          at('pointerdown', 120, innerHeight - 140);
+          at('pointermove', 140, innerHeight - 170);
+        });
+        await frames();
+        const held = await stick();
+        assert.ok(Math.abs(held.cx - 120) < 1 && Math.abs(held.cy - (vh - 140)) < 1, `${size}: the stick follows the thumb (${held.cx}, ${held.cy})`);
+        assert.ok(Math.abs(held.kx - 20) < 1 && Math.abs(held.ky + 30) < 1, `${size}: the knob under it (${held.kx}, ${held.ky})`);
+        await ms(() => document.getElementById('scene').dispatchEvent(new PointerEvent('pointerup', { pointerId: 7, pointerType: 'touch', bubbles: true })));
+        await frames();
+        const back = await stick();
+        assert.deepEqual([back.left, back.bottom, back.kx, back.ky], [24, ls ? 18 : 28, 0, 0], `${size}: back at rest on the lift`);
+      }
       assert.deepEqual([g.tip, g.name], ['3D · Cube Intermediate', '3D · Cube Intermediate'], `${size}: the full name is the title's tooltip and name`);
       assert.ok(Math.abs((g.strip.x + g.strip.right) / 2 - vw / 2) < 2, `${size}: the counters centred (${g.strip.x}..${g.strip.right})`);
       if (panelWidth) {

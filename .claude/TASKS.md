@@ -1221,7 +1221,7 @@ Feature: shared-screen-layout
 
 ## 235. 3D ready card, HUD readouts and the touch stick
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/style.css, themes/joyful-tiles/theme.css, js/touch-3d.js, dev/components.html, .claude/context/app-shell-3d.md, .claude/context/app-shell-3d-play.md
 Preconditions: 220, 223, 233

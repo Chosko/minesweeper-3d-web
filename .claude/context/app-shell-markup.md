@@ -90,13 +90,14 @@ bind.
     (`#…-offer`: `#…-retry` with the refresh icon, `#…-standard`,
     `#…-offer-menu`);
   - the cards over the 3D scene, each a `ui-card ui-screen`: the ready
-    card `#ready` (`.ready-body`; `.ready-main` — `#ready-back` with its
-    back key hint, `#ready-board`, `#ready-msg`, `#ready-btn` around
-    `.ready-title`, `#ready-blocked` with `#ready-drag`, the `ui-banner`
-    `#ready-learn` with `#ready-learn-btn` — and `.ready-aside` — the
-    `ui-panel--muted` `#ready-rules`, the controls list `#ready-keys`,
-    `#ready-pad`, the tip — one column ordered as J-Ready draws it, two
-    side by side on a phone held sideways); the context-lost card
+    card `#ready` (`.ready-body`; `.ready-main` — the phone-landscape
+    title `#ready-heading`, `#ready-back` with its back key hint,
+    `#ready-board`, `#ready-msg`, `#ready-btn` around `.ready-title`,
+    `#ready-blocked` with `#ready-drag` and its `.ready-pad-note`, the
+    plain `#ready-learn` line with `#ready-learn-btn` — and `.ready-aside`
+    — the `ui-panel--muted` `#ready-rules`, the controls list
+    `#ready-keys`, `#ready-pad`, the tip — one column ordered as J-Ready
+    draws it, two side by side on a phone held sideways); the context-lost card
     `#ctx-lost` (`#ctx-lost-btn` with the refresh icon, `#ctx-lost-menu`); the Learn 3D end card
     `#learn-end` (`#learn-end-title`, `#learn-end-line`,
     `#learn-end-primary` around `#learn-end-primary-label` and its select

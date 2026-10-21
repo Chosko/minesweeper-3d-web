@@ -150,8 +150,7 @@
      Element: <p class="ui-banner" role="status">…</p>
               an offer: <div class="ui-banner" role="group" aria-label="…">
                 <p class="ui-text">…</p><button class="ui-button …">…</button>
-              </div> (the 3D ready card's Learn 3D line), the action after
-              the line
+              </div>, the action after the line
      Role:    status; group for an offer
      Name:    its text; an offer its aria-label
      Look:    bold ink on the sunken surface, marked by a success-coloured
@@ -1005,18 +1004,20 @@
      Default focus: Resume, or Play again once ended; Cancel while the
      confirmation shows.
    3D ready card (index.html #ready): ui-card ui-screen over the 3D scene:
-     a head row of Back (ui-button--sm secondary with its back key hint)
-     and the board line; the refusal's ui-note--warn (info icon), hidden
-     while there is none; Click to
-     play (Tap to play on a coarse-only device) as the ui-button--lg
-     primary; once the browser blocks the lock, the drag-to-look primary
-     and its controller line; a ui-panel--muted "How 3D works" under its
-     ui-section-label and the ui-banner Learn 3D line with its
-     ui-button--sm, both until 3D is learned; the ui-controls list of the
-     ready card's short rows, touch's on a coarse-only device; the
-     fullscreen tip. Narrower below 1200 px; on a phone held
-     sideways the actions and the lists sit in two columns. Default
-     focus: Click to play.
+     a head row of Back (ui-button--sm secondary, arrow-left icon, with
+     its back key hint) and the board line; the refusal's ui-note--warn
+     (info icon), hidden while there is none; Click to play (mouse icon;
+     Tap to play with the hand icon on a coarse-only device) as the
+     ui-button--lg primary; once the browser blocks the lock, the
+     drag-to-look primary (hand icon) and its plain controller line; a
+     ui-panel--muted "How 3D works" under its ui-section-label and the
+     Learn 3D line on the success fill with its ui-button--sm (cube
+     icon), both until 3D is learned; the ui-controls list of the ready
+     card's short rows, touch's on a coarse-only device; the fullscreen
+     tip. Its width follows the window's size step; on a phone held
+     sideways it drops Back and "How 3D works": a title, the board line,
+     the play button and the Learn line in one column, the list in the
+     other. Default focus: Click to play.
    Context lost (index.html #ctx-lost): a message ui-card at the canvas's width,
      ui-screen on the scrim, its title, a ui-text line and ui-actions--row
      (Click to reload primary, with the refresh icon; Main menu). Default

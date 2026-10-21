@@ -888,7 +888,7 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
         escHint: shown(document.querySelector('#ready-back .ui-key-hint')),
       };
     });
-    assert.match(card.rules, /tap Ctrl on the right to show them/, 'the rules name the toolbar\'s Ctrl button');
+    assert.match(card.rules, /hold the Ctrl button to show them/, 'the rules name the toolbar\'s Ctrl button');
     assert.doesNotMatch(card.rules, /hold Ctrl/, 'not the Ctrl key');
     assert.equal(card.escHint, false, 'no Esc key hint in the touch card\'s Back');
     assert.ok(card.btn, 'the ready card\'s play button shows');
@@ -978,14 +978,14 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     await f.start([[...STICK, 1]]);
     await f.move([[STICK[0], STICK[1] - 70, 1]]);
     await frames(6);
-    const shown = await ms(() => getComputedStyle(document.getElementById('touch-stick')).display !== 'none');
-    assert.ok(shown, 'the stick shows under the thumb');
+    const held = await ms(() => document.getElementById('touch-stick').classList.contains('on'));
+    assert.ok(held, 'the stick follows the thumb');
     await f.end();
     const c1 = await camOf();
     assert.ok(Math.hypot(c1.x - c0.x, c1.y - c0.y, c1.z - c0.z) > 1, 'the stick moved the camera');
     await frames(4);
     assert.deepEqual(await camOf(), c1, 'lifted: it stops');
-    assert.equal(await ms(() => getComputedStyle(document.getElementById('touch-stick')).display), 'none', 'and hides');
+    assert.equal(await ms(() => document.getElementById('touch-stick').classList.contains('on')), false, 'and goes back to rest');
 
     // The look drag turns the camera and acts on nothing.
     await frames(4);

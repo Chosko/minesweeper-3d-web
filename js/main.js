@@ -2124,7 +2124,7 @@ function updateReadout() {
   const on = SETTINGS.get('aimReadout') && S.mode === 'playing' && MODES.active === '3d' && !endDelay() && !onBackdrop() && !replay3d.view;
   ui.setReadout(on ? S.readout : null);
 }
-/** The off-screen arrow on the crosshair ring, toward the box while none of it is in view; only in 3D play. */
+/** The off-screen arrow beside the crosshair, toward the box while none of it is in view; only in 3D play. */
 function updateArrow(on) {
   const g = S.game, three = renderer.camera;
   const key = on ? `${cam.x},${cam.y},${cam.z},${cam.yaw},${cam.pitch},${S.spacing},${g.X},${g.Y},${g.Z},${three.fov},${three.aspect}` : '';

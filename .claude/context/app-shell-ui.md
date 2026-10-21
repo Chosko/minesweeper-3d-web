@@ -120,8 +120,10 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   scrim. `css/style.css` does it from those screens' visibility
   (`body:has(…)`); `UI` toggles nothing for it.
 - **Aimed-cell readout** `#aim-readout` sits below and right of the
-  crosshair, clear of the off-screen arrow `#crosshair-arrow`: a cube icon
-  and `#aim-cubes`, then `#aim-flag-part` only while there are flags.
+  crosshair at the canvas's offsets (J-Game3D-states): an outline cube
+  icon and `#aim-cubes`, then `#aim-flag-part` (a muted dash, an outline
+  flag icon and `#aim-flags`) only while there are flags, the icons in the
+  text colour.
 - **Help surfaces, the active device and first-use hints** are
   [app-shell-help.md](app-shell-help.md).
 - **Controller menus.** `LAYER_SCREEN` maps each overlay to its screen,
