@@ -1371,7 +1371,7 @@ Feature: flat-grid-geometry
 
 ## 250. Tile painter and cache through the geometry's outline
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/tile-skin.js, js/classic2d/board-view.js, tests/tile-art.test.mjs, tests/classic2d-view.test.mjs
 Preconditions: 249

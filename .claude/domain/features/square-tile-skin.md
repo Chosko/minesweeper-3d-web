@@ -92,8 +92,8 @@ nothing here holds a palette.
 
 - Tile and number colours are the theme's board module's, per
   [themed-board-art-and-motion](./themed-board-art-and-motion.md).
-- The tile cache is in memory only, keyed by tile size, pixel ratio and
-  theme; nothing is persisted.
+- The tile cache is in memory only, keyed by tile size, pixel ratio,
+  theme and outline orientation; nothing is persisted.
 - The cell state the painter draws comes from the rules engine through the
   Classic 2D renderer; the skin never reads or changes game state.
 

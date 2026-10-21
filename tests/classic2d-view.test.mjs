@@ -65,11 +65,11 @@ function fakeCanvas() {
 // A skin recording every tile it draws, and the redraw callback the view hands it.
 // `board`, when given, is the board module the skin draws from.
 function fakeSkinFactory(board = null) {
-  const out = { draws: [], redraw: null, disposed: false };
+  const out = { draws: [], cells: [], redraw: null, disposed: false };
   out.createSkin = ({ redraw }) => {
     out.redraw = redraw;
     return {
-      drawTile(ctx, x, y, size, state, number, ratio) { out.draws.push({ x, y, size, state, number, ratio }); },
+      drawTile(ctx, x, y, size, state, number, ratio, depth, cell) { out.draws.push({ x, y, size, state, number, ratio }); out.cells.push(cell); },
       ...(board ? { board: () => board } : {}),
       dispose() { out.disposed = true; },
     };
@@ -1000,6 +1000,20 @@ test('the view places, hit-tests and draws every cell where its geometry puts it
   const r = view.cellRect(1);
   const p = view.boardPoint(r.x, r.y);
   assert.deepEqual(p, { u: 0, v: 1 }, 'the board point is in board units from the board\'s corner, wherever the cell\'s column is');
+});
+
+test('the view hands the skin each cell\'s outline and glyph box from its geometry, on the board and on the motion layer', () => {
+  const geometry = transposedGeometry(3, 2);
+  const { view, skin } = geometryView({ geometry });
+  const l = view.layout;
+  view.setGame(beginnerGame().game);
+  assert.equal(skin.draws.length, 6);
+  for (const [i, d] of skin.draws.entries()) {
+    const c = view.cellAt(d.x + 1, d.y + 1);
+    assert.deepEqual(skin.cells[i], { outline: geometry.outline(c, l.tile, l.gap), glyphBox: geometry.glyphBox(c, l.tile, l.gap) }, `cell ${c}`);
+  }
+  const src = readFileSync(join(ROOT, 'js/classic2d/board-view.js'), 'utf8').replace(/^\s*\/\/.*$/gm, '');
+  for (const call of src.matchAll(/skin\.drawTile\(([^;]*)\)/g)) assert.match(call[1], /shapeOf\(c\)/, `every drawTile call hands the cell's outline: ${call[0]}`);
 });
 
 test('the floor and the tile at each board scale are the geometry\'s', () => {

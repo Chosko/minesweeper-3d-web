@@ -4,9 +4,12 @@
 // drawn through the shared tile recipe (js/tile-art.js) in the active theme's
 // Classic 2D drawing style, palette and number font, all from the theme's board
 // module (js/themes/board-module.js), which the shell hands over through
-// BOARD_ART once the number font has loaded (js/shell/board-art.js). The skin
-// holds no palette, imports no theme and reads no stylesheet. The renderer owns
-// layout and hit-testing; the skin owns appearance only.
+// BOARD_ART once the number font has loaded (js/shell/board-art.js). A tile is
+// drawn through its cell's outline and glyph box, which the renderer takes from
+// the board's grid geometry (js/geometry/index.js); a tile given none is the
+// square of its size. The skin holds no palette, imports no theme and reads no
+// stylesheet. The renderer owns layout and hit-testing; the skin owns appearance
+// only.
 
 import { FALLBACK_COLOR } from '../tokens.js';
 import { drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross, drawMarkRing, explodedParams } from '../tile-art.js';
@@ -60,9 +63,23 @@ export function createBoardArt() {
 export const BOARD_ART = createBoardArt();
 
 // Visibly wrong on purpose, so an unhandled state is noticed on the board.
-function placeholder(ctx, x, y, size) {
+function placeholder(ctx, x, y, size, shape = null) {
+  if (shape?.clip) {
+    ctx.save();
+    ctx.translate(x, y);
+    clipTo(ctx, shape.points);
+    ctx.fillStyle = FALLBACK_COLOR;
+    ctx.fillRect(0, 0, shape.width, shape.height);
+    cross(ctx, 0, 0, size);
+    ctx.restore();
+    return;
+  }
   ctx.fillStyle = FALLBACK_COLOR;
   ctx.fillRect(x, y, size, size);
+  cross(ctx, x, y, size);
+}
+
+function cross(ctx, x, y, size) {
   const m = size * 0.2;
   ctx.strokeStyle = 'black';
   ctx.lineWidth = Math.max(2, size / 8);
@@ -76,6 +93,31 @@ function placeholder(ctx, x, y, size) {
 
 const validNumber = (n) => Number.isInteger(n) && n >= 0 && n <= 8;
 
+function clipTo(ctx, points) {
+  ctx.beginPath();
+  points.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+  ctx.closePath();
+  ctx.clip();
+}
+
+// A cell's tile shape from its outline and glyph box on the board (the geometry's): its shape and
+// orientation, its box's size, its corners and its glyph box from the box's own corner, and
+// whether it clips (every shape but the square, whose tile is its box). Null for a cell given none.
+function tileShape(cell) {
+  const o = cell?.outline;
+  if (!o) return null;
+  const g = cell.glyphBox ?? { x: o.x, y: o.y, width: o.width, height: o.height };
+  return {
+    shape: o.shape,
+    orientation: o.orientation ?? 'none',
+    width: o.width,
+    height: o.height,
+    clip: o.shape !== 'square',
+    points: (o.points ?? []).map(([px, py]) => [px - o.x, py - o.y]),
+    glyph: { x: g.x - o.x, y: g.y - o.y, width: g.width, height: g.height },
+  };
+}
+
 // One device pixel in the context's CSS pixels, from the scale it draws at, so
 // the recipe's bands snap to whole device pixels.
 function devicePixel(ctx) {
@@ -87,18 +129,34 @@ function devicePixel(ctx) {
 // theme's board module: its Classic 2D style and parameters, its 2D faces, flag, mine and cross,
 // and its 2D numbers in its number font — the exploded tile with the style's exploded parameters
 // (explodedParams), the marked start cell its marked face under the dashed ring; `depth` (0 flat to
-// 1 fully raised) is the closed, pressed and flagged faces' style depth.
-export function paintTileWith(board, ctx, x, y, size, state, number, depth = 1) {
+// 1 fully raised) is the closed, pressed and flagged faces' style depth. `cell`, { outline,
+// glyphBox } from the board's geometry, shapes the tile: x, y is its outline's box corner, the face
+// is clipped to the outline and the glyphs are set in the glyph box; the square outline is the tile
+// itself, drawn exactly as a tile given no cell.
+export function paintTileWith(board, ctx, x, y, size, state, number, depth = 1, cell = null) {
+  const shape = tileShape(cell);
   if (!board || !TILE_STATES.includes(state) || (state === 'revealed' && !validNumber(number))) {
-    placeholder(ctx, x, y, size);
+    placeholder(ctx, x, y, size, shape);
     return;
   }
   const { style2d: style, palette } = board;
   const faces = palette.faces2d;
   const px = devicePixel(ctx);
-  const face = (name, colours, params = style.params) => drawFace(ctx, size, name, { style: style.name, params, palette: colours, px, depth });
+  const faceSize = shape?.clip ? Math.max(shape.width, shape.height) : size;
+  const face = (name, colours, params = style.params) => drawFace(ctx, faceSize, name, { style: style.name, params, palette: colours, px, depth });
+  // The glyphs, in the glyph box: a square of its smaller side, centred in it.
+  const glyph = (draw) => {
+    if (!shape?.clip) return draw(size);
+    const g = shape.glyph;
+    const S = Math.min(g.width, g.height);
+    ctx.save();
+    ctx.translate(g.x + (g.width - S) / 2, g.y + (g.height - S) / 2);
+    draw(S);
+    ctx.restore();
+  };
   ctx.save();
   ctx.translate(x, y);
+  if (shape?.clip) clipTo(ctx, shape.points);
   switch (state) {
     case 'closed':
       face('closed', faces.closed);
@@ -108,28 +166,30 @@ export function paintTileWith(board, ctx, x, y, size, state, number, depth = 1) 
       break;
     case 'revealed':
       face('revealed', faces.revealed);
-      if (number > 0) drawNumberGlyph(ctx, size, number, { color: board.numbers2d[number], shadow: palette.numberShadow, font: board.font });
+      if (number > 0) glyph((S) => drawNumberGlyph(ctx, S, number, { color: board.numbers2d[number], shadow: palette.numberShadow, font: board.font }));
       break;
     case 'flagged':
       face('closed', faces.closed);
-      drawFlagGlyph(ctx, size, palette.flag);
+      glyph((S) => drawFlagGlyph(ctx, S, palette.flag));
       break;
     case 'mine':
       face('revealed', faces.revealed);
-      drawMineGlyph(ctx, size, palette.mine);
+      glyph((S) => drawMineGlyph(ctx, S, palette.mine));
       break;
     case 'exploded':
       face('revealed', faces.exploded, explodedParams(style.params));
-      drawMineGlyph(ctx, size, palette.mine);
+      glyph((S) => drawMineGlyph(ctx, S, palette.mine));
       break;
     case 'marked':
       face('closed', faces.marked);
-      drawMarkRing(ctx, size, { color: faces.marked.ring });
+      glyph((S) => drawMarkRing(ctx, S, { color: faces.marked.ring }));
       break;
     case 'wrong-flag':
       face('revealed', faces.revealed);
-      drawFlagGlyph(ctx, size, palette.flag);
-      drawCross(ctx, size, palette.cross);
+      glyph((S) => {
+        drawFlagGlyph(ctx, S, palette.flag);
+        drawCross(ctx, S, palette.cross);
+      });
       break;
     default:
       break;
@@ -151,11 +211,21 @@ const keyOf = (state, number) => {
   return TILE_STATES.includes(state) ? state : PLACEHOLDER;
 };
 
+/**
+ * The cache's key for one image: the outline orientation, then the state (a revealed one with its
+ * number, an unknown one the placeholder) and, for a raised state at a depth step short of 1, the
+ * step — 'up:revealed-3', 'down:flagged@0.5', 'none:closed' for the square.
+ */
+export function tileKey(orientation, state, number, step = 1) {
+  const base = keyOf(state, number);
+  return `${orientation}:${step === 1 || !DEPTH_STATES.includes(base) ? base : `${base}@${step}`}`;
+}
+
 // A skin for one renderer: draws tiles from a cache of pre-rendered images — every state, and the
-// raised states at each depth step — keyed by tile size, device pixel ratio and theme, from the
-// board module the hand-off `art` holds. Until one is handed over it draws and caches nothing.
-// On a hand-off it drops the cache and calls `redraw`, which the renderer
-// supplies; board() is the module it draws from, or null.
+// raised states at each depth step, for each outline orientation drawn — keyed by tile size,
+// device pixel ratio and theme, from the board module the hand-off `art` holds. Until one is
+// handed over it draws and caches nothing. On a hand-off it drops the cache and calls `redraw`,
+// which the renderer supplies; board() is the module it draws from, or null.
 export function createTileSkin({
   art = BOARD_ART,
   createCanvas = defaultCreateCanvas,
@@ -163,30 +233,34 @@ export function createTileSkin({
 } = {}) {
   let current = art.current();
   let key = null;
-  let images = null;
+  let images = null; // tileKey → image, for the orientations drawn under `key`
+  let built = null; // the orientations `images` holds
 
-  function build(board, size, ratio) {
-    const px = Math.max(1, Math.round(size * ratio));
+  // Every image of one outline orientation, `shape` (null for the square of `size`) at `size`.
+  function build(board, size, ratio, shape, orientation) {
+    const width = shape?.width ?? size;
+    const height = shape?.height ?? size;
+    const cell = shape && { outline: { shape: shape.shape, orientation, x: 0, y: 0, width, height, points: shape.points }, glyphBox: shape.glyph };
     const render = (state, number, depth = 1) => {
-      const canvas = createCanvas(px, px);
+      const canvas = createCanvas(Math.max(1, Math.round(width * ratio)), Math.max(1, Math.round(height * ratio)));
       const ctx = canvas.getContext('2d');
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      paintTileWith(board, ctx, 0, 0, size, state, number, depth);
+      paintTileWith(board, ctx, 0, 0, size, state, number, depth, cell);
       return canvas;
     };
-    const out = new Map();
     for (const state of TILE_STATES) {
-      if (state === 'revealed') for (let n = 0; n <= 8; n++) out.set(`revealed-${n}`, render(state, n));
-      else out.set(state, render(state, 0));
+      if (state === 'revealed') for (let n = 0; n <= 8; n++) images.set(tileKey(orientation, state, n), render(state, n));
+      else images.set(tileKey(orientation, state, 0), render(state, 0));
     }
-    for (const state of DEPTH_STATES) for (const step of DEPTH_STEPS) if (step !== 1) out.set(`${state}@${step}`, render(state, 0, step));
-    out.set(PLACEHOLDER, render(PLACEHOLDER, 0));
-    return out;
+    for (const state of DEPTH_STATES) for (const step of DEPTH_STEPS) if (step !== 1) images.set(tileKey(orientation, state, 0, step), render(state, 0, step));
+    images.set(tileKey(orientation, PLACEHOLDER, 0), render(PLACEHOLDER, 0));
+    built.add(orientation);
   }
 
   function invalidate() {
     key = null;
     images = null;
+    built = null;
   }
 
   const unsubscribe = art.onChange((next) => {
@@ -196,17 +270,23 @@ export function createTileSkin({
   });
 
   // Copies the pre-rendered tile to ctx at x, y, size CSS pixels — a closed, pressed or flagged one
-  // at the depth step nearest `depth` when one is given; rebuilds the cache first when size, pixel
-  // ratio or theme changed.
-  function drawTile(ctx, x, y, size, state, number, pixelRatio = 1, depth = null) {
+  // at the depth step nearest `depth` when one is given; `cell` ({ outline, glyphBox } from the
+  // board's geometry, none for the square) gives its outline, x, y being its box's corner. Rebuilds
+  // the cache first when size, pixel ratio or theme changed, and renders an orientation's images the
+  // first time a tile of it is drawn.
+  function drawTile(ctx, x, y, size, state, number, pixelRatio = 1, depth = null, cell = null) {
     if (!current) return;
     const want = `${size}|${pixelRatio}|${current.id}`;
     if (want !== key) {
-      images = build(current.board, size, pixelRatio);
+      images = new Map();
+      built = new Set();
       key = want;
     }
+    const shape = tileShape(cell);
+    const orientation = shape?.orientation ?? 'none';
+    if (!built.has(orientation)) build(current.board, size, pixelRatio, shape, orientation);
     const step = DEPTH_STATES.includes(state) ? depthStep(depth) : 1;
-    ctx.drawImage(images.get(step === 1 ? keyOf(state, number) : `${state}@${step}`), x, y, size, size);
+    ctx.drawImage(images.get(tileKey(orientation, state, number, step)), x, y, shape?.width ?? size, shape?.height ?? size);
   }
 
   return {

@@ -33,18 +33,24 @@ How a Classic 2D tile looks. The area overview is
 - `DEPTH_STEPS`, `depthStep(depth)` — the depths the cache holds the
   raised states (closed, pressed, flagged) at, and the step nearest a
   depth (1, the face's own, for none).
-- `paintTileWith(board, ctx, x, y, size, state, number, depth = 1)` — one
-  tile at `x, y`, `size` CSS pixels, from the board module `board`;
+- `paintTileWith(board, ctx, x, y, size, state, number, depth = 1, cell = null)`
+  — one tile at `x, y`, `size` CSS pixels, from the board module `board`;
   `number` (0–8) matters only for `revealed`, `depth` only for the raised
-  states.
+  states; `cell`, `{outline, glyphBox}` from the board's grid geometry
+  ([classic2d-board-view.md](classic2d-board-view.md)), shapes the tile,
+  `x, y` then being its outline's box corner, and none is the square of
+  `size`.
+- `tileKey(orientation, state, number, step = 1)` — the cache's key for one
+  image: the outline orientation, the state (a revealed one with its number,
+  an unknown one the placeholder) and a raised state's depth step.
 - `createBoardArt()` → `{current(), set(id, board), onChange(listener)}` —
   a board art hand-off: the module last handed over as `{id, board}` (null
   until the first) and its subscribers. `BOARD_ART` is the page's one, which
   the shell feeds (`js/shell/board-art.js`, [app-shell-board-module.md](app-shell-board-module.md))
   and every skin and the 3D scene's hand-off read.
 - `createTileSkin({art, createCanvas, redraw})` → `{paintTile, drawTile(ctx,
-  x, y, size, state, number, pixelRatio = 1, depth = null), board(),
-  invalidate, cacheKey, dispose}` — one skin per board view; `art` defaults
+  x, y, size, state, number, pixelRatio = 1, depth = null, cell = null),
+  board(), invalidate, cacheKey, dispose}` — one skin per board view; `art` defaults
   to `BOARD_ART`; `redraw` is the view's refit and repaint; `board()` the
   module it draws from, or null.
 
@@ -97,15 +103,23 @@ How a Classic 2D tile looks. The area overview is
   context's scale), so every band is whole device pixels. The board view
   draws the marked tile for its marked cell
   ([classic2d-board-motion.md](classic2d-board-motion.md)).
+- **Outline.** A tile is drawn through its cell's outline and glyph box,
+  which the board view takes from the geometry: every shape but the square
+  clips the face to the outline's corners and sets the glyphs in a square
+  of the glyph box's smaller side, centred in it. The square outline is the
+  tile itself, painted exactly as a tile given no outline.
 - **Placeholder.** An unknown state, a number outside 0–8, or no board
-  module paints `FALLBACK_COLOR` with a black cross — visibly wrong on
-  purpose.
-- **Tile cache.** `drawTile` keys the cache on `size|pixelRatio|theme id`;
-  on a key change it rebuilds every image (each state, `revealed-0`…`-8`,
-  the closed, pressed and flagged faces at every depth step but 1, the
-  placeholder) on offscreen canvases of `round(size × ratio)` device
-  pixels, then every draw is one `drawImage`. Until a module is handed over
-  it draws and caches nothing.
+  module paints `FALLBACK_COLOR` with a black cross, clipped to the outline
+  — visibly wrong on purpose.
+- **Tile cache.** `drawTile` keys the cache on `size|pixelRatio|theme id`
+  (`cacheKey()`) and each image in it by `tileKey` — outline orientation,
+  state and depth step. On a key change it drops every image; the first
+  draw of an orientation renders all of that orientation's images (each
+  state, `revealed-0`…`-8`, the closed, pressed and flagged faces at every
+  depth step but 1, the placeholder) on offscreen canvases of the outline's
+  box × ratio in device pixels, so a grid with two orientations caches
+  both, and then every draw is one `drawImage`. Until a module is handed
+  over it draws and caches nothing.
 - **Depth.** A depth draws from the cached step nearest it, so the motion
   layer's depth costs a few cached images and never a draw per frame. On a
   bevel style a pressed tile's slope narrows with the depth as a closed

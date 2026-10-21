@@ -432,6 +432,114 @@ test('the page\'s board art hand-off keeps the last module handed to it and tell
   assert.deepEqual(heard, ['joyful-tiles'], 'an unsubscribed listener hears nothing more');
 });
 
+// ---------------------------------------------------------------- the geometry's outline
+
+// A cell of the square geometry: its outline and glyph box at `tile`, as the board view hands them.
+async function squareCell(c, tile, gap = 0) {
+  const { createGeometry } = await import('../js/geometry/index.js');
+  const geometry = createGeometry('square', 4, 3);
+  return { outline: geometry.outline(c, tile, gap), glyphBox: geometry.glyphBox(c, tile, gap) };
+}
+
+// A triangle cell pointing `orientation` ('up' or 'down') with its box at x, y, `tile` wide and
+// tall, its glyph box the lower or upper middle of the box.
+function triangleCell(orientation, x, y, tile) {
+  const up = orientation === 'up';
+  const points = up ? [[x + tile / 2, y], [x + tile, y + tile], [x, y + tile]] : [[x, y], [x + tile, y], [x + tile / 2, y + tile]];
+  return {
+    outline: { shape: 'triangle', orientation, x, y, width: tile, height: tile, points },
+    glyphBox: { x: x + tile / 4, y: y + (up ? tile / 2 : 0), width: tile / 2, height: tile / 2 },
+  };
+}
+
+test('the painter takes a cell\'s outline and glyph box: the square outline paints exactly what the tile alone paints, in every state and theme', async () => {
+  const { paintTileWith, TILE_STATES } = await skinModule();
+  for (const b of Object.values(BOARDS)) {
+    for (const state of [...TILE_STATES, 'bogus']) {
+      for (const number of state === 'revealed' ? [0, 1, 3, 8, 9] : [0]) {
+        const alone = fakeContext();
+        const shaped = fakeContext();
+        paintTileWith(b, alone, 4, 8, 32, state, number);
+        paintTileWith(b, shaped, 4, 8, 32, state, number, 1, await squareCell(5, 32, 3));
+        assert.deepEqual(trace(shaped), trace(alone), `${state}/${number}: the same drawing`);
+      }
+    }
+  }
+});
+
+test('a cell\'s outline clips the face and its glyph is set in its glyph box; the placeholder still shows on any outline', async () => {
+  const { paintTileWith } = await skinModule();
+  const cell = triangleCell('up', 40, 80, 32);
+  const ctx = fakeContext();
+  paintTileWith(JOYFUL, ctx, 0, 0, 32, 'revealed', 3, 1, cell);
+  const clip = ctx.calls.findIndex((c) => c.op === 'clip');
+  assert.ok(clip >= 0, 'the face is clipped to the outline');
+  const path = ctx.calls.slice(0, clip).filter((c) => c.op === 'moveTo' || c.op === 'lineTo').map((c) => c.args.join());
+  assert.deepEqual(path, ['16,0', '32,32', '0,32'], 'the clip path is the outline\'s corners, from the tile\'s own corner');
+  const translates = ctx.calls.filter((c) => c.op === 'translate').map((c) => c.args.join());
+  assert.ok(translates.includes('8,16'), 'the glyph is drawn from its glyph box\'s corner');
+  assert.ok(ctx.calls.some((c) => c.op === 'fillText' && String(c.args[0]) === '3'), 'the number is drawn');
+  for (const [board, state, number] of [[JOYFUL, 'bogus', 0], [JOYFUL, 'revealed', 9], [null, 'closed', 0]]) {
+    const wrong = fakeContext();
+    paintTileWith(board, wrong, 0, 0, 32, state, number, 1, cell);
+    assert.ok(filledWith(wrong).has(FALLBACK_COLOR), `${String(state)}/${number} on a triangle paints the placeholder colour`);
+  }
+});
+
+test('the cache key\'s orientation part: each image is keyed by its outline orientation as well as its state, number and depth', async () => {
+  const { tileKey } = await skinModule();
+  assert.equal(tileKey('none', 'closed', 0), 'none:closed');
+  assert.equal(tileKey('up', 'revealed', 3), 'up:revealed-3');
+  assert.equal(tileKey('down', 'revealed', 3), 'down:revealed-3');
+  assert.equal(tileKey('down', 'flagged', 0, 0.5), 'down:flagged@0.5');
+  assert.equal(tileKey('up', 'revealed', 9), 'up:placeholder', 'a number outside 0–8 is the placeholder');
+  assert.equal(tileKey('up', 'bogus', 0), 'up:placeholder', 'an unknown state is the placeholder');
+  assert.notEqual(tileKey('up', 'closed', 0), tileKey('down', 'closed', 0), 'two orientations, two images');
+});
+
+test('the cache holds one image per state and outline orientation, so a grid with two orientations caches both', async () => {
+  const mod = await skinModule();
+  const { skin, canvases } = await makeSkin(mod);
+  const board = fakeContext();
+  skin.drawTile(board, 0, 0, 30, 'closed', 0, 1, null, triangleCell('up', 0, 0, 30));
+  const per = canvases.made.length;
+  assert.equal(per, mod.TILE_STATES.length - 1 + 9 + 1 + 3 * (mod.DEPTH_STEPS.length - 1), 'one orientation: every image once');
+  assert.equal(skin.cacheKey(), '30|1|joyful-tiles', 'the orientation is not a rebuild of the cache');
+  skin.drawTile(board, 15, 0, 30, 'closed', 0, 1, null, triangleCell('down', 15, 0, 30));
+  assert.equal(canvases.made.length, 2 * per, 'the second orientation adds its own images');
+  for (const o of ['up', 'down']) {
+    for (const state of mod.TILE_STATES) skin.drawTile(board, 0, 0, 30, state, 2, 1, 0.5, triangleCell(o, 0, 0, 30));
+  }
+  assert.equal(canvases.made.length, 2 * per, 'both orientations stay cached');
+  const up = canvases.made[0].ctx;
+  const down = canvases.made[per].ctx;
+  assert.notDeepEqual(trace(up), trace(down), 'each orientation\'s image is drawn through its own outline');
+  skin.drawTile(board, 0, 0, 30, 'closed', 0, 1, null, await squareCell(0, 30));
+  assert.equal(canvases.made.length, 3 * per, 'the square outline is a third orientation');
+  skin.drawTile(board, 0, 0, 30, 'closed', 0, 1);
+  assert.equal(canvases.made.length, 3 * per, 'a tile with no outline is the square\'s');
+  skin.drawTile(board, 0, 0, 32, 'closed', 0, 1, null, triangleCell('up', 0, 0, 32));
+  assert.equal(canvases.made.length, 4 * per, 'a size change drops every orientation, and rebuilds the one drawn');
+});
+
+test('a tile drawn through its square outline is the same image, copied to the same place, as the tile alone', async () => {
+  const mod = await skinModule();
+  const alone = await makeSkin(mod);
+  const shaped = await makeSkin(mod);
+  const a = fakeContext();
+  const s = fakeContext();
+  const cell = await squareCell(6, 30, 2);
+  alone.skin.drawTile(a, cell.outline.x, cell.outline.y, 30, 'revealed', 4, 2, null);
+  shaped.skin.drawTile(s, cell.outline.x, cell.outline.y, 30, 'revealed', 4, 2, null, cell);
+  assert.equal(shaped.canvases.made.length, alone.canvases.made.length);
+  alone.canvases.made.forEach((c, i) => {
+    const t = shaped.canvases.made[i];
+    assert.deepEqual([t.width, t.height], [c.width, c.height]);
+    assert.deepEqual(trace(t.ctx), trace(c.ctx), `image ${i}: the same pixels`);
+  });
+  assert.deepEqual(s.calls.at(-1).args.slice(1), a.calls.at(-1).args.slice(1), 'copied at the same rectangle');
+});
+
 // ---------------------------------------------------------------- the shell's hand-off
 
 function fakeApplier(id = null, mod = null) {

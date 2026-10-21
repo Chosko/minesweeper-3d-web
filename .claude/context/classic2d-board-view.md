@@ -100,9 +100,11 @@ cell motion, the end effect — is
   board out again (its gap may change) and repaints it.
 - **Geometry.** Every Classic 2D board — the game, the menu's and Daily
   previews, the replay viewer — is mounted on the square geometry of its
-  grid. The board's extent, each cell's outline (asked once per tile and
-  gap) and centre, the cell at a board point, the floor and the tile at
-  each board scale are the geometry's; the view computes no column or row.
+  grid. The board's extent, each cell's outline and glyph box (asked once
+  per tile and gap) and centre, the cell at a board point, the floor and
+  the tile at each board scale are the geometry's; the view computes no
+  column or row, and hands the skin each cell's outline and glyph box with
+  every tile it draws, on the board and on the motion layer.
   A repaint walks the index span between the cells at the view's corners,
   widened by a row each way, and draws those in view.
 - **Pitch.** On the square geometry tiles sit one pitch apart, the tile

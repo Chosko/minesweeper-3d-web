@@ -387,15 +387,22 @@ export function createBoardView({
   const scroll = { x: 0, y: 0 };
 
   // Each cell's outline on the board (the geometry's, at the layout's tile and gap), asked the first
-  // time the cell is placed at that tile and gap.
+  // time the cell is placed at that tile and gap, and its shape — the outline with its glyph box —
+  // that the skin draws its tile through.
   let outlines = [];
+  let shapes = [];
   let outlinesAt = null;
   function outline(c) {
     if (outlinesAt?.tile !== layout.tile || outlinesAt?.gap !== layout.gap) {
       outlines = new Array(count);
+      shapes = new Array(count);
       outlinesAt = { tile: layout.tile, gap: layout.gap };
     }
     return (outlines[c] ??= geometry.outline(c, layout.tile, layout.gap));
+  }
+  function shapeOf(c) {
+    const o = outline(c);
+    return (shapes[c] ??= { outline: o, glyphBox: geometry.glyphBox(c, layout.tile, layout.gap) });
   }
 
   // Cell c's tile — its outline's box — in canvas CSS pixels: { x, y, width, height }.
@@ -419,7 +426,7 @@ export function createBoardView({
       const centre = geometry.centre(c, layout.tile, layout.gap);
       return { ...cellRect(c), cx: layout.offsetX + centre.x - scroll.x, cy: layout.offsetY + centre.y - scroll.y };
     },
-    paint: (lctx, c, face, x, y, size, depth) => skin.drawTile(lctx, x, y, size, face, game?.cellNumber(c) ?? 0, ratio, depth),
+    paint: (lctx, c, face, x, y, size, depth) => skin.drawTile(lctx, x, y, size, face, game?.cellNumber(c) ?? 0, ratio, depth, shapeOf(c)),
     clip: () => (layout.scrolls ? { x: layout.viewX, y: layout.viewY, width: layout.viewWidth, height: layout.viewHeight } : null),
     onSettle: (cells) => draw(cells),
   }) : null;
@@ -541,7 +548,7 @@ export function createBoardView({
       let shown = state;
       if (state === CELL.CLOSED && pressed.has(c)) shown = PRESSED;
       else if (state === CELL.CLOSED && c === mark && !effect) shown = MARKED;
-      const paint = () => skin.drawTile(ctx, x, y, t, shown, game.cellNumber(c), ratio);
+      const paint = () => skin.drawTile(ctx, x, y, t, shown, game.cellNumber(c), ratio, null, shapeOf(c));
       if (effect) drawWave(ctx, x, y, t, waveAt(effect, c, now, effectT, boardOf()?.end2d), boardOf(), paint);
       else paint();
       const ring = boardOf()?.palette?.faces2d?.marked?.ring;
