@@ -91,6 +91,8 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   mode-aware help and first-use hints.
 - [../domain/features/settings.md](../domain/features/settings.md) — the
   pause-card shortcuts.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the controls list the help surfaces share.
 
 ## CROSS-REFERENCES
 

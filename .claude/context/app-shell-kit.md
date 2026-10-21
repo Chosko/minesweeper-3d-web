@@ -31,7 +31,9 @@ share the kit sets). Beside the m1 kit, the catalogue holds the switch row
 switch: label and help on the left, the switch at the right edge, the label
 inked while the switch is locked) and the shared layout's components: `ui-button--danger`, `ui-button--quiet`
 (variant `ui-button--sm`; `chosen` while a latched toggle is on),
-`ui-wordmark`, `ui-backdrop`,
+`ui-wordmark`, `ui-backdrop`, the plain stat tile `ui-stat--tile` (variant
+`ui-stat--warm`), `ui-panel--muted`, the code chip `ui-code` (its one part
+`value`), the pager `ui-pager` (`button`, `current`),
 `ui-frame` (parts `head`, `back`, `title`, `action`, `body`, `foot`,
 `status`, `summary`; variant `ui-frame__foot--action`, the white action
 foot; slot `window-chrome`), `ui-mode-entry` (`entry`,

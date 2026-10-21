@@ -74,6 +74,8 @@ Remembered view (`js/records/view-prefs.js`)
   — the library view, pin state and filter, Watch.
 - [../domain/features/replay-playback.md](../domain/features/replay-playback.md)
   — replay file download and import.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the quiet icon row actions and the inline confirm row.
 
 ## CROSS-REFERENCES
 

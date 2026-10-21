@@ -17,7 +17,7 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
 ## PUBLIC API
 
 `js/shell/menu.js`
-- `MENU_ENTRIES` — nine entries in three blocks (`block` 0: `classic-2d`,
+- `MENU_ENTRIES` — the entries in three blocks (`block` 0: `classic-2d`,
   `hexagon`, `triangle`, `surface`, `3d` (`needs: 'webgl2'`), each a mode;
   1: `daily`, `records`, `settings`, each a screen; 2: `quit`, `needs:
   'desktop'`). `UNAVAILABLE_REASONS` by missing feature (`webgl2`,
@@ -96,8 +96,8 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   shrinks on a shorter window down to its entries' floor, below which the
   menu scrolls (`overflow-y: auto`). The entries and the preview share that
   row, so the `ui-mode-list` takes exactly the preview's height; every entry
-  has `flex-basis: 0` and grows to an equal share, at least 44 px (the
-  floor, a finger tall on any pointer), the selected one by a larger
+  has `flex-basis: 0` and grows to an equal share, at least the entries' floor (a
+  finger tall on any pointer), the selected one by a larger
   `flex-grow` and to a minimum height (the theme's at xl, the shell's per
   size below it); a block's first entry (`data-block-start`) sits a
   spacer further than the list's gap. Below xl the shell sizes the labels,

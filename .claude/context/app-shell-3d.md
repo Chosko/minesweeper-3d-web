@@ -59,8 +59,9 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
   goes to the click-to-play card. A failed board releases lock for its
   offer without pausing.
 - **Refusals.** `onLockError` on the ready or pause card asks `LOCK_FALLBACK`
-  for the message (`NO_MOUSE_MSG` without a mouse). A refusal within
-  1500 ms of a release is not counted; the first counted one says the mouse
+  for the message (`NO_MOUSE_MSG` without a mouse), which the card shows
+  in its warn note `#ready-msg`. A refusal within
+  `RELOCK_COOLDOWN_MS` of a release is not counted; the first counted one says the mouse
   could not be captured; from the second the page is blocked for its
   session (an acquired lock resets only the count). While blocked every
   ready card shows the explanation and `#ready-blocked` (`#ready-drag` and

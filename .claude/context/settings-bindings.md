@@ -94,6 +94,8 @@ every function.
 
 - [../domain/features/settings.md](../domain/features/settings.md) — the
   read-only bindings list on the page.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the controls list every list is drawn in, in the canvas's short wording.
 
 ## CROSS-REFERENCES
 

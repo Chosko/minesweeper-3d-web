@@ -22,8 +22,8 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
   `webgl2`), `COMMANDS` (`toggle`, `prev`, `next`, `framePrev`,
   `frameNext`, `start`, `end`, `slower`, `faster`, `bbbv`, `camera`,
   `sound`), `REPLAY_KEYS`, `REPLAY_PAD` (Start / Y, LB / RB, LT / RT),
-  `REPLAY_KEY_LINE`, `SEEK_STEP_MIN_MS` (100),
-  `MAX_REPLAY_FILE_BYTES` (16 MB), `BBBV_TINTS` (the count of
+  `REPLAY_KEY_LINE`, `SEEK_STEP_MIN_MS`,
+  `MAX_REPLAY_FILE_BYTES`, `BBBV_TINTS` (the count of
   `BBBV_TINT_TOKENS`, re-exported from [replay-viewers.md](replay-viewers.md)'s
   `viewer-2d.js`), `LEAD_IN_MS`.
 - `prepareReplay({replay?, replayId?, file?}, {library})` → Promise of
@@ -96,7 +96,7 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
   or unreadable too); a box replay with no 3D viewer (no WebGL 2); any other
   graph kind with no viewer. Back works in every case.
 - **The timeline.** A replay opens paused on the start position (the
-  closed board, game time -500, clock 00.000) at 1×, Show 3BV off, the
+  closed board, `LEAD_IN_MS` before game time 0, clock 00.000) at 1×, Show 3BV off, the
   camera on Follow; at game time 0 the time-0 actions (the first click, a
   3D game's flags before it) play as the first action.
 - **The viewer's frame.** `tick(ms)` runs once per frame: while playing it
@@ -104,7 +104,7 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
   while paused it only calls `place()`. Previous / next go to the action
   before or after (from the start position, next is the time-0 actions);
   frame back / on move one movement sampling interval; both pause. The
-  seek bar steps 1% (at least `SEEK_STEP_MIN_MS`), marks paused spans and
+  seek bar steps by `seekStep` (at least `SEEK_STEP_MIN_MS`), marks paused spans and
   ticks every action. At the end the final board stays with the end line;
   play restarts from the start position.
 - **Cell motion.** A frame playback drew plays its changed cells' cell

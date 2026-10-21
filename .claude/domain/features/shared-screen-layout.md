@@ -225,8 +225,8 @@ In scope (m2b-themes):
   the backdrop that fits without scrolling on the largest window; on the
   compact windows two independent stacks; every setting row ruled; the
   Data panel's exports small buttons with download icons, *Reset all data*
-  confirmed in a confirm box and its failure an err note; no Controls action
-  that duplicates the bindings list. On a phone the bindings device choice
+  confirmed in a confirm box and its failure an err note; no Controls
+  action, the bindings list being the page's controls reference. On a phone the bindings device choice
   spans the full width, each option's label wrapping inside it, and the
   exports stack.
 - **Pause card, replay viewer, generating and failed-board cards, the 3D
@@ -387,12 +387,15 @@ kit are described in [app-shell.md](../../context/app-shell.md),
   `tag`, `card`, `badge`, `name`, `note`; variant `ui-scene-panel--live`);
   `ui-stat--tile` (plain by default, with the warm variant and the new-best
   state); `ui-wordmark` (`word`); `ui-button--quiet`; `ui-button--danger`;
-  the icon set and the button's leading-icon slot; `ui-switchrow`; the
-  number field's `is-invalid` state; `ui-confirm`; `ui-note--warn` and
-  `ui-note--err`; `ui-panel--muted`; `ui-divider`; `ui-tabs` (`tab`);
-  `ui-checkbox`; `ui-table` (with its recent-games variant); the pager; the
-  code chip; the controls list; the frame's compact and touch steps and
-  its white action foot; `ui-toast` (`icon`, `text`); a message
+  the icon set `ui-icon` and the button's leading-icon slot, which a
+  button's `data-icon` names; `ui-switchrow`; the number field's
+  `is-invalid` state; `ui-confirm`; `ui-note--warn` and `ui-note--err`;
+  `ui-panel--muted`; `ui-divider`; `ui-tabs` (`tab`); `ui-checkbox`;
+  `ui-table` (with its recent-games variant `ui-table--recent`); the pager
+  `ui-pager`; the code chip `ui-code`; the controls list `ui-controls`
+  (`key`, `action`); `ui-frame`'s size steps — desktop, compact and
+  touch — and its white action foot `ui-frame__foot--action`; `ui-toast`
+  (`icon`, `text`); a message
   `ui-card`'s `icon`; and the compositions `ui-mode-list`, `ui-options`,
   `ui-key-hints` and `ui-list`.
 - **Accessibility and controller parity** — every control has an accessible

@@ -14,7 +14,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
 ## PUBLIC API
 
 `js/ui.js` exports
-- `DIM_MIN` / `DIM_MAX` (1/100, from `js/mode3d/board-choice.js`);
+- `DIM_MIN` / `DIM_MAX` (from `js/mode3d/board-choice.js`);
   `clampSettings(s)` → `{X,Y,Z,mines}` integers, mines 1..X*Y*Z − 1 (a
   1×1×1 board clamps to 0); `startGame` clamps with it.
 - `fmtDims`, `pauseLine(time, minesLeft)`, `NO_MOUSE_MSG`, `TOUCH_MSG`,
@@ -27,7 +27,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   title to its size line (`boardLine2D`, `boardLine3D` with mines).
 - `UI(cb)` — callbacks are named after the control they serve
   (`onMenuEntry`, `onBack`, `onReady*`, `onResume`, `onRestart`,
-  `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleTap`,
+  `onMainMenu`, `onPause`, `onToggleSwap`, `onTapMode`,
   `onDismissHint(mode, kind)`, `on{Retry,Standard,OfferMenu,Cancel}{2D,3D}`,
   `onStandardWait3D`, `onLearnEnd(won)`, `onLearnBack`, `onBackToStart`,
   `onResetAll`). Method groups:
@@ -66,8 +66,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     `[data-pad-glyph]` slot, the Records screen's LB / RB and LT / RT hints),
     `setCamera('fly' | 'orbit')` (the 3D rows, the ready card's among
     them, follow the Camera setting), `flash`,
-    `toast(msg, ms, { firstUse })` (the text into `#toast-text`, the icon kept; `firstUse` marks a first-use hint's toast `toast--first-use`, never shown over the results), `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `openControls` / `closeControls` /
-    `isControlsOpen`, `isPauseVisible`, `setReadyMessage`.
+    `toast(msg, ms, { firstUse })` (the text into `#toast-text`, the icon kept; `firstUse` marks a first-use hint's toast `toast--first-use`, never shown over the results), `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `isPauseVisible`, `setReadyMessage`.
   HUD writes (`updateHud`, `updateFigures*`, `setArrow`, `setReadout`)
   touch the DOM only on change.
 
@@ -95,7 +94,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   under `(pointer: coarse)`, never taking focus), the title `#c2d-title` and
   Pause `#c2d-pause` in its head; `#hud-tap` under the board (the Tap choice,
   a `ui-segmented` radiogroup of "Tap: Reveal" and "Tap: Flag", only under
-  `(pointer: coarse)`, 48 px tall, its options never taking focus; its
+  `(pointer: coarse)`, its options never taking focus; its
   chosen option's value goes through `onTapMode` to `mode2d.setTapMode`,
   written back with `setTapMode`); the foot line `#c2d-size`. Its layout:
   [classic2d-mode.md](classic2d-mode.md) § Game window.
@@ -149,6 +148,8 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   — the counters' display formats.
 - [../domain/features/in-game-layout.md](../domain/features/in-game-layout.md)
   — the game window, the 3D overlay and the live figures.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the confirmations, the board status cards and the scrim behind a card.
 - [../domain/features/settings.md](../domain/features/settings.md) — the
   Settings page and the pause-card shortcuts.
 - [../domain/features/game-shell.md](../domain/features/game-shell.md) —

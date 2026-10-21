@@ -90,7 +90,7 @@ Page (`js/settings/page.js`)
   stripe per token.
 
 Reset (`js/settings/reset.js`)
-- `RESET_KEYS` — `LEGACY_KEYS`' four keys and `FIRST_USE_LEGACY_KEY`
+- `RESET_KEYS` — `LEGACY_KEYS` and `FIRST_USE_LEGACY_KEY`
   (`ms3d.hintH.done`); `ms3d.custom`, `ms3d.best.*` and `ms3d.lastPreset`
   stay.
 - `createReset({ storage, blobStore, legacy?, waitFor?, reload })` →

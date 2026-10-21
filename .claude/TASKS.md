@@ -1311,7 +1311,7 @@ Feature: theme-system
 
 ## 244. Update documentation for feature `shared-screen-layout`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-kit-helpers.md, .claude/context/app-shell-menu.md, .claude/context/app-shell-daily.md, .claude/context/app-shell-2d.md, .claude/context/app-shell-3d.md, .claude/context/app-shell-3d-play.md, .claude/context/app-shell-pause.md, .claude/context/app-shell-results.md, .claude/context/app-shell-ui.md, .claude/context/app-shell-help.md, .claude/context/settings-bindings.md, .claude/context/settings-page.md, .claude/context/records-screen.md, .claude/context/records-screen-view.md, .claude/context/records-library-view.md, .claude/context/records-board-code.md, .claude/context/replay-viewer-screen.md, .claude/context/replay-viewers.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/shared-screen-layout.md
 Preconditions: 218, 219, 220, 221, 222, 223, 228, 229, 230, 233, 234, 235, 237, 238, 239, 240, 241, 242

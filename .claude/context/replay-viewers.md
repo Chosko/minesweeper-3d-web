@@ -17,7 +17,7 @@ DOM-free at import.
 ## PUBLIC API
 
 `viewer-2d.js`
-- `TRAIL_MS` (150), `TRAIL_STEP_MS` (25); `movementTrack(movement,
+- `TRAIL_MS`, `TRAIL_STEP_MS`; `movementTrack(movement,
   interval?)`, `pointerAt(track, t)`, `cursorAt(track, t)`,
   `pointerPixel(layout, scroll, point)` (a sample in pitches to canvas
   pixels), `trailPoints(track, t, ms?)`.

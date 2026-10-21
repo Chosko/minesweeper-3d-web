@@ -91,7 +91,7 @@ Records screen (`js/records/screen.js`)
   `show`; a filter change starts the recent games on page one.
 - **Paged lists.** Both lists newest first, `PAGE_SIZE` per page
   (`pageOf`), past the end clamped, each under a kit pager (`bindPager`:
-  First, five numbered pages, Last; hidden on one page) and a range caption.
+  First, the numbered pages of `PAGER_WINDOW`, Last; hidden on one page) and a range caption.
 
 ## DOMAIN DEPENDENCIES
 

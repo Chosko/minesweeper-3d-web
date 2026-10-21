@@ -44,14 +44,14 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   `keyHintKeys` for the active device), `ui-key-hint--pad` for controller
   buttons, hidden with none (touch); `UI` calls it on every device change
   ([app-shell-help.md](app-shell-help.md)).
-- `PAGER_WINDOW` (5), `pagerState(page, pages)` → `{hidden, page, pages,
+- `PAGER_WINDOW` (the numbered pages shown), `pagerState(page, pages)` → `{hidden, page, pages,
   first, last, numbers: [{page, label, current}]}`; `bindPager(nav, {onPage,
   name?})` → `{show(state)}`: fills a `.ui-pager` with First, the numbered
   pages and Last (`data-page`), the current page `aria-current="page"` and
   `aria-disabled` (still focusable, so a pager button that becomes disabled
   hands focus to it).
 - The icon set: `ICONS` (frozen, name → `{stroke, shapes: [[tag, attrs],
-  …]}`), the kit's one source of the canvas's stroke icons on a 24 px grid,
+  …]}`), the kit's one source of the canvas's stroke icons,
   each drawn in `currentColor`; the catalogue head in `css/components.css`
   names them. `iconMarkup(name)` (svg text), `createIcon(doc, name)` (an
   `svg.ui-icon[data-icon]`, `aria-hidden`, in the SVG namespace) — an
@@ -103,6 +103,9 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
 
 - [../domain/features/screen-components.md](../domain/features/screen-components.md)
   — the controls' keyboard and controller contract, the code chip.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the icon set and its leading-icon slot, the notes, the slider's fill,
+  the pager and the code chip's one shape.
 - [../domain/features/in-game-layout.md](../domain/features/in-game-layout.md)
   — the counter formats and the figures panel's live part.
 

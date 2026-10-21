@@ -99,9 +99,9 @@ presses and releases Enter and ' through `input.actions` as their keys do;
   draws the crosshair's arms only while a cell is targeted, with no
   ring. Picking is cached by
   `S.pickKey`. Spacing resets per game to `SPACING_START`; the menu demo (`makeDemo`,
-  7³/30, decorative) uses 1.25 and an orbiting camera.
+  decorative) keeps its own spacing and an orbiting camera.
 - **Spacing.** Every change in play goes through `setSpacing(s)`: clamped
-  to [1, 10], the camera rescaled about the board centre by new / old
+  to `SPACING_MIN`–`SPACING_MAX`, the camera rescaled about the board centre by new / old
   (`FlyCamera.rescale`, yaw and pitch kept; the orbit's distance too),
   `ui.setSpacing` for the tools strip's readout. The wheel in Fly
   (`wheelSpacing`, its run held in `wheelRun`) and the debug hook's `wheel`

@@ -36,7 +36,7 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   `formatTimeDifference`, `formatRate` / `formatRateDifference`,
   `formatEfficiency` / `formatEfficiencyDifference`, `formatClicks`,
   `formatWinRate` (re-exported by the Records screen); `EQUAL_BEST`, `DASH`,
-  `NOTES`, `NOT_ELIGIBLE`, `FIRST_BEST`, `CHALLENGE_LABEL` ("Challenge · not
+  `NOTES`, `FIRST_BEST`, `CHALLENGE_LABEL` ("Challenge · not
   eligible for bests"), `CHALLENGE_NOTE`.
 - `resultsContent({summary, comparison?, saved?, notSaved?, watch?, rank?,
   streak?, standing?, watchBest?, swapped?})` → `{outcome, title, board, rank, label,
@@ -104,8 +104,7 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   capturing listeners as `END_SKIP`, keys only Esc in the look and every key outside it) ends it on Esc,
   any mouse button, any controller button or the lock's release
   (`endLook` → back to `results`, focus on Play again), consuming the
-  press whole; an Esc within 500 ms of the lock's release does not reopen
-  it.
+  press whole; the Esc that released the look's lock does not reopen it.
 - **Actions.** Play again (also `Enter`, `R`) → `RESULTS.playAgain` →
   `PAUSE.restart`, or, once the mode was left, `MODES.start('classic-2d',
   LAST_CHOICE_2D.current)` or `MODES.start('3d', board3dChoice)` through
