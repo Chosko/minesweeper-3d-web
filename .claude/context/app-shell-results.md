@@ -88,7 +88,9 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 - [app-shell-pause.md](app-shell-pause.md) — the hand-offs the flow attaches
   to.
 - [testing.md](testing.md) — `tests/results.test.mjs`,
-  `tests/results-watch.test.mjs`, `tests/replay-handoff.test.mjs`.
+  `tests/results-watch.test.mjs` (fast only; the results' browser tests,
+  Watch replay's among them, are in `tests/results.test.mjs`),
+  `tests/replay-handoff.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

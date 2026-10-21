@@ -94,7 +94,7 @@ How a browser test is built:
   mines or a fixed seed that reaches it (a loss, not a first-click win),
   pinned by a fast test beside it; a stubbed generation worker answers only
   the test's own board, so the start-up's daily pre-generation never takes
-  its place (`shell-mode-3d`).
+  its place.
 
 Browser environment:
 - Playwright is installed globally (`/opt/node22/lib/node_modules/playwright`,

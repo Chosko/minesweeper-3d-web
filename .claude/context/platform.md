@@ -129,7 +129,9 @@ return a Promise and may throw.
 ## CROSS-REFERENCES
 
 - [testing.md](testing.md) — `tests/platform-storage.test.mjs`,
-  `tests/platform-browser.test.mjs`, `tests/platform-blob-store.test.mjs`.
+  `tests/platform-browser.test.mjs` (every platform browser test, the
+  IndexedDB blob store's round trip among them),
+  `tests/platform-blob-store.test.mjs`.
 - [replay-library.md](replay-library.md) — the blob store's one user.
 - [app-shell.md](app-shell.md) — the `ms3d.*` keys nothing reads.
 - [settings.md](settings.md) — the settings document, the legacy keys it

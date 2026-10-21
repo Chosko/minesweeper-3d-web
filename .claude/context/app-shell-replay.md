@@ -94,7 +94,8 @@ are listed in [app-shell.md](app-shell.md) § PUBLIC API.
   `spawnPose`; [app-shell-3d-camera.md](app-shell-3d-camera.md) — the Camera
   setting's mode the free camera follows.
 - [testing.md](testing.md) — `tests/replay-viewer.test.mjs`,
-  `tests/replay-viewer-3d.test.mjs`, `tests/results-watch.test.mjs`,
+  `tests/replay-viewer-3d.test.mjs`, `tests/results-watch.test.mjs` (fast
+  only; Watch replay's browser test is in `tests/results.test.mjs`),
   `tests/records-replays.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
