@@ -82,7 +82,9 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   `AIM_DWELL_MS` on a revealed number with a closed cube behind it. The
   toast's, the aim hint's and Learn 3D's words come from `ui.hint`, in the
   names of the device the other help surfaces follow (`_bindDevice`): on
-  touch, the toolbar's buttons and the gestures.
+  touch, the toolbar's buttons and the gestures. Both are first-use toasts
+  (`ui.toast(…, { firstUse: true })`, the toast's `toast--first-use`), which
+  `css/style.css` hides while the results screen shows.
 
 ## DOMAIN DEPENDENCIES
 

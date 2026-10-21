@@ -308,7 +308,7 @@ test('while a 3D replay shows, the game\'s chips and toast stay hidden and the v
   const ui = read('js/ui.js');
   const show = ui.slice(ui.indexOf('showReplay() {'), ui.indexOf('\n  }\n', ui.indexOf('showReplay() {')));
   assert.match(show, /classList\.add\('replaying'\)/);
-  assert.match(ui, /toast\(msg, ms = 2200\) \{\s*if \(this\._replaying\) return;/, 'no toast while the viewer shows');
+  assert.match(ui, /toast\(msg, ms = 2200, \{ firstUse = false \} = \{\}\) \{\s*if \(this\._replaying\) return;/, 'no toast while the viewer shows');
   assert.match(read('css/style.css'), /body\.replaying :is\(#mode-chips, #hud-tools, #hint-strip, #toast\) \{ display: none; \}/);
   assert.match(MAIN, /hide: \(\) => \{ REPLAY_VIEWER\.hide\(\); ui\.hideReplay\(\); \}/, 'leaving restores the game\'s chrome');
 });

@@ -38,10 +38,12 @@ In scope (m1-classic-2d):
   bests, and the 3BV/s and efficiency tiles show the standing best without
   a difference.
 - The details, three labelled rows: *Clicks* — the counted clicks, then the
-  reveal, flag and chord clicks and the wasted total; *Next target* after a
-  win, *Streak* after a loss; *Win rate* — the board's standing counting
-  this game, its win rate with its completed games' figure, and its longest
-  streak (`personal-records`).
+  reveal clicks as *left*, the flag clicks as *right*, the chords and the
+  wasted total ("128 · left 104 · right 24 · chords 0 · wasted 0"; *reveal*
+  and *flag* in place of left and right while Swap clicks is on); *Next
+  target* after a win, *Streak* after a loss; *Win rate* — the board's
+  standing counting this game, its win rate with its completed games'
+  figure, and after a win its longest streak (`personal-records`).
 - The next-target row: after a win the board's best time as it stands after
   this game, to beat for a new best, and the board's current streak. The
   streak row after a loss that ended a streak: the streak ended and the
@@ -94,7 +96,7 @@ composed from the `screen-components` kit.
   first), out of the board's won games including this one; a no-guess board
   ranks only among its own games. The records model and its documents are
   unchanged by it.
-- **Results view.** One column sized to its content, arranged by
+- **Results view.** One column, its width by window size, arranged by
   `shared-screen-layout`: the header, the figure tiles with their
   comparisons and badges, the details, the board code, the action bar.
   Time is shown to the

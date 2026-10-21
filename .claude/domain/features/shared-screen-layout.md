@@ -95,8 +95,9 @@ In scope (m2b-themes):
     the type follow the desktop step, a **compact** step for the smaller
     desktop windows and a **touch** step for the phone sizes;
   - the **white action foot** — the foot of the board choice, Daily and
-    results screens, a fixed white bottom bar on phones; the game window
-    keeps its yellow foot;
+    results screens, a fixed white bottom bar on phones except the
+    results', which sits in flow at the card's end; the game window keeps
+    its yellow foot;
   - the **message card** layout, with ink text and an even gap between
     icon, title, text and actions, and the **status cards** (generating,
     failed board) centred on the board column;
@@ -194,7 +195,7 @@ In scope (m2b-themes):
   the summary, *Watch replay* and *Play*, and the key hints on Back and
   *Play*. On a phone: one column, no title, no border and no preview, the
   code shown instead, a rule between the mode list and the detail.
-- **Results screen** — one column sized to its content, over the game it
+- **Results screen** — one column, its width by window size, over the game it
   ended, in the order and with the content `results-screen` gives, and the
   3D changes `3d-results-records-screens` gives. A loss takes the canvas's
   neutral header, not the win look; the board line names the mode, and in

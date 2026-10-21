@@ -71,9 +71,11 @@ bind.
     ([app-shell-pause.md](app-shell-pause.md));
   - results `#results`: the frame `#results-frame`, its head
     (`#results-trophy`, `#results-title`, `#results-board`, the rank
-    `#results-rank`, `#r-look`), the tiles `#results-tiles` (`rs-*`), the
-    details table `#results-details` (`rd-*`), the code chip
-    `#results-code`, `#results-note`, and the foot `#results-actions`:
+    `#results-rank`, `#r-look`), the tiles `#results-tiles` (`rs-*`, the
+    3BV solved bar `#rs-progress`), the details table `#results-details`
+    (`rd-*`), the code group `#results-code-group` (its section label
+    `#results-code-label` over the chip `#results-code`), `#results-note`,
+    and the foot `#results-actions`:
     `#r-menu` at the start, `#r-watch`, `#r-watch-best`, `#r-records`,
     `#r-again` at the end ([app-shell-results.md](app-shell-results.md));
   - replay viewer `#replay` (its ids: [replay-viewer-screen.md](replay-viewer-screen.md)):

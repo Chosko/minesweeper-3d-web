@@ -11,8 +11,8 @@
 // precision and a sign, truncated toward zero for time; one that is zero at that precision reads
 // EQUAL_BEST ("= best"), with no sign and no number.
 //
-// resultsContent({ summary, comparison, saved, notSaved, watch, watchBest, rank, streak, standing }) → the
-// screen's content, top to bottom:
+// resultsContent({ summary, comparison, saved, notSaved, watch, watchBest, rank, streak, standing, swapped }) →
+// the screen's content, top to bottom:
 //   { outcome, title, board,
 //     rank        on a ranked win the chip "#3 of 12 wins on this board", from the flow's rank
 //                 { position, of }; null on a loss, a challenge or without a rank;
@@ -31,15 +31,18 @@
 //                 badged. On a loss the time tile says LOSS_NO_BESTS and the 3BV/s and efficiency
 //                 tiles show the standing best alone. Without a comparison (a failed recording) no
 //                 tile carries a comparison;
-//     details     the labelled rows [{ key, label, value }]: clicks ("183 · reveal 153 · flag 22 ·
-//                 chord 8 · wasted 6": the counted clicks, then the reveal, flag and chord clicks,
-//                 effective plus wasted, and the wasted total); then, with a comparison, next after a
-//                 win ("Beat <the board's best time as it stands> for a new best · streak <current>")
-//                 or streak after a loss ("Ended at <before> · longest <longest>" when it ended one,
-//                 else "Beat <best time> for a new best", or FIRST_BEST when the board has no best
-//                 time) — a challenge's row is challenge (CHALLENGE_NOTE) instead; then winRate
-//                 ("67% · completed games 80% · longest streak 4", from the flow's standing
-//                 { winRate, completedWinRate, longestStreak }) when the recording saved one;
+//     details     the labelled rows [{ key, label, value }]: clicks ("128 · left 104 · right 24 ·
+//                 chords 0 · wasted 0": the counted clicks, then the reveal clicks as left, the flag
+//                 clicks as right and the chord clicks, effective plus wasted, and the wasted total —
+//                 "reveal" and "flag" in place of left and right while `swapped`, the Classic 2D
+//                 mouse button swap being on); then, with a comparison, next after a win ("beat <the
+//                 board's best time as it stands> · streak <current>") or streak after a loss
+//                 ("ended at <before> · longest <longest>" when it ended one, else "beat <best
+//                 time>", or FIRST_BEST when the board has no best time) — a challenge's row is
+//                 challenge (CHALLENGE_NOTE) instead; then winRate, when the recording saved one,
+//                 from the flow's standing { winRate, completedWinRate, longestStreak }: after a win
+//                 "67% · completed games 80% · longest streak 4", after a loss "67% · completed
+//                 games 80%";
 //     code        the game's board code (js/records/board-code.js codeOf — a daily's in its daily
 //                 form), shown with Copy and Copy link; null for a game with no seed;
 //     notes: [text], watch, watchBest, compact, look, over3d }
@@ -54,13 +57,15 @@
 //
 // createResultsView({ root, onPlayAgain, onWatch?, onWatchBest?, onRecords, onMenu, onLook?, onCopy? }) →
 // { show(content), hide(), noteLook(text) }: fills the #results markup by id and calls back on its
-// actions. The frame (#results-frame) carries data-outcome; the head the trophy on a win
-// (#results-trophy), the title, the board line, the rank chip (#results-rank) — under the title
-// instead (#results-rank-line) over the 3D scene — or the challenge chip (#results-label); the
-// tiles (#rs-<key>) each their value, detail line (data-delta its direction), the tile's
-// data-new-best and its "New best" ui-chip--best, and 3BV solved its <progress>; the detail rows
-// (#rd-clicks, #rd-target, #rd-winRate) their label and value, a row without one hidden; the code
-// the #results-code chip (bindCodeChip, js/ui/components.js), whose Copy and Copy link call
+// actions. The frame (#results-frame) carries data-outcome, which gives a loss its neutral head; the
+// head the trophy tile on a win (#results-trophy), the title, the board line, the rank chip
+// (#results-rank) — at the end of the board line instead ("… · #9 of 42 wins on this board") over
+// the 3D scene — or the challenge chip (#results-label); the tiles (#rs-<key>) each their value,
+// detail line (data-delta its direction), the tile's data-new-best and its "New best"
+// ui-chip--best, and 3BV solved its <progress>; the detail rows (#rd-clicks, #rd-target,
+// #rd-winRate) their label and value, a row without one hidden; the code its group
+// (#results-code-group: the "Board code" section label and the #results-code chip, bindCodeChip,
+// js/ui/components.js), hidden without a code, whose Copy and Copy link call
 // onCopy({ kind, code, select }). Look at the board (#r-look, in the head) shows only while
 // content.look, the root then carrying `results--look`, under which Main menu shows no Esc key hint
 // (css/style.css); Watch replay (#r-watch) only
@@ -127,14 +132,19 @@ export function formatRateDifference(v) { return difference(v, (a) => a.toFixed(
 export function formatEfficiency(v) { return missing(v) ? DASH : `${v.toFixed(1)}%`; }
 export function formatEfficiencyDifference(v) { return difference(v, formatEfficiency, '0.0%'); }
 
-/** The clicks row: "183 · reveal 153 · flag 22 · chord 8 · wasted 6"; a dash for what is missing. */
-export function formatClicks(clicks) {
+/**
+ * The clicks row: "128 · left 104 · right 24 · chords 0 · wasted 0" — the reveal clicks as left and the
+ * flag clicks as right, or, with `swapped` (the mouse buttons traded), "reveal" and "flag"; a dash for
+ * what is missing.
+ */
+export function formatClicks(clicks, { swapped = false } = {}) {
   const kinds = ['reveal', 'flag', 'chord'];
+  const [left, right] = swapped ? ['reveal', 'flag'] : ['left', 'right'];
   const known = clicks && kinds.every((k) => Number.isFinite(clicks[k]?.effective) && Number.isFinite(clicks[k]?.wasted));
-  if (!known) return `${DASH} · reveal ${DASH} · flag ${DASH} · chord ${DASH} · wasted ${DASH}`;
+  if (!known) return `${DASH} · ${left} ${DASH} · ${right} ${DASH} · chords ${DASH} · wasted ${DASH}`;
   const [reveal, flag, chord] = kinds.map((k) => clicks[k].effective + clicks[k].wasted);
   const wasted = kinds.reduce((n, k) => n + clicks[k].wasted, 0);
-  return `${countedClicks(clicks)} · reveal ${reveal} · flag ${flag} · chord ${chord} · wasted ${wasted}`;
+  return `${countedClicks(clicks)} · ${left} ${reveal} · ${right} ${flag} · chords ${chord} · wasted ${wasted}`;
 }
 
 const COMPARABLE = Object.freeze({
@@ -171,6 +181,7 @@ function compared(stat, { summary, comparison, won, challenge }) {
 
 export function resultsContent({
   summary, comparison = null, saved = true, notSaved = false, watch = false, watchBest = null, rank = null, streak = null, standing = null,
+  swapped = false,
 }) {
   const won = summary.outcome === 'won';
   const challenge = summary.challenge === true;
@@ -196,24 +207,22 @@ export function resultsContent({
       figure('efficiency', formatEfficiency(summary.efficiency)),
     ];
 
-  const details = [{ key: 'clicks', label: 'Clicks', value: formatClicks(summary.clicks) }];
+  const details = [{ key: 'clicks', label: 'Clicks', value: formatClicks(summary.clicks, { swapped }) }];
   if (challenge) details.push({ key: 'challenge', label: 'Challenge', value: CHALLENGE_NOTE });
   else if (comparison) {
     const time = comparison.time;
     const bestTime = won && time?.newBest ? summary.elapsedMs : time?.best ? time.best.value : null;
-    const beat = `Beat ${formatTime(bestTime)} for a new best`;
+    const beat = `beat ${formatTime(bestTime)}`;
     if (won) details.push({ key: 'next', label: 'Next target', value: `${beat} · streak ${count(streak?.current)}` });
     else {
-      const value = streak?.before >= 1 ? `Ended at ${streak.before} · longest ${count(streak.longest)}` : missing(bestTime) ? FIRST_BEST : beat;
+      const value = streak?.before >= 1 ? `ended at ${streak.before} · longest ${count(streak.longest)}` : missing(bestTime) ? FIRST_BEST : beat;
       details.push({ key: 'streak', label: 'Streak', value });
     }
   }
   if (saved && standing) {
+    const rates = `${formatWinRate(standing.winRate)} · completed games ${formatWinRate(standing.completedWinRate)}`;
     const longest = Number.isInteger(standing.longestStreak) ? String(standing.longestStreak) : DASH;
-    details.push({
-      key: 'winRate', label: 'Win rate',
-      value: `${formatWinRate(standing.winRate)} · completed games ${formatWinRate(standing.completedWinRate)} · longest streak ${longest}`,
-    });
+    details.push({ key: 'winRate', label: 'Win rate', value: won ? `${rates} · longest streak ${longest}` : rates });
   }
 
   const ranked = won && !challenge && Number.isInteger(rank?.position) && Number.isInteger(rank?.of);
@@ -295,9 +304,8 @@ export function createResultsView({
       $('results-frame').setAttribute('data-outcome', content.outcome === 'won' ? 'won' : 'lost');
       show($('results-trophy'), content.outcome === 'won');
       $('results-title').textContent = content.title;
-      $('results-board').textContent = content.board;
+      $('results-board').textContent = over3d && content.rank ? `${content.board} · ${content.rank}` : content.board;
       line('results-rank', over3d ? null : content.rank);
-      line('results-rank-line', over3d ? content.rank : null);
       line('results-label', content.label);
       for (const key of TILES) fillTile(key, content.tiles.find((t) => t.key === key));
       for (const id of new Set(Object.values(ROWS))) show($(id), false);
@@ -308,6 +316,7 @@ export function createResultsView({
         show(row, true);
       }
       code.show(content.code ?? null);
+      show($('results-code-group'), !!content.code);
       line('results-note', content.notes.join(' '));
       show($('r-look'), !!content.look);
       show($('r-watch'), !!content.watch);

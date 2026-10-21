@@ -188,7 +188,7 @@ function boom() { sfx.explode(); ui.flash(); padRumble(PAD_BOOM); }
 /** The first time auto-hide hides a cube in any 3D game, a toast says so; once per browser. */
 function noteAutoHide(r) {
   if (S.learn || FIRST_USE.shown('autoHideToast') || !S.game || !hidCube(S.game, r.changed)) return;
-  if (FIRST_USE.once('autoHideToast')) ui.toast(ui.hint('autoHide'), 4000);
+  if (FIRST_USE.once('autoHideToast')) ui.toast(ui.hint('autoHide'), 4000, { firstUse: true });
 }
 /**
  * The end of the 3D game: the HUD freezes and the end effect plays; the 3D mode's end delay then
@@ -921,7 +921,7 @@ function aimHint(g, now) {
   if (S.learn || FIRST_USE.shown('aimHint')) return;
   const sel = S.selected;
   const cell = !controls.space && sel >= 0 && g.pressed[sel] && g.number[sel] > 0 ? aimHintCell(g, sel, aimedCell(g, S.spacing, true)) : null;
-  if (AIM_DWELL.update(cell, now) && FIRST_USE.once('aimHint')) ui.toast(ui.hint('aimHint'), 4000);
+  if (AIM_DWELL.update(cell, now) && FIRST_USE.once('aimHint')) ui.toast(ui.hint('aimHint'), 4000, { firstUse: true });
 }
 
 // ---------- replay library ----------
@@ -1162,7 +1162,7 @@ function lookable() {
  * only while the finished 3D board can be looked at; once it is gone, the ordinary results surface.
  */
 function showResults(data) {
-  const content = resultsContent(data);
+  const content = resultsContent({ ...data, swapped: data.mode !== '3d' && BUTTON_SWAP.on }); // swapped buttons make left / right ambiguous
   const board = lookable();
   RESULTS_VIEW.show({ ...content, look: content.look && board, over3d: content.over3d && board });
 }

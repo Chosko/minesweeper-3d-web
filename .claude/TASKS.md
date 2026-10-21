@@ -1241,7 +1241,7 @@ Feature: in-game-layout
 
 ## 237. Results screen to the canvas
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/results/view.js, css/style.css, themes/joyful-tiles/theme.css, js/shell/first-use.js, .claude/context/app-shell-results.md
 Preconditions: 222, 223

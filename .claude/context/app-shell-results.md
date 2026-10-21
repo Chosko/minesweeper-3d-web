@@ -39,21 +39,26 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   `NOTES`, `NOT_ELIGIBLE`, `FIRST_BEST`, `CHALLENGE_LABEL` ("Challenge · not
   eligible for bests"), `CHALLENGE_NOTE`.
 - `resultsContent({summary, comparison?, saved?, notSaved?, watch?, rank?,
-  streak?, standing?, watchBest?})` → `{outcome, title, board, rank, label,
+  streak?, standing?, watchBest?, swapped?})` → `{outcome, title, board, rank, label,
   tiles, details, code, notes, watch, watchBest, compact, look, over3d}`
   (fields in the head comment): `rank` the chip on a ranked win, `label` a
   challenge's chip in its place; `tiles` the four figure tiles (a win's
   time, 3BV/s, efficiency and 3BV; a loss's time, 3BV solved with its
   progress, 3BV/s and efficiency), each with its comparison and `newBest`;
-  `details` the Clicks, next target, streak or challenge, and win rate
-  rows; `compact` the small secondary actions beside Watch best; `look`
+  `details` the Clicks (left and right, or reveal and flag while
+  `swapped` — the shell's `BUTTON_SWAP.on` for a Classic 2D game), next
+  target, streak or challenge, and win rate rows (a loss's without the
+  longest streak), in the canvas's lower-case wording; `compact` the small secondary actions beside Watch best; `look`
   and `over3d` true for a 3D summary. `BOARD_DIFFICULTY`, `LOSS_NO_BESTS`.
 - `createResultsView({root, onPlayAgain, onWatch?, onWatchBest?, onRecords, onMenu, onLook?, onCopy?})` →
   `show(content)`, `hide()`, `noteLook(text)`; `LOOK_REFUSED`. It fills
-  `#results-frame`'s head (the trophy on a win, the title, the board line,
-  the rank or challenge chip — under the title over the 3D scene), the
-  tiles `#rs-<key>`, the detail rows `#rd-<key>` and the `#results-code`
-  chip, whose Copy and Copy link call `onCopy` (the shell's `copyCode`).
+  `#results-frame`'s head (the trophy tile on a win, the title, the board
+  line, the rank or challenge chip — the rank at the end of the board line
+  over the 3D scene), the tiles `#rs-<key>`, the detail rows `#rd-<key>`
+  and `#results-code-group` — the "Board code" section label and the
+  `#results-code` chip, hidden without a code — whose Copy and Copy link
+  call `onCopy` (the shell's `copyCode`). `data-outcome` on the frame gives
+  a loss its neutral head (`css/style.css`, the theme).
   The screen's composition is the head comment of `css/components.css`
   (*Results screen*).
 - `RESULTS_ACTIONS` (`r-again`, `r-watch`, `r-watch-best`, `r-look`,
@@ -79,7 +84,10 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   board, the same over both modes, with only the board or the scene behind
   it ([app-shell-ui.md](app-shell-ui.md) § Behind a card); over a 3D game
   the scene is drawn on demand only (`shouldRender`) while `lookable()`; a
-  finished 3D game is never returned to.
+  finished 3D game is never returned to. Its card takes the canvas's width
+  by window size and, on a phone, sits at the window's top and scrolls with
+  the page, its action bar in flow at its end (`css/style.css` § results).
+  A first-use toast never draws over it.
 - **Look at the board** (the `look` screen, `#look` its hint line). A 3D
   card's *Look at the board* (`openLook`) and Back on it (`resultsBack`;
   the browser's Back still goes to the menu) are offered while `lookable()`

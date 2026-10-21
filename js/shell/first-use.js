@@ -25,7 +25,8 @@
 //   { learn }?), gameFinished(mode, { learn, won }?), dismissed(mode), dismiss(mode), shown(name),
 //   once(name) }. A Learn 3D game (`learn`, js/mode3d/learn.js) counts toward no window, and only its
 //   win marks the rules block seen. once(name) is true the first time only ('autoHideToast' |
-//   'aimHint' | 'scrollHint') and records it.
+//   'aimHint' | 'scrollHint') and records it. The shell shows the auto-hide and aim hints as a first-use
+//   toast, which never draws over the results screen: one still up when the results show is hidden.
 // stripShown({ mode, screen, eligible, used, dismissed, touchOnly }) — whether a mode's hint strip
 //   shows: in a game that began inside the first FIRST_GAMES games of its mode (`eligible`, judged
 //   before its game started), not dismissed; the 3D strip from the start of play (`playing`), the

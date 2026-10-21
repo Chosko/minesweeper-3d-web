@@ -212,42 +212,73 @@ kbd {
   font-size: var(--font-size-sm); text-align: center;
   pointer-events: none;
 }
-/* The results screen (#results): one framed column sized to its content over the game it ended —
-   the head's title and board line on the left beside the trophy, the chips and Look at the board on
-   the right; the four figure tiles in one row; the details; the code; the foot's bar, Main menu on
-   the left and the rest on the right. Over the 3D scene Look at the board is Esc, so Main menu shows
-   no key hint. Below a 1000 px window the tiles go two by two, each badge above its label, so a figure
-   never outgrows its tile. On a phone the figures scale with the row, the code chip stacks, and the
-   actions stack: Play again full width, the secondary actions in pairs, Main menu last; the body
-   scrolls. */
+/* The results screen (#results): one framed column over the game it ended, 1040 px wide on the
+   largest windows, 1000 px below 1440 px and 960 px below 1200 px — the head's trophy tile, then the
+   title over the board line (a loss has no trophy), the chips and Look at the board on the right; the four figure tiles in
+   one row; the details, each row's label beside its value; the "Board code" section label left of
+   the code chip; the foot's bar, Main menu on the left and the rest on the right. Over the 3D scene
+   Look at the board is Esc, so Main menu shows no key hint. Below a 1000 px window the tiles go two
+   by two, each badge above its label, so a figure never outgrows its tile. On a phone the card sits
+   12 px in from the window's sides and top and the page scrolls: the figures scale with the row, each
+   detail's label sits over its value, the code chip goes under its label at full width, and the
+   actions stack at the card's end — Play again full width, the secondary actions in pairs, Main menu
+   last, Play again and Main menu with no key hints on a touch screen. A first-use toast never draws
+   over the card. */
 #results-frame { width: min(1040px, 100%); }
-#results-head { grid-template-columns: auto minmax(0, 1fr) auto; }
-#results-head .ui-frame__title { text-align: start; white-space: normal; }
-#results-heading { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+@media (max-width: 1439px) { #results-frame { width: min(1000px, 100%); } }
+@media (max-width: 1199px) { #results-frame { width: min(960px, 100%); } }
+#results-head { grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; padding: 22px 28px; }
+#results-frame[data-outcome="lost"] #results-head { grid-template-columns: minmax(0, 1fr) auto; }
+#results-frame[data-outcome="lost"] #results-head .ui-frame__start { display: none; }
+#results-head .ui-frame__title { font-size: 40px; line-height: 1.1; text-align: start; white-space: normal; }
+#results-heading { display: flex; flex-direction: column; min-width: 0; }
 #results-heading .ui-text { margin: 0; }
-#results-body { display: flex; flex-direction: column; gap: var(--space-5); }
-#results-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-#results-tiles > .ui-stat--tile { position: relative; min-width: 0; }
-#results-tiles > .ui-stat--tile > .ui-chip { position: absolute; top: var(--space-3); right: var(--space-3); }
-#results-tiles progress { width: 100%; }
-#results-details td { width: 100%; white-space: normal; }
+#results-board { font-size: 16px; font-weight: var(--font-weight-bold); }
+#results-trophy { display: grid; place-items: center; flex: none; width: 56px; height: 56px; }
+#results-head :is(#results-rank, #results-label) { font-size: 14px; padding: 6px 12px; }
+#results-body { display: flex; flex-direction: column; gap: 18px; padding: 24px 28px; }
+#results-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+#results-tiles > .ui-stat--tile { position: relative; min-width: 0; gap: 4px; padding: 14px 16px; }
+#results-tiles > .ui-stat--tile > .ui-chip { position: absolute; top: 12px; right: 12px; }
+#results-tiles .ui-stat__value { font-size: clamp(var(--font-size-xl), 5.5cqi, 34px); }
+#results-tiles .ui-stat__detail { font-size: 14px; font-weight: var(--font-weight-bold); }
+#rs-progress { display: block; width: 100%; height: 10px; margin-top: 4px; overflow: hidden; appearance: none; }
+#results-details, #results-details tbody { display: block; width: 100%; }
+#results-details tr { display: flex; gap: 14px; padding: 9px 0; }
+#results-details :is(th, td) { padding: 0; }
+#results-details th { flex: none; min-width: 110px; font-size: 15px; font-weight: var(--font-weight-heavy); }
+#results-details td { min-width: 0; font-size: 14px; text-align: start; white-space: normal; }
+#results-code-group { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 #results-actions-end { justify-content: flex-end; }
 #results-look-note { flex-basis: 100%; }
 #results.results--look #r-menu .ui-key-hint { display: none; }
+body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 @media (max-width: 999px) {
   #results-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  #results-tiles > .ui-stat--tile > .ui-chip { position: static; order: -1; }
+  #results-tiles > .ui-stat--tile > .ui-chip { position: static; order: -1; align-self: flex-start; }
 }
 @media (max-width: 719px) {
-  #results-head { grid-template-columns: auto minmax(0, 1fr); }
+  #results { align-items: flex-start; padding: 12px; }
+  #results-frame { width: 100%; max-height: none; flex: none; }
+  #results-body { overflow: visible; padding: 16px; }
+  #results-head { grid-template-columns: auto minmax(0, 1fr); padding: 18px; }
+  #results-frame[data-outcome="lost"] #results-head { grid-template-columns: minmax(0, 1fr); }
+  #results-head .ui-frame__title { font-size: 32px; }
   #results-head .ui-frame__end { grid-column: 1 / -1; justify-content: flex-start; flex-wrap: wrap; }
-  #results-tiles .ui-stat__value { font-size: clamp(var(--font-size-md), 6.5cqi, var(--font-size-xl)); }
-  #results-code { flex-direction: column; align-items: flex-start; }
-  #results-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #results-tiles > .ui-stat--tile { padding: 12px; }
+  #results-tiles .ui-stat__value { font-size: clamp(var(--font-size-md), 7.2cqi, 24px); }
+  #results-details tr { flex-direction: column; gap: 2px; }
+  #results-code-group { flex-direction: column; align-items: stretch; gap: 8px; }
+  #results-code { width: 100%; box-sizing: border-box; flex-wrap: wrap; row-gap: 6px; }
+  #results-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
+  #results-actions .ui-button:not(.ui-button--lg) { padding-inline: 12px; white-space: nowrap; }
   #results-actions-start, #results-actions-end { display: contents; }
   #r-again { grid-column: 1 / -1; order: -1; }
   #r-menu { grid-column: 1 / -1; order: 1; }
   #results-look-note { grid-column: 1 / -1; order: 2; }
+}
+@media (pointer: coarse) {
+  #results :is(#r-again, #r-menu) .ui-key-hint { display: none; }
 }
 
 /* ---------- the 3D ready card ---------- */

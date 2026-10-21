@@ -3922,7 +3922,8 @@ test('the white action foot: board choices, Daily and results end in a white bar
   // The results foot, the action bar, is roomier.
   assert.match(bodyOf(THEME_RULES, '#results-actions'), /padding: 16px 28px 20px;/);
   assert.match(bodyOf(mediaRules(THEME_CSS, COMPACT_STEP), '#results-actions'), /padding: 14px 22px 18px;/);
-  assert.match(bodyOf(mediaRules(THEME_CSS, TOUCH_QUERY), ':is(.ui-frame__foot--action, #results-actions)'), /padding: 0 16px;/, 'and on a phone the bar like the others');
+  assert.match(bodyOf(mediaRules(THEME_CSS, TOUCH_QUERY), '.ui-frame__foot--action'), /padding: 0 16px;/, 'on a phone the bar');
+  assert.match(bodyOf(mediaRules(THEME_CSS, TOUCH_QUERY), '#results-actions'), /min-height: 0; padding: 14px 16px 18px; box-shadow: none;/, 'but the results bar stays in flow at the card\'s end');
   assert.doesNotMatch(STYLE, /#results-actions \{[^}]*padding/, 'its paddings are the theme\'s');
   assert.doesNotMatch(STYLE, /#c2d-frame > \.ui-frame__foot \{[^}]*padding/, 'the game window\'s foot follows the steps');
 });

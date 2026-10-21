@@ -769,7 +769,30 @@
   font-size: 16px;
   font-weight: var(--font-weight-bold);
 }
-/* the results foot, the action bar, roomier */
+/* the results card: a rounder frame on a shorter drop; its head a sunk neutral band after a loss; the
+   trophy in a white tile on the head's edge; the rank and challenge chips white; the 3BV solved bar
+   teal on the line colour; the foot, the action bar, roomier */
+:root[data-theme="joyful-tiles"] #results-frame {
+  border-radius: 22px;
+  box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2);
+}
+:root[data-theme="joyful-tiles"] #results-frame[data-outcome="lost"] #results-head {
+  background: var(--color-surface-sunk);
+  border-bottom-color: var(--color-line);
+}
+:root[data-theme="joyful-tiles"] #results-trophy {
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 4px 0 var(--color-head-edge);
+  color: var(--color-ink);
+}
+:root[data-theme="joyful-tiles"] #results-head :is(#results-rank, #results-label) { background: var(--color-surface); color: var(--color-ink); box-shadow: none; }
+:root[data-theme="joyful-tiles"] #results-head #results-label { color: var(--color-locked-ink); }
+:root[data-theme="joyful-tiles"] #rs-progress { border: 0; border-radius: 6px; background: var(--color-line); }
+:root[data-theme="joyful-tiles"] #rs-progress::-webkit-progress-bar { background: var(--color-line); border-radius: 6px; }
+:root[data-theme="joyful-tiles"] #rs-progress::-webkit-progress-value { background: var(--color-teal-edge); border-radius: 6px; }
+:root[data-theme="joyful-tiles"] #rs-progress::-moz-progress-bar { background: var(--color-teal-edge); border-radius: 6px; }
+:root[data-theme="joyful-tiles"] #results-details th { color: var(--color-ink); }
 :root[data-theme="joyful-tiles"] #results-actions { padding: 16px 28px 20px; }
 /* the frame's size steps: compact on the smaller desktop windows, touch on a phone upright or sideways */
 @media (max-width: 1439px), (max-height: 820px) {
@@ -794,7 +817,9 @@
     justify-content: flex-end;
     box-shadow: 0 -10px 20px -12px var(--shade-press);
   }
-  :root[data-theme="joyful-tiles"] :is(.ui-frame__foot--action, #results-actions) { padding: 0 16px; }
+  :root[data-theme="joyful-tiles"] .ui-frame__foot--action { padding: 0 16px; }
+  /* the results foot stays in flow at the card's end */
+  :root[data-theme="joyful-tiles"] #results-actions { min-height: 0; padding: 14px 16px 18px; box-shadow: none; }
 }
 
 /* ---------- mode entry: its accent fill (--f), drop edge (--e) and text (--o); places neutral ---------- */

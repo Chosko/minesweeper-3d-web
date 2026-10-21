@@ -144,7 +144,8 @@ control around it inks.
   desktop windows, touch for a phone upright or sideways — whose values the
   theme stylesheet holds; the title stays on one line. A screen's bar of
   actions (the board choices, Daily, results) is the white action foot
-  `ui-frame__foot--action`, a bottom bar on a phone; the Classic 2D game
+  `ui-frame__foot--action`, a bottom bar on a phone (the results' in flow
+  at the card's end); the Classic 2D game
   window keeps the head-coloured foot. A `ui-scene-panel` is a framed region a mode's
   own renderer draws into: a Classic 2D board view, the 3D scene through
   the renderer's target rectangle while the panel is `--live`

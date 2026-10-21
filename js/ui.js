@@ -921,10 +921,15 @@ export class UI {
     if (!this.el.settings.classList.contains('hidden')) this._renderSettingsBindings();
   }
 
-  /** Short global notice (e.g. "Controller connected") in the toast's text, its icon kept; none while the replay viewer shows. */
-  toast(msg, ms = 2200) {
+  /**
+   * Short global notice (e.g. "Controller connected") in the toast's text, its icon kept; none while the
+   * replay viewer shows. A first-use hint's toast (`firstUse`) carries toast--first-use, which keeps it
+   * from drawing over the results screen (css/style.css).
+   */
+  toast(msg, ms = 2200, { firstUse = false } = {}) {
     if (this._replaying) return;
     const t = $('toast');
+    t.classList[firstUse ? 'add' : 'remove']('toast--first-use');
     $('toast-text').textContent = msg;
     t.classList.add('on');
     clearTimeout(this._toastTimer);

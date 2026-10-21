@@ -1052,32 +1052,38 @@
      the game); the base and default theme stylesheets, no script.
    Results screen (index.html #results, filled by js/results/view.js; the
      gallery's #g-results shows it with placeholder content): one ui-frame
-     (#results-frame) sized to its content over the game it ended, no card
-     and no second column. Its head: the trophy on a win (ui-frame__start),
-     the outcome title with the board line under it (and, over the 3D scene,
-     the rank), and on the right (ui-frame__end) the rank ui-chip ("#3 of 12
-     wins on this board"), a challenge's ui-chip--muted "Challenge · not
-     eligible for bests" in its place, and on a 3D game Look at the board (a
-     small secondary button with its back key hint). Its body: a
-     ui-stat-row--tiles of four ui-stat--tile — on a win Time, 3BV/s,
-     Efficiency and 3BV, on a loss Time, 3BV solved (with a <progress> bar),
-     3BV/s and Efficiency — each comparable tile's ui-stat__detail its
-     comparison (coloured by data-delta on a win) and, when the game set that
-     best, data-new-best on the tile and its ui-chip--best "New best"; a
-     ui-table of the three details (Clicks; Next target, Streak or
-     Challenge; Win rate); the ui-code chip; a ui-text--warning note. Its
-     foot, the action bar: Main menu (secondary, its back key hint) on the
-     left; Watch replay, Watch best, Records (secondary, ui-button--sm while
-     Watch best shows) and Play again (primary, large, its select key hint)
-     on the right; a ui-text--warning note under them. Over a 3D game the
-     Main menu shows no key hint (results--look, css/style.css). On a phone
-     the tiles go two by two, the code chip stacks, Play again runs full
-     width, the secondary actions sit in pairs and Main menu comes last; the
-     body scrolls. Default focus: Play again. It sits on the scrim, the
-     same over both modes: behind it only the finished board — the Classic
-     2D window's board and title, or the 3D scene — shows, the HUD and the
-     window's other parts hidden, as behind the 3D ready card and the pause
-     card (css/style.css).
+     (#results-frame) over the game it ended, its width by window size, no
+     card and no second column. Its head: the trophy in its tile on a win
+     (ui-frame__start), the outcome title with the board line under it
+     (over the 3D scene the rank at the line's end), and on the right
+     (ui-frame__end) the rank ui-chip ("#3 of 12 wins on this board"), a
+     challenge's ui-chip--muted "Challenge · not eligible for bests" in its
+     place, and on a 3D game Look at the board (a secondary button with its
+     eye icon and back key hint); a loss's head is the neutral band with no
+     trophy. Its body: a ui-stat-row--tiles of four ui-stat--tile — on a
+     win Time, 3BV/s, Efficiency and 3BV, on a loss Time, 3BV solved (with
+     its <progress> bar, drawn as the theme's track), 3BV/s and Efficiency
+     — each comparable tile's ui-stat__detail its comparison (coloured by
+     data-delta on a win) and, when the game set that best, data-new-best
+     on the tile and its ui-chip--best "New best"; a ui-table of the three
+     details (Clicks; Next target, Streak or Challenge; Win rate), each
+     label beside its value; the ui-section-label "Board code" with the
+     ui-code chip on the right; a ui-text--warning note. Its foot, the
+     action bar, each action with its icon: Main menu (secondary, its back
+     key hint) on the left; Watch replay, Watch best, Records (secondary,
+     ui-button--sm while Watch best shows) and Play again (primary, large,
+     its select key hint) on the right; a ui-text--warning note under them.
+     Over a 3D game the Main menu shows no key hint (results--look,
+     css/style.css). On a phone the card sits at the window's top and the
+     page scrolls: the tiles go two by two, each detail's label over its
+     value, the code chip under its label, and at the card's end Play again
+     runs full width, the secondary actions sit in pairs and Main menu
+     comes last, Play again and Main menu with no key hints by touch.
+     Default focus: Play again. It sits on the scrim, the same over both
+     modes: behind it only the finished board — the Classic 2D window's
+     board and title, or the 3D scene — shows, the HUD and the window's
+     other parts hidden, as behind the 3D ready card and the pause card
+     (css/style.css); no first-use toast draws over it.
    Replay viewer (index.html #replay, filled by js/replay/viewer.js): ui-backdrop
      holding a ui-frame (#replay-frame) that fills it: Back (a small secondary
      button with its back key hint) and the title, "Replay · <mode> · <board>"

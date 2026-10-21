@@ -530,7 +530,7 @@ test('in a browser, a 3D board won and lost ends on the results screen, shown ov
       const text = (id) => document.getElementById(id).textContent;
       return {
         hud: text('hud-clicks'), counted: c.reveal.effective + c.reveal.wasted + c.flag.effective + c.flag.wasted + c.chord.effective + c.chord.wasted,
-        clicks: document.querySelector('#rd-clicks td').textContent, rankLine: text('results-rank-line'), rankChip: document.getElementById('results-rank').classList.contains('hidden'),
+        clicks: document.querySelector('#rd-clicks td').textContent, boardLine: text('results-board'), rankChip: document.getElementById('results-rank').classList.contains('hidden'),
         badges: [...document.querySelectorAll('#results-tiles .ui-stat--tile')].filter((e) => !e.querySelector('.ui-chip--best')?.classList.contains('hidden') && e.querySelector('.ui-chip--best')).map((e) => e.id),
         next: document.querySelector('#rd-target td').textContent, time: document.querySelector('#rs-time .ui-stat__value').textContent,
         look: document.getElementById('results-head').contains(document.getElementById('r-look')),
@@ -538,11 +538,11 @@ test('in a browser, a 3D board won and lost ends on the results screen, shown ov
       };
     });
     assert.equal(card.hud, String(card.counted), 'the overlay counts the clicks the summary counts');
-    assert.match(card.clicks, new RegExp(`^${card.counted} · reveal \\d+ · flag \\d+ · chord \\d+ · wasted \\d+$`));
-    assert.equal(card.rankLine, '#1 of 1 wins on this board', 'over the scene the rank sits under the title');
+    assert.match(card.clicks, new RegExp(`^${card.counted} · left \\d+ · right \\d+ · chords \\d+ · wasted \\d+$`));
+    assert.match(card.boardLine, / · #1 of 1 wins on this board$/, 'over the scene the rank ends the board line');
     assert.equal(card.rankChip, true, 'not in a chip');
     assert.deepEqual(card.badges, ['rs-time', 'rs-bbbvPerSecond', 'rs-efficiency'], 'every best a first win sets is badged on its tile');
-    assert.equal(card.next, `Beat ${card.time} for a new best · streak 1`);
+    assert.equal(card.next, `beat ${card.time} · streak 1`);
     assert.equal(card.look, true, 'Look at the board sits in the header band');
     assert.equal(card.menuHint, true, 'Main menu carries no Esc hint over the scene');
     assert.match(card.time, /^\d+\.\d{3} s$/);

@@ -328,8 +328,8 @@ test('on a coarse-only device the auto-hide toast and the aim hint name the touc
   // Both are drawn for the device the help surfaces speak for: touch unless a controller is in use.
   const ui = read('js/ui.js');
   assert.match(ui, /hint\(name\) \{\s*return hintText\(name, this\._bindDevice\(this\._mode\), this\._glyphs\);/);
-  assert.match(MAIN, /ui\.toast\(ui\.hint\('autoHide'\), 4000\)/);
-  assert.match(MAIN, /ui\.toast\(ui\.hint\('aimHint'\), 4000\)/);
+  assert.match(MAIN, /ui\.toast\(ui\.hint\('autoHide'\), 4000, \{ firstUse: true \}\)/);
+  assert.match(MAIN, /ui\.toast\(ui\.hint\('aimHint'\), 4000, \{ firstUse: true \}\)/);
   assert.doesNotMatch(MAIN, /hintText\(/, 'the shell never picks a hint\'s device itself');
 });
 

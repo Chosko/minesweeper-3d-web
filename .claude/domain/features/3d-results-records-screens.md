@@ -30,8 +30,8 @@ In scope (m2-3d-joins):
 - The results screen for won and lost 3D games: the same contents and
   actions as Classic 2D's (`results-screen`), plus *Look at the board*.
   Over the scene the header carries *Look at the board* with its `Esc`
-  hint, the rank moves under the title, and *Main menu* drops its `Esc`
-  hint.
+  hint, the rank moves to the end of the board line, and *Main menu* drops
+  its `Esc` hint.
 - The results screen shown over the dimmed 3D scene; the end banner is
   removed.
 - *Look at the board*: a read-only free flight over the frozen finished

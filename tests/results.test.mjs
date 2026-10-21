@@ -86,11 +86,15 @@ test('3BV/s shows two decimals and efficiency one decimal; a difference of zero 
   assert.equal(formatEfficiencyDifference(null), DASH);
 });
 
-test('the clicks row: the counted clicks, then the reveal, flag and chord clicks and the wasted total', () => {
+test('the clicks row: the counted clicks, then the reveal clicks as left, the flag clicks as right, the chords and the wasted total', () => {
   const c = { reveal: { effective: 150, wasted: 3 }, flag: { effective: 20, wasted: 2 }, chord: { effective: 7, wasted: 1 } };
-  assert.equal(formatClicks(c), '183 · reveal 153 · flag 22 · chord 8 · wasted 6');
-  assert.equal(formatClicks(clicks(0)), '0 · reveal 0 · flag 0 · chord 0 · wasted 0');
-  assert.equal(formatClicks(null), `${DASH} · reveal ${DASH} · flag ${DASH} · chord ${DASH} · wasted ${DASH}`);
+  assert.equal(formatClicks(c), '183 · left 153 · right 22 · chords 8 · wasted 6');
+  assert.equal(formatClicks(clicks(0)), '0 · left 0 · right 0 · chords 0 · wasted 0');
+  assert.equal(formatClicks(null), `${DASH} · left ${DASH} · right ${DASH} · chords ${DASH} · wasted ${DASH}`);
+  // With the mouse buttons swapped, left and right would name the wrong clicks: reveal and flag instead.
+  assert.equal(formatClicks(c, { swapped: true }), '183 · reveal 153 · flag 22 · chords 8 · wasted 6');
+  assert.equal(detail(resultsContent({ summary: summary(), swapped: true }), 'clicks').value, '138 · reveal 138 · flag 0 · chords 0 · wasted 0');
+  assert.match(read('js/main.js'), /resultsContent\(\{ \.\.\.data, swapped: data\.mode !== '3d' && BUTTON_SWAP\.on \}\)/, 'the shell passes the Classic 2D swap');
 });
 
 test('one time format outside the live bar: the results view formats, the pause card reuses them', () => {
@@ -168,19 +172,19 @@ test('the details: the clicks on wins and losses alike, then the next target or 
   const standing = { winRate: 4 / 6, completedWinRate: 0.8, longestStreak: 4, longestCompletedStreak: 5 };
   const won = resultsContent({ summary: summary(), comparison, saved: true, streak, standing, rank: { position: 3, of: 12 } });
   assert.deepEqual(won.details.map((d) => [d.key, d.label, d.value]), [
-    ['clicks', 'Clicks', '138 · reveal 138 · flag 0 · chord 0 · wasted 0'],
-    ['next', 'Next target', 'Beat 45.120 s for a new best · streak 3'],
+    ['clicks', 'Clicks', '138 · left 138 · right 0 · chords 0 · wasted 0'],
+    ['next', 'Next target', 'beat 45.120 s · streak 3'],
     ['winRate', 'Win rate', '67% · completed games 80% · longest streak 4'],
   ]);
   const lost = resultsContent({ summary: lostSummary(), comparison: lostComparison, saved: true, streak: { before: 3, current: 0, longest: 7 }, standing });
   assert.deepEqual(lost.details.map((d) => [d.key, d.label, d.value]), [
-    ['clicks', 'Clicks', '60 · reveal 60 · flag 0 · chord 0 · wasted 0'],
-    ['streak', 'Streak', 'Ended at 3 · longest 7'],
-    ['winRate', 'Win rate', '67% · completed games 80% · longest streak 4'],
+    ['clicks', 'Clicks', '60 · left 60 · right 0 · chords 0 · wasted 0'],
+    ['streak', 'Streak', 'ended at 3 · longest 7'],
+    ['winRate', 'Win rate', '67% · completed games 80%'],
   ]);
   assert.equal(lost.rank, null, 'no rank on a loss');
   const noClicks = resultsContent({ summary: summary({ clicks: undefined }), comparison, saved: true });
-  assert.match(detail(noClicks, 'clicks').value, /^— · reveal —/);
+  assert.match(detail(noClicks, 'clicks').value, /^— · left —/);
   assert.ok(!JSON.stringify(won).includes('IOE'), 'the card shows no IOE');
 });
 
@@ -205,9 +209,9 @@ test('a lost game: time, 3BV solved with its progress, 3BV/s and efficiency; los
 
 test('the streak row after a loss: the streak it ended, else the best to beat, else a first win', () => {
   const ended = resultsContent({ summary: lostSummary(), comparison: lostComparison, saved: true, streak: { before: 3, current: 0, longest: 7 } });
-  assert.equal(detail(ended, 'streak').value, 'Ended at 3 · longest 7');
+  assert.equal(detail(ended, 'streak').value, 'ended at 3 · longest 7');
   const noStreak = resultsContent({ summary: lostSummary(), comparison: lostComparison, saved: true, streak: { before: 0, current: 0, longest: 7 } });
-  assert.equal(detail(noStreak, 'streak').value, 'Beat 45.120 s for a new best');
+  assert.equal(detail(noStreak, 'streak').value, 'beat 45.120 s');
   const empty = Object.fromEntries(Object.keys(comparison).map((k) => [k, { best: null, value: null, difference: null, newBest: false }]));
   const firstGame = resultsContent({ summary: lostSummary(), comparison: empty, saved: true, streak: { before: 0, current: 0, longest: 0 } });
   assert.equal(detail(firstGame, 'streak').value, 'Win this board to set a best');
@@ -216,16 +220,17 @@ test('the streak row after a loss: the streak it ended, else the best to beat, e
 test('the next target after a win: the board\'s best time as it stands and its current streak', () => {
   const streak = { before: 2, current: 3, longest: 5 };
   const kept = resultsContent({ summary: summary(), comparison, saved: true, streak });
-  assert.equal(detail(kept, 'next').value, 'Beat 45.120 s for a new best · streak 3', 'the standing best when this game did not beat it');
+  assert.equal(detail(kept, 'next').value, 'beat 45.120 s · streak 3', 'the standing best when this game did not beat it');
   const beaten = { ...comparison, time: { best: { id: 'a', value: 48213, endedAt: 'x' }, value: 47380, difference: -833, newBest: true } };
   assert.equal(detail(resultsContent({ summary: summary(), comparison: beaten, saved: true, streak }), 'next').value,
-    'Beat 47.380 s for a new best · streak 3', 'this game\'s time once it is the best');
+    'beat 47.380 s · streak 3', 'this game\'s time once it is the best');
 });
 
-test('the win rate row: the board\'s win rate counting this game, its completed games\' figure and its longest streak', () => {
-  const none = resultsContent({ summary: lostSummary(), comparison: lostComparison, saved: true,
-    standing: { winRate: 0, completedWinRate: null, longestStreak: 0, longestCompletedStreak: 0 } });
-  assert.equal(detail(none, 'winRate').value, `0% · completed games ${DASH} · longest streak 0`);
+test('the win rate row: the board\'s win rate counting this game, its completed games\' figure and, after a win, its longest streak', () => {
+  const standing = { winRate: 0, completedWinRate: null, longestStreak: 0, longestCompletedStreak: 0 };
+  const none = resultsContent({ summary: lostSummary(), comparison: lostComparison, saved: true, standing });
+  assert.equal(detail(none, 'winRate').value, `0% · completed games ${DASH}`, 'a loss shows no longest streak');
+  assert.equal(detail(resultsContent({ summary: summary(), comparison, saved: true, standing }), 'winRate').value, `0% · completed games ${DASH} · longest streak 0`);
   assert.equal(detail(resultsContent({ summary: summary(), comparison: null, saved: false, standing: { winRate: 1 } }), 'winRate'), undefined, 'a failed recording shows no win rate');
   assert.equal(detail(resultsContent({ summary: summary(), comparison }), 'winRate'), undefined, 'nor does a game the flow gave none');
 });
@@ -338,11 +343,11 @@ test('the view fills the three detail rows, hiding a row the game has none for',
   const standing = { winRate: 0.5, completedWinRate: 1, longestStreak: 2, longestCompletedStreak: 3 };
   view.show(resultsContent({ summary: summary(), comparison, saved: true, standing, streak: { before: 0, current: 1, longest: 2 } }));
   const row = (id) => [root.el(`${id} th`).textContent, root.el(`${id} td`).textContent, hidden(root, id)];
-  assert.deepEqual(row('rd-clicks'), ['Clicks', '138 · reveal 138 · flag 0 · chord 0 · wasted 0', false]);
-  assert.deepEqual(row('rd-target'), ['Next target', 'Beat 45.120 s for a new best · streak 1', false]);
+  assert.deepEqual(row('rd-clicks'), ['Clicks', '138 · left 138 · right 0 · chords 0 · wasted 0', false]);
+  assert.deepEqual(row('rd-target'), ['Next target', 'beat 45.120 s · streak 1', false]);
   assert.deepEqual(row('rd-winRate'), ['Win rate', '50% · completed games 100% · longest streak 2', false]);
   view.show(resultsContent({ summary: lostSummary(), comparison: lostComparison, saved: true, standing, streak: { before: 2, current: 0, longest: 2 } }));
-  assert.deepEqual(row('rd-target'), ['Streak', 'Ended at 2 · longest 2', false]);
+  assert.deepEqual(row('rd-target'), ['Streak', 'ended at 2 · longest 2', false]);
   view.show(resultsContent({ summary: summary(), comparison: null, saved: false }));
   assert.deepEqual([hidden(root, 'rd-clicks'), hidden(root, 'rd-target'), hidden(root, 'rd-winRate')], [false, true, true]);
 });
@@ -383,11 +388,16 @@ test('the view shows the challenge chip and the code chip, with Copy and Copy li
   assert.equal(hidden(root, 'results-label'), false);
   assert.equal(hidden(root, 'results-rank'), true);
   assert.equal(hidden(root, 'results-code'), false);
+  assert.equal(hidden(root, 'results-code-group'), false, 'the code under its label');
   assert.equal(root.el('results-code .ui-code__value').textContent, encodeBoardCode({ board: BEGINNER, seed: 1, startCell: 40, generatorVersion: 1 }));
   view.show(resultsContent({ summary: summary(), comparison: null }));
   assert.equal(hidden(root, 'results-label'), true);
   assert.equal(hidden(root, 'results-code'), true, 'no code, no chip');
-  assert.match(RESULTS_HTML, /<div id="results-code" class="ui-code hidden">[\s\S]*data-copy="code">Copy<\/button>[\s\S]*data-copy="link">Copy link<\/button><\/div>/);
+  assert.equal(hidden(root, 'results-code-group'), true, 'and no label');
+  // The kit's code chip under its "Board code" section label: the label names the chip's group; quiet small Copy and Copy link with their icons.
+  assert.match(RESULTS_HTML, /<div id="results-code-group" class="hidden"><div class="ui-section-label"><h3 class="ui-section-label__text" id="results-code-label">Board code<\/h3><\/div><div id="results-code" class="ui-code hidden" role="group" aria-labelledby="results-code-label">/);
+  assert.match(RESULTS_HTML, /class="ui-button ui-button--quiet ui-button--sm" data-copy="code" data-icon="copy">Copy<\/button>[\s\S]*class="ui-button ui-button--quiet ui-button--sm" data-copy="link" data-icon="link">Copy link<\/button><\/div><\/div>/);
+  assert.doesNotMatch(RESULTS_HTML, /ui-code__label/, 'no label inside the chip');
   assert.match(MAIN, /onCopy: \(c\) => copyCode\(c\)/, 'the shell copies through the clipboard');
 });
 
@@ -435,7 +445,7 @@ test('the view shows Look at the board for a 3D summary only, calls back on it, 
   assert.match(LOOK_REFUSED, /^[^\n]{10,120}$/, 'one line');
 });
 
-test('the Esc hint sits on what Esc does: Look at the board on a 3D card that offers it, with the rank under the title; Main menu otherwise', () => {
+test('the Esc hint sits on what Esc does: Look at the board on a 3D card that offers it, with the rank at the end of the board line; Main menu otherwise', () => {
   const root = fakeRoot();
   const look = () => root.classList.contains('results--look');
   const view = createResultsView({ root, onPlayAgain() {}, onRecords() {}, onMenu() {} });
@@ -443,17 +453,16 @@ test('the Esc hint sits on what Esc does: Look at the board on a 3D card that of
   assert.equal(look(), true, 'a 3D results card: Main menu without its Esc hint');
   assert.equal(root.el('r-look').classList.contains('hidden'), false, 'Look at the board, with its own');
   assert.equal(root.el('results-rank').classList.contains('hidden'), true, 'no rank chip over the scene');
-  assert.equal(root.el('results-rank-line').textContent, '#9 of 42 wins on this board', 'the rank under the title');
-  assert.equal(root.el('results-rank-line').classList.contains('hidden'), false);
+  assert.equal(root.el('results-board').textContent, 'Cube Intermediate · #9 of 42 wins on this board', 'the rank at the end of the board line');
   view.show(resultsContent({ summary: summary(), comparison, rank: { position: 9, of: 42 } }));
   assert.equal(look(), false, 'a Classic 2D results card: Esc is Main menu');
   assert.equal(root.el('results-rank').classList.contains('hidden'), false);
-  assert.equal(root.el('results-rank-line').classList.contains('hidden'), true);
+  assert.equal(root.el('results-board').textContent, 'Beginner', 'the rank in its chip, not on the board line');
   view.show({ ...resultsContent({ summary: summary({ board: { ...BOARD_3D } }), comparison }), look: false });
   assert.equal(look(), false, 'a 3D card whose board can no longer be looked at: Esc goes back to the menu');
   assert.match(read('css/style.css'), /#results\.results--look #r-menu \.ui-key-hint\s*\{\s*display:\s*none;\s*\}/, 'which hides Main menu\'s Esc hint');
-  assert.match(RESULTS_HTML, /id="r-look" class="ui-button ui-button--secondary ui-button--sm hidden">Look at the board <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
-  assert.match(RESULTS_HTML, /id="r-menu" class="ui-button ui-button--secondary">Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  assert.match(RESULTS_HTML, /id="r-look" class="ui-button ui-button--secondary hidden" data-icon="eye">Look at the board <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  assert.match(RESULTS_HTML, /id="r-menu" class="ui-button ui-button--secondary" data-icon="arrow-left">Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
   assert.match(read('js/ui.js'), /for \(const id of \[[^\]]*'results'[^\]]*\]\) showKeyHints/, 'its key hints follow the active device');
 });
 
@@ -704,14 +713,14 @@ test('the results screen is the kit composition: one framed column — header ba
     'rd-clicks', 'rd-target', 'rd-winRate', 'results-code', 'results-note', 'r-again', 'r-look', 'r-watch', 'r-watch-best', 'r-records', 'r-menu', 'results-look-note']) {
     assert.ok(RESULTS_HTML.includes(`id="${id}"`), `#${id}`);
   }
-  for (const gone of ['results-banner', 'results-bests', 'rb-time', 'results-figures', 'results-next', 'results-standing', 'results-keys', 'data-esc-hint']) {
+  for (const gone of ['results-banner', 'results-bests', 'rb-time', 'results-figures', 'results-next', 'results-standing', 'results-keys', 'data-esc-hint', 'results-rank-line']) {
     assert.ok(!RESULTS_HTML.includes(gone), `${gone} is gone`);
   }
   // Top to bottom: the head (title, board, rank; the chips and Look at the board on the right), the
   // tiles, the details, the code, the note, then the foot's bar: Main menu left; the rest right.
-  const order = ['results-head', 'results-title', 'results-board', 'results-rank-line', 'results-rank', 'results-label', 'r-look',
+  const order = ['results-head', 'results-trophy', 'results-title', 'results-board', 'results-rank', 'results-label', 'r-look',
     'results-tiles', 'rs-time', 'rs-bbbvSolved', 'rs-bbbvPerSecond', 'rs-efficiency', 'rs-bbbv', 'results-details', 'rd-clicks', 'rd-target', 'rd-winRate',
-    'results-code', 'results-note', 'results-actions', 'r-menu', 'r-watch', 'r-watch-best', 'r-records', 'r-again', 'results-look-note'];
+    'results-code-group', 'results-code-label', 'results-code', 'results-note', 'results-actions', 'r-menu', 'r-watch', 'r-watch-best', 'r-records', 'r-again', 'results-look-note'];
   const at = order.map((id) => RESULTS_HTML.indexOf(`id="${id}"`));
   assert.ok(at.every((i) => i >= 0), `every part is in the markup: ${order.filter((_, k) => at[k] < 0)}`);
   assert.deepEqual([...at].sort((a, b) => a - b), at, 'in reading order');
@@ -727,17 +736,18 @@ test('the results screen is the kit composition: one framed column — header ba
   assert.match(RESULTS_HTML, /<progress id="rs-progress" max="1" value="0" aria-labelledby="rs-bbbvSolved-label"><\/progress>/, '3BV solved carries its progress bar');
   assert.match(RESULTS_HTML, /<table id="results-details" class="ui-table">/);
   assert.match(RESULTS_HTML, /<footer class="ui-frame__foot ui-frame__foot--action" id="results-actions">/);
-  const buttons = [...RESULTS_HTML.matchAll(/<button type="button" id="(r-[a-z-]+)" class="ui-button ([^"]+)">([^<]+)</g)]
-    .map((m) => [m[1], m[2], m[3].trim()]);
+  // Every action leads with its icon; the secondary actions take the middle size, Play again the large one.
+  const buttons = [...RESULTS_HTML.matchAll(/<button type="button" id="(r-[a-z-]+)" class="ui-button ([^"]+)" data-icon="([a-z-]+)">([^<]+)</g)]
+    .map((m) => [m[1], m[2], m[3], m[4].trim()]);
   assert.deepEqual(buttons, [
-    ['r-look', 'ui-button--secondary ui-button--sm hidden', 'Look at the board'],
-    ['r-menu', 'ui-button--secondary', 'Main menu'],
-    ['r-watch', 'ui-button--secondary hidden', 'Watch replay'],
-    ['r-watch-best', 'ui-button--secondary hidden', 'Watch best'],
-    ['r-records', 'ui-button--secondary', 'Records'],
-    ['r-again', 'ui-button--primary ui-button--lg', 'Play again'],
+    ['r-look', 'ui-button--secondary hidden', 'eye', 'Look at the board'],
+    ['r-menu', 'ui-button--secondary', 'arrow-left', 'Main menu'],
+    ['r-watch', 'ui-button--secondary hidden', 'film', 'Watch replay'],
+    ['r-watch-best', 'ui-button--secondary hidden', 'trophy', 'Watch best'],
+    ['r-records', 'ui-button--secondary', 'chart', 'Records'],
+    ['r-again', 'ui-button--primary ui-button--lg', 'play', 'Play again'],
   ]);
-  assert.match(RESULTS_HTML, /id="r-again" class="ui-button ui-button--primary ui-button--lg">Play again <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/, 'Play again shows its Enter hint');
+  assert.match(RESULTS_HTML, /id="r-again" class="ui-button ui-button--primary ui-button--lg" data-icon="play">Play again <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/, 'Play again shows its Enter hint');
   assert.match(RESULTS_HTML, /<p id="results-look-note" class="ui-text ui-text--warning hidden" role="status"><\/p>/);
 });
 
@@ -751,6 +761,59 @@ test('the results layout: one column sized to its content; on a phone the tiles 
   assert.match(phone, /#r-again\s*\{[^}]*grid-column:\s*1 \/ -1[^}]*order:\s*-1/, 'Play again full width, first');
   assert.match(phone, /#r-menu\s*\{[^}]*grid-column:\s*1 \/ -1/, 'Main menu full width, last');
   assert.doesNotMatch(style, /#results-stats|#results-bests/, 'the old card\'s rules are gone');
+});
+
+test('the results card to the canvas: its width by window size, the head, the loss head, the tiles, the details, the code row and the phone card', () => {
+  const style = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const theme = read('themes/joyful-tiles/theme.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = (css, sel) => css.match(new RegExp(`(?:^|[}\\s])${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`, 'm'))?.[1] ?? '';
+  const J = ':root[data-theme="joyful-tiles"] ';
+  // 1040 px wide on the largest windows, 1000 px below 1440 px, 960 px below 1200 px.
+  assert.match(style, /#results-frame \{ width: min\(1040px, 100%\); \}\s*@media \(max-width: 1439px\) \{ #results-frame \{ width: min\(1000px, 100%\); \} \}\s*@media \(max-width: 1199px\) \{ #results-frame \{ width: min\(960px, 100%\); \} \}/);
+  assert.match(rule(theme, `${J}#results-frame`), /border-radius: 22px;[\s\S]*box-shadow: inset 0 -2px 0 var\(--color-line\), 0 8px 0 var\(--color-head-edge\), var\(--elevation-2\);/, 'radius 22 on an 8 px head-edge drop');
+  // The head: 22 × 28 px padding, the title 40 px, the board line 16 px bold, the trophy in a 56 px white tile on the head's edge.
+  assert.match(rule(style, '#results-head'), /gap: 16px; padding: 22px 28px;/);
+  assert.match(rule(style, '#results-head .ui-frame__title'), /font-size: 40px;/);
+  assert.match(rule(style, '#results-board'), /font-size: 16px; font-weight: var\(--font-weight-bold\);/);
+  assert.match(rule(style, '#results-trophy'), /width: 56px; height: 56px;/);
+  assert.match(rule(theme, `${J}#results-trophy`), /border-radius: 16px;\s*background: var\(--color-surface\);\s*box-shadow: 0 4px 0 var\(--color-head-edge\);/);
+  assert.match(RESULTS_HTML, /<span id="results-trophy" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30"/, 'a 30 px trophy in its tile');
+  // The rank chip 14 px on 6 × 12 px, white; a loss's head the neutral sunk band with no trophy column.
+  assert.match(rule(style, '#results-head :is(#results-rank, #results-label)'), /font-size: 14px; padding: 6px 12px;/);
+  assert.match(rule(theme, `${J}#results-head :is(#results-rank, #results-label)`), /background: var\(--color-surface\); color: var\(--color-ink\);/);
+  assert.match(rule(theme, `${J}#results-frame[data-outcome="lost"] #results-head`), /background: var\(--color-surface-sunk\);\s*border-bottom-color: var\(--color-line\);/);
+  assert.match(rule(style, '#results-frame[data-outcome="lost"] #results-head .ui-frame__start'), /display: none;/);
+  // The 3BV solved bar: 10 px, radius 6, teal on the line colour, not the native look.
+  assert.match(rule(style, '#rs-progress'), /height: 10px;[^}]*appearance: none;/);
+  assert.match(rule(theme, `${J}#rs-progress`), /border: 0; border-radius: 6px; background: var\(--color-line\);/);
+  assert.match(rule(theme, `${J}#rs-progress::-webkit-progress-value`), /background: var\(--color-teal-edge\);/);
+  assert.match(rule(theme, `${J}#rs-progress::-moz-progress-bar`), /background: var\(--color-teal-edge\);/);
+  assert.match(rule(theme, `${J}#rs-progress::-webkit-progress-bar`), /background: var\(--color-line\);/);
+  // The details: each label 15 px heavy, at least 110 px, beside its 14 px value; a ruled line per row.
+  assert.match(rule(style, '#results-details tr'), /display: flex; gap: 14px; padding: 9px 0;/);
+  assert.match(rule(style, '#results-details th'), /min-width: 110px; font-size: 15px; font-weight: var\(--font-weight-heavy\);/);
+  assert.match(rule(style, '#results-details td'), /font-size: 14px; text-align: start;/);
+  assert.match(rule(theme, `${J}.ui-table tbody tr`), /border-top: 1px solid var\(--color-line\);/);
+  // The code row: the label on the left, the chip on the right.
+  assert.match(rule(style, '#results-code-group'), /display: flex; align-items: center; justify-content: space-between;/);
+  // On a phone: the card 12 px in from the sides and top, the page scrolling, its body 16 px in, each label over its value, the code under its label.
+  const phone = style.slice(style.indexOf('@media (max-width: 719px)', style.indexOf('#results-frame')));
+  assert.match(phone, /#results \{ align-items: flex-start; padding: 12px; \}/);
+  assert.match(phone, /#results-frame \{ width: 100%; max-height: none; flex: none; \}/);
+  assert.match(phone, /#results-body \{ overflow: visible; padding: 16px; \}/);
+  assert.match(phone, /#results-head \{ grid-template-columns: auto minmax\(0, 1fr\); padding: 18px; \}/);
+  assert.match(phone, /#results-head \.ui-frame__title \{ font-size: 32px; \}/);
+  assert.match(phone, /#results-details tr \{ flex-direction: column; gap: 2px; \}/);
+  assert.match(phone, /#results-code-group \{ flex-direction: column;/);
+  assert.match(style, /@media \(pointer: coarse\) \{\s*#results :is\(#r-again, #r-menu\) \.ui-key-hint \{ display: none; \}/, 'no key hints on Play again and Main menu by touch');
+});
+
+test('no first-use toast draws over the results card', () => {
+  const style = read('css/style.css');
+  assert.match(style, /body:has\(> #results:not\(\.hidden\)\) #toast\.toast--first-use \{ display: none; \}/);
+  assert.match(MAIN, /ui\.toast\(ui\.hint\('autoHide'\), 4000, \{ firstUse: true \}\)/, 'the auto-hide hint is a first-use toast');
+  assert.match(MAIN, /ui\.toast\(ui\.hint\('aimHint'\), 4000, \{ firstUse: true \}\)/, 'and so is the aim hint');
+  assert.match(read('js/ui.js'), /t\.classList\[firstUse \? 'add' : 'remove'\]\('toast--first-use'\);/, 'the toast carries the mark, cleared for any other toast');
 });
 
 test('the shell registers the results screen, its focus, its controller layer and the flow on the hand-off', () => {
@@ -951,7 +1014,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     assert.equal(shown.trophy, true);
     assert.equal(shown.clicksRow, `Clicks: ${formatClicks(shown.clicks)}`);
     assert.equal(shown.clicksRow.split(' ')[1], made, 'the overlay, frozen at the end, and the card count the same clicks');
-    assert.equal(shown.target, `Next target: Beat ${shown.time} for a new best · streak 1`);
+    assert.equal(shown.target, `Next target: beat ${shown.time} · streak 1`);
     assert.equal(shown.winRate, 'Win rate: 100% · completed games 100% · longest streak 1');
     assert.equal(shown.board2d, true, 'the finished board stays visible behind the screen');
     assert.equal(shown.focus, 'r-again', 'Play again has default focus');
@@ -960,6 +1023,32 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     assert.ok(Math.max(...shown.bar) - Math.min(...shown.bar) <= 2, `the action bar is one row (${shown.bar})`);
     assert.equal(shown.menuLeft, true, 'Main menu on the left');
     assert.equal(shown.hscroll, false, 'no horizontal scroll');
+    // The card as the canvas draws it at 1366 × 768: 1000 px wide, the head 22 × 28 px with the 40 px title and the 56 px trophy tile,
+    // the rank chip 14 px, each detail's label 15 px heavy beside its 14 px mono value, every action with its icon.
+    const look = await page.evaluate(() => {
+      const cs = (sel) => getComputedStyle(document.querySelector(sel));
+      const box = (sel) => document.querySelector(sel).getBoundingClientRect();
+      return {
+        width: Math.round(box('#results-frame').width), radius: cs('#results-frame').borderRadius, head: cs('#results-head').padding,
+        title: [cs('#results-title').fontSize, cs('#results-title').fontWeight], board: [cs('#results-board').fontSize, cs('#results-board').fontWeight],
+        trophy: [Math.round(box('#results-trophy').width), Math.round(box('#results-trophy').height), cs('#results-trophy').backgroundColor],
+        rank: [cs('#results-rank').fontSize, cs('#results-rank').padding],
+        label: [cs('#rd-clicks th').fontSize, cs('#rd-clicks th').fontWeight, Math.round(box('#rd-clicks th').width) >= 110],
+        value: [cs('#rd-clicks td').fontSize, /JetBrains Mono/.test(cs('#rd-clicks td').fontFamily), box('#rd-clicks td').left > box('#rd-clicks th').left, Math.abs(box('#rd-clicks td').top - box('#rd-clicks th').top) <= 2],
+        rule: cs('#rd-clicks').borderTopWidth,
+        icons: ['r-menu', 'r-watch', 'r-records', 'r-again'].map((id) => document.querySelector(`#${id} > .ui-icon`)?.dataset.icon ?? null),
+        codeRow: box('#results-code-group .ui-section-label').right < box('#results-code').left,
+      };
+    });
+    assert.deepEqual(look, {
+      width: 1000, radius: '22px', head: '22px 28px', title: ['40px', '800'], board: ['16px', '700'], trophy: [56, 56, 'rgb(255, 255, 255)'],
+      rank: ['14px', '6px 12px'], label: ['15px', '800', true], value: ['14px', true, true, true], rule: '1px',
+      icons: ['arrow-left', 'film', 'chart', 'play'], codeRow: true,
+    });
+    for (const [width, height, cardW] of [[1920, 1080, 1040], [1024, 768, 960]]) {
+      await page.setViewportSize({ width, height });
+      assert.equal(await page.evaluate(() => Math.round(document.getElementById('results-frame').getBoundingClientRect().width)), cardW, `the card is ${cardW} wide at ${width} × ${height}`);
+    }
 
     // On a phone the same card: tiles two by two, Play again first and full width, Main menu last; no horizontal scroll.
     await page.setViewportSize({ width: 390, height: 844 });
@@ -977,6 +1066,23 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
       };
     });
     assert.deepEqual(phone, { rows: 2, pairs: true, overflow: [], again: [true, true], menuLast: true, hscroll: false });
+    // The phone card: 12 px in from the sides and top, its head 18 px in with the 32 px title, its body 16 px in, each detail's
+    // label over its value, the code chip under its label, and the action bar in flow at the card's end — the page scrolls to it.
+    const phoneCard = await page.evaluate(() => {
+      const box = (sel) => document.querySelector(sel).getBoundingClientRect();
+      const cs = (sel) => getComputedStyle(document.querySelector(sel));
+      const frame = box('#results-frame');
+      const scroller = document.getElementById('results');
+      return {
+        insets: [Math.round(frame.left), Math.round(window.innerWidth - frame.right), Math.round(frame.top + scroller.scrollTop)],
+        head: cs('#results-head').padding, title: cs('#results-title').fontSize, body: cs('#results-body').padding,
+        stacked: box('#rd-clicks td').top >= box('#rd-clicks th').bottom - 1,
+        code: box('#results-code').top >= box('#results-code-group .ui-section-label').bottom - 1,
+        footInFlow: Math.round(box('#results-actions').bottom) === Math.round(frame.bottom) && box('#results-actions').top >= box('#results-body').bottom - 1,
+        scrolls: scroller.scrollHeight > scroller.clientHeight,
+      };
+    });
+    assert.deepEqual(phoneCard, { insets: [12, 12, 12], head: '18px', title: '32px', body: '16px', stacked: true, code: true, footInFlow: true, scrolls: true });
     // The narrowest four-tile window, a narrow desktop window and the narrowest phone, with long figures: none outgrows its tile.
     for (const [width, height] of [[1000, 800], [720, 800], [360, 740]]) {
       await page.setViewportSize({ width, height });
@@ -1043,6 +1149,14 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     assert.equal(lost.afterPress, 'results', 'a click during the end delay shows the card at once');
     assert.equal(await mode(), 'results');
     assert.equal(await page.evaluate(() => document.getElementById('results-title').textContent), 'Game over');
+    assert.deepEqual(await page.evaluate(() => {
+      const head = getComputedStyle(document.getElementById('results-head'));
+      const sunk = getComputedStyle(document.documentElement).getPropertyValue('--color-surface-sunk').trim();
+      const probe = document.createElement('i'); probe.style.color = sunk; document.body.append(probe);
+      const want = getComputedStyle(probe).color; probe.remove();
+      const bar = getComputedStyle(document.getElementById('rs-progress'));
+      return { neutral: head.backgroundColor === want, trophy: document.getElementById('results-trophy').getBoundingClientRect().width, bar: [bar.height, bar.borderRadius, bar.appearance] };
+    }), { neutral: true, trophy: 0, bar: ['10px', '6px', 'none'] }, 'a loss: the neutral head with no trophy, the 3BV solved bar 10 px with radius 6');
     assert.equal(await ending(), null, 'the board is drawn in its end state');
     assert.equal(await page.evaluate(() => globalThis.__ms.records.history('classic-2d:square:9x9:10:guess').at(-1).outcome), 'lost', 'recorded finished, as lost');
     await page.evaluate(() => document.getElementById('r-menu').focus());
