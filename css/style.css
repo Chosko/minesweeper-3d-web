@@ -295,19 +295,20 @@ kbd {
 .modal-close { font-size: 24px; width: 34px; height: 34px; }
 
 /* ---------- first-use hint strip ---------- */
-/* Centred above the HUD strip; on the Classic 2D board it takes the room below the board. Too long for
-   the window, its text wraps onto a second line. */
+/* Centred above the HUD strip in 3D; in Classic 2D over the board in its column (below). Its inputs in
+   key boxes 14 px apart with no separator, then the close button. Too long for its room, its items
+   wrap onto a second line. */
 #hint-strip {
   position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; pointer-events: auto;
-  display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 14px; font-size: 13px;
+  display: flex; align-items: center; gap: 14px; padding: 7px 8px 7px 18px; font-size: 15px; font-weight: var(--font-weight-bold);
   width: max-content; max-width: calc(100vw - 24px); box-sizing: border-box;
 }
-#hint-strip-text { min-width: 0; }
+#hint-strip-text { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) 14px; min-width: 0; }
+#hint-strip .hint-close { flex: none; display: grid; place-items: center; width: 30px; height: 30px; }
 /* While a view chip shows in the chip row, the hint strip stands above it (on a phone it sits under the counters). */
 @media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
   #hud:not(.hud--2d):has(.chip.on) #hint-strip { bottom: 122px; }
 }
-#c2d.c2d--hint #c2d-board { bottom: 64px; }
 /* A Learn 3D step's place ("1 / 4") before its prompt. */
 .hint-step { font-weight: var(--font-weight-bold); font-variant-numeric: var(--font-numeric-tabular); white-space: nowrap; }
 
@@ -340,8 +341,10 @@ kbd {
 #hud.hud--2d #hud-overlay { display: none; }
 /* The HUD strip sits centred below the window. */
 #hud.hud--2d .hud-tools { top: auto; right: auto; bottom: 25px; left: 50%; transform: translateX(-50%); }
-/* The first-use hint strip sits in the room the board area leaves it at the board column's foot (#c2d.c2d--hint). */
-#hud.hud--2d #hint-strip { left: 50%; transform: translateX(-50%); bottom: 116px; }
+/* The first-use hint strip lies over the board, 10 px above its foot (UI.setHintStrip moves it into the
+   board area): the board keeps its size, and the Tap choice under it and the figures under the board on a
+   narrower window stay clear. */
+#c2d-stage > #hint-strip { bottom: 10px; max-width: calc(100% - 2 * var(--space-3)); z-index: 1; }
 @media (max-width: 1439px), (max-height: 820px) {
   #c2d-body { grid-template-columns: auto auto 260px; }
   #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr) auto 260px; }
@@ -357,7 +360,6 @@ kbd {
 @media (max-height: 820px) {
   #c2d { padding-top: 13px; padding-bottom: 64px; }
   #hud.hud--2d .hud-tools { bottom: 8px; }
-  #hud.hud--2d #hint-strip { bottom: 96px; }
 }
 @media (max-width: 1023px) {
   #c2d-body, #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
@@ -369,8 +371,8 @@ kbd {
   #c2d-figures .ui-figures__foot .ui-key-hints { flex-direction: row; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
 }
 /* A phone: the window full-bleed, no figures panel and no HUD strip; upright, the board under the
-   counter strip and the Reveal / Flag switch under the board; held sideways, the board at the left
-   edge and a column beside it of the mines, the time, Restart and the switch. */
+   counter strip and the Tap choice under the board; held sideways, the board at the left
+   edge and a column beside it of the mines, the time, Restart and the Tap choice. */
 @media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
   #c2d { padding: 0; }
   #c2d-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
@@ -378,15 +380,6 @@ kbd {
   #c2d-body, #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   #c2d-main { padding: var(--space-3) var(--space-4); }
   #c2d-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr) auto; }
-  #hud.hud--2d #hint-strip { bottom: 52px; }
-}
-/* On a coarse pointer the Reveal / Flag switch sits under the board in a portrait window: the hint strip clears it. */
-@media (pointer: coarse) and (min-height: 501px), (pointer: coarse) and (orientation: portrait) {
-  #hud.hud--2d #hint-strip { bottom: 168px; }
-}
-@media (pointer: coarse) and (min-height: 501px) and (max-height: 820px) { #hud.hud--2d #hint-strip { bottom: 148px; } }
-@media (pointer: coarse) and (max-width: 719px) and (min-height: 501px), (pointer: coarse) and (max-width: 719px) and (orientation: portrait) {
-  #hud.hud--2d #hint-strip { bottom: 104px; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   #c2d-main { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); gap: 10px var(--space-3); padding: 10px var(--space-3); }
@@ -513,8 +506,9 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
   #hud:not(.hud--2d) ~ #help { right: 328px; }
 }
 #hud.hud--2d #crosshair, #hud.hud--2d #crosshair-arrow, #hud.hud--2d #aim-readout, #hud.hud--2d #mode-chips { display: none; }
-/* The Classic 2D Reveal / Flag switch (js/classic2d/touch-input.js): under the board on a coarse pointer only, accented on Flag. */
+/* The Classic 2D Tap choice (js/classic2d/touch-input.js): a segmented Tap: Reveal | Tap: Flag under the board, on a coarse pointer only. */
 #hud-tap { display: none; }
+#hud-tap .ui-segmented__option { min-height: 40px; min-width: 96px; }
 /* The HUD key strip at the bottom centre. */
 .hud-tools { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); padding: 7px 16px; display: flex; gap: 16px; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .kbd-hint { white-space: nowrap; }
@@ -784,7 +778,7 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
 /* ---------- coarse pointers ---------- */
 /* Touch targets a finger needs; a fine pointer keeps every size above. */
 @media (pointer: coarse) {
-  #hud-tap { display: flex; flex: none; align-self: center; min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-4); }
+  #hud-tap { display: inline-flex; flex-wrap: nowrap; flex: none; align-self: center; height: 48px; box-sizing: border-box; }
   /* Swap clicks trades mouse buttons: a coarse primary pointer is never fine, so this is js/main.js COARSE_ONLY */
   #hud-swap { display: none; }
   /* Pause (the 3D bar's and the Classic 2D window's) and the window's Restart take a touch anywhere in a 44 px band around their centre, their layout unchanged */

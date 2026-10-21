@@ -19,7 +19,7 @@ shell hands in its flow and its sound sink. The area overview is
   the contract methods plus `warm()`, `client` (the mode's one generation
   client), `fixed` (the open game's forced start, or null), `ending`, `finishNow()`,
   `hideBoard(hidden)`, `tick()`, `pad(poll, now)`, `setScale(scale)`,
-  `tapMode` / `setTapMode('reveal' | 'flag')` (the Reveal / Flag switch,
+  `tapMode` / `setTapMode('reveal' | 'flag')` (the Tap choice's value,
   `reveal` at first, kept for the page), `boardGame` (for the debug hook),
   `retry()`, `playStandard()`, `cancelGeneration()` → whether a board being
   generated was cancelled, `loadChoice()`, `status()` → `{state, time,
@@ -75,7 +75,7 @@ shell hands in its flow and its sound sink. The area overview is
   new second (`tick`).
 - **Game window** (`#c2d`, ids in [app-shell-ui.md](app-shell-ui.md)): head
   (Swap clicks, title, Pause), body (counter strip over the board area, the
-  Reveal / Flag switch on a coarse pointer, the flat live figures column
+  Tap choice on a coarse pointer, the flat live figures column
   with the controls reminder), foot (size, mines, no-guess). The window
   hugs its content, centred above the HUD strip: the fit rule works in the
   room the chrome leaves, and the board area takes the board's extent in

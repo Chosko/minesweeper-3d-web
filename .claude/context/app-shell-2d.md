@@ -20,8 +20,7 @@ themselves are [classic2d.md](classic2d.md).
   at the `boardScale` setting (`scale`) inside the board frame (`frame`,
   `BOARD_FRAME`). The window hugs its board: `ui.sizeBoard2D` measures the
   room its chrome leaves with the window at its largest (`c2d--measure`)
-  and sizes `#c2d-stage` to the view's `extent` there, keeping the room the
-  stage holds around `#c2d-board` (the hint strip's) and giving back what
+  and sizes `#c2d-stage` to the view's `extent` there, giving back what
   the body then overflows (below 1024 px the figures row under the board
   wraps at the board's width, never setting the window's) — at each fresh view
   before its first fit (`mounted`), on every change of `#c2d`'s size (a

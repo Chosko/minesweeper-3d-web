@@ -1191,7 +1191,7 @@ Feature: in-game-layout
 
 ## 232. First-use hint strip and the Tap: Reveal / Flag segmented choice
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/style.css, js/settings/bindings.js, index.html, js/ui.js, .claude/context/app-shell-help.md, .claude/context/classic2d-input.md
 Preconditions: 231

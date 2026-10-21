@@ -417,8 +417,8 @@ on purpose:
 - **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.
 - **Minor timing changes the player cannot see:** auto-hiding and the win check run right after each
   action instead of once per frame.
-- **Touch:** Classic 2D plays by touch. A tap reveals, or flags while the Reveal / Flag switch under the
-  board (shown on a touch screen) is on Flag; a 400 ms long-press flags, with a short vibration; a
+- **Touch:** Classic 2D plays by touch. A tap reveals, or flags while the Tap choice under the
+  board (shown on a touch screen) is on Tap: Flag; a 400 ms long-press flags, with a short vibration; a
   tap on a number chords. One finger pans a board larger than the screen, two fingers pan and pinch
   to zoom between the smallest tile and the whole board. 3D plays by touch on a touch-only device
   too ([Touch](#touch)): a left-thumb stick, a look drag, tap, long-press and two-finger tap on the

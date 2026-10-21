@@ -947,15 +947,16 @@
      Its body: the board column — a ui-counter-strip (mines left, Restart
      with its restart key hint, the timer) over the board area, sized to
      the board and left-aligned under the strip, where the board sits in
-     its ui-board-frame, and under it the Reveal / Flag switch on a coarse
-     pointer — a ui-divider--vertical and the ui-figures panel of the live
+     its ui-board-frame with the first-use hint strip laid over it, and
+     under it the Tap choice (a ui-segmented Tap: Reveal | Tap: Flag) on a
+     coarse pointer — a ui-divider--vertical and the ui-figures panel of the live
      figures (3BV with its bar, pace vs PB, 3BV/s, clicks, flags) with the
      controls reminder at its foot, a flat column with no surface of its
      own. The foot is a ui-frame__status line naming the board's size,
      mines and no-guess. Below 1024 px the panel moves under the board, its
      figures in a row; on a phone the window is full-bleed and the panel
      hidden, and held sideways the board takes the left edge and a column
-     beside it holds the mines, the time, Restart and the switch.
+     beside it holds the mines, the time, Restart and the Tap choice.
      Default focus: none (the board takes the keys).
    3D game overlay (index.html #hud-overlay over the full-window scene): a
      ui-counter-strip (mines left, Restart with its restart key hint, the

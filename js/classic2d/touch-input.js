@@ -9,8 +9,8 @@
 //                                       cell it does nothing. The lift that follows does nothing.
 //   lifted sooner, moved less than TAP_SLOP px  a tap, acting on the cell it touched on the lift:
 //                                       a closed cell reveals, or toggles its flag while the
-//                                       Reveal / Flag switch is on Flag (flagMode); a revealed
-//                                       number chords, whichever way the switch is set.
+//                                       Tap choice is on Flag (flagMode); a revealed
+//                                       number chords, whichever way the choice is set.
 //   moved TAP_SLOP px or more           pans the board when it scrolls (onPan, the finger's moves
 //                                       from where it touched); otherwise acts on nothing.
 //   While the finger is down the touched cell, or a number's closed unflagged neighbours, show the
@@ -26,7 +26,7 @@
 //   graph, game, onPress, onAction, rules, active   as createPointerInput's (pointer-input.js); a
 //             touch begun while active() is false is ignored through its lift.
 //   scrolls   () → whether the board scrolls (a one-finger drag pans only then).
-//   flagMode  () → true while the Reveal / Flag switch is on Flag.
+//   flagMode  () → true while the Tap choice is on Flag.
 //   vibrate   () → the long-press flag's vibration.
 //   clock     { setTimeout, clearTimeout }, for the long-press; the global ones by default.
 //
@@ -52,7 +52,7 @@ export const LONG_PRESS_MS = 400;
 export const TAP_SLOP = 8;
 /** The long-press flag's vibration, in ms. */
 export const VIBRATE_MS = 20;
-/** What a tap on a closed cell does: the Reveal / Flag switch's two settings. */
+/** What a tap on a closed cell does: the Tap choice's two options. */
 export const TAP_MODES = Object.freeze(['reveal', 'flag']);
 
 const globalClock = {

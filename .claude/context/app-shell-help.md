@@ -64,7 +64,14 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   a coarse-only device (`COARSE_ONLY`, passed as `stripShown`'s
   `touchOnly`), and otherwise once `used2D` is set; a
   scrolling 2D board (`clipped2D`) shows the one-time scroll hint instead
-  until `FIRST_USE.once('scrollHint')`.
+  until `FIRST_USE.once('scrollHint')`. The strip `#hint-strip` stands in
+  `#hud` over the 3D scene; in Classic 2D `setHintStrip` moves it into the
+  board area `#c2d-stage`, laid over the board's foot, so the board keeps its
+  size and neither the Tap choice under the board nor the figures under it
+  on a narrower window are covered; its wording and key boxes are
+  `hintStripHtml`'s ([settings-bindings.md](settings-bindings.md)). On a coarse pointer the
+  Classic 2D window's Tap choice `#hud-tap` sets what a tap on a closed cell
+  does ([classic2d-input.md](classic2d-input.md) § Touch input).
   The ready card shows "How 3D works" and the Learn 3D line while
   `FIRST_USE.rules3D` (its hidden-cubes line names the Ctrl key, or the
   touch toolbar's Ctrl button under `#ready.ready--touch`), except on the

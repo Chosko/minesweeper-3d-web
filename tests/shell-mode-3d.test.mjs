@@ -968,8 +968,7 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
       toolsShown: getComputedStyle(document.getElementById('hud-tools')).display !== 'none',
     }));
     assert.ok(help.stripShown, 'the first-use strip shows in the first games');
-    assert.match(help.strip, /Tap reveal/);
-    assert.match(help.strip, /Shift button neighbours/);
+    assert.equal(help.strip, 'Tap reveal · Long-press flag · Two-finger tap chord');
     assert.doesNotMatch(help.strip + help.tools, /<kbd|Esc|Left|Right|Hold/, `no key named (${help.strip} | ${help.tools})`);
     assert.ok(help.toolsShown, 'the HUD strip keeps its spacing readout');
     assert.match(help.tools, /Pinch spacing/);
@@ -1121,7 +1120,7 @@ test('in a browser with a mouse at 1280 × 800, 3D starts with pointer lock and 
     await ms(() => globalThis.__ms.forcePlay());
     assert.equal(await ms(() => getComputedStyle(document.getElementById('touch-3d')).display), 'none', 'no touch layer');
     const help = await ms(() => ({ strip: document.getElementById('hint-strip-text').textContent, tools: document.getElementById('hud-tools').textContent }));
-    assert.equal(help.strip, 'Left reveal · Right flag · Hold Space aim through · Hold Shift neighbours', 'the keyboard\'s hint strip, as before');
+    assert.equal(help.strip, 'Left reveal Right flag Hold Space aim through Hold Shift neighbours', 'the keyboard\'s hint strip, every input a key box');
     assert.match(help.tools, /Esc menu/, 'the keyboard\'s HUD strip, as before');
     assert.equal(await ms(() => document.body.classList.contains('touch-play')), false);
     assert.deepEqual(errors, []);

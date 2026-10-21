@@ -111,8 +111,8 @@ bind.
     `404.html`'s `.not-found` is the same card ([app-shell-themes.md](app-shell-themes.md)).
   `#c2d` is the Classic 2D game window (its ids:
   [app-shell-ui.md](app-shell-ui.md) § Classic 2D window): `#c2d-board`
-  holds the panel `#c2d-panel` behind the canvas; `#c2d.c2d--hint` gives
-  the hint strip room below; `#c2d.c2d--measure` lays the window out at its
+  holds the panel `#c2d-panel` behind the canvas, and the hint strip lies
+  over the board in `#c2d-stage`; `#c2d.c2d--measure` lays the window out at its
   largest for `UI.sizeBoard2D` to measure the board's room. `#hud` holds the 3D overlay `#hud-overlay`
   (§ 3D overlay there), hidden under `hud--2d`.
 - **Pointer sizes.** The text minimums hold on every pointer, in the
@@ -121,7 +121,7 @@ bind.
   depend on the pointer: each stylesheet ends with one `@media (pointer:
   coarse)` block — the kit's gives `ui-toggle__input` and
   `ui-checkbox__input` a 44 px hit square (`::after`) and `ui-slider__input`
-  a 44 px height; the shell's shows `#hud-tap` in Classic 2D at 44 px, gives
+  a 44 px height; the shell's shows `#hud-tap` in Classic 2D at 48 px, gives
   `#hud-pause`, `#hud-restart` and `#c2d-restart` a 44 px band (`::after`),
   `#touch-modes` buttons 76 × 44 px, and hides `#hud-swap` (every main menu
   entry is at least 44 px on any pointer, [app-shell-menu.md](app-shell-menu.md)). Every

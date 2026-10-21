@@ -197,8 +197,8 @@ test('the scroll hint reads "Drag to pan · pinch to zoom" on a coarse-only devi
 });
 
 test('on a coarse-only device each mode\'s hint strip reads its touch wording, unless a controller is in use', () => {
-  assert.equal(text(hintStripHtml('classic-2d', 'touch')), 'Tap reveal · Long-press flag · Tap a number chord');
-  assert.equal(text(hintStripHtml('3d', 'touch')), 'Tap reveal · Long-press flag · Space button aim through · Shift button neighbours');
+  assert.equal(text(hintStripHtml('classic-2d', 'touch')), 'Tap reveal · Long-press flag · Tap a number to chord');
+  assert.equal(text(hintStripHtml('3d', 'touch')), 'Tap reveal · Long-press flag · Two-finger tap chord');
   for (const mode of ['classic-2d', '3d']) assert.doesNotMatch(hintStripHtml(mode, 'touch', GLYPHS.xbox), /<kbd/, `${mode}: no key or pad glyph`);
   const ui = read('js/ui.js');
   assert.match(ui, /: hintStripHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs\)/,
@@ -267,16 +267,23 @@ test('on a touch-only device the Classic 2D strip shows from the start of the ga
   assert.equal(stripShown({ ...base, touchOnly: true, mode: '3d', screen: 'ready' }), false, 'the 3D strip is unchanged');
 });
 
-test('the strips\' words come from the bindings source, with the controller\'s glyphs while it is the active device', () => {
-  assert.equal(text(hintStripHtml('classic-2d', 'keyboard')), 'Arrows move · Space reveal · F flag · D chord');
-  assert.equal(text(hintStripHtml('3d', 'keyboard')), 'Left reveal · Right flag · Hold Space aim through · Hold Shift neighbours');
+// A key or button strip's items, [input, action] each: the whole input in one key box, then its action.
+const stripItems = (html) => [...html.matchAll(/<span class="kbd-hint"><kbd>([^<]*)<\/kbd> ([^<]*)<\/span>/g)].map(([, input, action]) => [input, action]);
+
+test('the strips\' words come from the bindings source, every input in a key box with no separators, with the controller\'s glyphs while it is the active device', () => {
+  assert.deepEqual(stripItems(hintStripHtml('classic-2d', 'keyboard')), [['Arrows', 'move'], ['Space', 'reveal'], ['F', 'flag'], ['D', 'chord']]);
+  assert.deepEqual(stripItems(hintStripHtml('3d', 'keyboard')), [['Left', 'reveal'], ['Right', 'flag'], ['Hold Space', 'aim through'], ['Hold Shift', 'neighbours']]);
   const pad2d = hintStripHtml('classic-2d', 'controller', GLYPHS.playstation);
-  assert.match(pad2d, /<kbd class="pad">✕<\/kbd> reveal/);
-  assert.match(pad2d, /<kbd class="pad">□<\/kbd> flag/);
-  assert.match(pad2d, /<kbd class="pad">△<\/kbd> chord/);
+  assert.deepEqual(stripItems(pad2d), [['D-pad', 'move'], ['✕', 'reveal'], ['□', 'flag'], ['△', 'chord']]);
   assert.doesNotMatch(pad2d, /Space|Arrows/, 'no keyboard names on the controller strip');
-  const pad3d = text(hintStripHtml('3d', 'controller', GLYPHS.xbox));
-  assert.equal(pad3d, 'RT reveal · LT flag · Hold RB aim through · Hold LB neighbours');
+  assert.deepEqual(stripItems(hintStripHtml('3d', 'controller', GLYPHS.xbox)), [['RT', 'reveal'], ['LT', 'flag'], ['Hold RB', 'aim through'], ['Hold LB', 'neighbours']]);
+  for (const mode of ['classic-2d', '3d']) {
+    for (const device of ['keyboard', 'controller']) {
+      const html = hintStripHtml(mode, device, GLYPHS.xbox);
+      assert.equal(html.replace(/<span class="kbd-hint"><kbd>[^<]*<\/kbd> [^<]*<\/span>/g, '').trim(), '', `${mode}, ${device}: nothing but key boxes and their actions`);
+      assert.doesNotMatch(html, /&middot;|·|•|&bull;/, `${mode}, ${device}: no separator`);
+    }
+  }
   assert.match(read('js/shell/first-use.js') + read('js/ui.js'), /hintStripHtml\(/, 'the strip is drawn from the bindings source');
 });
 
@@ -403,7 +410,8 @@ test('in a browser: the rules block until a finished 3D game, the one-time toast
     assert.equal(await ms(() => document.querySelector('#ready-back .ui-key-hint__key')?.textContent), 'Esc', 'the Esc key hint in the ready card\'s Back');
     await ms(() => globalThis.__ms.forcePlay());
     assert.ok(await shown('hint-strip'), 'the 3D strip from the start of play');
-    assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Left reveal · Right flag · Hold Space aim through · Hold Shift neighbours');
+    assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Left reveal Right flag Hold Space aim through Hold Shift neighbours');
+    assert.equal(await ms(() => document.getElementById('hint-strip').parentElement.id), 'hud', 'the 3D strip over the scene, in the HUD');
     assert.equal(await shown('hint-h'), false);
 
     // An abandoned game does not count as finished.
@@ -485,19 +493,46 @@ test('in a browser: the Classic 2D strip appears at the first key, in pad glyphs
     };
     const start2D = () => ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'beginner', custom: { width: 9, height: 9, mines: 10 }, noGuess: false }));
 
+    // The board's place and tile, and the strip's box against its board column.
+    const geometry = () => ms(() => {
+      const box = (el) => el.getBoundingClientRect().toJSON();
+      const el = document.getElementById('hint-strip');
+      const close = document.getElementById('hint-strip-close');
+      const css = getComputedStyle(el);
+      return {
+        stage: box(document.getElementById('c2d-stage')), tile: globalThis.__ms.board2D.layout.tile, main: box(document.getElementById('c2d-main')), strip: box(el),
+        parent: el.parentElement.id, position: css.position, font: [css.fontSize, css.fontWeight], padding: css.padding, gap: css.columnGap,
+        close: [close.getBoundingClientRect().width, close.getBoundingClientRect().height, !!close.querySelector('svg path[d]'), close.textContent.trim()],
+        boxes: [...el.querySelectorAll('#hint-strip-text kbd')].map((k) => k.textContent),
+      };
+    });
+
     await page.mouse.move(10, 10); // the keyboard and mouse are the active device
     await start2D();
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'classic-2d');
     assert.equal(await shown('hint-strip'), false, 'not before a key or the controller is used');
+    await frames(2);
+    const before = await geometry();
     await page.keyboard.press('ArrowRight');
     assert.ok(await shown('hint-strip'));
-    assert.equal(await strip(), 'Arrows move · Space reveal · F flag · D chord');
+    assert.equal(await strip(), 'Arrows move Space reveal F flag D chord');
+    await frames(2);
+    const after = await geometry();
+    assert.deepEqual([after.stage, after.tile], [before.stage, before.tile], 'the board keeps its place and size with the strip shown');
+    assert.equal(after.parent, 'c2d-stage', 'the strip sits in the board area');
+    assert.equal(after.position, 'absolute');
+    assert.ok(Math.abs(after.stage.bottom - after.strip.bottom - 10) <= 0.5 && after.strip.top >= after.stage.top, `over the board, 10 px above its foot (${after.stage.bottom - after.strip.bottom})`);
+    assert.ok(Math.abs((after.strip.left + after.strip.right) / 2 - (after.stage.left + after.stage.right) / 2) <= 1, 'centred on the board');
+    assert.deepEqual([after.font, after.padding, after.gap], [['15px', '700'], '7px 8px 7px 18px', '14px'], 'its type, padding and gap');
+    assert.deepEqual(after.close, [30, 30, true, ''], 'a 30 px close button with a stroked X');
+    assert.deepEqual(after.boxes, ['Arrows', 'Space', 'F', 'D'], 'every input a key box');
     // The controller: the strip names its inputs while it is the active device.
     await tap(15); // D-pad right
-    assert.match(await strip(), /✕ reveal · □ flag · △ chord/);
+    assert.equal(await strip(), 'D-pad move ✕ reveal □ flag △ chord');
+    assert.deepEqual((await geometry()).boxes, ['D-pad', '✕', '□', '△'], 'the D-pad in a key box too');
     await page.mouse.move(40, 40);
     await frames(1);
-    assert.equal(await strip(), 'Arrows move · Space reveal · F flag · D chord', 'back to the keyboard and mouse');
+    assert.equal(await strip(), 'Arrows move Space reveal F flag D chord', 'back to the keyboard and mouse');
     // A second game: the strip waits for that game's own first key.
     await start2D();
     assert.equal(await shown('hint-strip'), false, 'not carried over from the previous game');

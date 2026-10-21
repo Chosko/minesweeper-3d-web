@@ -619,7 +619,12 @@ test('the Classic 2D game window is built from catalogued components: head with 
   assert.ok(restartHint && restartHint.attrs['data-action'] === 'restart', 'Restart carries its key hint');
   assert.ok('data-no-focus' in restart.attrs, 'Restart never takes the board\'s keys');
   assert.match(WINDOW_2D, /<div id="c2d-board"><div id="c2d-panel" class="ui-board-frame hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the board\'s frame');
-  assert.ok(byId2D('hud-tap'), 'the Reveal / Flag switch sits in the window');
+  const tapChoice = byId2D('hud-tap');
+  assert.ok(tapChoice && hasClasses(tapChoice, '.ui-segmented') && tapChoice.attrs.role === 'radiogroup' && tapChoice.attrs['aria-label'], 'the Tap choice sits in the window, a named segmented radiogroup');
+  const tapOptions = within(inside(WINDOW_2D, WINDOW_2D_TAGS, tapChoice), '.ui-segmented__option');
+  assert.deepEqual(tapOptions.map((o) => [o.attrs.role, o.attrs['data-value'], o.attrs['aria-checked'], textOf(WINDOW_2D, o)]),
+    [['radio', 'reveal', 'true', 'Tap: Reveal'], ['radio', 'flag', 'false', 'Tap: Flag']], 'two options, Reveal chosen');
+  assert.ok(tapOptions.every((o) => 'data-no-focus' in o.attrs), 'neither option takes the board\'s keys');
 
   const panel = byId2D('c2d-figures');
   assert.ok(hasClasses(panel, '.ui-figures') && panel.tag === 'section' && panel.attrs['aria-label'] === 'Live figures', 'the figures panel');
@@ -1680,7 +1685,7 @@ test('coarse pointers get 44 px switch and slider targets inside (pointer: coars
   assert.ok(!styleCoarse.some(([sel]) => /\bkbd\b/.test(sel)), 'the key cap size is no coarse-only rule');
   const kbd = rules(topLevel(STYLE)).filter(([s]) => s.trim() === 'kbd').map(([, b]) => b).join(';');
   assert.match(kbd, /font(-size)?:[^;]*max\(11px,\s*0\.78em\)/, 'key caps at 11 px or more on every pointer');
-  assert.ok(styleCoarse.some(([sel, body]) => sel.includes('#hud-tap') && body.includes('44px')), 'the Reveal / Flag switch\'s 44 px hit area');
+  assert.ok(styleCoarse.some(([sel, body]) => sel.trim() === '#hud-tap' && /height:\s*48px/.test(body)), 'the Tap choice 48 px tall');
   assert.ok(styleCoarse.some(([sel, body]) => sel.trim() === '#hud-swap' && /display:\s*none/.test(body)), 'no Swap clicks on a coarse-only device');
 });
 
@@ -3492,13 +3497,12 @@ for (const [size, device, want] of ARTBOARDS_2D) {
         globalThis.__ms.modes.start('classic-2d', { size: 'intermediate', noGuess: false });
       });
       await settle();
-      // The first-use hint strips (a clipped board's scroll hint, the touch hint) keep a room of their own under the
-      // board, which the artboards do not draw: dismissed here one after the other, the board takes its room back.
+      // The first-use hint strips (a clipped board's scroll hint, the touch hint), which the artboards do not draw
+      // here, dismissed one after the other.
       for (let i = 0; i < 4 && await ms(() => !document.getElementById('hint-strip').classList.contains('hidden')); i++) {
         await ms(() => document.getElementById('hint-strip-close').click());
         await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       }
-      assert.equal(await ms(() => document.getElementById('c2d').classList.contains('c2d--hint')), false, `${size}: no hint strip left`);
       await settle();
       const g = await ms(() => {
         const box = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
@@ -3567,6 +3571,24 @@ for (const [size, device, want] of ARTBOARDS_2D) {
         assert.ok(near(g.restart.width, g.strip.width - 24), `${size}: Restart full width (${g.restart.width})`);
         assert.ok(g.tap.y >= g.strip.bottom && near(g.tap.x, g.strip.x), `${size}: the Tap switch under them`);
         assert.equal(g.restart.height, 44, `${size}: Restart 44 px tall`);
+      }
+      if (!device.hasTouch) {
+        // A key brings the mode's hint strip: laid over the board column, the board keeps its size, and
+        // under the board it never reaches the figures row.
+        await page.keyboard.press('ArrowRight');
+        await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'));
+        await settle();
+        const h = await ms(() => {
+          const box = (el) => el.getBoundingClientRect().toJSON();
+          const el = document.getElementById('hint-strip');
+          return { strip: box(el), parent: el.parentElement.id, stage: box(document.getElementById('c2d-stage')), main: box(document.getElementById('c2d-main')), figures: box(document.getElementById('c2d-figures')), tile: globalThis.__ms.board2D.layout.tile, gap: globalThis.__ms.board2D.layout.gap };
+        });
+        assert.deepEqual([h.stage.width, h.stage.height, h.tile], [g.stage.width, g.stage.height, g.layout.tile], `${size}: the board keeps its size with the strip shown`);
+        if (want.window) assert.deepEqual([h.tile, h.gap], size === 'xl' ? [42, 4] : [28, 3], `${size}: the tile and gap as without the strip`);
+        assert.equal(h.parent, 'c2d-stage', `${size}: the strip in the board area`);
+        assert.ok(near(h.stage.bottom - h.strip.bottom, 10, 0.5) && h.strip.top >= h.stage.y, `${size}: over the board, 10 px above its foot`);
+        if (size === 'xl') assert.ok(near(h.main.bottom - h.strip.bottom, 32, 0.5), `${size}: 32 px off the board column's foot, as J-Game2D-states draws it`);
+        if (want.under) assert.ok(h.strip.bottom <= h.figures.y, `${size}: clear of the figures row under the board`);
       }
       assert.deepEqual(errors, [], `${size}: no page errors`);
     } finally {

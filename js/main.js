@@ -407,7 +407,7 @@ const ui = new UI({
   onPause: () => pauseGame(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
   onToggleSwap: () => BUTTON_SWAP.toggle(),
-  onToggleTap: () => { mode2d.setTapMode(mode2d.tapMode === 'flag' ? 'reveal' : 'flag'); ui.setTapMode(mode2d.tapMode); },
+  onTapMode: (value) => { mode2d.setTapMode(value); ui.setTapMode(mode2d.tapMode); }, // the Tap choice's option: what a tap on a closed cell does
   onResetAll: () => RESET.run(),
   onDismissHint: (mode, kind) => { if (kind === 'scroll') FIRST_USE.once('scrollHint'); else FIRST_USE.dismiss(mode); refreshHints(); },
   onRetry2D: () => answer2D(() => mode2d.retry()),

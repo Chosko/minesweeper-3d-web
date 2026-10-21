@@ -92,10 +92,11 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
 - **Classic 2D window** (`#c2d`; `showClassic2D` marks `#hud` `hud--2d`,
   hiding the 3D overlay): `#hud-swap` (Swap clicks, `aria-pressed`, never
   under `(pointer: coarse)`, never taking focus), the title `#c2d-title` and
-  Pause `#c2d-pause` in its head; `#hud-tap` under the board (the Reveal /
-  Flag switch, "Tap: Reveal" / "Tap: Flag", only under `(pointer: coarse)`,
-  a 44 px hit area; `main.js` flips `mode2d.setTapMode` and writes it back
-  with `setTapMode`); the foot line `#c2d-size`. Its layout:
+  Pause `#c2d-pause` in its head; `#hud-tap` under the board (the Tap choice,
+  a `ui-segmented` radiogroup of "Tap: Reveal" and "Tap: Flag", only under
+  `(pointer: coarse)`, 48 px tall, its options never taking focus; its
+  chosen option's value goes through `onTapMode` to `mode2d.setTapMode`,
+  written back with `setTapMode`); the foot line `#c2d-size`. Its layout:
   [classic2d-mode.md](classic2d-mode.md) § Game window.
 - **HUD density.** The counter digits, the figures' values and spacing, the
   panel titles and the touch buttons follow the frame's size steps

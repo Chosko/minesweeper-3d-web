@@ -75,7 +75,7 @@ export const TOUCH_MSG = 'Both modes play by touch: 3D and Classic 2D.';
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer, onTouchMode }
+    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onTapMode, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer, onTouchMode }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       hudCounters: $('hud-counters'), hudFigures: $('hud-figures'), hudHead: $('hud-figures').querySelector('.ui-figures__head'), hudTitle: $('hud-title'),
@@ -185,8 +185,9 @@ export class UI {
     // The swap toggle never takes focus, so the board's cursor keys (Space, Enter) keep playing.
     this.el.hudSwap.addEventListener('mousedown', (e) => e.preventDefault());
     this.el.hudSwap.addEventListener('click', () => cb.onToggleSwap?.());
+    // The Tap choice neither: a chosen option hands its value to the shell.
     this.el.hudTap.addEventListener('mousedown', (e) => e.preventDefault());
-    this.el.hudTap.addEventListener('click', () => cb.onToggleTap?.());
+    bindSegmented(this.el.hudTap, { horizontal: true, onChange: (value) => cb.onTapMode?.(value) });
     $('c2d-retry').addEventListener('click', () => cb.onRetry2D?.());
     $('c2d-standard').addEventListener('click', () => cb.onStandard2D?.());
     $('c2d-cancel').addEventListener('click', () => cb.onCancel2D?.());
@@ -436,11 +437,13 @@ export class UI {
   }
   /** The Classic 2D mouse button swap's toggle: pressed while the swap is on. */
   setSwap(on) { this.el.hudSwap.setAttribute('aria-pressed', on ? 'true' : 'false'); }
-  /** The Reveal / Flag switch (coarse pointers only, by the stylesheet): pressed while a tap flags. */
+  /** The Tap choice (coarse pointers only, by the stylesheet): its option for `mode`, 'reveal' or 'flag', chosen. */
   setTapMode(mode) {
-    const flag = mode === 'flag';
-    this.el.hudTap.setAttribute('aria-pressed', flag ? 'true' : 'false');
-    this.el.hudTap.textContent = flag ? 'Tap: Flag' : 'Tap: Reveal';
+    const options = [...this.el.hudTap.querySelectorAll('.ui-segmented__option')];
+    segmentedState(options.length, options.findIndex((o) => o.dataset.value === mode)).forEach((st, i) => {
+      options[i].setAttribute('aria-checked', String(st.checked));
+      options[i].tabIndex = st.tabIndex;
+    });
   }
   /**
    * The board's frame (the kit's ui-board-frame) at `rect` in the board area (board-view.js panelRect),
@@ -460,20 +463,18 @@ export class UI {
    * the room the window's chrome leaves it, `extent(width, height)` the board view's
    * (board-view.js). The room is measured with the window at its largest (#c2d.c2d--measure, the
    * area taking what the chrome leaves) and the area sized at once, in one task, so nothing paints
-   * in between; whatever the stage keeps around the board's container (the hint strip's room)
-   * stays around it. Measured at its largest, the window's chrome can be shorter than at the
+   * in between. Measured at its largest, the window's chrome can be shorter than at the
    * board's width (the figures row under the board wraps more): the area gives back what the body
    * then overflows. Returns whether the area's size changed; a hidden window is left as it is.
    */
   sizeBoard2D(extent) {
-    const { c2d, c2dStage: stage, c2dBoard: board } = this.el;
+    const { c2d, c2dStage: stage } = this.el;
     if (c2d.classList.contains('hidden')) return false;
     const before = [stage.style.width, stage.style.height];
     stage.style.width = '';
     stage.style.height = '';
     c2d.classList.add('c2d--measure');
-    const s = stage.getBoundingClientRect();
-    const b = board.getBoundingClientRect();
+    const b = stage.getBoundingClientRect();
     c2d.classList.remove('c2d--measure');
     if (!(b.width > 0 && b.height > 0)) {
       [stage.style.width, stage.style.height] = before;
@@ -481,8 +482,8 @@ export class UI {
     }
     const place = (height) => {
       const e = extent(b.width, height);
-      stage.style.width = `${Math.round(e.width + s.width - b.width)}px`;
-      stage.style.height = `${Math.round(e.height + s.height - b.height)}px`;
+      stage.style.width = `${Math.round(e.width)}px`;
+      stage.style.height = `${Math.round(e.height)}px`;
     };
     place(b.height);
     const body = stage.closest('.ui-frame__body');
@@ -606,8 +607,8 @@ export class UI {
    * The first-use hint strip of the shown mode, in the active device's names — or, with `scroll`,
    * the one-time hint beside a clipped Classic 2D board, or, with `learn`, a Learn 3D prompt (its
    * hint name in the bindings source) after its step ("1 / 4", the four steps only) and with no close
-   * button; on the 2D board it takes room at the
-   * bottom. It steps aside while the help panel is open.
+   * button. In Classic 2D it sits in the board area (#c2d-stage), over the board, which keeps its
+   * size; in 3D in the HUD, over the scene. It steps aside while the help panel is open.
    */
   setHintStrip(on, { scroll = false, learn = null } = {}) {
     this._hint = !!on;
@@ -624,8 +625,9 @@ export class UI {
       }
     }
     this.el.hintClose.classList.toggle('hidden', this._hintKind === 'learn');
+    const host = this._mode === 'classic-2d' ? this.el.c2dStage : this.el.hud;
+    if (this.el.hintStrip.parentElement !== host) host.append(this.el.hintStrip);
     this._showHint();
-    this.el.c2d.classList.toggle('c2d--hint', this._hint && this._mode === 'classic-2d');
   }
   _showHint() { this.el.hintStrip.classList.toggle('hidden', !this._hint || !this.el.help.classList.contains('hidden')); }
   /** The hint strip's dismiss button (the shell keeps the dismissal for good). */

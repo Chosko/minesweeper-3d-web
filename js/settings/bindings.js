@@ -24,7 +24,9 @@
 // hudStripHtml(mode, device, glyphs?, { muted, spacing }) → the HUD strip: only the keys, buttons or
 //   gestures the mode binds on that device (F flags in Classic 2D, so it is not listed there); 3D's
 //   carries the spacing to one decimal. Touch lists only 3D's spacing; Classic 2D's is empty.
-// hintStripHtml(mode, device, glyphs?) → the first-use hint strip of that mode, " · " between items.
+// hintStripHtml(mode, device, glyphs?) → the first-use hint strip of that mode: on the keyboard and the
+//   controller each input whole in one key box before its action, with no separator; on touch the
+//   gestures as words, " · " between items.
 // helpFootHtml(mode, device, glyphs?) → the H panel's foot line in plain words: the key that hides
 //   the panel; on touch, 3D's release rule, and empty for Classic 2D.
 // hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`),
@@ -246,6 +248,9 @@ export function readyRows(device, camera = 'fly') {
 
 const escape = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+/** Row text as plain text: a key's name, a controller button's glyph. */
+const plainText = (text, glyphs) => text.replace(/\[([^\]]+)\]/g, '$1').replace(/\{([a-z]+)\}/g, (m, name) => (Object.hasOwn(glyphs, name) ? glyphs[name] : m));
+
 function render(text, glyphs) {
   return text.split(/(\[[^\]]+\]|\{[a-z]+\})/).map((part) => {
     if (/^\[[^\]]+\]$/.test(part)) return `<kbd>${escape(part.slice(1, -1))}</kbd>`;
@@ -304,17 +309,17 @@ export const HUD_STRIP = table({
   },
 });
 
-/** The first-use hint strip per mode and device. */
+/** The first-use hint strip per mode and device; a keyboard or controller row's whole input is drawn as one key box. */
 export const HINT_STRIP = table({
   'classic-2d': {
     keyboard: [['Arrows', 'move'], ['[Space]', 'reveal'], ['[F]', 'flag'], ['[D]', 'chord']],
     controller: [['D-pad', 'move'], ['{a}', 'reveal'], ['{x}', 'flag'], ['{y}', 'chord']],
-    touch: [['Tap', 'reveal'], ['Long-press', 'flag'], ['Tap a number', 'chord']],
+    touch: [['Tap', 'reveal'], ['Long-press', 'flag'], ['Tap a number', 'to chord']],
   },
   '3d': {
     keyboard: [['Left', 'reveal'], ['Right', 'flag'], ['Hold [Space]', 'aim through'], ['Hold [Shift]', 'neighbours']],
     controller: [['{rt}', 'reveal'], ['{lt}', 'flag'], ['Hold {rb}', 'aim through'], ['Hold {lb}', 'neighbours']],
-    touch: [['Tap', 'reveal'], ['Long-press', 'flag'], ['Space button', 'aim through'], ['Shift button', 'neighbours']],
+    touch: [['Tap', 'reveal'], ['Long-press', 'flag'], ['Two-finger tap', 'chord']],
   },
 });
 
@@ -349,7 +354,9 @@ export function hudStripHtml(mode, device, glyphs = GLYPHS.generic, { muted = fa
 }
 
 export function hintStripHtml(mode, device, glyphs = GLYPHS.generic) {
-  return pick(HINT_STRIP, mode, device, 'hint strip').map(([input, action]) => `${render(input, glyphs)} ${render(action, glyphs)}`).join(' &middot; ');
+  const list = pick(HINT_STRIP, mode, device, 'hint strip');
+  if (device === TOUCH_DEVICE.id) return list.map(([input, action]) => `${escape(input)} ${escape(action)}`).join(' &middot; ');
+  return list.map(([input, action]) => `<span class="kbd-hint"><kbd>${escape(plainText(input, glyphs))}</kbd> ${escape(action)}</span>`).join(' ');
 }
 
 export function helpFootHtml(mode, device, glyphs = GLYPHS.generic) {
@@ -360,7 +367,7 @@ export function hintText(name, device, glyphs = GLYPHS.generic) {
   if (!Object.hasOwn(HINT_TEXT, name)) throw new Error(`hint text: unknown hint "${name}"`);
   const t = HINT_TEXT[name][device];
   if (t === undefined) throw new Error(`hint text: unknown device "${device}"`);
-  return t.replace(/\[([^\]]+)\]/g, '$1').replace(/\{([a-z]+)\}/g, (m, name2) => (Object.hasOwn(glyphs, name2) ? glyphs[name2] : m));
+  return plainText(t, glyphs);
 }
 
 /**

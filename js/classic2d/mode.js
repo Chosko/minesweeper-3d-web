@@ -101,7 +101,7 @@
 // board played standard after a no-guess failure stays standard.
 //
 // Shell side: setScale(scale) refits the open board at another board scale. tapMode and
-// setTapMode('reveal' | 'flag') are the Reveal / Flag switch every game's touch input reads: what a
+// setTapMode('reveal' | 'flag') are the Tap choice every game's touch input reads: what a
 // tap on a closed cell does, 'reveal' at first and kept for the page's life. A pinch zoom is the
 // board view's, so it lasts one game: every start, restart and Play again opens at the fit rule. hideBoard(hidden) hides
 // the board whenever the pause card shows — the session pauses
@@ -170,7 +170,7 @@ export function createClassic2DMode(report, {
   const time = clock ?? globalClock;
   let game = null; // { session, view, pointer, cursor, touch, sampler, offs, last, ending }
   let hidden = false;
-  let tapMode = TAP_MODES[0]; // the Reveal / Flag switch: what a tap on a closed cell does, kept for the page's life
+  let tapMode = TAP_MODES[0]; // the Tap choice: what a tap on a closed cell does, kept for the page's life
   let shown = { seconds: null, minesLeft: null, clicks: null };
   let figuresInput = null; // the live figures' input last fed
   let progressShown = null; // the progress last pushed to flow.progress
@@ -427,7 +427,7 @@ export function createClassic2DMode(report, {
       game?.sampler?.tick();
     },
     pad(poll, now) { game?.cursor.pad(poll, now); },
-    /** The Reveal / Flag switch: 'reveal' or 'flag', what a tap on a closed cell does. */
+    /** The Tap choice: 'reveal' or 'flag', what a tap on a closed cell does. */
     get tapMode() { return tapMode; },
     setTapMode(next) { if (TAP_MODES.includes(next)) tapMode = next; },
     retry: () => answer('retry'),

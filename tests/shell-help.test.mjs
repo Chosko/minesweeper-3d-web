@@ -206,8 +206,8 @@ test('the help foot, the HUD strip and the hint strip have touch wording in both
     }
   }
   // The hint strips: each mode's touch gestures and on-screen buttons, as its touch rows have them.
-  assert.equal(plain(hintStripHtml('classic-2d', 'touch')), 'Tap reveal · Long-press flag · Tap a number chord');
-  assert.equal(plain(hintStripHtml('3d', 'touch')), 'Tap reveal · Long-press flag · Space button aim through · Shift button neighbours');
+  assert.equal(plain(hintStripHtml('classic-2d', 'touch')), 'Tap reveal · Long-press flag · Tap a number to chord');
+  assert.equal(plain(hintStripHtml('3d', 'touch')), 'Tap reveal · Long-press flag · Two-finger tap chord');
   for (const [input] of [...HINT_STRIP['classic-2d'].touch, ...HINT_STRIP['3d'].touch]) {
     const rows = [...bindingRows('classic-2d', 'touch'), ...bindingRows('3d', 'touch')].map(([i]) => i);
     assert.ok(rows.includes(input), `"${input}" is a touch row's input`);
@@ -236,8 +236,8 @@ test('on a mouse and keyboard and with a controller the three surfaces read as b
   assert.equal(text(hudStripHtml('3d', 'keyboard')), 'X spacing 1.1H helpM sound onF fullscreenEsc menu');
   assert.equal(text(hudStripHtml('classic-2d', 'keyboard')), 'H helpM sound onEsc menu');
   assert.equal(text(hudStripHtml('3d', 'controller', GLYPHS.xbox)), 'D-pad ↑ ↓ spacing 1.1X helpMenu menu');
-  assert.equal(plain(hintStripHtml('classic-2d', 'keyboard')), 'Arrows move · Space reveal · F flag · D chord');
-  assert.equal(plain(hintStripHtml('3d', 'controller', GLYPHS.xbox)), 'RT reveal · LT flag · Hold RB aim through · Hold LB neighbours');
+  assert.equal(plain(hintStripHtml('classic-2d', 'keyboard')), 'Arrows move Space reveal F flag D chord');
+  assert.equal(plain(hintStripHtml('3d', 'controller', GLYPHS.xbox)), 'RT reveal LT flag Hold RB aim through Hold LB neighbours');
   assert.equal(text(helpFootHtml('classic-2d', 'keyboard')), 'H hides this panel.');
   assert.equal(text(helpFootHtml('3d', 'controller', GLYPHS.xbox)), 'X hides this panel.');
 });
@@ -402,7 +402,7 @@ test('in a browser: the controller as the active device redraws every shown surf
     assert.match(await htmlOf('#hud-tools'), /<kbd class="pad">X<\/kbd> help/);
     assert.match(await htmlOf('#hud-tools'), /<kbd class="pad">Menu<\/kbd> menu/);
     assert.doesNotMatch(await textOf('#hud-tools'), /Esc|fullscreen/);
-    assert.match(await htmlOf('#hint-strip-text'), /<kbd class="pad">RT<\/kbd> reveal/);
+    assert.match(await htmlOf('#hint-strip-text'), /<kbd>RT<\/kbd> reveal/);
     await tap(BTN.X);
     assert.match(await textOf('#help .ui-controls'), /Fly \/ look around/, 'the H panel shows the controller rows');
     await tap(BTN.X);

@@ -39,8 +39,11 @@ every function.
   device; F is not listed in Classic 2D, where it flags; 3D's first entry is
   the spacing readout, `X` spacing 1.1 to one decimal, D-pad on the
   controller, Pinch on touch, its only touch entry; Classic 2D's touch strip
-  is empty), `hintStripHtml(mode, device, glyphs?)` (touch: tap, long-press,
-  the tap chord in Classic 2D, the Space and Shift buttons in 3D).
+  is empty), `hintStripHtml(mode, device, glyphs?)` (keyboard and controller:
+  each row a `kbd-hint` holding its whole input in one `<kbd>` and its
+  action, no separator between rows; touch: tap, long-press and the mode's
+  chord gesture — a tap on a number in Classic 2D, the two-finger tap in 3D —
+  as words between " · ").
 - `HELP_FOOT`, `helpFootHtml(mode, device, glyphs?)` — the H panel's foot
   line in plain words, naming the key that hides the panel (on touch, 3D's
   release rule, the finger's lift; Classic 2D's touch foot is empty).
