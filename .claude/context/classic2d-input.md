@@ -123,8 +123,8 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
 
 ## CROSS-REFERENCES
 
-- [classic2d-board-view.md](classic2d-board-view.md) — the view the mounts
-  hit-test, press and scroll.
+- [classic2d-board-view.md](classic2d-board-view.md), [classic2d-board-canvas.md](classic2d-board-canvas.md)
+  — the view the mounts hit-test, press and scroll.
 - [classic2d-mode.md](classic2d-mode.md) — the mode that mounts the inputs
   and hands in the swap.
 - [engine.md](engine.md) — the input profile markers.

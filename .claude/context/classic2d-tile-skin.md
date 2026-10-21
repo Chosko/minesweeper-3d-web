@@ -151,7 +151,7 @@ How a Classic 2D tile looks. The area overview is
   [app-shell-themes.md](app-shell-themes.md) — the theme applier, `js/tokens.js` (`FALLBACK_COLOR`).
 - [rendering.md](rendering.md) — the 3D tile atlas, drawn through the same
   `js/tile-art.js` in the module's 3D style.
-- [classic2d-board-view.md](classic2d-board-view.md) — the view that owns a
+- [classic2d-board-canvas.md](classic2d-board-canvas.md) — the view that owns a
   skin; [classic2d-board-motion.md](classic2d-board-motion.md) — the motion
   layer that draws from the cache's depth steps.
 - [classic2d-tile-motion.md](classic2d-tile-motion.md) — the cell motion

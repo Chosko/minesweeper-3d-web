@@ -7,14 +7,15 @@ feedback, the focus ring on the ring layer and the marked start cell, the
 cell events it plays on the motion layer, and the end effect's drawing. `js/classic2d/board-view.js`
 holds the view's side of each; `js/classic2d/motion-layer.js` is the
 motion layer the view plays cell motion on. Both DOM-free at import. The
-view's layout, fit rule, scrolling, redraw and `mountBoardView` are
-[classic2d-board-view.md](classic2d-board-view.md); the area overview is
+view's layout and fit rule are
+[classic2d-board-view.md](classic2d-board-view.md), its scrolling, redraw
+and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the area overview is
 [classic2d.md](classic2d.md).
 
 ## PUBLIC API
 
 `js/classic2d/board-view.js` (the view's other members are
-[classic2d-board-view.md](classic2d-board-view.md) `createBoardView`'s)
+[classic2d-board-canvas.md](classic2d-board-canvas.md) `createBoardView`'s)
 - `createBoardView`'s `layer` (the motion layer's canvas, none for no
   motion), `overlay` (the ring layer's canvas, none for no cursor ring)
   and `onMotion({cell, event, before, after})` (each cell event started);
@@ -99,7 +100,8 @@ view's layout, fit rule, scrolling, redraw and `mountBoardView` are
 ## CROSS-REFERENCES
 
 - [classic2d-board-view.md](classic2d-board-view.md) — the view these
-  draw on: layout, pitch, redraw, hiding and its other members.
+  draw on: layout and pitch; [classic2d-board-canvas.md](classic2d-board-canvas.md)
+  — redraw, hiding and its other members.
 - [classic2d-tile-motion.md](classic2d-tile-motion.md) — the cell motion
   player the layer drives; [classic2d-tile-skin.md](classic2d-tile-skin.md)
   — the tile cache and its depth steps the layer draws from.

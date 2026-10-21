@@ -114,7 +114,7 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   the opening entry's): `menuPreview` gives the kind and `previewOf` names
   the Daily preview's date. The Classic 2D boards are drawn by
   `mountBoardView`, `framed`: each whole board in its board frame inside
-  the panel ([classic2d-board-view.md](classic2d-board-view.md));
+  the panel ([classic2d-board-canvas.md](classic2d-board-canvas.md));
   the 3D one is the demo board the renderer draws into the panel
   ([app-shell-3d.md](app-shell-3d.md) § Scene panel), drawn only while that
   preview shows.

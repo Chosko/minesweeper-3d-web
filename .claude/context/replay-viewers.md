@@ -19,14 +19,20 @@ DOM-free at import.
 `viewer-2d.js`
 - `TRAIL_MS`, `TRAIL_STEP_MS`; `movementTrack(movement,
   interval?)`, `pointerAt(track, t)`, `cursorAt(track, t)`,
-  `pointerPixel(layout, scroll, point)` (a sample in pitches to canvas
-  pixels), `trailPoints(track, t, ms?)`.
-- `createViewer2D({view, sim, pointer, overlay?})` → `{track, draw(frame,
+  `pointerPixel(layout, scroll, point)` (a sample in board units — the
+  layout's pitch — to canvas pixels), `trailPoints(track, t, ms?)`,
+  `replayGeometry(board)` (the grid geometry of a replay's 2D board
+  identity, [geometry.md](geometry.md); a `RangeError` for an unknown grid
+  kind).
+- `createViewer2D({view, sim, pointer, overlay?, geometry?})` → `{track, draw(frame,
   {playing}), place(), setScale(scale), press(actions), still(),
   showBbbv(tints), repaint(), destroy()}`; `pointer` is `{place, hide,
-  trail?, ring?}` in canvas CSS pixels, `overlay` `{paint(rects), clear()}`.
-- `mountViewer2D({container, sim, scale?, win?})` — the board view in its
-  board frame, the whole board fitted in the container at any tile up to
+  trail?, ring?}` in canvas CSS pixels, `overlay` `{paint(rects), clear()}`
+  with each rect a cell's outline (box, shape, corners) and its tint;
+  `geometry` the board's, `replayGeometry` of the replay's board when not
+  given, so an unknown grid kind is refused at creation, never at draw time.
+- `mountViewer2D({container, sim, scale?, win?})` — the board view on the
+  replay board's geometry in its board frame, the whole board fitted in the container at any tile up to
   the board scale's cap, so it never scrolls (no play input), the pointer,
   trail and rings as
   elements (`.replay-pointer`, `.replay-trail`, `.replay-ring--<kind>`: the
@@ -58,8 +64,12 @@ DOM-free at import.
   that fits never scrolls. The board scale
   reaches the view through `setScale`. The pointer trails its last
   `TRAIL_MS` only on frames playback drew; a seek or `still()` clears it.
+- **Board units.** The 2D pointer and trail are kept in board units; the
+  pointer's cell is the one the geometry hit-tests under it, at the
+  layout's tile and gap.
 - **Press rings.** 2D: on the recorded pointer when it was on the acted
-  cell, else on the cell's centre (a keyboard or controller click). 3D: on
+  cell, else on the geometry's centre of the cell (a keyboard or controller
+  click). 3D: on
   the acted cell's projection through the replay camera (`scene.ring`).
 - **3D cell motion.** The renderer plays the replayed changes' cell
   events as in play, the solved pulse included, and the shell's frame loop
@@ -69,8 +79,8 @@ DOM-free at import.
 - **Show 3BV.** The tints (`regionTints`) are painted per cell and kept
   through seeks, refits and (2D, `repaint`) a theme change; null clears.
   An opening takes one of `BBBV_TINT_TOKENS` (confetti tokens) at
-  `TINT_ALPHA` — in 2D a tile-sized square rounded `TINT_RADIUS`
-  (`paintBbbv`), in 3D its cubes' tint —; an isolated number is left
+  `TINT_ALPHA` — in 2D the cell's outline, a square rounded `TINT_RADIUS`
+  and any other shape its polygon (`paintBbbv`), in 3D its cubes' tint —; an isolated number is left
   unpainted.
 - **3D playback.** On Follow the camera is the recorded pose with the
   recorded view mode, from a movement cap on the last sample before it. On
@@ -91,7 +101,8 @@ DOM-free at import.
   `regionTints`, the commands that call `setFree` and `showBbbv`.
 - [replay.md](replay.md) — the movement streams these invert; [replay-samplers.md](replay-samplers.md) — the samplers.
 - [engine-3d.md](engine-3d.md) — the 3D state view.
-- [classic2d-board-view.md](classic2d-board-view.md) — the board view the 2D viewer mounts.
+- [classic2d-board-canvas.md](classic2d-board-canvas.md), [classic2d-board-view.md](classic2d-board-view.md) — the board view the 2D viewer mounts;
+  [geometry.md](geometry.md) — the grid geometry it rebuilds.
 - [rendering.md](rendering.md) — the renderer the 3D viewer draws on.
 - [app-shell-replay.md](app-shell-replay.md) — `REPLAY_SCENE` and the
   free replay camera in `js/main.js`.

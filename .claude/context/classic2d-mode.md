@@ -143,7 +143,7 @@ shell hands in its flow and its sound sink. The area overview is
 ## CROSS-REFERENCES
 
 - [classic2d-session.md](classic2d-session.md) — its session;
-  [classic2d-board-view.md](classic2d-board-view.md), [classic2d-input.md](classic2d-input.md) — what it mounts.
+  [classic2d-board-canvas.md](classic2d-board-canvas.md), [classic2d-input.md](classic2d-input.md) — what it mounts.
 - [app-shell.md](app-shell.md) — the mode host;
   [app-shell-2d.md](app-shell-2d.md) — the flow, `main.js` handing in `sfx`
   and the button swap; [app-shell-pause.md](app-shell-pause.md) — the end
