@@ -310,10 +310,10 @@ Tasks: 248, 249, 250, 251, 252, 253
 
 ## hexagon-grid — Hexagon grid: graph, generation kind, geometry, standard boards, limits, identity and code token
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/hexagon-grid.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
-Tasks: none
+Tasks: 254, 255, 256, 257
 
 ---
 

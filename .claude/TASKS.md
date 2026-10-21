@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 253
+Last task number: 257
 
 ---
 
@@ -1406,5 +1406,45 @@ Target: claude
 Files: .claude/context/classic2d-board-view.md, .claude/context/classic2d-board-motion.md, .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-input.md, .claude/context/classic2d-mode.md, .claude/context/replay-samplers.md, .claude/context/replay-viewers.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-geometry.md
 Preconditions: 248, 249, 250, 251, 252
 Feature: flat-grid-geometry
+
+---
+
+## 254. Hexagon graph provider and the `hex` generation description
+
+Status: [MISSING]
+Target: claude
+Files: js/engine/hex-grid.js, js/generation/generate.js, js/generation/start-cell.js, js/generation/worker.js, tests/engine-hex-grid.test.mjs, tests/generation-placer.test.mjs, tests/generation-noguess.test.mjs
+Preconditions: none
+Feature: hexagon-grid
+
+---
+
+## 255. Hexagon geometry
+
+Status: [MISSING]
+Target: claude
+Files: js/geometry/hex.js, js/geometry/index.js, tests/geometry-hex.test.mjs
+Preconditions: 248
+Feature: hexagon-grid
+
+---
+
+## 256. Hexagon boards, limits, identity and board-code token
+
+Status: [MISSING]
+Target: claude
+Files: js/hexagon/board-setup.js, js/records/board.js, js/records/board-code.js, tests/hexagon-board-setup.test.mjs, tests/records-board.test.mjs, tests/records-board-code.test.mjs
+Preconditions: 254
+Feature: hexagon-grid
+
+---
+
+## 257. Update documentation for feature `hexagon-grid`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/engine.md, .claude/context/generation.md, .claude/context/records.md, .claude/context/records-board-code.md, .claude/context/classic2d.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/hexagon-grid.md
+Preconditions: 254, 255, 256
+Feature: hexagon-grid
 
 ---
