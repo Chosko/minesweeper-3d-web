@@ -73,7 +73,7 @@ Context:
 /task-implement 253 --review
 ```
 
-## [~] 7. Implement task 254 — Hexagon graph provider and the `hex` generation description
+## [x] 7. Implement task 254 — Hexagon graph provider and the `hex` generation description
 
 Depends on: none
 
@@ -83,6 +83,8 @@ Context:
 ```prompt
 /task-implement 254 --review
 ```
+
+Done: 2026-10-21, commit `8d8f2c3` (14 files, +519/-22). Hexagon Expert (30 × 16, 123 mines) finds a no-guess board within the attempt budget on only about 13–17% of seeds (failures up to about 0.63 s); the budget is unchanged, and the hexagon-grid document's open question records it.
 
 ## [x] 8. Implement task 255 — Hexagon geometry
 
@@ -102,7 +104,8 @@ Done: 2026-10-21, commit `3a5e47d` (4 files, +460/-4). Odd columns sit half a ro
 
 Depends on: 7
 
-Context: none
+Context:
+- 2026-10-21 (from step 7): no-guess generation on Hexagon Expert (30 × 16, 123 mines) meets the attempt budget on only about 13–17% of seeds (dev/measure-noguess-hex.mjs); Beginner and Intermediate always do. The budget was left unchanged — a board-generation decision is pending.
 
 ```prompt
 /task-implement 256 --review
@@ -114,6 +117,7 @@ Depends on: 7, 8, 9
 
 Context:
 - 2026-10-21 (from step 8): the hexagon geometry lowers odd columns by half a row step, (tile + gap) / 2, not "half a tile" as the hexagon-grid feature document says; it hit-tests a press anywhere in the board rectangle to the nearest tile centre (ties to the lower index) — bring the document in line.
+- 2026-10-21 (from step 7): task 254's commit already edited .claude/context/ (engine, generation, testing, INDEX) and hexagon-grid.md, including an open question on the Hexagon Expert no-guess budget — build on those edits rather than redo them.
 
 ```prompt
 /task-implement 257 --review
