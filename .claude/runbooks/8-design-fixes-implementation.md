@@ -384,7 +384,7 @@ Context:
 
 Done: 2026-10-21, commit `d6ca35d` (31 files, +153/-95). Decisions: the version refusal keeps two reasons (newer: "Reload the page to update." as text; older: "It cannot be played here."), where the canvas gives one; a cut-off code gets a new "incomplete" refusal; a pace exactly on the best reads "ahead of"; an accepted code's line now ends "· starts on the marked cell" ("cube" in 3D) instead of "not eligible for bests".
 
-## [~] 30. Implement task 243 — Component gallery coverage and the theme list
+## [x] 30. Implement task 243 — Component gallery coverage and the theme list
 
 Depends on: 5, 6, 7, 8, 9, 10
 
@@ -393,6 +393,8 @@ Context: none
 ```prompt
 /task-implement 243 --review
 ```
+
+Done: 2026-10-21, commit `d5a8a56` (13 files, +471/-59). Decisions: the kit catalogue now lists the 3D game's on-screen parts (hint strip, help card, key strip, view chip, crosshair, off-screen arrow, aim readout, touch stick); the 3D demo board builder moved from `makeDemo` in `js/main.js` to `demoBoard3D()` in `js/shell/menu-preview.js`, shared by menu and gallery. Deferred, no task yet: the hint strip's close button is a plain part, not a control with states.
 
 ## [x] 31. Implement task 244 — Update documentation for feature `shared-screen-layout`
 
@@ -432,11 +434,12 @@ Context:
 
 Done: 2026-10-20, commit `a0771f1` (7 files, +41/-30).
 
-## [ ] 34. Implement task 247 — Update documentation for feature `theme-system`
+## [~] 34. Implement task 247 — Update documentation for feature `theme-system`
 
 Depends on: 30
 
-Context: none
+Context:
+- 2026-10-21 (from step 30): task 243 added the 3D game's on-screen parts to the kit catalogue and moved the 3D demo board builder to `demoBoard3D()` in `js/shell/menu-preview.js`; the gallery copies its layout rules rather than loading `css/style.css`.
 
 ```prompt
 /task-implement 247 --review
