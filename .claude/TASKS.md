@@ -1231,7 +1231,7 @@ Feature: shared-screen-layout
 
 ## 236. Learn 3D play layout and end cards
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/style.css, js/ui.js, index.html, .claude/context/mode3d-learn.md
 Preconditions: 235

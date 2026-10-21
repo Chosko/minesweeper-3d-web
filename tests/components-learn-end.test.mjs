@@ -51,6 +51,14 @@ for (const [size, device] of SIZES) {
         }, won);
         await page.waitForFunction(() => globalThis.__ms.state.mode === 'learn-end', null, { timeout: patience(7500) });
         assert.equal(await ms(() => document.getElementById('learn-end-primary-label').textContent), won ? 'Play Cube Intro' : 'Try again');
+        // J-Ready-states' "end card · won" and "· lost": the line on both, in ink, the play or restart icon, Back's arrow.
+        assert.equal(await ms(() => document.getElementById('learn-end-line').getClientRects().length > 0), true, 'the line shows');
+        assert.equal(await ms(() => document.getElementById('learn-end-line').textContent),
+          won ? 'Ready for a real board? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records.' : 'The lesson box is always the same. Try it again.');
+        assert.deepEqual(await ms(() => [...document.querySelectorAll('#learn-end-primary > .ui-icon')].map((i) => i.dataset.icon)), [won ? 'play' : 'restart']);
+        assert.deepEqual(await ms(() => [...document.querySelectorAll('#learn-end-back > .ui-icon')].map((i) => i.dataset.icon)), ['arrow-left']);
+        assert.equal(await ms(() => getComputedStyle(document.getElementById('learn-end-line')).color),
+          await ms(() => getComputedStyle(document.getElementById('learn-end-title')).color), 'the body text in the title\'s ink');
         await checkCard(page, '#learn-end .ui-card', `learn-end-${won ? 'won' : 'lost'}-${size}`);
       }
       assert.deepEqual(errors, []);

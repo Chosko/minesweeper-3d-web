@@ -1393,7 +1393,7 @@ function startGame(settings, pregenerated = null) {
   S.settings = { X: s.X, Y: s.Y, Z: s.Z, mines: play.mines, ...(learn ? { learn } : {}) };
   board3dChoice = { ...S.settings, noGuess, ...(learn ? { minePositions: settings.minePositions } : {}) };
   hint3D.eligible = !learn && FIRST_USE.inFirstGames('3d');
-  ui.setTimed(!learn);
+  ui.setLearn(learn);
   S.play = play;
   S.game = g;
   S.started = false;
@@ -1601,7 +1601,7 @@ function leaveGame() {
   S.game = null;
   S.play = null;
   S.learn = null;
-  ui.setTimed(true);
+  ui.setLearn(false);
   board3d.generating = false;
   board3d.failure = null;
   board3d.progress = null;

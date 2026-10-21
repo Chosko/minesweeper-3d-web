@@ -43,8 +43,8 @@ mine positions) is listed in [app-shell.md](app-shell.md) § PUBLIC API.
 - **Learn 3D.** `startLearn()` (the board choice's `onLearn`, the ready
   card's line, `__ms.learn()`) starts `learnChoice()` (`js/mode3d/learn.js`)
   and saves nothing. `S.learn` holds the guided game's prompt sequence
-  (`createLearnPrompts`), null otherwise; `ui.setTimed(false)` hides the
-  timer. `refreshHints` shows its prompt in the hint strip in play
+  (`createLearnPrompts`), null otherwise; `ui.setLearn(true)` gives the
+  overlay Learn 3D's layout. `refreshHints` shows its prompt in the hint strip in play
   (`LEARN_HINTS`, after its step `#hint-strip-step` from `learnStepOf`, no
   close button); `learnAction` feeds flags and chords
   from `onAction`, and after every action while the game is on L's closed,

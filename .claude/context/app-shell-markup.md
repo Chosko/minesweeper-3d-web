@@ -101,8 +101,8 @@ bind.
     draws it, two side by side on a phone held sideways); the context-lost card
     `#ctx-lost` (`#ctx-lost-btn` with the refresh icon, `#ctx-lost-menu`); the Learn 3D end card
     `#learn-end` (`#learn-end-title`, `#learn-end-line`,
-    `#learn-end-primary` around `#learn-end-primary-label` and its select
-    key hint, `#learn-end-back`);
+    `#learn-end-primary` around `#learn-end-primary-label`, its icon and its
+    select key hint, `#learn-end-back` with the arrow-left icon);
   - the messages: the toast `#toast` (a `ui-toast`, its text in
     `#toast-text`); the fatal card, the template `#fatal-card` (`.fatal`, a
     `ui-backdrop` holding a `role="alert"` message `ui-card`: its badge,

@@ -7,7 +7,9 @@ Learn 3D, the guided board that teaches the 3D views and moves:
 `learnChoice` and the prompt sequence `createLearnPrompts`. DOM-free. The
 3D mode's map and its board choice, where Learn 3D is the first option,
 are [mode3d.md](mode3d.md); the shell's wiring of the guided game is
-[app-shell-3d-session.md](app-shell-3d-session.md) § Learn 3D.
+[app-shell-3d-session.md](app-shell-3d-session.md) § Learn 3D. Its own play
+layout, prompt strip and end cards are drawn by `js/ui.js`, `index.html` and
+the stylesheets (§ Learn 3D's screens).
 
 ## PUBLIC API
 
@@ -47,6 +49,26 @@ are [mode3d.md](mode3d.md); the shell's wiring of the guided game is
 - **Learn 3D's end.** A win offers *Play Cube Intro* — an ordinary pick of
   Cube Intro, saved as the last choice — a loss *Try again*
   ([app-shell-3d-session.md](app-shell-3d-session.md) § End sequence).
+- **Learn 3D's screens** (J-Ready-states: "Learn 3D · prompt 1–4", "clear
+  the rest", "end card · won", "end card · lost").
+  - Play layout: `UI.setLearn(on)` puts `hud--learn` on `#hud` and hides
+    the timer (the pause card then shows mines left alone). The figures
+    panel is its head alone — the title "Learn 3D" and Pause with its Esc
+    hint, no 3BV, Clicks, Flags or reminder — and above a phone the head
+    and the counter strip (mines and Restart) stand in a column at the top
+    left, the help panel on the right edge; on a phone the overlay keeps
+    the phone layouts with the timer and figures gone. The layout is
+    `css/style.css`'s, the head's surface and title size the theme's.
+  - Prompt strip: a Learn 3D prompt takes the hint strip's own form
+    (`hint-strip--learn`, set by `setHintStrip`'s `learn`): no close
+    button, its own padding and gap, the step ("1 / 4") smaller in the mono
+    face, before the prompt.
+  - End cards: the "Learn 3D" section label above the title, the line in
+    ink on both — the win's offer of Cube Intro, the loss's "The lesson box
+    is always the same. Try it again." —, the primary action with the play
+    icon (Play Cube Intro) or the restart icon (Try again), set by
+    `showLearnEnd`, and Back to board choice at the default size with the
+    arrow-left icon.
 
 ## DOMAIN DEPENDENCIES
 
@@ -65,9 +87,17 @@ are [mode3d.md](mode3d.md); the shell's wiring of the guided game is
   prompts name.
 - [engine-3d.md](engine-3d.md) — the 3D state view `lessonCells` and
   `closedAround` read.
-- [testing.md](testing.md) — `tests/mode3d-learn.test.mjs`.
+- [app-shell-ui.md](app-shell-ui.md) — the 3D overlay and the hint strip
+  the play layout changes.
+- [testing.md](testing.md) — `tests/mode3d-learn.test.mjs` (the layout and
+  the prompt strip in the Playwright lesson),
+  `tests/components-learn-end.test.mjs` (the end cards).
 
 ## WHEN TO READ THE SOURCE
 
 - Changing the guided board or its prompts: `learn.js`'s head comment; a
   changed board re-runs `node dev/find-learn-3d.mjs`.
+- Changing the play layout, the prompt strip or the end cards: the
+  `hud--learn` and `hint-strip--learn` rules in `css/style.css` and
+  `themes/joyful-tiles/theme.css`, `UI.setLearn`, `setHintStrip` and
+  `showLearnEnd` in `js/ui.js`, `#learn-end` in `index.html`.

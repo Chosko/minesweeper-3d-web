@@ -250,6 +250,12 @@ test('the four steps\' prompts carry their place in the lesson ("1 / 4"); the st
   assert.match(set, /const step = on && learn \? learnStepOf\(learn\) : null;/);
   assert.match(set, /this\.el\.hintStep\.textContent = step \?\? '';/);
   assert.match(set, /this\.el\.hintStep\.classList\.toggle\('hidden', !step\);/);
+  // As J-Ready-states draws it: the prompt in its own strip, 9 × 20 px padding and 12 px apart, the step 13 px.
+  assert.match(set, /this\.el\.hintStrip\.classList\.toggle\('hint-strip--learn', this\._hintKind === 'learn'\);/);
+  const css = read('css/style.css');
+  assert.match(css, /#hint-strip\.hint-strip--learn \{ padding: 9px 20px; gap: 12px; \}/);
+  assert.match(css, /#hint-strip\.hint-strip--learn \.hint-step \{ font-size: 13px; \}/);
+  assert.match(read('themes/joyful-tiles/theme.css'), /#hint-strip \.hint-step \{ font-family: var\(--font-family-mono\); \}/, 'the step in the mono face');
 });
 
 test('on a coarse-only device the prompts name the touch toolbar\'s buttons and the touch gestures', () => {
@@ -268,13 +274,33 @@ test('on a coarse-only device the prompts name the touch toolbar\'s buttons and 
   assert.match(read('js/ui.js'), /if \(learn\) this\.el\.hintStripText\.textContent = this\.hint\(learn\);/);
 });
 
-test('no timer: the overlay hides its time and the pause card shows mines left alone', () => {
+test('Learn 3D\'s play layout: no timer, no figures panel — a head with the title and Pause over a strip of mines and Restart, top left', () => {
   assert.equal(pauseLine(12.5, 3, { timed: false }), '3 mines left');
   assert.equal(pauseLine(12.5, 1, { timed: false }), '1 mine left');
-  assert.match(read('js/ui.js'), /setTimed\(on\) \{[\s\S]*?timeStat\.classList\.toggle\('hidden', !this\._timed\)/);
-  assert.match(MAIN, /ui\.setTimed\(!learn\)/);
-  assert.match(read('js/ui.js'), /setTimed\(on\) \{[\s\S]*?hudFigures\.classList\.toggle\('hud-figures--untimed', !this\._timed\)/, 'nor the figures that take the time');
-  assert.match(read('css/style.css'), /\.hud-figures--untimed :is\(\[data-figure="pace"\], \[data-figure="rate"\]\) \{ display: none; \}/);
+  const ui = code('js/ui.js');
+  const set = ui.slice(ui.indexOf('setLearn(on) {'), ui.indexOf('updateHud('));
+  assert.match(set, /this\._timed = !on;/, 'the pause card shows mines left alone');
+  assert.match(set, /this\.el\.timeStat\.classList\.toggle\('hidden', !this\._timed\);/);
+  assert.match(set, /this\.el\.hud\.classList\.toggle\('hud--learn', !!on\);/);
+  assert.doesNotMatch(ui, /setTimed|hud-figures--untimed/, 'one switch, the layout\'s');
+  assert.match(MAIN, /ui\.setLearn\(learn\)/);
+  assert.match(MAIN, /ui\.setLearn\(false\)/);
+  assert.doesNotMatch(MAIN, /setTimed/);
+  const css = read('css/style.css');
+  assert.doesNotMatch(css, /hud-figures--untimed/);
+  // J-Ready-states' "Learn 3D · prompt 1–4": a column at the top left, the head above the strip, 12 px apart, no figures.
+  const wide = css.slice(css.indexOf('/* Learn 3D\'s own play layout'));
+  assert.ok(wide.length < css.length, 'the layout is documented');
+  assert.match(wide, /@media \(min-width: 720px\) and \(min-height: 501px\), \(min-width: 720px\) and \(orientation: portrait\) \{\s*#hud\.hud--learn \.hud-overlay \{ display: flex; flex-direction: column; align-items: flex-start; gap: 12px; position: absolute; top: 24px; left: 24px; \}/);
+  assert.match(wide, /#hud\.hud--learn :is\(\.hud-counters, \.hud-figures\) \{ position: static; transform: none; width: auto; max-height: none; \}/);
+  assert.match(wide, /#hud\.hud--learn \.hud-figures \{ order: -1; \}/, 'the head first');
+  assert.match(wide, /#hud\.hud--learn \.hud-figures \.ui-figures__head \{ gap: 16px; padding: 8px 8px 8px 20px; \}/);
+  assert.match(wide, /#hud\.hud--learn ~ #help \{ right: 24px; \}/, 'the help panel takes the right edge the panel left');
+  assert.doesNotMatch(wide, /#hud:not\(\.hud--2d\) ~ #help/, 'after every step of the help panel\'s place beside the figures, so it wins');
+  assert.match(css, /#hud\.hud--learn \.hud-figures :is\(\.ui-figures__body, \.ui-figures__live\) \{ display: none; \}/, 'no 3BV, Clicks, Flags or reminder');
+  const theme = read('themes/joyful-tiles/theme.css');
+  assert.match(theme, /#hud\.hud--learn \.hud-figures \{ box-shadow: 0 6px 0 var\(--color-head-edge\), var\(--elevation-1\); \}/, 'the head on its own surface');
+  assert.match(theme, /#hud\.hud--learn \.hud-figures \.ui-figures__title \{ font-size: 18px; \}/, 'the title 18 px');
   assert.match(MAIN, /bests3D = board\.learn \? null : RECORDS\.bests/, 'the guided board reads no bests');
 });
 
@@ -302,19 +328,21 @@ test('index.html holds the Learn 3D entry first on the 3D board choice, the read
   // As J-Ready-states draws it: the "Learn 3D" section label over the outcome, the line, then the large primary
   // action with its select key hint beside Back to board choice.
   assert.match(card, /<div class="ui-section-label"><span class="ui-section-label__text">Learn 3D<\/span><\/div>\s*<h2 class="ui-card__title" id="learn-end-title">/);
-  assert.match(card, /<button type="button" id="learn-end-primary" class="ui-button ui-button--primary ui-button--lg"><span id="learn-end-primary-label">Play Cube Intro<\/span> <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
+  assert.match(card, /<button type="button" id="learn-end-primary" class="ui-button ui-button--primary ui-button--lg" data-icon="play"><span id="learn-end-primary-label">Play Cube Intro<\/span> <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
+  assert.match(card, /<button type="button" id="learn-end-back" class="ui-button ui-button--secondary" data-icon="arrow-left">Back to board choice<\/button>/, 'Back at the default size, with the arrow-left icon');
+  assert.match(card, /<p class="ui-text" id="learn-end-line">/, 'the body text in ink');
 });
 
-test('the Learn 3D end card: a win reads "You cleared the box!" and offers Play Cube Intro; the loss card is unchanged', () => {
+test('the Learn 3D end card: a win reads "You cleared the box!" and offers Play Cube Intro, a loss says the box is always the same and offers Try again', () => {
   const ui = code('js/ui.js');
   const show = ui.slice(ui.indexOf('showLearnEnd(won) {'), ui.indexOf('hideLearnEnd()'));
   assert.match(show, /learnEndTitle\.textContent = won \? 'You cleared the box!' : 'That cube was a mine\.'/);
-  assert.match(show, /learnEndLine\.textContent = won \? 'Ready for a real board\? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records\.' : 'Learn 3D'/);
+  assert.match(show, /learnEndLine\.textContent = won \? 'Ready for a real board\? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records\.' : 'The lesson box is always the same\. Try it again\.'/);
   assert.match(show, /learnEndPrimaryLabel\.textContent = won \? 'Play Cube Intro' : 'Try again'/);
-  assert.match(show, /learnEndLine\.classList\.toggle\('hidden', !won\)/, 'on a loss the section label carries "Learn 3D", so the line hides');
+  assert.doesNotMatch(show, /learnEndLine\.classList/, 'the line shows on both');
+  assert.match(show, /setButtonIcon\(this\.el\.learnEndPrimary, won \? 'play' : 'restart'\)/, 'the canvas\'s icons: play, restart');
   assert.deepEqual([INTRO.X, INTRO.Y, INTRO.Z, INTRO.mines], [6, 6, 6, 10], 'the line names Cube Intro\'s board');
   assert.match(ui, /learnEndLine: \$\('learn-end-line'\)/);
-  assert.match(INDEX, /<p class="ui-text ui-text--muted" id="learn-end-line">Learn 3D<\/p>/, 'the loss card\'s line, as it was');
   assert.match(MAIN, /onLearnEnd: \(won\) => \(won \? playCubeIntro\(\) : PAUSE\.restart\(/);
   const play = MAIN.slice(MAIN.indexOf('function playCubeIntro('), MAIN.indexOf('\n}\n', MAIN.indexOf('function playCubeIntro(')));
   assert.match(play, /const choice = \{ size: 'cube-intro', custom: \{ \.\.\.last\.custom \}, noGuess: !!last\.noGuess \};/, 'Cube Intro with the presets\' no-guess switch as remembered');
@@ -381,6 +409,21 @@ test('in a browser, Learn 3D: the entry, the marked cube, the four prompts, the 
     assert.equal(await ms(() => document.getElementById('hud-title').textContent), 'Learn 3D');
     assert.equal(await shown('hud-time'), false, 'no timer');
     await ms(() => globalThis.__ms.forcePlay());
+    // Its own layout: the head (title and Pause) at the top left, the strip of mines and Restart under it, no figures.
+    const box = (sel) => ms((q) => { const r = document.querySelector(q).getBoundingClientRect(); return { left: r.left, top: r.top, bottom: r.bottom, width: r.width }; }, sel);
+    const head = await box('#hud-figures .ui-figures__head'), counters = await box('#hud-counters');
+    assert.deepEqual([Math.round(head.left), Math.round(head.top)], [24, 24], 'the head at the top left');
+    assert.equal(Math.round(counters.left), 24, 'the strip under it, left-aligned');
+    assert.equal(Math.round(counters.top - head.bottom), 12, '12 px apart');
+    assert.equal(await ms(() => document.querySelector('#hud-figures .ui-figures__body').getClientRects().length), 0, 'no 3BV, Clicks, Flags or reminder');
+    assert.equal(await ms(() => getComputedStyle(document.getElementById('hud-title')).fontSize), '18px');
+    assert.equal(await shown('hud-pause'), true);
+    assert.equal(await shown('hud-restart'), true);
+    await page.keyboard.press('KeyH');
+    await page.waitForFunction(() => !document.getElementById('help').classList.contains('hidden'));
+    assert.equal(await ms(() => Math.round(innerWidth - document.getElementById('help').getBoundingClientRect().right)), 24, 'the help panel on the right edge');
+    await page.keyboard.press('KeyH');
+    await page.waitForFunction(() => document.getElementById('help').classList.contains('hidden'));
     const L = await ms(() => globalThis.__ms.learnBoard.lessonNumber);
     const M = await ms(() => globalThis.__ms.learnBoard.lessonMine);
     const start = await ms(() => globalThis.__ms.learnBoard.startCell);
@@ -400,6 +443,8 @@ test('in a browser, Learn 3D: the entry, the marked cube, the four prompts, the 
     assert.equal(await strip(), 'Hold Shift to see what this number counts');
     assert.equal(await ms(() => document.getElementById('hint-strip-step').textContent), '1 / 4', 'the first step says so');
     assert.equal(await shown('hint-strip-step'), true);
+    assert.deepEqual(await ms(() => { const s = getComputedStyle(document.getElementById('hint-strip')); return [s.paddingTop, s.paddingLeft, s.columnGap]; }), ['9px', '20px', '12px'], 'the prompt\'s own strip');
+    assert.equal(await ms(() => getComputedStyle(document.getElementById('hint-strip-step')).fontSize), '13px');
     assert.equal(await ms(() => globalThis.__ms.renderer.mark), L, 'L carries the tint');
     assert.equal(await ms(() => document.getElementById('toast').classList.contains('on') && /Solved cubes hide/.test(document.getElementById('toast').textContent)), false, 'no auto-hide toast');
 

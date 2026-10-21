@@ -970,7 +970,10 @@
      no key strip: upright, the title and Pause bar on top and the counters
      under it; held sideways, the title a pill at the top left, the counters
      at the top centre and Pause an icon button at the top right; the touch
-     hint strip wraps under them.
+     hint strip wraps under them. Learn 3D's overlay has no timer and no
+     figures: above a phone, the panel's head alone (the title and Pause)
+     over the counter strip, a column at the top left; its prompt in the
+     hint strip's own Learn 3D form, the step before it.
      Default focus: none (the scene takes the keys).
    Board status (index.html #c2d-status centred on the Classic 2D board
      column, and #m3d-status over the 3D box): ui-card ui-screen while a
@@ -1029,11 +1032,12 @@
      focus: Click to reload.
    Learn 3D end card (index.html #learn-end): ui-card ui-screen over the
      guided board's stopped scene, holding the "Learn 3D"
-     ui-section-label, the outcome title, a ui-text--muted line (the
-     win's offer of Cube Intro; none on a loss) and ui-actions--row (Play
-     Cube Intro on a win or Try again on a loss, ui-button--lg primary
-     with its select key hint; Back to board choice). No time and no
-     records. Default focus: the primary action.
+     ui-section-label, the outcome title, a ui-text line (the win's offer
+     of Cube Intro; on a loss, that the box is always the same) and
+     ui-actions--row (Play Cube Intro with the play icon on a win or Try
+     again with the restart icon on a loss, ui-button--lg primary with its
+     select key hint; Back to board choice with the arrow-left icon). No
+     time and no records. Default focus: the primary action.
    Toast (index.html #toast): one ui-toast, its text in #toast-text, shown
      at the bottom centre for its time (js/ui.js toast).
    Fatal card (index.html #fatal-card, the template the page shows when the

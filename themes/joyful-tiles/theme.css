@@ -1301,6 +1301,12 @@
     box-shadow: 0 6px 0 var(--color-head-edge), var(--elevation-1);
   }
 }
+/* Learn 3D's overlay above a phone: the panel is its head alone, a head surface, the title 18 px */
+@media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
+  :root[data-theme="joyful-tiles"] #hud.hud--learn .hud-figures { box-shadow: 0 6px 0 var(--color-head-edge), var(--elevation-1); }
+  :root[data-theme="joyful-tiles"] #hud.hud--learn .hud-figures .ui-figures__head { border-bottom: 0; }
+  :root[data-theme="joyful-tiles"] #hud.hud--learn .hud-figures .ui-figures__title { font-size: 18px; }
+}
 /* the first-use hint strip: an ink pill; in touch play, where it wraps, a rounded box */
 :root[data-theme="joyful-tiles"] #hint-strip {
   border-radius: var(--radius-pill);

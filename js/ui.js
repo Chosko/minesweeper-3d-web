@@ -630,6 +630,7 @@ export class UI {
       }
     }
     this.el.hintClose.classList.toggle('hidden', this._hintKind === 'learn');
+    this.el.hintStrip.classList.toggle('hint-strip--learn', this._hintKind === 'learn');
     const host = this._mode === 'classic-2d' ? this.el.c2dStage : this.el.hud;
     if (this.el.hintStrip.parentElement !== host) host.append(this.el.hintStrip);
     this._showHint();
@@ -720,9 +721,9 @@ export class UI {
   }
   /**
    * The Learn 3D end card over the guided board's stopped scene, under its "Learn 3D" section label: on
-   * a win "You cleared the box!", the line offering Cube Intro and Play Cube Intro, on a loss "That cube
-   * was a mine." with Try again (its "Learn 3D" line hidden, the label carrying it); Back to board choice
-   * on both, and no time.
+   * a win "You cleared the box!", the line offering Cube Intro and Play Cube Intro with the play icon, on
+   * a loss "That cube was a mine.", the line saying the box is always the same and Try again with the
+   * restart icon; Back to board choice on both, and no time.
    */
   showLearnEnd(won) {
     this._learnWon = !!won;
@@ -730,9 +731,9 @@ export class UI {
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
     this.el.learnEndTitle.textContent = won ? 'You cleared the box!' : 'That cube was a mine.';
-    this.el.learnEndLine.textContent = won ? 'Ready for a real board? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records.' : 'Learn 3D';
-    this.el.learnEndLine.classList.toggle('hidden', !won);
+    this.el.learnEndLine.textContent = won ? 'Ready for a real board? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records.' : 'The lesson box is always the same. Try it again.';
     this.el.learnEndPrimaryLabel.textContent = won ? 'Play Cube Intro' : 'Try again';
+    setButtonIcon(this.el.learnEndPrimary, won ? 'play' : 'restart');
     this.el.learnEnd.classList.remove('hidden');
   }
   hideLearnEnd() { this.el.learnEnd.classList.add('hidden'); }
@@ -801,11 +802,14 @@ export class UI {
     const head = this.el.hudHead.getBoundingClientRect();
     return head.height > 0 && head.top <= strip.bottom ? Math.max(strip.bottom, head.bottom) : strip.bottom;
   }
-  /** The 3D overlay's timer and the figures that take the time, shown unless the game has none (Learn 3D); the pause card follows it. */
-  setTimed(on) {
-    this._timed = !!on;
+  /**
+   * Learn 3D's own overlay (`hud--learn`) while `on`: no timer — the pause card shows mines left alone —
+   * and no figures panel, its head (the title and Pause) over the strip of mines and Restart at the top left.
+   */
+  setLearn(on) {
+    this._timed = !on;
     this.el.timeStat.classList.toggle('hidden', !this._timed);
-    this.el.hudFigures.classList.toggle('hud-figures--untimed', !this._timed);
+    this.el.hud.classList.toggle('hud--learn', !!on);
   }
   /**
    * The counters: the display formats clamp (timer at 999, counter at -99); `time` itself is

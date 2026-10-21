@@ -320,8 +320,11 @@ kbd {
 @media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
   #hud:not(.hud--2d):has(.chip.on) #hint-strip { bottom: 122px; }
 }
-/* A Learn 3D step's place ("1 / 4") before its prompt. */
+/* A Learn 3D step's place ("1 / 4") before its prompt. A Learn 3D prompt has its own strip: no close
+   button, its step and text 12 px apart. */
 .hint-step { font-weight: var(--font-weight-bold); font-variant-numeric: var(--font-numeric-tabular); white-space: nowrap; }
+#hint-strip.hint-strip--learn { padding: 9px 20px; gap: 12px; }
+#hint-strip.hint-strip--learn .hint-step { font-size: 13px; }
 
 
 /* ---------- Classic 2D game window ---------- */
@@ -502,7 +505,6 @@ body.replaying #menu { display: none; }
 .hud-figures { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); width: 300px; max-height: calc(100vh - 2 * 104px); box-sizing: border-box; pointer-events: auto; }
 .hud-figures .ui-figures__body { min-height: 0; overflow-y: auto; padding-top: 14px; }
 .hud-figures .ui-figure__value { white-space: nowrap; }
-.hud-figures--untimed :is([data-figure="pace"], [data-figure="rate"]) { display: none; }
 /* In touch play on a tablet it ends above the touch toolbar; the help panel stands beside it, centred vertically as it is. */
 body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 @media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
@@ -515,6 +517,17 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 @media (max-width: 1199px) {
   .hud-figures { width: 280px; }
   #hud:not(.hud--2d) ~ #help { right: 328px; }
+}
+/* Learn 3D's own play layout (J-Ready-states, "Learn 3D · prompt 1–4"): no figures panel — the panel is its
+   head alone, the title and Pause —, and above a phone a column at the top left, the head over the strip of
+   mines and Restart (no timer), the help panel on the right edge the panel leaves. */
+#hud.hud--learn .hud-figures :is(.ui-figures__body, .ui-figures__live) { display: none; }
+@media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
+  #hud.hud--learn .hud-overlay { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; position: absolute; top: 24px; left: 24px; }
+  #hud.hud--learn :is(.hud-counters, .hud-figures) { position: static; transform: none; width: auto; max-height: none; }
+  #hud.hud--learn .hud-figures { order: -1; }
+  #hud.hud--learn .hud-figures .ui-figures__head { gap: 16px; padding: 8px 8px 8px 20px; }
+  #hud.hud--learn ~ #help { right: 24px; }
 }
 #hud.hud--2d #crosshair, #hud.hud--2d #crosshair-arrow, #hud.hud--2d #aim-readout, #hud.hud--2d #mode-chips { display: none; }
 /* The Classic 2D Tap choice (js/classic2d/touch-input.js): a segmented Tap: Reveal | Tap: Flag under the board, on a coarse pointer only. */

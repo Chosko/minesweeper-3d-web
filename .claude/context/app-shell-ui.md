@@ -52,7 +52,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     `isConfirmOpen`, `closeConfirm`, `closeResetConfirm` (→ false when none
     is open);
   - HUD: `setBoard` (the 3D title and the pause card's full board line),
-    `setTimed(on)` (off on Learn 3D), `updateHud(time, minesLeft,
+    `setLearn(on)` (Learn 3D's overlay), `updateHud(time, minesLeft,
     clicks?)`, `updateFigures3D(input, {tick, bests})`, `overlayBottom3D()`
     (the overlay's top row's bottom, for the touch zones), `setModes`,
     `setCrosshair`, `setArrow(angle|null)`, `setReadout(r|null)`,
@@ -110,8 +110,10 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   title `#hud-title` and Pause `#hud-pause`, each on its own surface over
   the sky. The title's full name is its tooltip and accessible name; it
   drops the board (`shortTitle3D`) when the name overflows its line —
-  measured, refitted on resize and once the fonts load. Learn 3D hides the
-  timer and, by `hud-figures--untimed`, pace and 3BV/s. START pauses through
+  measured, refitted on resize and once the fonts load. Learn 3D's overlay
+  (`hud--learn`, from `setLearn`) is its own layout: no timer and no figures
+  panel, its head over the counter strip at the top left —
+  [mode3d-learn.md](mode3d-learn.md) § Learn 3D's screens. START pauses through
   `#hud-pause` (`#c2d-pause` in Classic 2D). Layouts by window size:
   `css/components.css`'s head comment (*3D game overlay*).
 - **Behind a card.** While the 3D ready card (not pending), the pause card
