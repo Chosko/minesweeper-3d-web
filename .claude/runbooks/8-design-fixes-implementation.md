@@ -178,7 +178,7 @@ Context: none
 
 Done: 2026-10-20, commits `4408553`, `f9e0595` (24 files, +405/-153). Decisions: previews and the replay viewer mount with `framed: true` and the view builds the frame; a scrolling board shows no frame and is clipped at `--board-viewport-radius`; the replay viewer always fits the whole board; the menu (1024×768) and replay (1920×1080) preview tile sizes are left unpinned for tasks 228 and 239.
 
-## [~] 15. Implement task 228 — Main menu: mode entries, scene panel, per-size layout, build label and scroll
+## [x] 15. Implement task 228 — Main menu: mode entries, scene panel, per-size layout, build label and scroll
 
 Depends on: 7, 10
 
@@ -191,13 +191,16 @@ Context:
 /task-implement 228 --review
 ```
 
-## [ ] 16. Implement task 229 — Daily screen to the canvas
+Done: 2026-10-21, commit `14bbd95` (12 files, +356/-95). Decisions: the kit card badge is 102 px and the menu preview draws the canvas's large card (200 px badge, 100 px glyph); the 70 px rest height holds outside the menu only, menu entries flex with a 44 px floor; phone glyph 24 px per the criterion (the canvas draws 26); preview tiles are pinned per size; locked Quit shows no reason line.
+
+## [~] 16. Implement task 229 — Daily screen to the canvas
 
 Depends on: 9, 10, 14, 15
 
 Context:
 - 2026-10-20 (from step 9): task 222 removed the `ui-code__label` styling, so the inline "Board code" label inside this screen's chip in `index.html` renders unstyled until this task moves it out as a section label.
 - 2026-10-21 (from step 17): task 230 resized the shared option rule (12px 18px padding, 64px min height, 14px gap), so Daily's mode options already take the new sizes; Daily keeps its own chip markup.
+- 2026-10-21 (from step 15): task 228 pinned the menu's Daily preview at xl to a 27 px tile, 872 px wide, by insetting the preview's board layer per size; tests assert it.
 
 ```prompt
 /task-implement 229 --review
