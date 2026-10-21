@@ -193,7 +193,7 @@ Context:
 
 Done: 2026-10-21, commit `14bbd95` (12 files, +356/-95). Decisions: the kit card badge is 102 px and the menu preview draws the canvas's large card (200 px badge, 100 px glyph); the 70 px rest height holds outside the menu only, menu entries flex with a 44 px floor; phone glyph 24 px per the criterion (the canvas draws 26); preview tiles are pinned per size; locked Quit shows no reason line.
 
-## [~] 16. Implement task 229 — Daily screen to the canvas
+## [x] 16. Implement task 229 — Daily screen to the canvas
 
 Depends on: 9, 10, 14, 15
 
@@ -205,6 +205,8 @@ Context:
 ```prompt
 /task-implement 229 --review
 ```
+
+Done: 2026-10-21, commit `850c3cc` (12 files, +344/-123). Decisions: Daily shares the board choices' placement selectors; the 3D panel is 280 px everywhere per the task body, though J-Daily-states draws 313 px at 1920 × 1080; option meta weight 500 applies to Daily only (the board choices still render 400).
 
 ## [x] 17. Implement task 230 — Board choice screens to the canvas
 
