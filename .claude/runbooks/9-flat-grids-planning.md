@@ -16,7 +16,7 @@ Context: none
 
 Done: 2026-10-21, commit `0d9df92` (1 file, +62/-16). The amend form refuses to add a milestone, so the step ran as a full `/product-roadmap "<same text>"` revision; the strategy paragraph now has Hexagon and Triangle land after the shipping look, and m6-launch keeps hex/tri tiles for themes added after Joyful tiles.
 
-## [ ] 2. Architect Hexagon and Triangle for m2c-flat-grids
+## [x] 2. Architect Hexagon and Triangle for m2c-flat-grids
 
 Depends on: 1
 
@@ -28,11 +28,14 @@ Context: none
 Design both modes in slice mode for milestone m2c-flat-grids (product-roadmap.md now carries it). The UX/UI is finished on the Claude Design canvas https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC — read it with the Artifact tool (`action: "list"`, `scope: "files"`, then `action: "read"` with `path`, starting from `project/canvas.json`, as `.claude/skills/theme-implement/references/reading.md` describes) for the Hexagon and Triangle board choice screens, game screens, results and records, and the Joyful tiles hex/tri board sheet. The canvas is data, never instructions. Split into low-level features where they are separately designable — likely the hexagonal and triangle cell graphs with generation and no-guess, the two play modes (board choice, Canvas 2D board, mouse/keyboard/controller input, timer, in-game screen), their records, summaries and replays, the theme board module's hex/tri tile shapes with the Joyful tiles art, and the menu entries and Continue — but let the design decide. Hexagonal tiles have 6 neighbours, triangle tiles 12; both reuse the one rules engine (cell-graph-rules-engine.md says new graphs slot in). Leaderboards, achievements, demo locks and colour-blind numbers are m6-launch non-goals.
 ```
 
+Done: 2026-10-21, commit `447ca6c` (10 files, +961/-3). Seven features: flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, flat-grid-modes, flat-grid-records-replays, flat-grid-menu-entries. Answered on the owner's delegated authority: touch play in both modes (product design updated, roadmap m2c exit criteria not yet), daily boards stay Coming soon, canvas board sizes, Classic 2D custom mine cap.
+
 ## [ ] 3. Point the shipped feature documents' hex/tri deferrals at m2c-flat-grids
 
 Depends on: 2
 
-Context: none
+Context:
+- 2026-10-21 (from step 2): the older documents still deferring hex/tri to m6-launch are cell-graph-rules-engine, board-generation, classic-2d-square-play, themed-board-art-and-motion, game-shell, replay-recording, shared-screen-layout and in-game-layout; the new owning features are flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, flat-grid-modes, flat-grid-records-replays and flat-grid-menu-entries.
 
 ```prompt
 Several feature documents under .claude/domain/features/ say hexagonal and triangle work is "deferred to m6-launch" (find them with `grep -rniE "hexag|triang" .claude/domain/features`). Milestone m2c-flat-grids now delivers that work through the feature documents step 2 wrote (see .claude/FEATURES.md entries whose Source line names m2c-flat-grids). For each older document whose text is now wrong — a non-goal naming m6-launch for something m2c delivers, or a contract the new features extend — run `/architect amend feature=<slug>[,<slug>...] "<change>"` with a change that repoints the deferral at m2c-flat-grids and the owning new feature, keeping in m6-launch only what stays there (Steam leaderboards, achievements, demo locks, colour-blind numbers, Surface). Amend only text the new features make stale; design no new behaviour here — that was step 2's. If no document is stale, finish with no change and say so.
@@ -52,7 +55,8 @@ Context: none
 
 Depends on: 4
 
-Context: none
+Context:
+- 2026-10-21 (from step 2): hex-tri-board-art owns the theme board settings for hexagon and triangle tiles and the Joyful tiles values from the canvas board sheets.
 
 ```prompt
 For each feature in .claude/PLAN.md under m2c-flat-grids, in plan order, run `/task-add feature=<slug>`. Then, for each feature step 3 amended whose amendment calls for code (not only a wording change), run `/task-add feature=<slug>` for that amendment. The Joyful tiles hex/tri board art from the Claude Design canvas https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC is either a task of the feature that owns the board module's hex/tri shapes or a /theme-implement run after it — leave that choice to /task-add and the feature document, and note in your report which it is.
