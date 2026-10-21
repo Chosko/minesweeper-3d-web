@@ -337,10 +337,10 @@ Tasks: 262, 263, 264, 265, 266
 
 ## flat-grid-modes — Hexagon and Triangle modes: board choice, last choice, session, game window, inputs and results
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/flat-grid-modes.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
-Tasks: none
+Tasks: 267, 268, 269, 270, 271
 
 ---
 

@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 266
+Last task number: 271
 
 ---
 
@@ -1536,5 +1536,55 @@ Target: claude
 Files: .claude/context/app-shell-board-module.md, .claude/context/app-shell-themes.md, .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-tile-motion.md, .claude/context/rendering-board-art.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/hex-tri-board-art.md
 Preconditions: 262, 263, 264, 265
 Feature: hex-tri-board-art
+
+---
+
+## 267. Flat mode configuration, with Classic 2D as the square configuration
+
+Status: [MISSING]
+Target: claude
+Files: js/flat-modes.js, js/classic2d/mode.js, js/classic2d/board-setup.js, js/classic2d/board-choice.js, js/classic2d/session.js, js/main.js, tests/flat-modes.test.mjs, tests/classic2d-mode.test.mjs
+Preconditions: 249, 251, 252
+Feature: flat-grid-modes
+
+---
+
+## 268. Hexagon and Triangle modes with their board choice screens
+
+Status: [MISSING]
+Target: claude
+Files: js/main.js, js/shell/router.js, index.html, css/style.css, js/classic2d/board-choice.js, js/flat-modes.js, tests/shell-router.test.mjs, tests/components-menu-screens.test.mjs, tests/shell-daily.test.mjs
+Preconditions: 255, 256, 259, 260, 267
+Feature: flat-grid-modes
+
+---
+
+## 269. Play in Hexagon and Triangle
+
+Status: [MISSING]
+Target: claude
+Files: js/main.js, js/classic2d/mode.js, js/classic2d/session.js, js/ui.js, js/shell/live-figures.js, js/shell/first-use.js, js/results/, tests/flat-modes-play.test.mjs, tests/results.test.mjs
+Preconditions: 264, 268
+Feature: flat-grid-modes
+
+---
+
+## 270. Board codes and challenge links for Hexagon and Triangle
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/challenge.js, js/main.js, js/classic2d/board-choice.js, tests/shell-challenge.test.mjs
+Preconditions: 268
+Feature: flat-grid-modes
+
+---
+
+## 271. Update documentation for feature `flat-grid-modes`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/classic2d.md, .claude/context/classic2d-mode.md, .claude/context/classic2d-session.md, .claude/context/app-shell-2d.md, .claude/context/app-shell-ui.md, .claude/context/app-shell-help.md, .claude/context/app-shell-results.md, .claude/context/app-shell-navigation.md, .claude/context/app-shell-markup.md, .claude/context/app-shell-daily.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-modes.md
+Preconditions: 267, 268, 269, 270
+Feature: flat-grid-modes
 
 ---
