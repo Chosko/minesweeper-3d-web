@@ -232,7 +232,7 @@ Context: none
 
 Done: 2026-10-21, commit `a1f181a` (17 files, +456/-89). Decisions: the window fits its board through JavaScript (`js/ui.js`, `js/main.js`, `js/classic2d/mode.js`), which measures the chrome's room and sizes the board area; HUD sizes are documented in `app-shell-ui.md` § HUD density, not `app-shell-3d.md`. `tests/shell-menu.test.mjs` failed once in ten runs on a preview not yet mounted (load-dependent, unproven).
 
-## [~] 19. Implement task 232 — First-use hint strip and the Tap: Reveal / Flag segmented choice
+## [x] 19. Implement task 232 — First-use hint strip and the Tap: Reveal / Flag segmented choice
 
 Depends on: 18
 
@@ -242,6 +242,8 @@ Context:
 ```prompt
 /task-implement 232 --review
 ```
+
+Done: 2026-10-21, commit `e658470` (22 files, +208/-122). Premise wrong: the strip's "bottom 32px of the board column" holds only at xl; it sits 10 px above the board's foot inside `#c2d-stage` at every size, as the canvas draws it. Touch strips keep the canvas's " · " separators; controller buttons are plain key boxes; the 3D touch strip drops Space and Shift.
 
 ## [x] 20. Implement task 233 — Controls and bindings lists as one ruled two-column part
 
@@ -267,7 +269,7 @@ Context:
 /task-implement 234 --review
 ```
 
-## [ ] 22. Implement task 235 — 3D ready card, HUD readouts and the touch stick
+## [~] 22. Implement task 235 — 3D ready card, HUD readouts and the touch stick
 
 Depends on: 7, 10, 20
 
