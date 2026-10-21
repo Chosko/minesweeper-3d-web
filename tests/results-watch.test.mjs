@@ -364,7 +364,7 @@ test('in a browser, a just-won 2D game is watched from the results screen and ag
       await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
       await page.keyboard.press('Escape');
       assert.equal(await mode(), 'records', selector);
-      assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), 'Beginner', 'on the same board');
+      assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), 'Beginner · Bests', 'on the same board');
     }
     assert.deepEqual(errors, []);
   } finally {

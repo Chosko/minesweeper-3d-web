@@ -1442,20 +1442,22 @@
 /* the toast: it slides up into view */
 :root[data-theme="joyful-tiles"] .toast { transition: opacity var(--duration-slow) var(--easing-out), transform var(--duration-slow) var(--easing-out); }
 
-/* the Records tables */
-:root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) { font-size: 15px; }
-:root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td) { border-bottom: 1px solid var(--color-line); }
-:root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) th { color: var(--color-ink-muted); }
-:root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) thead th { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
-:root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) td { color: var(--color-ink); }
-@container (max-width: 1099px) {
-  :root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table) tr { border-bottom: 1px solid var(--color-line); }
-  :root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table) td { border: 0; }
-  :root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table) td[data-label]::before { color: var(--color-ink-muted); }
-}
-@container (max-width: 335px) {
-  :root[data-theme="joyful-tiles"] #records-averages-table tr { border-bottom: 1px solid var(--color-line); }
-  :root[data-theme="joyful-tiles"] #records-averages-table :is(th, td) { border: 0; }
-  :root[data-theme="joyful-tiles"] #records-averages-table th { color: var(--color-ink); }
-  :root[data-theme="joyful-tiles"] #records-averages-table td[data-label]::before { color: var(--color-ink-muted); }
+/* the Records screen: the picker's fade into the surface, the counters' sunk tiles, the averages'
+   phone cards, the pin glyph (accent when pinned, its locked edge when not), the Leaderboards chip */
+:root[data-theme="joyful-tiles"] #records-picker-clip::after { background: linear-gradient(to left, var(--color-surface), transparent); }
+:root[data-theme="joyful-tiles"] #records-counters > .ui-stat { border-radius: 12px; background: var(--color-surface-sunk); }
+:root[data-theme="joyful-tiles"] #records-overall { border-radius: 20px; }
+:root[data-theme="joyful-tiles"] #records-counters .ui-stat__value { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] :is(#records-win-rate, #records-overall-line) { font-family: var(--font-family-mono); color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] #records-averages-table th[scope="row"] { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] #records-averages-table td { font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] #records-top-stat-label { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] #records .ui-table__date { color: var(--color-ink-muted); font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] #records-replays-table [data-pinned="true"] { color: var(--color-accent); }
+:root[data-theme="joyful-tiles"] #records-replays-table [data-pinned="false"] { color: var(--color-locked-edge); }
+:root[data-theme="joyful-tiles"] #records-leaderboards-icon { border-radius: 18px; background: var(--color-yellow); color: var(--color-yellow-on); box-shadow: 0 5px 0 var(--color-yellow-edge); }
+:root[data-theme="joyful-tiles"] #records-leaderboards-title { color: var(--color-ink); }
+@media (max-width: 719px) {
+  :root[data-theme="joyful-tiles"] #records-averages-table tr { border: 0; border-radius: 12px; background: var(--color-surface-sunk); }
+  :root[data-theme="joyful-tiles"] #records-averages-table td[data-label]::before { font-family: var(--font-family-sans); color: var(--color-ink-muted); }
 }

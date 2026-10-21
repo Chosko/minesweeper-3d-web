@@ -19,9 +19,10 @@ remembered in `records.view`.
 Library view (`js/records/replay-list.js`)
 - `REPLAY_SCREEN` — `'replay'`; `REPLAYS_EMPTY_TEXT`; `REPLAYS_NOT_SAVED`;
   `REPLAY_HEADERS`; `CODE_HEADER`; `REPLAY_FILE_TYPE` — `'.msrp'`;
-  `codeCell(doc, code, onCopy)` — a table cell with a code chip
-  (empty for none), shared by every Records row that names one game. A
-  row's `code` is its listing's, or null.
+  `codeCell(doc, code)` — a table cell holding the code as plain
+  monospace text (empty for none), shared by every Records row that names
+  one game; `pinGlyph(doc, row)` — a row's pin state as the pin icon, named
+  by `pinState`. A row's `code` is its listing's, or null.
 - `replayFileName(boardKey, endedAt)` → `"minesweeper-<board key>-<end
   date>.msrp"` (to the second, characters a file name cannot hold replaced
   by `-`), also the replay viewer's download name.
@@ -44,8 +45,10 @@ Remembered view (`js/records/view-prefs.js`)
 
 - **The library view.** The board's kept replays (`forBoard`), newest first,
   or pinned first under the filter, remembered in `records.view` (loaded at
-  start-up, saved on each change), `PAGE_SIZE` per page under a kit pager;
-  Pin adds the hand pin, Unpin clears every reason. Delete opens
+  start-up, saved on each change), `PAGE_SIZE` per page under a kit pager.
+  A row's actions are quiet small buttons led by their icons — Watch,
+  Download (its icon alone), Pin / Unpin, Delete (its trash icon alone),
+  each named for its replay. Pin adds the hand pin, Unpin clears every reason. Delete opens
   `#records-replays-confirm`, a `ui-confirm--row`, in a table row under that
   replay's, one cell across every column, the list staying around it (focus
   on Cancel; another row's Delete moves it there); Cancel

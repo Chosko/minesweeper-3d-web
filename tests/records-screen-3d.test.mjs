@@ -83,9 +83,9 @@ function fakeView() {
   const shown = [];
   return { shown, show(c) { shown.push(c); }, hide() {} };
 }
-const PRESET_LABELS = ['Cube Intro', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert']
-  .flatMap((l) => [l, `${l} · no-guess`]);
-const DAILY_3D = 'Daily · 8 × 8 × 8 · 40 mines · no-guess';
+const PRESETS = ['Cube Intro', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert'];
+const PRESET_LABELS = [...PRESETS, ...PRESETS.map((l) => `${l} · no-guess`)];
+const DAILY_3D = 'Daily';
 const value = (list, key) => list.find((s) => s.key === key || s.stat === key).value;
 
 // ---------------------------------------------------------------- the switch and the picker
@@ -98,12 +98,12 @@ test('the switch offers Classic 2D and 3D; the content carries the chosen mode',
   assert.equal(recordsContent(fakeStore()).mode, 'classic-2d');
 });
 
-test('the 3D picker lists the four presets with and without no-guess, then the custom 3D boards played, under their 3D labels', () => {
+test('the 3D picker lists the four presets without no-guess, then with it, then the custom 3D boards played, under their 3D labels', () => {
   const store = fakeStore({ games: [game(CUSTOM_3D), game(BEGINNER), game(CUSTOM_2D), game(CUBE_EXPERT_NG)] });
   const three = pickerBoards(store, '3d');
   assert.deepEqual(three.map((b) => b.label), [...PRESET_LABELS, DAILY_3D, '10 × 10 × 10 · 80 mines']);
   assert.equal(three[0].key, boardKey(CUBE_INTRO));
-  assert.equal(three[2].key, boardKey(CUBE_BEGINNER));
+  assert.equal(three[1].key, boardKey(CUBE_BEGINNER));
   assert.ok(three.every((b) => !b.label.startsWith('First box')), 'no First box entry');
   assert.equal(new Set(three.map((b) => b.key)).size, three.length, 'a preset played is not listed twice');
   const two = pickerBoards(store, 'classic-2d');
@@ -270,7 +270,7 @@ test("a 3D board gets every history view: the Top 10, the averages, the best-tim
   assert.equal(c.mode, '3d');
   assert.deepEqual(c.top.rows.map((r) => [r.rank, r.id, r.time]), [['1', 'c2', '70.000 s'], ['2', 'c1', '90.000 s']]);
   assert.deepEqual(c.averages.rows[0].values, ['80.000 s', '80.000 s', '80.000 s']);
-  assert.equal(c.averages.winRates[0].value, '67%');
+  assert.equal(c.averages.winRate, 'Win rate, last 50 (3): 67% (completed games 67%)');
   assert.deepEqual(c.bestChart.steps.map((x) => x.id), ['c1', 'c2']);
   const week = recordsContent(store, { boardKey: boardKey(CUBE_BEGINNER), now, period: '7d' });
   assert.deepEqual([week.top.rows.length, week.games.rows.length], [0, 0], 'nothing in the last 7 days on this board');
@@ -338,13 +338,18 @@ test('the 2D | 3D switch is a kit segmented choice in the frame\'s head, above t
   assert.deepEqual(options, [['classic-2d', 'Classic 2D', 'true'], ['3d', '3D', 'false']]);
   const head = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div class="ui-frame__end">'), RECORDS_HTML.indexOf('</header>'));
   assert.ok(head.includes('id="records-mode"'), 'the switch is the frame head\'s end');
+  const body = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div class="ui-frame__body" id="records-body">'));
+  assert.match(body, /^<div class="ui-frame__body" id="records-body">\s*<div id="records-mode-touch" class="ui-segmented" role="radiogroup" aria-label="Mode">/,
+    'the phone\'s full-width bar opens the body, above the picker');
+  assert.ok(body.indexOf('id="records-mode-touch"') < body.indexOf('id="records-picker"'));
 });
 
 test('the shell opens the records screen with its mode and board, and the switch calls the controller', () => {
   assert.match(MAIN, /RECORDS_PAGE\.show\(\{ mode: d\.mode, boardKey: d\.boardKey \}\)/);
   assert.match(MAIN, /onMode: \(mode\) => RECORDS_PAGE\.setMode\(mode\)/);
   const src = read('js/records/screen.js');
-  assert.match(src, /bindSegmented\(modes, \{ onChange: \(mode\) => onMode\(mode\) \}\)/);
+  assert.match(src, /\['records-mode', 'records-mode-touch'\]\.map\(\$\)/, 'the head\'s switch and the phone\'s bar');
+  assert.match(src, /for \(const group of modeGroups\) bindSegmented\(group, \{ onChange: \(mode\) => onMode\(mode\) \}\)/);
 });
 
 test('the catalogue documents the mode switch', () => {
@@ -397,19 +402,19 @@ test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', 
     await page.click('#menu-entry-records');
     assert.equal(await mode(), 'records');
     assert.equal(await checked(), '3d');
-    assert.equal(await boardShown(), 'Cube Intro');
+    assert.equal(await boardShown(), 'Cube Intro · Bests');
     assert.equal(await overallTitle(), '3D overall');
     assert.equal(await firstOption(), 'Cube Intro');
     assert.deepEqual((await ms(() => [...document.querySelectorAll('#records-picker .ui-segmented__option')].map((o) => o.textContent))).slice(0, PRESET_LABELS.length),
-      PRESET_LABELS, 'the picker offers the four presets, each without then with no-guess');
+      PRESET_LABELS, 'the picker offers the four presets without no-guess, then with it');
     const figure = (id) => ms((i) => document.querySelector(`#${i} .ui-stat__value`).textContent, id);
     assert.equal(await figure('rec-completedWinRate'), '100%', 'the 3D board\'s completed-games figures');
-    assert.equal(await figure('ro-longestCompletedStreak'), '1');
+    assert.match(await ms(() => document.getElementById('records-overall-line').textContent), /Longest 1 \(completed 1\)$/);
 
     // Mouse.
     await page.click('#records-mode [data-value="classic-2d"]');
     assert.equal(await checked(), 'classic-2d');
-    assert.equal(await boardShown(), 'Beginner');
+    assert.equal(await boardShown(), 'Beginner · Bests');
     assert.equal(await overallTitle(), 'Classic 2D overall');
     assert.equal(await firstOption(), 'Beginner');
 
@@ -417,7 +422,7 @@ test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', 
     await page.focus('#records-mode [aria-checked="true"]');
     await page.keyboard.press('ArrowRight');
     assert.equal(await checked(), '3d');
-    assert.equal(await boardShown(), 'Cube Intro');
+    assert.equal(await boardShown(), 'Cube Intro · Bests');
     assert.equal(await ms(() => document.activeElement?.dataset.value), '3d', 'focus stays on the switch');
 
     // Controller: focus moves onto the 2D option and A chooses it.
@@ -425,7 +430,7 @@ test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', 
     assert.equal(await ms(() => document.activeElement?.dataset.value), 'classic-2d');
     await tap(BTN.A);
     assert.equal(await checked(), 'classic-2d');
-    assert.equal(await boardShown(), 'Beginner');
+    assert.equal(await boardShown(), 'Beginner · Bests');
 
     await tap(BTN.B);
     assert.equal(await mode(), 'menu');

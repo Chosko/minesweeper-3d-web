@@ -149,8 +149,12 @@ test('the chart draws both series and its grid in the token colours', () => {
   assert.ok(ctx.calls.some((c) => c.op === 'fillText' && c.args[0] === '3BV/s'), 'a legend names the 3BV/s line');
   assert.ok(ctx.calls.some((c) => c.op === 'fillText' && c.args[0] === 'Efficiency'), 'a legend names the efficiency line');
   const empty = fakeContext();
-  drawHistoryChart(empty, { width: 300, height: 140, pixelRatio: 1, points: [], token: (name) => THEMES.light[name] });
-  assert.ok(!strokes(empty).has(THEMES.light[CHART_TOKENS.rate]), 'no line without a won game');
+  drawHistoryChart(empty, { width: 300, height: 140, pixelRatio: 1, points: [], token: (name) => THEMES.light[name], emptyText: NO_WON_GAMES_PERIOD });
+  assert.deepEqual(empty.calls.filter((c) => c.op !== 'setTransform' && c.op !== 'clearRect').map((c) => [c.op, ...(c.op === 'fillText' ? c.args : [])]),
+    [['fillText', NO_WON_GAMES_PERIOD, 150, 70]], 'without a won game only its empty line, centred: no grid, axes or legend');
+  const fallback = fakeContext();
+  drawHistoryChart(fallback, { width: 300, height: 140, points: [], token: (name) => THEMES.light[name] });
+  assert.ok(fallback.calls.some((c) => c.op === 'fillText' && c.args[0] === NO_WON_GAMES), 'the board\'s empty line by default');
 });
 
 test('the chart module is DOM-free, takes no chart library and holds no literal colour', () => {
@@ -276,7 +280,8 @@ test('the best-time chart draws its step line and markers in the token colour, t
   const empty = fakeContext();
   drawBestTimeChart(empty, { width: 400, height: 160, data: { steps: [], emptyText: NO_BEST_TIME }, token: (name) => THEMES.light[name] });
   assert.ok(!strokes(empty).has(THEMES.light[CHART_TOKENS.best]), 'no line');
-  assert.ok(empty.calls.some((c) => c.op === 'fillText' && c.args[0] === NO_BEST_TIME), 'the honest empty line');
+  assert.deepEqual(empty.calls.filter((c) => c.op !== 'setTransform' && c.op !== 'clearRect').map((c) => [c.op, ...(c.op === 'fillText' ? c.args : [])]),
+    [['fillText', NO_BEST_TIME, 200, 80]], 'the honest empty line alone, centred: no grid, axes or legend');
   const src = read('js/records/history-chart.js');
   assert.match(src, /best: '--color-[a-z-]+'/, 'the best line is a token');
 });
@@ -392,7 +397,7 @@ test('the recent games list shows newest first with date and time, outcome, time
   assert.equal(games.rows[1].time, '12.000 s');
   assert.equal(games.rows[1].rate, (5 / 12).toFixed(2));
   assert.equal(games.rows[0].rate, DASH, 'no time, no 3BV/s');
-  assert.deepEqual(games.headers, ['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Efficiency']);
+  assert.deepEqual(games.headers, ['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Eff.']);
   const ended = store.history(boardKey(BEGINNER)).toReversed();
   assert.deepEqual(games.rows.map((r) => r.date), ended.map((e) => formatDateTime(e.endedAt)), 'each game\'s end, as a date and a local time');
   assert.deepEqual(games.rows.map((r) => r.bbbv), ['20', '20', '20'], 'the board\'s 3BV for won, lost and abandoned games alike');
@@ -486,15 +491,15 @@ const RECORDS_HTML = INDEX.slice(INDEX.indexOf('<section id="records"'), INDEX.i
 test('the history panel holds the chart canvas with its text alternative, the games table and the kit pager', () => {
   const panel = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-history"'));
   assert.ok(panel.length > 0, '#records-history');
-  assert.match(panel, /^<div id="records-history" class="ui-panel" role="group" aria-labelledby="records-history-title">/);
+  assert.match(panel, /^<div id="records-history" role="group" aria-label="History">/, 'the history sits on the frame, no panel and no heading');
   assert.match(panel, /<canvas id="records-chart" role="img" aria-label="[^"]+">[^<]*<\/canvas>/, 'the chart is an image with a text alternative');
   assert.match(panel, /<table id="records-games"[^>]*>[\s\S]*<caption[^>]*>[\s\S]*<thead>[\s\S]*<tbody id="records-games-body"><\/tbody>/);
   const heads = [...panel.slice(0, panel.indexOf('</thead>')).matchAll(/<th scope="col"[^>]*>([^<]+)<\/th>/g)].map((m) => m[1]);
-  assert.deepEqual(heads, ['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Efficiency', 'Board code', 'Replay']);
+  assert.deepEqual(heads, ['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Eff.', 'Board code', 'Replay']);
   assert.match(panel, /<nav id="records-games-pager" class="ui-pager hidden" aria-label="[^"]+"><\/nav>/, 'the kit pager, filled by the view');
   assert.doesNotMatch(RECORDS_HTML, /records-prev|records-next|>Newer<|>Older</, 'Newer and Older are gone');
   assert.match(panel, /id="records-page"/);
-  assert.match(read('css/style.css'), /#records-chart \{/);
+  assert.match(read('css/style.css'), /#records-chart, #records-best-chart \{/);
 });
 
 test('the view draws the chart through the history chart and wires the pager to the controller', () => {

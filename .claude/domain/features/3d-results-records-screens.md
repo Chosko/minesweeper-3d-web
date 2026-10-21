@@ -96,8 +96,9 @@ described in [app-shell.md](../../context/app-shell.md) and
   look is a view of the finished board, not a return to the game.
 - **Records mode switch.** `records-screen` gains a 2D | 3D segmented
   choice above its board picker. The picker lists the chosen mode's boards
-  from `3d-game-records`' mode-filtered listing; 3D boards use the 3D
-  labels. The figures panel shows the chosen board's figures, and under
+  from `3d-game-records`' mode-filtered listing, its named boards every one
+  without no-guess, then every one with it, as the 2D picker does; 3D boards
+  use the 3D labels. The figures panel shows the chosen board's figures, and under
   them the chosen mode's overall figures as a row of their own, titled for
   the mode ("Classic 2D overall", "3D overall") and never mixed with the
   board's, the completed games' win rate and best streak among both as in

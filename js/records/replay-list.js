@@ -30,12 +30,13 @@
 //   REPLAY_FILE_TYPE its extension, which Open replay file picks.
 //
 // createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage, onDelete, onDownload,
-//   onOpenFile, onCopy }) → { show(list), closeConfirm(), isConfirmOpen(), hide() }: fills
+//   onOpenFile }) → { show(list), closeConfirm(), isConfirmOpen(), hide() }: fills
 //   #records-replays by id — the Pinned first checkbox, Open replay file (#records-replays-open,
 //   onOpenFile(), shown while list.canOpen), the empty state, one table row per replay with its
-//   outcome as a kit chip (outcomeChip), its board code as a code chip (createCodeChip; Copy and Copy link call onCopy), its
-//   Download (onDownload(id)), Pin / Unpin and Delete buttons and, when list.canWatch, its Watch
-//   button, the range caption and the kit pager
+//   outcome as a kit chip (outcomeChip), its pin state as a glyph (pinGlyph), its board code as plain
+//   text (codeCell), its actions as quiet small buttons led by their icons — when list.canWatch its
+//   Watch, then Download (onDownload(id)) as its icon alone, Pin / Unpin, and Delete, its trash icon alone —, the
+//   range caption and the kit pager
 //   (bindPager; onPage(page)). A rebuilt list keeps focus on the button of the replay that had it.
 //   Delete shows the confirmation (#records-replays-confirm, a confirm box row: the row's
 //   deleteMessage, Delete replay, Cancel) in a table row under that replay's, one cell across every
@@ -46,15 +47,17 @@
 
 import { DASH, formatTime, formatRate, formatEfficiency } from '../results/view.js';
 import { PIN_BEST, PIN_HAND } from '../replay/library.js';
-import { pagerState, bindPager, createCodeChip, bindCodeChip } from '../ui/components.js';
+import { pagerState, bindPager, createButton, createIcon } from '../ui/components.js';
 import { pageOf } from './history-chart.js';
 
 /** The replay viewer's router screen (replay-playback); Watch shows once the shell registers it. */
 export const REPLAY_SCREEN = 'replay';
 export const REPLAYS_EMPTY_TEXT = 'No replays kept for this board yet.';
 export const REPLAYS_NOT_SAVED = 'Replays are not being saved this session.';
-export const REPLAY_HEADERS = Object.freeze(['Date', 'Outcome', 'Time', '3BV/s', 'Efficiency', 'Pin']);
+export const REPLAY_HEADERS = Object.freeze(['Date', 'Outcome', 'Time', '3BV/s', 'Eff.', 'Pin']);
 export const CODE_HEADER = 'Board code';
+// The kit table class of each REPLAY_HEADERS column's cells.
+const REPLAY_CELLS = Object.freeze(['ui-table__date', '', 'ui-table__figure', 'ui-table__figure', 'ui-table__figure', '']);
 export const REPLAY_FILE_TYPE = '.msrp';
 
 const time = (iso) => { const t = Date.parse(iso); return Number.isNaN(t) ? -Infinity : t; };
@@ -122,16 +125,23 @@ export function outcomeChip(doc, label) {
   return chip;
 }
 
-/** A table cell holding a code chip for `code` (empty for none), for every Records row that names one game. */
-export function codeCell(doc, code, onCopy) {
+/** A table cell holding `code` as plain monospace text (empty for none), for every Records row that names one game. */
+export function codeCell(doc, code) {
   const td = doc.createElement('td');
+  td.className = 'ui-table__code';
   td.dataset.label = CODE_HEADER;
-  if (code) {
-    const chip = createCodeChip(doc);
-    bindCodeChip(chip, { onCopy }).show(code);
-    td.append(chip);
-  }
+  td.textContent = code ?? '';
   return td;
+}
+
+/** A replay's pin state as a glyph: the pin, drawn for a pinned replay or as its locked edge when not, named by its state. */
+export function pinGlyph(doc, row) {
+  const span = doc.createElement('span');
+  span.setAttribute('role', 'img');
+  span.setAttribute('aria-label', row.pin);
+  span.dataset.pinned = String(row.pinned);
+  span.append(createIcon(doc, 'pin'));
+  return span;
 }
 
 export function togglePin(library, row) {
@@ -144,7 +154,6 @@ export function watchRoute(replayId, returnTo) {
 
 export function createReplayListView({
   root, onWatch, onTogglePin, onPinnedFirst, onPage = () => {}, onDelete = () => {}, onDownload = () => {}, onOpenFile = () => {},
-  onCopy = () => {},
 }) {
   const $ = (id) => root.querySelector(`#${id}`);
   const doc = root.ownerDocument;
@@ -172,11 +181,9 @@ export function createReplayListView({
   const openFile = $('records-replays-open');
   openFile?.addEventListener('click', () => onOpenFile());
 
-  const button = (text, label, onClick, data) => {
-    const b = doc.createElement('button');
-    b.type = 'button';
-    b.className = 'ui-button ui-button--secondary';
-    b.textContent = text;
+  // A row action: a quiet small button led by its icon, its text shown unless iconOnly.
+  const button = (text, icon, label, onClick, data, iconOnly = false) => {
+    const b = createButton(doc, { label: text, icon, variant: 'quiet', size: 'sm', iconOnly });
     b.setAttribute('aria-label', label);
     Object.assign(b.dataset, data);
     b.addEventListener('click', onClick);
@@ -239,17 +246,20 @@ export function createReplayListView({
         [r.date, r.outcome, r.time, r.rate, r.efficiency, r.pin].forEach((text, i) => {
           const td = doc.createElement('td');
           if (i === 1) td.append(outcomeChip(doc, text));
+          else if (i === 5) td.append(pinGlyph(doc, r));
           else td.textContent = text;
+          if (REPLAY_CELLS[i]) td.className = REPLAY_CELLS[i];
           td.dataset.label = REPLAY_HEADERS[i];
           tr.append(td);
         });
-        tr.append(codeCell(doc, r.code, onCopy));
+        tr.append(codeCell(doc, r.code));
         const actions = doc.createElement('td');
+        actions.dataset.label = 'Actions';
         const what = `replay of ${r.date}, ${r.time}`;
-        if (r.watch) actions.append(button('Watch', `Watch ${what}`, () => onWatch(r.id), { id: r.id, act: 'watch' }));
-        actions.append(button('Download', `Download ${what}`, () => onDownload(r.id), { id: r.id, act: 'download' }));
-        actions.append(button(r.actionLabel, `${r.actionLabel} ${what}`, () => onTogglePin(r.id), { id: r.id, act: 'pin' }));
-        actions.append(button('Delete', `Delete ${what}`, () => ask(r), { id: r.id, act: 'delete' }));
+        if (r.watch) actions.append(button('Watch', 'film', `Watch ${what}`, () => onWatch(r.id), { id: r.id, act: 'watch' }));
+        actions.append(button('Download', 'download', `Download ${what}`, () => onDownload(r.id), { id: r.id, act: 'download' }, true));
+        actions.append(button(r.actionLabel, 'pin', `${r.actionLabel} ${what}`, () => onTogglePin(r.id), { id: r.id, act: 'pin' }));
+        actions.append(button('Delete', 'trash', `Delete ${what}`, () => ask(r), { id: r.id, act: 'delete' }, true));
         tr.append(actions);
         return tr;
       }));

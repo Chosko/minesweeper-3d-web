@@ -19,14 +19,17 @@ Records view (`js/records/screen.js`)
 - `createRecordsView({ root, onSelect, onMode?, onBack, onPage, onWatch?,
   onTogglePin?, onPinnedFirst?, onReplayPage?, onDelete?, onPeriod?,
   onOutcome?, onTab?, onTopStat?, onExport?, onDownload?, onOpenFile?,
-  onCopy?, chart?, bestChart? })` →
+  chart?, bestChart? })` →
   `show(content)`, `hide()`, `closeConfirm()`, `isConfirmOpen()`; the
-  switch is `#records-mode`, the chart defaults to `#records-chart`; the
-  tabs `#records-tabs` are a kit tablist (`bindTabs`), each showing the
-  panel its `aria-controls` names; the games, Top 10 and library tables
-  gain a Board code column of code chips (`codeCell`) whose Copy
-  and Copy link call `onCopy`, and a recent game or replay its outcome as a
-  kit chip (`outcomeChip`, `js/records/replay-list.js`).
+  switch is `#records-mode` in the head and `#records-mode-touch`, the
+  phone's bar, both bound; the charts default to `#records-chart` and
+  `#records-best-chart`, drawn on every show; the tabs `#records-tabs` are
+  a kit tablist (`bindTabs`), each showing the panel its `aria-controls`
+  names; a best's Watch is an inline `ui-link` in its tile's note, a list
+  row's a quiet small button led by the film icon; the games, Top 10 and
+  library tables gain a Board code column of plain text (`codeCell`), and
+  a recent game or replay its outcome as a kit chip (`outcomeChip`,
+  `js/records/replay-list.js`).
 - `TRIGGER_MODES` — `{lt: 'classic-2d', rt: '3d'}`, the triggers' modes.
 
 Export (`js/records/export.js`)
@@ -38,24 +41,30 @@ Export (`js/records/export.js`)
 
 ## INTERNAL PATTERNS
 
-- **Layout** (`css/components.css` head comment, *Records*). `#records` is
-  a `ui-frame` on the backdrop: Back and the 2D | 3D switch in its head,
-  the picker at the top of its body, then a `ui-columns--two` — the
-  board's figures (the bests as `ui-stat--tile`s, the counters), the
-  averages panel, the mode's overall figures and under them the two export
-  actions on one side; on the other the history panel — the period and
-  outcome choices, both charts in a `ui-columns--pair`, then the Recent
-  games | Top 10 | Replays | Leaderboards tabs, Leaderboards a coming-soon
-  panel with no pager; one column below the kit breakpoint. An empty board
-  hides the choices, the charts and the averages; the tabs stay. The
-  bests' figures keep one line (the kit's `ui-stat--tile`). A table
-  narrower than a row of its figures, board code and actions on one line —
-  every width the two panels take — stacks each row's cells under their
-  `data-label`, the board code and the actions each on a line of their own
-  (`css/style.css`, a container query on the two panels); the averages
-  table stacks the same way, each row a card headed by its label, in a
-  panel narrower than its row of three-digit times (a container query on
-  `#records-averages`, a table at 1024 px and wider); a time never wraps.
+- **Layout** (`css/components.css` head comment, *Records*; `css/style.css`
+  places it). `#records` is a `ui-frame` inset on the backdrop at each
+  window step's canvas size (J-Records-xl, -l, -m), not full height: Back
+  ("Main menu", "Back" on a phone) and the 2D | 3D switch in its head, the
+  picker one line across the top of its body, scrolling sideways under a
+  fade, then a `ui-columns--two` — the left column at a fixed width per
+  window step, its sections on the frame under section labels (the bests
+  as three `ui-stat--tile`s across at every size, each figure shrinking
+  with its tile to stay on one line; the counters as a grid of sunk tiles,
+  two across on a phone; the averages table and the win rate line), the
+  overall line in the one muted panel, the export actions; the right
+  column the history with no panel or heading — the period and outcome
+  choices on one row, both charts in a `ui-columns--pair` (stacked in the
+  narrowest two-column step), then the Recent games | Top 10 | Replays |
+  Leaderboards tabs, Leaderboards a coming-soon panel with no pager. From
+  the kit breakpoint each column scrolls on its own; below it one column
+  and the body scrolls. A board with no games keeps every part, figures
+  and averages showing dashes and both charts their empty line; only the
+  win rate line hides. Each table keeps one line per row, scrolling
+  sideways in its own box (`#records-games-scroll`, `#records-top-scroll`,
+  `#records-replays-scroll`) when narrower, and shows its Board code column
+  on the largest window step only. On a phone the frame is full-bleed, the
+  head holds Back and the title, `#records-mode-touch` is the full-width
+  switch under it and each averages row is a card; a time never wraps.
 - **Export.** `js/main.js` builds one `RECORDS_EXPORT` over the store and
   the library; the screen's actions under the mode's overall figures and
   the Settings Data panel's both save through it, disabled with `NOTHING_TO_EXPORT` until a
@@ -65,7 +74,8 @@ Export (`js/records/export.js`)
   step the board (`stepBoard`); `[data-pad-glyph]` hints beside the switch
   and the picker show the active pad's glyphs (`UI.setPad`). The arrow keys
   do not walk Records; the D-pad walks it column by column
-  ([app-shell-focus.md](app-shell-focus.md) § Focus walk).
+  ([app-shell-focus.md](app-shell-focus.md) § Focus walk). The glyphs take
+  no room while hidden.
 
 ## DOMAIN DEPENDENCIES
 
@@ -91,6 +101,6 @@ Export (`js/records/export.js`)
 ## WHEN TO READ THE SOURCE
 
 - Changing the screen's layout: its markup is `#records` in `index.html`,
-  catalogued in `css/components.css`; the stacking tables are
-  `css/style.css`'s container queries.
+  catalogued in `css/components.css`; its placement per window step is
+  `css/style.css`'s Records block, its colours `themes/<id>/theme.css`.
 - Changing the export's columns or files: the head comment of `export.js`.

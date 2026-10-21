@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  REPLAY_SCREEN, REPLAYS_EMPTY_TEXT, REPLAYS_NOT_SAVED, REPLAY_HEADERS, replayList, pinState, togglePin, watchRoute, deleteMessage, replayFileName,
+  REPLAY_SCREEN, REPLAYS_EMPTY_TEXT, REPLAYS_NOT_SAVED, REPLAY_HEADERS, replayList, pinState, togglePin, watchRoute, deleteMessage, replayFileName, codeCell,
 } from '../js/records/replay-list.js';
 import { pagerState } from '../js/ui/components.js';
 import { RECORDS_SCREEN, recordsContent, createRecordsScreen, formatDateTime } from '../js/records/screen.js';
@@ -126,7 +126,10 @@ test('a library row carries its listing\'s board code, or none for a replay from
   const rows = replayList(library, KEY).rows;
   assert.deepEqual(rows.map((r) => [r.id, r.code]), [['coded', 'B-00000001-40-1ABC'], ['old', null]]);
   const table = read('index.html').match(/<table id="records-replays-table" class="ui-table">[\s\S]*?<\/thead>/)[0];
-  assert.match(table, /<th scope="col">Pin<\/th><th scope="col">Board code<\/th><th scope="col">Actions<\/th>/);
+  assert.match(table, /<th scope="col">Pin<\/th><th scope="col" data-label="Board code">Board code<\/th><th scope="col">Actions<\/th>/);
+  const doc = { createElement: () => ({ dataset: {}, className: '', textContent: '' }) };
+  assert.deepEqual([codeCell(doc, 'B-00000001-40-1ABC'), codeCell(doc, null)].map((td) => [td.className, td.dataset.label, td.textContent]),
+    [['ui-table__code', 'Board code', 'B-00000001-40-1ABC'], ['ui-table__code', 'Board code', '']], 'the code as plain monospace text, no chip');
 });
 
 test('a row\'s time goes through the results screen\'s formatter', () => {
@@ -433,8 +436,8 @@ test('Open replay file picks a file and opens it in the viewer, Back returning t
 });
 
 test('the panel carries Open replay file, and the shell wires Download and Open to the screen', () => {
-  assert.match(RECORDS_HTML_DL(), /<button type="button" id="records-replays-open" class="ui-button ui-button--secondary ui-button--sm hidden">Open replay file<\/button>/);
-  assert.match(read('js/records/replay-list.js'), /button\('Download', `Download \$\{what\}`/);
+  assert.match(RECORDS_HTML_DL(), /<button type="button" id="records-replays-open" class="ui-button ui-button--secondary ui-button--sm hidden" data-icon="upload">Open replay file<\/button>/);
+  assert.match(read('js/records/replay-list.js'), /button\('Download', 'download', `Download \$\{what\}`/);
   assert.match(read('js/main.js'), /onDownload: \(id\) => RECORDS_PAGE\.downloadReplay\(id\)/);
   assert.match(read('js/main.js'), /onOpenFile: \(\) => RECORDS_PAGE\.openReplayFile\(\)/);
 });
@@ -505,7 +508,7 @@ test('the records screen holds the Replays tab\'s panel: pinned-first checkbox, 
   assert.match(panel, /<label class="ui-checkbox"><input type="checkbox" id="records-pinned-first" class="ui-checkbox__input"><span class="ui-checkbox__label">Pinned first<\/span><\/label>/);
   assert.match(panel, new RegExp(`<p id="records-replays-empty" class="ui-text ui-text--muted hidden">${REPLAYS_EMPTY_TEXT}</p>`));
   assert.match(panel, /<tbody id="records-replays-body"><\/tbody>/);
-  for (const h of REPLAY_HEADERS) assert.ok(panel.includes(`<th scope="col">${h}</th>`), `header ${h}`);
+  for (const h of REPLAY_HEADERS) assert.match(panel, new RegExp(`<th scope="col"[^>]*>${h.replace('.', '\\.')}</th>`), `header ${h}`);
   assert.match(panel, /<caption class="ui-text ui-text--muted" id="records-replays-page"><\/caption>/, 'the range caption');
   assert.match(panel, /<nav id="records-replays-pager" class="ui-pager hidden" aria-label="[^"]+"><\/nav>/, 'the kit pager');
   assert.ok(panel.includes('<div id="records-replays-confirm" class="ui-confirm ui-confirm--row hidden" role="alertdialog" aria-labelledby="records-replays-confirm-text">'
@@ -604,13 +607,22 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
       screen.setTab('replays');
     }, KEY);
     const T = '#records-test';
-    const rows = () => page.evaluate((s) => [...document.querySelectorAll(`${s} #records-replays-body tr`)].map((r) => [...r.cells].map((c) => c.textContent)), T);
+    // Each cell's text, the pin glyph's by its name.
+    const rows = () => page.evaluate((s) => [...document.querySelectorAll(`${s} #records-replays-body tr`)]
+      .map((r) => [...r.cells].map((c) => c.querySelector('[role="img"]')?.getAttribute('aria-label') ?? c.textContent)), T);
     const active = () => page.evaluate(() => ({ ...document.activeElement?.dataset }));
 
     let r = await rows();
     assert.deepEqual(r.map((c) => c.slice(1, 6)), [['Won', '47.380 s', '0.42', '80.0%', 'Not pinned'], ['Lost', '12.000 s', '0.50', '50.0%', 'Not pinned']], 'newest first');
     assert.deepEqual(r.map((c) => c[6]), ['', ''], 'no board code: listings from before codes');
-    assert.deepEqual(r.map((c) => c[7]), ['WatchDownloadPinDelete', 'WatchDownloadPinDelete']);
+    assert.deepEqual(r.map((c) => c[7]), ['WatchPin', 'WatchPin'], 'Watch and Pin named on the button, Download and Delete by their icons alone');
+    assert.deepEqual(await page.evaluate((s) => [...document.querySelectorAll(`${s} #records-replays-body tr:first-child button`)].map((b) => [
+      b.dataset.act, [...b.classList].filter((c) => c !== 'ui-button').join(' '), b.querySelector(':scope > .ui-icon')?.dataset.icon, b.getAttribute('aria-label').replace(/ of .*, /, ' … ')]), T), [
+      ['watch', 'ui-button--quiet ui-button--sm', 'film', 'Watch replay … 47.380 s'],
+      ['download', 'ui-button--quiet ui-button--sm', 'download', 'Download replay … 47.380 s'],
+      ['pin', 'ui-button--quiet ui-button--sm', 'pin', 'Pin replay … 47.380 s'],
+      ['delete', 'ui-button--quiet ui-button--sm', 'trash', 'Delete replay … 47.380 s'],
+    ], 'quiet small icon buttons');
     assert.equal(await page.evaluate((s) => document.querySelector(`${s} #records-replays-empty`).classList.contains('hidden'), T), true);
 
     // Keyboard: Pin flips to Unpin and focus stays on that replay's button.
@@ -664,6 +676,8 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
       return { cell: [cell.paddingTop, cell.paddingRight, cell.paddingBottom, cell.paddingLeft],
         buttons: [...box.querySelectorAll('.ui-button')].map((b) => getComputedStyle(b).margin) };
     }, T), { cell: ['0px', '0px', '0px', '0px'], buttons: ['0px', '0px'] });
+    assert.equal(await page.evaluate((s) => getComputedStyle(document.querySelector(`${s} #records-replays-confirm-text`)).whiteSpace, T), 'normal',
+      'the question wraps inside the table\'s scroll box, never cut off on one line');
     await page.keyboard.press('Enter');
     c = await confirm();
     assert.equal(c.open, false);

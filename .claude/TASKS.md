@@ -1251,7 +1251,7 @@ Feature: shared-screen-layout
 
 ## 238. Records screen to the canvas
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/style.css, js/records/screen.js, js/records/replay-list.js, js/records/history-chart.js, themes/joyful-tiles/theme.css, .claude/context/records-screen-view.md, .claude/context/records-library-view.md
 Preconditions: 221, 222

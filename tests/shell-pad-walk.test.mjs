@@ -170,7 +170,7 @@ async function seed(ms) {
   });
 }
 
-test('[slow] in a browser, the Records walk stops on every Watch, Download, Pin and Delete of the shown tab, and Right from "Pinned first" enters the replays', async (t) => {
+test('[slow] in a browser, the Records walk stops on every Watch, Download, Pin and Delete of the shown tab, and Open replay file sits above the replays\' actions', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -205,12 +205,12 @@ test('[slow] in a browser, the Records walk stops on every Watch, Download, Pin 
       assert.deepEqual(up.filter((k) => buttons.includes(k)), [...buttons].reverse(), `${tab}: Up visits them in reverse`);
     }
 
-    // Right from "Pinned first" goes to Open replay file beside it, then on into the replays table's first button.
+    // Down from "Pinned first" enters the replays table; Up from its first button reaches Open replay file, at the end of the tools row.
     await ms(() => document.getElementById('records-pinned-first').focus());
-    await tap(BTN.RIGHT);
-    assert.equal(await key(), 'records-replays-open');
     await tap(BTN.DOWN);
     assert.equal(await key(), 'records-replays-table:0');
+    await tap(BTN.UP);
+    assert.equal(await key(), 'records-replays-open');
 
     // A on Pin pins, as a click does, and focus stays on the row's button.
     const pin = await ms(() => [...document.querySelectorAll('#records-replays-table button')].findIndex((b) => b.dataset.act === 'pin'));
@@ -289,15 +289,15 @@ test('[slow] in a browser, LB / RB step the Records board and LT / RT switch 2D 
     assert.equal(await mode(), 'classic-2d', 'LT: 2D');
 
     // The glyphs: the active pad's LB / RB at the picker's ends and LT / RT at the switch's, under pad navigation only.
-    const glyphs = () => ms(() => [...document.querySelectorAll('#records [data-pad-glyph]')].map((e) => [e.dataset.padGlyph, e.textContent, getComputedStyle(e).visibility]));
+    const glyphs = () => ms(() => [...document.querySelectorAll('#records [data-pad-glyph]')].map((e) => [e.dataset.padGlyph, e.textContent, e.getClientRects().length > 0 ? 'shown' : 'none']));
     assert.equal(await ms(() => document.body.classList.contains('pad-nav')), true);
-    assert.deepEqual(await glyphs(), [['lt', 'LT', 'visible'], ['rt', 'RT', 'visible'], ['lb', 'LB', 'visible'], ['rb', 'RB', 'visible']]);
-    const rects = () => ms(() => ['records-mode', 'records-picker'].map((id) => JSON.stringify(document.getElementById(id).getBoundingClientRect())));
-    const padRects = await rects();
+    assert.deepEqual(await glyphs(), [['lt', 'LT', 'shown'], ['rt', 'RT', 'shown'], ['lb', 'LB', 'shown'], ['rb', 'RB', 'shown']]);
+    const lefts = () => ms(() => ['records-picker-clip', 'records-columns'].map((id) => Math.round(document.getElementById(id).getBoundingClientRect().left)));
     await page.mouse.move(5, 5);
     await page.mouse.move(40, 40);
-    assert.deepEqual((await glyphs()).map((g) => g[2]), ['hidden', 'hidden', 'hidden', 'hidden'], 'hidden with the mouse');
-    assert.deepEqual(await rects(), padRects, 'and the layout does not shift');
+    assert.deepEqual((await glyphs()).map((g) => g[2]), ['none', 'none', 'none', 'none'], 'hidden with the mouse');
+    const [picker, body] = await lefts();
+    assert.equal(picker, body, 'the hidden glyphs take no room: the picker starts on the body\'s edge');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

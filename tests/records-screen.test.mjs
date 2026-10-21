@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   RECORDS_SCREEN, TRIGGER_MODES, pickerBoards, lastBoardPlayed, recordsContent, createRecordsScreen, formatDate, formatWinRate, formatDateTime,
-  EMPTY_TEXT, GAME_TABS, TOP_STATS, TOP_EMPTY_TEXT, TOP_EMPTY_PERIOD, GAMES_EMPTY_TEXT, WON_ONLY_TEXT,
+  EMPTY_TEXT, DAILY_OPTION, GAME_TABS, TOP_STATS, TOP_EMPTY_TEXT, TOP_EMPTY_PERIOD, GAMES_EMPTY_TEXT, WON_ONLY_TEXT,
 } from '../js/records/screen.js';
 import { NO_WON_GAMES_PERIOD, NO_BEST_TIME, NO_BEST_TIME_PERIOD } from '../js/records/history-chart.js';
 import { gameRank } from '../js/records/stats.js';
@@ -66,7 +66,7 @@ function brokenStore() {
     overallCompletedWinRate: fail,
   };
 }
-const STANDARD_LABELS = ['Beginner', 'Beginner · no-guess', 'Intermediate', 'Intermediate · no-guess', 'Expert', 'Expert · no-guess'];
+const STANDARD_LABELS = ['Beginner', 'Intermediate', 'Expert', 'Beginner · no-guess', 'Intermediate · no-guess', 'Expert · no-guess'];
 const DAILY_LABEL = 'Daily · Expert · no-guess';
 const stat = (list, key) => list.find((s) => s.key === key || s.stat === key);
 
@@ -101,11 +101,12 @@ test('every recent game and Top 10 row names its board code; an entry from befor
 
 // ---------------------------------------------------------------- picker
 
-test('the picker lists the six standard boards, the Daily board, then every custom board played, by boardLabel', () => {
-  assert.deepEqual(pickerBoards(fakeStore()).map((b) => b.label), [...STANDARD_LABELS, DAILY_LABEL], 'the standard boards and the Daily board with no games played');
+test('the picker lists the three standard boards, the three no-guess ones, the Daily board as "Daily", then every custom board played, by boardLabel', () => {
+  assert.equal(DAILY_OPTION, 'Daily');
+  assert.deepEqual(pickerBoards(fakeStore()).map((b) => b.label), [...STANDARD_LABELS, DAILY_OPTION], 'the standard boards and the Daily board with no games played');
   const store = fakeStore({ games: [game(CUSTOM2, { endedAt: '2026-10-01T12:00:00.000Z' }), game(BEGINNER), game(CUSTOM, { endedAt: '2026-10-08T12:00:00.000Z' }), game(EXPERT_NG)] });
   const boards = pickerBoards(store);
-  assert.deepEqual(boards.map((b) => b.label), [...STANDARD_LABELS, DAILY_LABEL, '20 × 12 · 50 mines', '5 × 5 · 3 mines']);
+  assert.deepEqual(boards.map((b) => b.label), [...STANDARD_LABELS, DAILY_OPTION, '20 × 12 · 50 mines', '5 × 5 · 3 mines']);
   assert.equal(boards[0].key, boardKey(BEGINNER));
   assert.equal(boards[5].key, boardKey(EXPERT_NG));
   assert.equal(new Set(boards.map((b) => b.key)).size, boards.length, 'a standard board played is not listed twice');
@@ -158,7 +159,7 @@ test('the figures panel shows the three bests with their dates, games, wins, win
     ['longestCompletedStreak', '2'],
   ]);
   assert.deepEqual(c.counters.map((s) => s.label), [
-    'Games', 'Wins', 'Win rate', 'Win rate, completed games', 'Current streak', 'Longest streak', 'Best streak, completed games',
+    'Games', 'Wins', 'Win rate', 'Win rate, completed', 'Current streak', 'Longest streak', 'Best streak, completed',
   ]);
 });
 
@@ -192,6 +193,9 @@ test('the overall panel shows the Classic 2D totals across every board', () => {
     ['longestCompletedStreak', '2'],
   ]);
   assert.equal(c.overallTitle, 'Classic 2D overall');
+  assert.equal(c.overallLine, 'Games 4 · Wins 3 · Win rate 75% (completed 75%) · Current streak 2 · Longest 2 (completed 2)', 'one sentence');
+  const many = fakeStore({ games: Array.from({ length: 1207 }, (_, i) => game(BEGINNER, { outcome: i % 2 ? 'won' : 'lost' })) });
+  assert.match(recordsContent(many).overallLine, /^Games 1,207 · Wins 603 · /, 'counts grouped by thousands');
 });
 
 test('formats: a date is day, month and year; a win rate a whole percentage; a missing value a dash', () => {
@@ -363,7 +367,7 @@ test('the Top 10 by time: ten rows best first, each with rank, time, 3BV/s, effi
   const { top } = c;
   assert.equal(top.stat, 'time');
   assert.deepEqual(top.stats.map((t) => [t.label, t.selected]), [['Time', true], ['3BV/s', false], ['Efficiency', false]]);
-  assert.deepEqual(top.headers, ['Rank', 'Time', '3BV/s', 'Efficiency', 'Date', '3BV', 'Clicks']);
+  assert.deepEqual(top.headers, ['#', 'Time', '3BV/s', 'Eff.', 'Date', '3BV', 'Clicks']);
   assert.equal(top.rows.length, 10, 'ten of thirteen won games; the loss never ranks');
   assert.deepEqual(top.rows.map((r) => r.rank), ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
   assert.deepEqual(top.rows[0], {
@@ -403,13 +407,12 @@ test('the averages panel: Time, 3BV/s and Efficiency over the last 10, last 50 a
   assert.deepEqual(averages.rows.map((r) => r.label), ['Time', '3BV/s', 'Efficiency']);
   assert.deepEqual(averages.rows[0].values, ['46.500 s', '45.500 s', '45.500 s'], 'the mean of the last 10 and of all 12 won games');
   assert.deepEqual(averages.rows[2].values, ['80.0%', '80.0%', '80.0%']);
-  assert.deepEqual(averages.winRates.map((w) => [w.label, w.value, w.detail]), [
-    ['Win rate, last 50 games', '92%', '13 games so far'], ['Win rate, last 50, completed games', '92%', '13 games so far'],
-  ], 'the last-50 win rate counts the loss; the completed games\' beside it');
+  assert.equal(averages.winRate, 'Win rate, last 50 (13): 92% (completed games 92%)',
+    'one line: the last-50 win rate counts the loss, the completed games\' beside it, a short window with its count');
   const none = recordsContent(fakeStore({ games: [game(BEGINNER, { outcome: 'abandoned' })] }), { boardKey: boardKey(BEGINNER), now: NOW }).averages;
   assert.deepEqual(none.rows.map((r) => r.values), [[DASH, DASH, DASH], [DASH, DASH, DASH], [DASH, DASH, DASH]], 'no won game: dashes');
   assert.deepEqual(none.columns.map((c) => c.label), ['Last 10', 'Last 50', 'All']);
-  assert.deepEqual(none.winRates.map((w) => w.value), ['0%', DASH], 'an abandoned game counts in the win rate, not the completed one');
+  assert.equal(none.winRate, `Win rate, last 50 (1): 0% (completed games ${DASH})`, 'an abandoned game counts in the win rate, not the completed one');
 });
 
 test('the period filters every history view; the outcome only the recent games; bests, counters and overall stay all-time', () => {
@@ -428,7 +431,7 @@ test('the period filters every history view; the outcome only the recent games; 
   assert.equal(month.games.rows.length, 4);
   assert.deepEqual(month.top.rows.map((r) => r.id), ['w2', 'w1'], 'the Top 10 within the period');
   assert.equal(month.averages.rows[0].values[2], '47.500 s');
-  assert.equal(month.averages.winRates[0].value, '50%');
+  assert.equal(month.averages.winRate, 'Win rate, last 50 (4): 50% (completed games 67%)');
   assert.equal(month.chart.points.length, 2);
   assert.deepEqual(month.bestChart.steps.map((x) => x.id), ['w1', 'w2'], 'the best time\'s progression within the period');
   assert.deepEqual([month.bestChart.start, month.bestChart.end], [daysAgo(10), daysAgo(1)], 'the first and last shown won games');
@@ -520,62 +523,73 @@ const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const RECORDS_HTML = INDEX.slice(INDEX.indexOf('<section id="records"'), INDEX.indexOf('<!-- /Records -->'));
 
-test('the records screen is the kit composition: picker, figures, overall, empty state, note and Back', () => {
+test('the records screen is the kit composition: picker, figures, overall, note and Back', () => {
   assert.ok(RECORDS_HTML.length > 400, 'index.html holds #records');
   assert.match(RECORDS_HTML, /^<section id="records" class="overlay ui-backdrop hidden"/);
   const classes = [...RECORDS_HTML.matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/));
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden' || c === 'overlay', `kit class only: ${c}`);
   assert.match(RECORDS_HTML, /<section class="ui-frame" id="records-frame" aria-labelledby="records-title">/);
   assert.match(RECORDS_HTML, /<h2 class="ui-frame__title" id="records-title">Records<\/h2>/);
-  assert.match(RECORDS_HTML, /<div id="records-picker" class="ui-segmented" role="radiogroup" aria-label="Board"><\/div>/);
-  for (const id of ['records-title', 'records-picker', 'records-figures', 'records-board', 'records-empty', 'records-bests', 'records-counters',
+  assert.match(RECORDS_HTML, /<div id="records-picker-clip"><div id="records-picker-scroll"><div id="records-picker" class="ui-segmented" role="radiogroup" aria-label="Board"><\/div><\/div><\/div>/,
+    'the picker in its sideways scroll, under the fade of its clip');
+  for (const id of ['records-title', 'records-picker', 'records-figures', 'records-board', 'records-bests', 'records-counters',
     'rec-time', 'rec-bbbvPerSecond', 'rec-efficiency', 'rec-games', 'rec-wins', 'rec-winRate', 'rec-completedWinRate', 'rec-currentStreak',
-    'rec-longestStreak', 'rec-longestCompletedStreak', 'records-overall', 'ro-games', 'ro-wins', 'ro-winRate', 'ro-completedWinRate',
-    'ro-currentStreak', 'ro-longestStreak', 'ro-longestCompletedStreak', 'records-note', 'records-back', 'records-leaderboards']) {
+    'rec-longestStreak', 'rec-longestCompletedStreak', 'records-overall', 'records-overall-line', 'records-win-rate', 'records-note', 'records-back',
+    'records-leaderboards']) {
     assert.ok(RECORDS_HTML.includes(`id="${id}"`), `#${id}`);
   }
-  for (const prefix of ['rec', 'ro']) {
-    assert.match(RECORDS_HTML, new RegExp(`id="${prefix}-completedWinRate-label">Win rate, completed games<`));
-    assert.match(RECORDS_HTML, new RegExp(`id="${prefix}-longestCompletedStreak-label">Best streak, completed games<`));
-  }
+  assert.doesNotMatch(RECORDS_HTML, /id="records-empty"|id="ro-/, 'the list says a board is empty; the overall figures are one line');
+  assert.match(RECORDS_HTML, /id="rec-completedWinRate-label">Win rate, completed</);
+  assert.match(RECORDS_HTML, /id="rec-longestCompletedStreak-label">Best streak, completed</);
   const buttons = [...RECORDS_HTML.matchAll(/<button[^>]*>/g)].map((m) => m[0]);
   const option = (value, on) => `<button type="button" class="ui-segmented__option" role="radio" aria-checked="${on}" data-value="${value}">`;
   const tab = (value, on) => `<button type="button" class="ui-tabs__tab" role="tab" aria-selected="${on}" id="records-tab-${value}" aria-controls="records-${value}" data-value="${value}">`;
   assert.deepEqual(buttons, [
-    '<button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm" data-back>',
+    '<button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-to-menu data-icon="arrow-left" aria-label="Back to Main menu">',
     option('classic-2d', true), option('3d', false),
-    '<button type="button" id="records-export-csv" class="ui-button ui-button--secondary ui-button--sm">',
-    '<button type="button" id="records-export-json" class="ui-button ui-button--secondary ui-button--sm">',
+    option('classic-2d', true), option('3d', false),
+    '<button type="button" id="records-export-csv" class="ui-button ui-button--secondary ui-button--sm" data-icon="download">',
+    '<button type="button" id="records-export-json" class="ui-button ui-button--secondary ui-button--sm" data-icon="download">',
     option('all', true), option('12m', false), option('30d', false), option('7d', false),
     option('all', true), option('won', false), option('lost', false), option('abandoned', false),
     tab('recent', true), tab('top', false), tab('replays', false), tab('leaderboards', false),
     option('time', true), option('bbbvPerSecond', false), option('efficiency', false),
-    '<button type="button" id="records-replays-open" class="ui-button ui-button--secondary ui-button--sm hidden">',
+    '<button type="button" id="records-replays-open" class="ui-button ui-button--secondary ui-button--sm hidden" data-icon="upload">',
     '<button type="button" id="records-replays-yes" class="ui-button ui-button--danger ui-button--sm" data-icon="trash">',
     '<button type="button" id="records-replays-no" class="ui-button ui-button--secondary ui-button--sm">',
   ]);
 });
 
-test('the bests are three kit stat tiles: label, large figure, then the date and its Watch beneath', () => {
-  const bests = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-bests"'), RECORDS_HTML.indexOf('<div id="records-counters"'));
+test('the board\'s figures sit on the frame under section labels: three plain stat tiles of bests, then the counters as sunk tiles', () => {
+  const figures = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-figures"'), RECORDS_HTML.indexOf('<div id="records-averages"'));
+  assert.match(figures, /^<div id="records-figures" role="group" aria-labelledby="records-board">\s*<div class="ui-section-label"><h3 class="ui-section-label__text" id="records-board">Beginner · Bests<\/h3><\/div>/,
+    'no panel: the board\'s bests under its section label');
+  assert.match(figures, /<div class="ui-section-label"><h3 class="ui-section-label__text" id="records-counters-title">Counters<\/h3><\/div>\s*<div id="records-counters" class="ui-stat-row" role="group" aria-labelledby="records-counters-title">/);
+  const bests = figures.slice(figures.indexOf('<div id="records-bests"'), figures.indexOf('<div class="ui-section-label"><h3 class="ui-section-label__text" id="records-counters-title">'));
   assert.match(bests, /^<div id="records-bests" class="ui-stat-row ui-stat-row--tiles">/);
   for (const [stat, label] of [['time', 'Best time'], ['bbbvPerSecond', 'Best 3BV/s'], ['efficiency', 'Best efficiency']]) {
     assert.ok(bests.includes(`<div id="rec-${stat}" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rec-${stat}-label">`
       + `<span class="ui-stat__label" id="rec-${stat}-label">${label}</span><span class="ui-stat__value">&mdash;</span>`
-      + '<span class="ui-stat__detail">&mdash;</span></div>'), `${stat} tile`);
+      + '<span class="ui-stat__detail"></span></div>'), `${stat} tile: its note filled by the view, the date and the inline Watch`);
   }
+  const css = read('css/style.css');
+  assert.match(css, /#records-bests \{ display: grid; grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/, 'three across at every size');
+  assert.match(css, /#records-counters \{ display: grid; grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/, 'four counters across');
+  assert.match(css, /@media \(max-width: 719px\) \{[^}]*\}[\s\S]*?#records-counters \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/, 'two on a phone');
+  assert.match(read('themes/joyful-tiles/theme.css'), /#records-counters > \.ui-stat \{ border-radius: 12px; background: var\(--color-surface-sunk\); \}/, 'the counters sunk');
 });
 
 test('the screen is a frame: Back, the title and the switch in its head; the picker, then two columns — figures and export; history and the tabs — then the note', () => {
   const at = (needle) => { const i = RECORDS_HTML.indexOf(needle); assert.ok(i >= 0, needle); return i; };
   const head = RECORDS_HTML.slice(at('<header class="ui-frame__head">'), at('</header>'));
   assert.ok(head.includes('id="records-back"') && head.includes('id="records-title"') && head.includes('id="records-mode"'), 'Back, the title and the switch in the head');
-  assert.match(head, /<div class="ui-frame__start"><button type="button" id="records-back"[^>]*>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/);
+  assert.match(head, /<div class="ui-frame__start"><button type="button" id="records-back"[^>]*><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
+    '"Main menu" led by its arrow, "Back" on a phone');
   assert.match(head, /<div class="ui-frame__end">/);
   assert.ok(at('id="records-picker"') > at('<div class="ui-frame__body" id="records-body">'), 'the picker in the body');
   assert.ok(at('id="records-picker"') < at('<div class="ui-columns ui-columns--two" id="records-columns">'), 'the picker above both columns');
   const cols = RECORDS_HTML.slice(at('<div class="ui-columns ui-columns--two" id="records-columns">'));
-  const [, first, second] = cols.split('<div class="ui-column">');
+  const [, first, second] = cols.split(/<div class="ui-column" id="records-[a-z]+-column">/);
   assert.ok(first && second, 'two ui-column children');
   assert.ok(first.includes('<div class="ui-divider ui-divider--vertical" role="separator" aria-orientation="vertical"></div>'), 'a rule between the columns');
   const order = (text, ids) => {
@@ -588,22 +602,23 @@ test('the screen is a frame: Back, the title and the switch in its head; the pic
   order(second, ['id="records-history"', 'id="records-period"', 'id="records-outcome"', 'id="records-won-only"', 'id="records-chart"',
     'id="records-best-chart"', 'id="records-tabs"', 'id="records-games"', 'id="records-top"', 'id="records-replays"', 'id="records-leaderboards"']);
   assert.ok(at('id="records-note"') > at('id="records-leaderboards"'), 'the note below both columns');
+  assert.doesNotMatch(RECORDS_HTML, /ui-panel(?!--muted)"/, 'no panel but the muted ones');
 });
 
-test('the averages panel sits under the board\'s figures: a table of Time, 3BV/s and Efficiency by window, and the last-50 win rates', () => {
+test('the averages sit under the board\'s figures: a table of Time, 3BV/s and Efficiency by window, then the last-50 win rate line', () => {
   const panel = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-averages"'), RECORDS_HTML.indexOf('<div id="records-overall"'));
-  assert.match(panel, /^<div id="records-averages" class="ui-panel" role="group" aria-labelledby="records-averages-title">\s*<h3 class="ui-heading" id="records-averages-title">Averages, won games<\/h3>/);
-  const heads = [...panel.matchAll(/<th scope="col" id="records-avg-(\w+)">([^<]+)<\/th>/g)].map((m) => [m[1], m[2]]);
+  assert.match(panel, /^<div id="records-averages" role="group" aria-labelledby="records-averages-title">\s*<div class="ui-section-label"><h3 class="ui-section-label__text" id="records-averages-title">Averages · won games<\/h3><\/div>/);
+  const heads = [...panel.matchAll(/<th scope="col" class="ui-table__figure" id="records-avg-(\w+)">([^<]+)<\/th>/g)].map((m) => [m[1], m[2]]);
   assert.deepEqual(heads, [['last10', 'Last 10'], ['last50', 'Last 50'], ['all', 'All']]);
   assert.match(panel, /<tbody id="records-averages-body"><\/tbody>/);
-  assert.match(panel, /id="rec-recentWinRate-label">Win rate, last 50 games</);
-  assert.match(panel, /id="rec-recentCompletedWinRate-label">Win rate, last 50, completed games</);
+  assert.match(panel, /<p id="records-win-rate" class="ui-text"><\/p>/);
 });
 
 test('the history area: period and outcome choices above it, both charts, the four tabs, the Top 10 table and the Leaderboards coming-soon panel', () => {
   const panel = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-history"'), RECORDS_HTML.indexOf('<div id="records-replays"'));
-  assert.match(panel, /<div id="records-period" class="ui-segmented" role="radiogroup" aria-label="Period">/);
-  assert.match(panel, /<div id="records-outcome" class="ui-segmented" role="radiogroup" aria-label="Outcome">/);
+  assert.match(panel, /^<div id="records-history" role="group" aria-label="History">\s*<div id="records-filters" class="ui-row"><div id="records-period" class="ui-segmented" role="radiogroup" aria-label="Period">/,
+    'no panel and no heading; the period and the outcome on one row');
+  assert.match(panel, /<\/div><div id="records-outcome" class="ui-segmented" role="radiogroup" aria-label="Outcome">/);
   assert.match(panel, /<canvas id="records-best-chart" role="img" aria-label="[^"]+">[^<]*<\/canvas>/, 'the best-time chart is an image with a text alternative');
   assert.match(panel, /<div id="records-tabs" class="ui-tabs" role="tablist" aria-label="Lists">/);
   const tabs = [...RECORDS_HTML.matchAll(/<button type="button" class="ui-tabs__tab" role="tab" aria-selected="(?:true|false)" id="records-tab-(\w+)" aria-controls="records-(\w+)" data-value="(\w+)">([^<]+)<\/button>/g)]
@@ -614,17 +629,21 @@ test('the history area: period and outcome choices above it, both charts, the fo
     assert.match(RECORDS_HTML, new RegExp(`<div id="records-${value}"[^>]* role="tabpanel" aria-labelledby="records-tab-${value}"`), `the ${value} panel`);
   }
   assert.match(panel, /<div id="records-recent" role="tabpanel" aria-labelledby="records-tab-recent">\s*<p id="records-games-empty" class="ui-text ui-text--muted hidden">/);
-  assert.match(panel, /<div id="records-top" class="hidden" role="tabpanel" aria-labelledby="records-tab-top">\s*<div id="records-top-stat" class="ui-segmented" role="radiogroup" aria-label="Rank by">/);
+  assert.match(panel, /<div id="records-top" class="hidden" role="tabpanel" aria-labelledby="records-tab-top">\s*<div id="records-top-rank" class="ui-row"><span class="ui-text ui-text--muted" id="records-top-stat-label">Rank by<\/span><div id="records-top-stat" class="ui-segmented" role="radiogroup" aria-labelledby="records-top-stat-label">/,
+    'a "Rank by" label before the choice it names');
   const soon = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-leaderboards"'), RECORDS_HTML.indexOf('<p id="records-note"'));
-  assert.match(soon, /^<div id="records-leaderboards" class="ui-panel ui-panel--muted hidden" role="tabpanel" aria-labelledby="records-tab-leaderboards">/);
-  assert.match(soon, /<h4 class="ui-heading">Leaderboards are coming soon<\/h4>/);
+  assert.match(soon, /^<div id="records-leaderboards" class="ui-panel ui-panel--muted hidden" role="tabpanel" aria-labelledby="records-tab-leaderboards">\s*<span class="ui-card__icon" id="records-leaderboards-icon" aria-hidden="true"><svg class="ui-icon" data-icon="trophy"/);
+  assert.match(soon, /<h4 class="ui-card__title" id="records-leaderboards-title">Leaderboards are coming soon<\/h4>/);
   assert.match(soon, /<p class="ui-text ui-text--muted">They will rank this board against other players, beside your own records\.<\/p>/);
   assert.doesNotMatch(soon, /ui-pager/, 'no pager');
   const top = panel.slice(panel.indexOf('<table id="records-top-table" class="ui-table">'));
   const heads = [...top.slice(0, top.indexOf('</thead>')).matchAll(/<th scope="col"[^>]*>([^<]+)<\/th>/g)].map((m) => m[1]);
-  assert.deepEqual(heads, ['Rank', 'Time', '3BV/s', 'Efficiency', 'Date', '3BV', 'Clicks', 'Board code', 'Replay']);
+  assert.deepEqual(heads, ['#', 'Time', '3BV/s', 'Eff.', 'Date', '3BV', 'Clicks', 'Board code', 'Replay']);
   assert.match(top, /<th scope="col" id="records-top-replay" class="hidden">Replay<\/th>/);
   assert.match(panel, /<p id="records-top-empty" class="ui-text ui-text--muted hidden">No won games on this board yet\.<\/p>/);
+  for (const id of ['records-games', 'records-top-table', 'records-replays-table']) {
+    assert.match(RECORDS_HTML, new RegExp(`<div id="${id.replace(/-table$/, '')}-scroll">\\s*<table id="${id}" class="ui-table">`), `${id} scrolls sideways in its own box`);
+  }
 });
 
 test('the export actions sit under the mode\'s overall figures, with their nothing-to-export line', () => {
@@ -648,12 +667,12 @@ test('the shell wires the filters, tabs, stat choice and export to the controlle
   assert.match(src, /createHistoryChart\(\{ canvas: bestCanvas, kind: 'best' \}\)/);
 });
 
-test('the mode overall figures are a row of their own, titled for the mode, never mixed with the board figures', () => {
+test('the mode overall figures are one muted line of their own, titled for the mode, never mixed with the board figures', () => {
   const figures = RECORDS_HTML.slice(at0('<div id="records-figures"'), at0('<div id="records-overall"'));
-  assert.doesNotMatch(figures, /id="ro-/);
+  assert.doesNotMatch(figures, /records-overall-line/);
   const overall = RECORDS_HTML.slice(at0('<div id="records-overall"'), at0('<div id="records-history"'));
   assert.match(overall, /^<div id="records-overall" class="ui-panel ui-panel--muted" role="group" aria-labelledby="records-overall-title">/);
-  assert.match(overall, /<h3 class="ui-heading" id="records-overall-title">Classic 2D overall<\/h3>\s*<div class="ui-stat-row">/);
+  assert.match(overall, /<div class="ui-section-label"><h3 class="ui-section-label__text" id="records-overall-title">Classic 2D overall<\/h3><\/div>\s*<p id="records-overall-line" class="ui-text"><\/p>/);
   assert.doesNotMatch(overall, /id="rec-/);
 });
 function at0(needle) { return RECORDS_HTML.indexOf(needle); }
@@ -701,15 +720,24 @@ test('in a browser, the menu opens the records screen on the last board played, 
     const active = () => page.evaluate(() => document.activeElement?.textContent ?? '');
     const value = (id) => page.evaluate((i) => document.querySelector(`#${i} .ui-stat__value`).textContent, id);
     const visible = (id) => page.evaluate((i) => !document.getElementById(i).classList.contains('hidden'), id);
+    const text = (id) => page.evaluate((i) => document.getElementById(i).textContent, id);
 
     // Nothing played: Beginner, its empty state.
     await page.click('#menu-entry-records');
     assert.equal(await mode(), 'records');
     assert.equal(await visible('records'), true);
     const options = await page.evaluate(() => [...document.querySelectorAll('#records-picker .ui-segmented__option')].map((o) => o.textContent));
-    assert.deepEqual(options, [...STANDARD_LABELS, DAILY_LABEL]);
+    assert.deepEqual(options, [...STANDARD_LABELS, DAILY_OPTION]);
     assert.equal(await active(), 'Beginner', 'the picker takes default focus');
-    assert.equal(await visible('records-empty'), true);
+    assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('records-back'); return [b.hasAttribute('data-to-menu'), b.getAttribute('aria-label'), b.innerText.split('\n')[0].trim()]; }),
+      [true, 'Back to Main menu', 'Main menu'], 'opened from the menu, Back reads Main menu');
+    assert.equal(await text('records-games-empty'), 'No games on this board yet.', 'the list says the board has no games');
+    assert.equal(await visible('records-games-empty'), true);
+    assert.deepEqual(await page.evaluate(() => ['records-filters', 'records-won-only', 'records-charts', 'records-averages', 'records-tabs']
+      .filter((id) => document.getElementById(id).getClientRects().length === 0)), [], 'the filters, the note, both empty charts, the averages and the tabs stay');
+    assert.equal(await visible('records-win-rate'), false, 'no win rate line without a game');
+    assert.deepEqual(await page.evaluate(() => ['rec-time', 'rec-games', 'rec-winRate'].map((id) => document.querySelector(`#${id} .ui-stat__value`).textContent)),
+      ['—', '0', '—'], 'the bests a dash, the counters 0 or a dash');
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu', 'Back returns to the menu');
     assert.equal(await visible('records'), false);
@@ -726,7 +754,7 @@ test('in a browser, the menu opens the records screen on the last board played, 
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'records');
     assert.equal(await active(), '20 × 12 · 50 mines', 'opens on the last board played');
-    assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), '20 × 12 · 50 mines');
+    assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), '20 × 12 · 50 mines · Bests');
     assert.equal(await value('rec-time'), '90.000 s');
 
     // Keyboard: the arrow keys move the choice; the figures follow.
@@ -734,13 +762,13 @@ test('in a browser, the menu opens the records screen on the last board played, 
     assert.equal(await active(), 'Beginner', 'the arrows wrap through every board');
     assert.equal(await value('rec-time'), '47.380 s');
     assert.equal(await value('rec-games'), '1');
-    assert.equal(await visible('records-empty'), false);
+    assert.equal(await visible('records-games-empty'), false);
 
     // Mouse: an option click chooses it.
     await page.click('#records-picker [data-value="classic-2d:square:30x16:99:no-guess"]');
-    assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), 'Expert · no-guess');
-    assert.equal(await visible('records-empty'), true);
-    assert.equal(await value('ro-games'), '2', 'the Classic 2D overall figures');
+    assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), 'Expert · no-guess · Bests');
+    assert.equal(await visible('records-games-empty'), true);
+    assert.match(await text('records-overall-line'), /^Games 2 · Wins 2 · /, 'the Classic 2D overall figures');
 
     // Live: a game recorded while the screen is open redraws it.
     await page.click('#records-picker [data-value="classic-2d:square:9x9:10:guess"]');
@@ -754,7 +782,7 @@ test('in a browser, the menu opens the records screen on the last board played, 
     assert.equal(await value('rec-winRate'), '50%');
     assert.equal(await value('rec-completedWinRate'), '50%', 'the completed-games figures show beside the reference ones');
     assert.equal(await value('rec-longestCompletedStreak'), '1');
-    assert.equal(await value('ro-completedWinRate'), '67%');
+    assert.match(await text('records-overall-line'), /Win rate 67% \(completed 67%\)/);
 
     // The tabs: the mouse opens Leaderboards' coming-soon panel, with no pager; the arrow keys walk the four tabs.
     const tabShown = () => page.evaluate(() => ['recent', 'top', 'replays', 'leaderboards'].filter((v) => {
@@ -944,7 +972,7 @@ test('in a browser, at 1280 × 800 and 390 × 844, the Top 10 opens, both charts
         await page.click('#records-period [data-value="7d"]');
         await page.click('#records-outcome [data-value="abandoned"]');
         assert.equal(await visible('records-games-empty'), true, `${at}: a filter leaving nothing shows the list's empty line`);
-        assert.equal(await visible('records-empty'), false, `${at}: never the board's empty state`);
+        assert.notEqual(await text('records-games-empty'), 'No games on this board yet.', `${at}: never the board's empty state`);
         assert.deepEqual(await wide(), [], `${at}: Records never scrolls sideways`);
         await page.keyboard.press('Escape');
         await page.click('#menu-entry-records');
@@ -1036,7 +1064,7 @@ test('in a browser, the best tiles and the Records tables keep every figure on o
         return { id, text: value.textContent, lines: lines(value), inside: [...tile.children].every((c) => inside(tile, c)) };
       });
       const shown = (el) => el.getClientRects().length > 0;
-      const cells = [...document.querySelectorAll('#records-games-body td[data-label="Time"], #records-top-body td[data-label="Time"], #records-replays-body td[data-label="Time"], #records .ui-code__value')]
+      const cells = [...document.querySelectorAll('#records-games-body td:is([data-label="Time"], [data-label="Board code"]), #records-top-body td:is([data-label="Time"], [data-label="Board code"]), #records-replays-body td:is([data-label="Time"], [data-label="Board code"])')]
         .filter(shown).map((el) => ({ text: el.textContent, lines: lines(el) }));
       const rows = [...document.querySelectorAll('#records-replays-body tr')].map((tr) => new Set([...tr.querySelectorAll('button[data-act]')].map((b) => Math.round(b.getBoundingClientRect().top))).size);
       return { tiles, cells, rows };
@@ -1064,7 +1092,8 @@ test('in a browser, the best tiles and the Records tables keep every figure on o
             for (const tab of ['recent', 'top', 'replays']) {
               await page.click(`#records-tabs [data-value="${tab}"]`);
               const { cells, rows } = await measure();
-              assert.ok(cells.some((c) => c.text === '999.999 s') && cells.some((c) => /-/.test(c.text)), `${at} ${tab}: a long time and a board code shown`);
+              assert.ok(cells.some((c) => c.text === '999.999 s'), `${at} ${tab}: a long time shown`);
+              assert.equal(cells.some((c) => /-/.test(c.text)), width >= 1440, `${at} ${tab}: the board code shown on the largest window only`);
               for (const c of cells) assert.equal(c.lines, 1, `${at} ${tab}: "${c.text}" on one line`);
               if (tab === 'replays') assert.ok(rows.length > 0 && rows.every((n) => n === 1), `${at}: each replay row's actions in one row (${rows})`);
             }
@@ -1146,6 +1175,40 @@ test('in a browser, at 390 × 844 and 360 × 800 in both modes, the Averages tab
         }
       }
     }
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the bests show at 32 px on the largest window, and the picker opens with the chosen board in view on a phone', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    await page.evaluate(() => {
+      const clicks = { reveal: { effective: 25, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } };
+      globalThis.__ms.records.record({ id: 'x1', board: { mode: 'classic-2d', grid: 'square', width: 30, height: 16, mines: 99, noGuess: true }, outcome: 'won',
+        elapsedMs: 48213, bbbv: 20, bbbvSolved: 20, clicks, bbbvPerSecond: 0.4, efficiency: 80, seed: 1, generatorVersion: 1, endedAt: '2026-10-09T12:00:00.000Z' });
+    });
+    await page.click('#menu-entry-records');
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#rec-time .ui-stat__value')).fontSize), '32px', 'the canvas\'s 32 px figure at xl');
+    await page.keyboard.press('Escape');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.click('#menu-entry-records');
+    const view = await page.evaluate(() => {
+      const scroller = document.getElementById('records-picker-scroll').getBoundingClientRect();
+      const chosen = document.querySelector('#records-picker [aria-checked="true"]');
+      const r = chosen.getBoundingClientRect();
+      return { label: chosen.textContent, inside: r.left >= scroller.left - 0.5 && r.right <= scroller.right - 40 + 0.5, page: document.documentElement.scrollLeft };
+    });
+    assert.deepEqual(view, { label: 'Expert · no-guess', inside: true, page: 0 }, 'the chosen board scrolled into view, clear of the fade, the page unmoved');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

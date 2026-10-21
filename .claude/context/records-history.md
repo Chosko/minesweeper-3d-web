@@ -23,7 +23,9 @@ History chart (`js/records/history-chart.js`)
   `bestTimeText`, `drawBestTimeChart`; hover: `nearestIndex`,
   `rateReadout`, `bestReadout`; `formatDate`, `formatShortDate`;
   `createHistoryChart({ canvas, kind?: 'rate' | 'best', ... })` →
-  `draw(data)`, `hoverAt(x)`, `leave()`, `readout`, `destroy()`.
+  `draw(data, emptyText?)`, `hoverAt(x)`, `leave()`, `readout`,
+  `destroy()`. A chart with nothing to draw shows only its empty line,
+  centred: no grid, axes or legend.
 - `pageOf(items, page, size = PAGE_SIZE)`; `PAGE_SIZE` — 10.
 
 Stats (`js/records/stats.js`)

@@ -101,24 +101,113 @@ kbd {
   #menu-foot { flex-direction: column; align-items: flex-start; }
   #menu-foot > #menu-build { margin-inline-start: 0; }
 }
-/* The Records screen (#records): its window on the backdrop at the canvas's size, the switch in its
-   head, the picker across the body over the two columns (a rule between them at the kit breakpoint,
-   css/components.css), the body scrolling; on a phone the window is full-bleed and the switch takes
-   a row of the head of its own. */
-#records-frame { width: 1640px; height: 100%; }
-#records-body { display: flex; flex-direction: column; gap: var(--space-4); }
+/* The Records screen (#records): its window inset on the backdrop at each window step's canvas size
+   (J-Records-xl, -l, -m), Back, the title and the switch in its head — Back reading "Main menu" when
+   it returns to the menu (data-to-menu, set by js/main.js), else "Back" —; the picker one line across
+   the body over the two columns — the board's sections at a fixed width, a rule, the history —, each
+   column scrolling on its own from the kit breakpoint; one column below it, the body scrolling. The
+   picker scrolls sideways under a fade at its end, its controller glyphs taking no room while hidden.
+   The bests are three tiles across at every size, each figure 32 px on the largest window and
+   shrinking with its tile below it to stay on one line; the counters a grid of tiles, four across, two on a phone. Each table keeps one line per row
+   and scrolls sideways in its own box when narrower than its row, and shows its Board code column on
+   the largest window only. On a phone the window is full-bleed, the head holds Back ("Back") and the
+   title, the switch is a full-width bar under it, and each averages row is a card. */
+#records { align-items: flex-start; padding: 66px 24px 24px; }
+#records-frame { width: 1640px; height: 940px; }
+#records-body { display: flex; flex-direction: column; gap: 14px; padding: 18px 24px; }
 #records-body > p { margin: 0; }
-/* The history panel's parts and each tab's list a column apart, a tab's list set off below the tabs. */
-#records-history, #records-history > [role="tabpanel"]:not(.ui-panel) { display: flex; flex-direction: column; gap: var(--space-3); }
-#records-history > [role="tabpanel"] { margin-top: var(--space-3); }
-#records-history :is(h3, p) { margin: 0; }
-@media (max-width: 1023px) { #records-columns > .ui-divider--vertical { display: none; } }
+#records-mode-touch, #records-back [data-label="phone"], #records-back:not([data-to-menu]) [data-label="wide"] { display: none; }
+#records-back:not([data-to-menu]) [data-label="phone"] { display: inline; }
+#records [data-pad-hint] { display: none; }
+body.pad-nav #records [data-pad-hint] { display: inline-flex; }
+#records-board-picker { flex: none; }
+#records-picker-clip { position: relative; flex: 1 1 auto; min-width: 0; }
+#records-picker-clip::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 40px; pointer-events: none; }
+#records-picker-scroll { overflow-x: auto; scrollbar-width: none; }
+#records-picker-scroll::-webkit-scrollbar { display: none; }
+#records-picker { flex-wrap: nowrap; }
+#records-picker > .ui-segmented__option { flex: none; white-space: nowrap; }
+#records-columns { gap: 24px; }
+#records-columns > .ui-column, #records-figures, #records-averages, #records-history,
+#records-history > [role="tabpanel"]:not(.ui-panel) { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+#records-history { gap: 12px; }
+#records-history > [role="tabpanel"] { margin-top: 2px; }
+:is(#records-figures, #records-averages, #records-overall, #records-history) :is(h3, h4, p) { margin: 0; }
+#records-bests { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+#records-bests > .ui-stat--tile { min-width: 0; gap: 3px; padding: 12px 10px; container-type: inline-size; }
+@media (max-width: 1439px) { #records-bests > .ui-stat--tile { padding: 10px 12px; } }
+#records-bests .ui-stat__value { font-size: min(32px, 18.5cqi); }
+#records-bests .ui-stat__detail { font-size: 13px; }
+#records-counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+#records-counters > .ui-stat { gap: 2px; min-width: 0; padding: 8px 10px; }
+#records-counters .ui-stat__label { font-size: 13px; text-transform: none; letter-spacing: normal; }
+#records-counters .ui-stat__value { font-size: 20px; }
+#records-averages-table :is(th, td) { padding: 8px; white-space: nowrap; }
+#records-averages-table thead th { letter-spacing: 0.1em; }
+:is(#records-win-rate, #records-overall-line) { font-size: 14px; }
+#records-win-rate { margin-top: 6px; }
+#records-overall { gap: 8px; padding: 12px 14px; }
+#records-overall-line { line-height: 1.6; }
+#records-filters { gap: 12px; }
+#records-filters > .ui-segmented, #records-top-rank > .ui-segmented { flex: none; }
+#records-won-only { font-size: 13px; }
+#records-charts { gap: 20px; }
+#records-chart, #records-best-chart { display: block; width: 100%; height: 180px; }
+#records-top-rank { gap: 10px; }
+#records-top-stat-label { font-size: 14px; font-weight: var(--font-weight-bold); }
+#records-replays-tools { justify-content: space-between; gap: 14px; }
+#records-leaderboards { flex-direction: row; align-items: center; gap: 18px; padding: 22px 24px; }
+#records-leaderboards-icon { flex: none; width: 64px; height: 64px; }
+#records-leaderboards-icon > .ui-icon { width: 34px; height: 34px; }
+#records-leaderboards-text { display: flex; flex-direction: column; gap: 4px; }
+#records-leaderboards-title { margin: 0; font-size: 20px; font-weight: var(--font-weight-heavy); line-height: 1.2; }
+#records-leaderboards-text > .ui-text { font-size: 15px; }
+:is(#records-games-scroll, #records-top-scroll, #records-replays-scroll) { overflow-x: auto; }
+:is(#records-games, #records-replays-table, #records-top-table) caption { caption-side: bottom; text-align: left; padding-top: var(--space-2); }
+:is(#records-games, #records-replays-table, #records-top-table) :is(th, td) { padding: 8px; white-space: nowrap; }
+:is(#records-games, #records-replays-table, #records-top-table) th { padding-block: 6px; }
+#records-replays-table :is(th, td) { padding-inline: 6px; }
+#records-replays-table td:has(> .ui-confirm--row) { padding: 0; white-space: normal; }
+#records-replays-table td[data-label="Actions"] > .ui-button { padding-inline: 10px; }
+#records-replays-table td[data-label="Actions"] > .ui-button + .ui-button { margin-inline-start: 4px; }
+#records-replays-table [data-pinned] { display: inline-flex; }
+#records-replays-table [data-pinned] > .ui-icon { width: 18px; height: 18px; }
+#records-export-note { flex-basis: 100%; }
+@media (max-width: 1439px) {
+  #records { padding-top: 24px; }
+  #records-frame { width: 1302px; height: 712px; }
+  #records-body { padding: 14px 18px; }
+  #records-columns { gap: 16px; grid-template-columns: 470px auto minmax(0, 1fr); }
+  #records-averages-table :is(th, td) { padding-inline: 6px; }
+  :is(#records-games, #records-top-table, #records-replays-table) [data-label="Board code"] { display: none; }
+}
+@media (max-width: 1199px) {
+  #records { padding: 16px 20px 20px; }
+  #records-frame { width: 984px; height: 728px; }
+  #records-columns { grid-template-columns: 400px auto minmax(0, 1fr); }
+  #records-charts { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1023px) {
+  #records-columns { grid-template-columns: minmax(0, 1fr); }
+  #records-columns > .ui-divider--vertical { display: none; }
+}
 @media (max-width: 719px) {
   #records { padding: 0; }
-  #records-frame { width: 100%; border-radius: 0; box-shadow: none; }
-  #records-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr); }
-  #records-frame .ui-frame__end { grid-column: 1 / -1; justify-content: flex-start; }
-  #records-body { padding: var(--space-4); }
+  #records-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+  #records-frame .ui-frame__end > * { display: none; }
+  #records-back [data-label="wide"] { display: none; }
+  #records-back [data-label="phone"] { display: inline; }
+  #records-body { gap: 16px; padding: 14px 16px 30px; }
+  #records-mode-touch { display: flex; }
+  #records-mode-touch > .ui-segmented__option { flex: 1 1 0; }
+  #records-counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #records-averages-table, #records-averages-table tbody { display: block; }
+  #records-averages-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #records-averages-table tbody { display: flex; flex-direction: column; gap: 8px; }
+  #records-averages-table tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px 12px; }
+  #records-averages-table :is(th, td) { display: block; padding: 0; border: 0; text-align: left; font-size: 14px; }
+  #records-averages-table th { grid-column: 1 / -1; font-weight: var(--font-weight-heavy); }
+  #records-averages-table td[data-label]::before { content: attr(data-label); display: block; }
 }
 /* The Settings page (#settings): its window on the backdrop at the canvas's size, Back in its head,
    the body scrolling. The widest window's three columns (js/settings/page.js SETTINGS_COLUMNS)
@@ -153,53 +242,6 @@ kbd {
   #settings-columns [data-setting-row] .ui-slider__input { width: 170px; }
   #set-bind-device { display: flex; width: 100%; }
   #set-bind-device > .ui-segmented__option { flex: 1 1 0; min-width: 0; padding-inline: var(--space-2); white-space: normal; }
-}
-#records-chart { display: block; width: 100%; height: 160px; }
-#records-best-chart { display: block; width: 100%; height: 160px; }
-:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) { width: 100%; border-collapse: collapse; font-variant-numeric: var(--font-numeric-tabular); }
-:is(#records-games, #records-replays-table) caption { caption-side: bottom; text-align: left; padding-top: var(--space-2); }
-:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td) { padding: var(--space-1) var(--space-2); text-align: right; white-space: normal; }
-:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) th { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
-:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td):first-child { text-align: left; }
-#rec-time .ui-button, #rec-bbbvPerSecond .ui-button, #rec-efficiency .ui-button, :is(#records-replays-table, #records-top-table) td .ui-button { white-space: nowrap; }
-#records-replays-table td .ui-button { margin: var(--space-1) 0 var(--space-1) var(--space-2); }
-#records-replays-table td:has(> .ui-confirm--row) { padding: 0; }
-#records-replays-table .ui-confirm .ui-button { margin: 0; }
-#records-export-note { flex-basis: 100%; }
-#records-averages-table :is(th, td) { white-space: nowrap; padding-inline: var(--space-1); }
-:is(#records-games, #records-replays-table, #records-top-table) td[data-label="Time"] { white-space: nowrap; }
-/* A Records table narrower than a row of its figures, board code and actions on one line (about
-   1,100 px, wider than either Records panel gets) stacks each row's cells, each under its column's
-   name (data-label, set by the views), the board code and the actions each on a line of their own,
-   so a time, a code or a replay's actions never wrap but on a phone, and the screen never scrolls
-   sideways. */
-#records-history, #records-replays { container-type: inline-size; }
-@container (max-width: 1099px) {
-  :is(#records-games, #records-replays-table, #records-top-table), :is(#records-games, #records-replays-table, #records-top-table) :is(tbody, caption) { display: block; }
-  :is(#records-games, #records-replays-table, #records-top-table) thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  :is(#records-games, #records-replays-table, #records-top-table) tr {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-8) * 2.5), 1fr));
-    gap: var(--space-1) var(--space-3); padding: var(--space-2) 0;
-  }
-  :is(#records-games, #records-replays-table, #records-top-table) td { display: block; padding: 0; border: 0; text-align: left; }
-  :is(#records-games, #records-replays-table, #records-top-table) td[data-label]::before { content: attr(data-label); display: block; font-size: var(--font-size-xs); }
-  :is(#records-games, #records-top-table) td:empty { display: none; }
-  :is(#records-games, #records-replays-table, #records-top-table) td:is([data-label="Board code"], :last-child) { grid-column: 1 / -1; }
-  #records-replays-table td .ui-button { margin: 0 var(--space-2) 0 0; }
-}
-/* The Averages table stacks the same way in a panel narrower than its row of three-digit times on one
-   line (about 333 px, narrower than the panel at 1024 px and wider), each row a card headed by its label. */
-#records-averages { container-type: inline-size; }
-@container (max-width: 335px) {
-  #records-averages-table, #records-averages-table tbody { display: block; }
-  #records-averages-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  #records-averages-table tr {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-8) * 2.5), 1fr));
-    gap: var(--space-1) var(--space-3); padding: var(--space-2) 0;
-  }
-  #records-averages-table :is(th, td) { display: block; padding: 0; border: 0; text-align: left; }
-  #records-averages-table th { grid-column: 1 / -1; }
-  #records-averages-table td[data-label]::before { content: attr(data-label); display: block; font-size: var(--font-size-xs); }
 }
 /* The ready card waiting unseen for a pointer lock the player's own Play again asked for. */
 #ready.ready--pending { visibility: hidden; }

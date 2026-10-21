@@ -17,16 +17,16 @@ behaviour and content, read from `personal-records`.
 
 In scope (m1-classic-2d):
 
-- A board picker: Beginner, Intermediate and Expert, each with and without
-  no-guess, then the mode's Daily board ("Daily · Expert · no-guess"), then
-  every custom board played, labelled by its size and mine count. The Daily
+- A board picker: Beginner, Intermediate and Expert, then the three with
+  no-guess, then the mode's Daily board (the option "Daily"), then every
+  custom board played, labelled by its size and mine count. The Daily
   board's figures show its days in a row (current and longest) in place of
   the win streak.
 - For the chosen board: the three bests with their dates, games played,
   wins, win rate, current and longest streak, with the completed games'
   win rate beside the win rate and their best streak beside the longest
-  streak, labelled for what they leave out ("Win rate, completed games",
-  "Best streak, completed games").
+  streak, labelled for what they leave out ("Win rate, completed",
+  "Best streak, completed").
 - The Classic 2D overall figures: games, wins, win rate, current and
   longest streak, with the same two completed games' figures.
 - Stats history for the chosen board: 3BV/s and efficiency of won games
@@ -39,7 +39,7 @@ In scope (m1-classic-2d):
   Leaderboards tab shows a panel saying they are coming soon, with no
   pager. Every row
   that names one game — the recent games, the Top 10 and the library
-  view's rows — shows its board code with Copy and Copy link, none for a
+  view's rows — shows its board code as plain text on the largest window, none for a
   game from before codes; the Top 10 leaves challenges out, as the
   results screen's rank does.
 - Filters by period and by outcome over the stats history.

@@ -17,9 +17,10 @@
 //   is null, a gap in its line.
 // chartText(points, empty = NO_WON_GAMES) → the chart's text alternative: the count of won games,
 //   and each series' range and latest value in the results screen's formats; empty without one.
-// drawHistoryChart(ctx, { width, height, pixelRatio, points, token, hover? }) draws the grid, the
-//   axis labels, the legend and both lines in the CHART_TOKENS colours, and the hovered game's
-//   marker and readout (rateReadout) when hover is its index.
+// drawHistoryChart(ctx, { width, height, pixelRatio, points, token, hover?, emptyText? }) draws the
+//   grid, the axis labels, the legend and both lines in the CHART_TOKENS colours, and the hovered
+//   game's marker and readout (rateReadout) when hover is its index; with no point, only emptyText
+//   (NO_WON_GAMES by default), centred.
 // The best-time chart: its data is { steps, start, end, emptyText? } — steps from bestTimeSteps
 //   (js/records/stats.js), start and end the first and last end date of the shown won games.
 // dateTicks(start, end, count = DATE_TICKS) → [{ t, label }]: the first and last date and evenly
@@ -31,14 +32,15 @@
 //   time axis (each tick formatTime'd with its trailing zeros dropped, the fewest decimals that show
 //   it exactly: "2.5 s", "1.25 s", "0 s", never "2.500 s", which reads as thousands), the date axis,
 //   the step line of the standing best (stepping down at each new best, held to the last date) with
-//   a marker at each new best, the empty text without one, and the hovered best's marker and
-//   readout (bestReadout).
+//   a marker at each new best, and the hovered best's marker and readout (bestReadout); with no new
+//   best, only its empty text, centred.
 // nearestIndex(xs, x) → the index of the x position nearest x (null entries skipped), or -1.
 // rateReadout(points, i) → [date and time, "3BV/s 1.23", "Efficiency 80.0%"]; bestReadout(steps, i)
 //   → [date and time, best time].
 // createHistoryChart({ canvas, kind = 'rate' | 'best', token?, onThemeChange?, pixelRatio?,
-//   observeResize? }) → { draw(data), hoverAt(x), leave(), readout, destroy() }: data is the rate
-//   chart's points or the best-time chart's data; sizes the canvas from its CSS box at the pixel
+//   observeResize? }) → { draw(data, emptyText?), hoverAt(x), leave(), readout, destroy() }: data is
+//   the rate chart's points (emptyText its empty line, kept until the next given) or the best-time
+//   chart's data; sizes the canvas from its CSS box at the pixel
 //   ratio, skips a canvas with no size, and redraws the last data on every theme change and every
 //   resize of the box (observeResize(canvas, fn) → stop; a ResizeObserver by default) until
 //   destroyed. hoverAt(x) (CSS px from the canvas's left) marks the nearest point and draws its
@@ -167,9 +169,19 @@ function line(ctx, pts, color) {
   }
 }
 
-export function drawHistoryChart(ctx, { width, height, pixelRatio = 1, points, token, hover = null }) {
+// A chart with nothing to draw: its empty line alone, centred, no grid, axes or legend.
+function drawEmpty(ctx, { width, height, text, token }) {
+  ctx.font = `${token(CHART_TOKENS.fontSize)} ${token(CHART_TOKENS.font)}`;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = token(CHART_TOKENS.label);
+  ctx.fillText(text, width / 2, height / 2);
+}
+
+export function drawHistoryChart(ctx, { width, height, pixelRatio = 1, points, token, hover = null, emptyText = NO_WON_GAMES }) {
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   ctx.clearRect(0, 0, width, height);
+  if (!points.length) { drawEmpty(ctx, { width, height, text: emptyText, token }); return; }
   const s = chartScale(points, { width, height });
   const { left, top, width: w, height: h } = s.plot;
   const ink = token(CHART_TOKENS.label);
@@ -208,7 +220,6 @@ export function drawHistoryChart(ctx, { width, height, pixelRatio = 1, points, t
     lx += 16 + ctx.measureText(name).width + 16;
   }
 
-  if (!points.length) return;
   line(ctx, s.efficiency, token(CHART_TOKENS.efficiency));
   line(ctx, s.rate, token(CHART_TOKENS.rate));
   if (hover !== null && points[hover]) {
@@ -316,6 +327,7 @@ export function drawBestTimeChart(ctx, { width, height, pixelRatio = 1, data, to
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   ctx.clearRect(0, 0, width, height);
   const steps = data?.steps ?? [];
+  if (!steps.length) { drawEmpty(ctx, { width, height, text: data?.emptyText ?? NO_BEST_TIME, token }); return; }
   const s = bestTimeScale(data ?? {}, { width, height });
   const { left, top, width: w, height: h } = s.plot;
   const ink = token(CHART_TOKENS.label);
@@ -342,11 +354,6 @@ export function drawBestTimeChart(ctx, { width, height, pixelRatio = 1, data, to
   ctx.textAlign = 'left';
   ctx.fillText('Best time', left + 16, 7);
 
-  if (!steps.length) {
-    ctx.textAlign = 'center';
-    ctx.fillText(data?.emptyText ?? NO_BEST_TIME, left + w / 2, top + h / 2);
-    return;
-  }
 
   // The dated axis under the plot.
   ctx.textBaseline = 'top';
@@ -388,6 +395,7 @@ export function createHistoryChart({
 }) {
   const best = kind === 'best';
   let data = best ? { steps: [] } : [];
+  let emptyText = best ? NO_BEST_TIME : NO_WON_GAMES;
   let hover = null;
   let readout = null;
   const size = () => ({ width: canvas.clientWidth, height: canvas.clientHeight });
@@ -408,7 +416,7 @@ export function createHistoryChart({
     canvas.height = Math.round(height * ratio);
     const ctx = canvas.getContext('2d');
     if (best) drawBestTimeChart(ctx, { width, height, pixelRatio: ratio, data, token, hover });
-    else drawHistoryChart(ctx, { width, height, pixelRatio: ratio, points: data, token, hover });
+    else drawHistoryChart(ctx, { width, height, pixelRatio: ratio, points: data, token, hover, emptyText });
   };
   const hoverAt = (x) => {
     const { width, height } = size();
@@ -430,9 +438,10 @@ export function createHistoryChart({
   const off = onThemeChange(() => paint());
   const stop = observeResize(canvas, () => paint());
   return {
-    draw(next = data) {
+    draw(next = data, empty = emptyText) {
       if (next !== data) mark(null);
       data = next;
+      emptyText = empty;
       paint();
     },
     hoverAt,

@@ -25,11 +25,12 @@ Records screen (`js/records/screen.js`)
 - `RECORDS_SCREEN` — `'records'`; `EMPTY_TEXT`; `RECORDS_MODES` — frozen
   `{ value, label, overallTitle }` for `classic-2d` and `3d`.
 - `pickerBoards(records, mode?)` → `[{ key, label, board }]`: the mode's
-  named boards (each without, then with no-guess — for 3D the four cube
-  presets, Cube Intro to Cube Expert), its Daily board (always listed), then
-  its custom boards in `boardsPlayed(mode)` order; a game played on a
-  former First box preset is listed there as a custom board
-  ([records.md](records.md)).
+  named boards, every one without no-guess, then every one with it (for 3D
+  the four cube presets, Cube Intro to Cube Expert), its Daily board
+  (always listed, labelled `DAILY_OPTION`, "Daily"), then its custom boards
+  in `boardsPlayed(mode)` order; a game played on a former First box preset
+  is listed there as a custom board ([records.md](records.md)). The content's
+  `board.label` is always the board's `boardLabel`.
 - `lastBoardPlayed(records, mode?)` → key or null.
 - `recordsContent(records, { mode?, boardKey?, notSaved?, page?, replays?,
   replayPage?, pinnedFirst?, canWatch?, canOpen?, replaysNotSaved?, period?,
@@ -38,7 +39,8 @@ Records screen (`js/records/screen.js`)
   entry and the board, null for an entry from before codes); a Daily board's
   counters replace the streak pair with "Days in a row" and "Longest days
   in a row" (`daysInARow` as of `now`'s local date), each figure carrying
-  its label.
+  its label; `overallLine` is the mode's overall figures as one sentence,
+  `averages.winRate` the last-50 win rate line.
 - `GAME_TABS` (Recent games, Top 10, Replays, Leaderboards, the first the
   default), `TOP_STATS`, `TOP_EMPTY_TEXT`, `TOP_EMPTY_PERIOD`,
   `GAMES_EMPTY_TEXT`, `WON_ONLY_TEXT`.
@@ -73,8 +75,10 @@ Records screen (`js/records/screen.js`)
   clamped to its last; `hide` unsubscribes. `show`, `select` and `setMode`
   start both lists on page one, toggling Pinned first the replays.
 - **Never blocks.** Every store query is wrapped: unreadable records show
-  the empty state, and Back always works. A board with no games hides the
-  bests, counters and history. When `records.available()` is false, the
+  the empty state, and Back always works. A board with no games keeps every
+  part: dashes for its bests and averages, 0 or a dash for its counters,
+  each chart its empty line, the recent games the board's empty line
+  (`EMPTY_TEXT`). When `records.available()` is false, the
   session's first show carries the `notSaved` note; a library not saving
   adds `REPLAYS_NOT_SAVED` once per session after its load settles.
 - **Formats are the results screen's** (`formatTime`, `formatRate`,

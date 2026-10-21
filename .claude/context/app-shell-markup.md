@@ -53,7 +53,8 @@ bind.
   - placeholder `#coming-soon` (`#coming-soon-menu` in the head,
     `#coming-soon-title`, `#coming-soon-back`); Records `#records` (the view
     and its ids: [records-screen-view.md](records-screen-view.md); the switch
-    `#records-mode` in the frame's head, the switch and the picker each in
+    `#records-mode` in the frame's head and `#records-mode-touch` the
+    phone's bar opening the body, the head's switch and the picker each in
     a `data-pad-hinted` row between `data-pad-glyph` hints); Settings
     `#settings` (Back `#settings-back` in the head `#settings-actions`, the
     body `#settings-body` from `settingsPageHtml()`,

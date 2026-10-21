@@ -1159,11 +1159,12 @@ test('each Back that Esc triggers holds its back key hint, and no "Esc: Back" te
   for (const id of ['coming-soon-menu', 'r-menu', 'settings-back']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the Back holds its key hint (#${id})`);
   }
-  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back']) {
+  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'records-back']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`),
-      `the board choices' and Daily's Back holds its key hint, reading Back on a phone (#${id})`);
+      `the board choices', Daily's and Records' Back holds its key hint, reading Back on a phone (#${id})`);
   }
-  for (const id of ['coming-soon-back', 'records-back', 'rp-back', 'replay-message-back', 'ready-back']) {
+  assert.match(read('css/style.css'), /#records-back:not\(\[data-to-menu\]\) \[data-label="wide"\]/, 'Records\' Back reads Back unless it returns to the menu');
+  for (const id of ['coming-soon-back', 'rp-back', 'replay-message-back', 'ready-back']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `so does a Back that returns one step (#${id})`);
   }
   assert.match(read('js/ui.js'), /for \(const id of \[[^\]]*'ready', 'learn-end', 'ctx-lost'[^\]]*\]\) showKeyHints\(/, 'the ready, Learn 3D end and context-lost cards\' key hints follow the device');

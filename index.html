@@ -432,67 +432,55 @@
     <section class="ui-frame" id="records-frame" aria-labelledby="records-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start"><button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
+        <div class="ui-frame__start"><button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-to-menu data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
         <h2 class="ui-frame__title" id="records-title">Records</h2>
         <div class="ui-frame__end"><div data-pad-hinted><kbd data-pad-hint data-pad-glyph="lt" aria-hidden="true">LT</kbd><div id="records-mode" class="ui-segmented" role="radiogroup" aria-label="Mode"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="classic-2d">Classic 2D</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="3d">3D</button></div><kbd data-pad-hint data-pad-glyph="rt" aria-hidden="true">RT</kbd></div></div>
       </header>
       <div class="ui-frame__body" id="records-body">
-        <div data-pad-hinted id="records-board-picker"><kbd data-pad-hint data-pad-glyph="lb" aria-hidden="true">LB</kbd><div id="records-picker" class="ui-segmented" role="radiogroup" aria-label="Board"></div><kbd data-pad-hint data-pad-glyph="rb" aria-hidden="true">RB</kbd></div>
+        <div id="records-mode-touch" class="ui-segmented" role="radiogroup" aria-label="Mode"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="classic-2d">Classic 2D</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="3d">3D</button></div>
+        <div data-pad-hinted id="records-board-picker"><kbd data-pad-hint data-pad-glyph="lb" aria-hidden="true">LB</kbd><div id="records-picker-clip"><div id="records-picker-scroll"><div id="records-picker" class="ui-segmented" role="radiogroup" aria-label="Board"></div></div></div><kbd data-pad-hint data-pad-glyph="rb" aria-hidden="true">RB</kbd></div>
         <div class="ui-columns ui-columns--two" id="records-columns">
-          <div class="ui-column">
-            <div id="records-figures" class="ui-panel" role="group" aria-labelledby="records-board">
-              <h3 class="ui-heading" id="records-board">Beginner</h3>
-              <p id="records-empty" class="ui-text ui-text--muted hidden">No games on this board yet.</p>
+          <div class="ui-column" id="records-figures-column">
+            <div id="records-figures" role="group" aria-labelledby="records-board">
+              <div class="ui-section-label"><h3 class="ui-section-label__text" id="records-board">Beginner · Bests</h3></div>
               <div id="records-bests" class="ui-stat-row ui-stat-row--tiles">
-                <div id="rec-time" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rec-time-label"><span class="ui-stat__label" id="rec-time-label">Best time</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>
-                <div id="rec-bbbvPerSecond" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rec-bbbvPerSecond-label"><span class="ui-stat__label" id="rec-bbbvPerSecond-label">Best 3BV/s</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>
-                <div id="rec-efficiency" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rec-efficiency-label"><span class="ui-stat__label" id="rec-efficiency-label">Best efficiency</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>
+              <div id="rec-time" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rec-time-label"><span class="ui-stat__label" id="rec-time-label">Best time</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail"></span></div>
+              <div id="rec-bbbvPerSecond" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rec-bbbvPerSecond-label"><span class="ui-stat__label" id="rec-bbbvPerSecond-label">Best 3BV/s</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail"></span></div>
+              <div id="rec-efficiency" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rec-efficiency-label"><span class="ui-stat__label" id="rec-efficiency-label">Best efficiency</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail"></span></div>
               </div>
-              <div id="records-counters" class="ui-stat-row">
-                <div id="rec-games" class="ui-stat" role="group" aria-labelledby="rec-games-label"><span class="ui-stat__label" id="rec-games-label">Games</span><span class="ui-stat__value">0</span></div>
-                <div id="rec-wins" class="ui-stat" role="group" aria-labelledby="rec-wins-label"><span class="ui-stat__label" id="rec-wins-label">Wins</span><span class="ui-stat__value">0</span></div>
-                <div id="rec-winRate" class="ui-stat" role="group" aria-labelledby="rec-winRate-label"><span class="ui-stat__label" id="rec-winRate-label">Win rate</span><span class="ui-stat__value">&mdash;</span></div>
-                <div id="rec-completedWinRate" class="ui-stat" role="group" aria-labelledby="rec-completedWinRate-label"><span class="ui-stat__label" id="rec-completedWinRate-label">Win rate, completed games</span><span class="ui-stat__value">&mdash;</span></div>
-                <div id="rec-currentStreak" class="ui-stat" role="group" aria-labelledby="rec-currentStreak-label"><span class="ui-stat__label" id="rec-currentStreak-label">Current streak</span><span class="ui-stat__value">0</span></div>
-                <div id="rec-longestStreak" class="ui-stat" role="group" aria-labelledby="rec-longestStreak-label"><span class="ui-stat__label" id="rec-longestStreak-label">Longest streak</span><span class="ui-stat__value">0</span></div>
-                <div id="rec-longestCompletedStreak" class="ui-stat" role="group" aria-labelledby="rec-longestCompletedStreak-label"><span class="ui-stat__label" id="rec-longestCompletedStreak-label">Best streak, completed games</span><span class="ui-stat__value">0</span></div>
+              <div class="ui-section-label"><h3 class="ui-section-label__text" id="records-counters-title">Counters</h3></div>
+              <div id="records-counters" class="ui-stat-row" role="group" aria-labelledby="records-counters-title">
+              <div id="rec-games" class="ui-stat" role="group" aria-labelledby="rec-games-label"><span class="ui-stat__label" id="rec-games-label">Games</span><span class="ui-stat__value">0</span></div>
+              <div id="rec-wins" class="ui-stat" role="group" aria-labelledby="rec-wins-label"><span class="ui-stat__label" id="rec-wins-label">Wins</span><span class="ui-stat__value">0</span></div>
+              <div id="rec-winRate" class="ui-stat" role="group" aria-labelledby="rec-winRate-label"><span class="ui-stat__label" id="rec-winRate-label">Win rate</span><span class="ui-stat__value">&mdash;</span></div>
+              <div id="rec-completedWinRate" class="ui-stat" role="group" aria-labelledby="rec-completedWinRate-label"><span class="ui-stat__label" id="rec-completedWinRate-label">Win rate, completed</span><span class="ui-stat__value">&mdash;</span></div>
+              <div id="rec-currentStreak" class="ui-stat" role="group" aria-labelledby="rec-currentStreak-label"><span class="ui-stat__label" id="rec-currentStreak-label">Current streak</span><span class="ui-stat__value">0</span></div>
+              <div id="rec-longestStreak" class="ui-stat" role="group" aria-labelledby="rec-longestStreak-label"><span class="ui-stat__label" id="rec-longestStreak-label">Longest streak</span><span class="ui-stat__value">0</span></div>
+              <div id="rec-longestCompletedStreak" class="ui-stat" role="group" aria-labelledby="rec-longestCompletedStreak-label"><span class="ui-stat__label" id="rec-longestCompletedStreak-label">Best streak, completed</span><span class="ui-stat__value">0</span></div>
               </div>
             </div>
-            <div id="records-averages" class="ui-panel" role="group" aria-labelledby="records-averages-title">
-              <h3 class="ui-heading" id="records-averages-title">Averages, won games</h3>
+            <div id="records-averages" role="group" aria-labelledby="records-averages-title">
+              <div class="ui-section-label"><h3 class="ui-section-label__text" id="records-averages-title">Averages · won games</h3></div>
               <table id="records-averages-table" class="ui-table">
-                <thead><tr><td></td><th scope="col" id="records-avg-last10">Last 10</th><th scope="col" id="records-avg-last50">Last 50</th><th scope="col" id="records-avg-all">All</th></tr></thead>
+                <thead><tr><td></td><th scope="col" class="ui-table__figure" id="records-avg-last10">Last 10</th><th scope="col" class="ui-table__figure" id="records-avg-last50">Last 50</th><th scope="col" class="ui-table__figure" id="records-avg-all">All</th></tr></thead>
                 <tbody id="records-averages-body"></tbody>
               </table>
-              <div class="ui-stat-row">
-                <div id="rec-recentWinRate" class="ui-stat" role="group" aria-labelledby="rec-recentWinRate-label"><span class="ui-stat__label" id="rec-recentWinRate-label">Win rate, last 50 games</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail"></span></div>
-                <div id="rec-recentCompletedWinRate" class="ui-stat" role="group" aria-labelledby="rec-recentCompletedWinRate-label"><span class="ui-stat__label" id="rec-recentCompletedWinRate-label">Win rate, last 50, completed games</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail"></span></div>
-              </div>
+              <p id="records-win-rate" class="ui-text"></p>
             </div>
             <div id="records-overall" class="ui-panel ui-panel--muted" role="group" aria-labelledby="records-overall-title">
-              <h3 class="ui-heading" id="records-overall-title">Classic 2D overall</h3>
-              <div class="ui-stat-row">
-                <div id="ro-games" class="ui-stat" role="group" aria-labelledby="ro-games-label"><span class="ui-stat__label" id="ro-games-label">Games</span><span class="ui-stat__value">0</span></div>
-                <div id="ro-wins" class="ui-stat" role="group" aria-labelledby="ro-wins-label"><span class="ui-stat__label" id="ro-wins-label">Wins</span><span class="ui-stat__value">0</span></div>
-                <div id="ro-winRate" class="ui-stat" role="group" aria-labelledby="ro-winRate-label"><span class="ui-stat__label" id="ro-winRate-label">Win rate</span><span class="ui-stat__value">&mdash;</span></div>
-                <div id="ro-completedWinRate" class="ui-stat" role="group" aria-labelledby="ro-completedWinRate-label"><span class="ui-stat__label" id="ro-completedWinRate-label">Win rate, completed games</span><span class="ui-stat__value">&mdash;</span></div>
-                <div id="ro-currentStreak" class="ui-stat" role="group" aria-labelledby="ro-currentStreak-label"><span class="ui-stat__label" id="ro-currentStreak-label">Current streak</span><span class="ui-stat__value">0</span></div>
-                <div id="ro-longestStreak" class="ui-stat" role="group" aria-labelledby="ro-longestStreak-label"><span class="ui-stat__label" id="ro-longestStreak-label">Longest streak</span><span class="ui-stat__value">0</span></div>
-                <div id="ro-longestCompletedStreak" class="ui-stat" role="group" aria-labelledby="ro-longestCompletedStreak-label"><span class="ui-stat__label" id="ro-longestCompletedStreak-label">Best streak, completed games</span><span class="ui-stat__value">0</span></div>
-              </div>
+              <div class="ui-section-label"><h3 class="ui-section-label__text" id="records-overall-title">Classic 2D overall</h3></div>
+              <p id="records-overall-line" class="ui-text"></p>
             </div>
             <div id="records-export" class="ui-actions ui-actions--row">
-              <button type="button" id="records-export-csv" class="ui-button ui-button--secondary ui-button--sm">Export history (CSV)</button>
-              <button type="button" id="records-export-json" class="ui-button ui-button--secondary ui-button--sm">Export all (JSON)</button>
+              <button type="button" id="records-export-csv" class="ui-button ui-button--secondary ui-button--sm" data-icon="download">Export history (CSV)</button>
+              <button type="button" id="records-export-json" class="ui-button ui-button--secondary ui-button--sm" data-icon="download">Export all (JSON)</button>
               <span id="records-export-note" class="ui-text ui-text--muted hidden" role="status"></span>
             </div>
           </div>
           <div class="ui-divider ui-divider--vertical" role="separator" aria-orientation="vertical"></div>
-          <div class="ui-column">
-            <div id="records-history" class="ui-panel" role="group" aria-labelledby="records-history-title">
-              <h3 class="ui-heading" id="records-history-title">History</h3>
-              <div id="records-period" class="ui-segmented" role="radiogroup" aria-label="Period"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="all">All time</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="12m">12 months</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="30d">30 days</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="7d">7 days</button></div>
-              <div id="records-outcome" class="ui-segmented" role="radiogroup" aria-label="Outcome"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="all">All</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="won">Won</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="lost">Lost</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="abandoned">Abandoned</button></div>
+          <div class="ui-column" id="records-history-column">
+            <div id="records-history" role="group" aria-label="History">
+              <div id="records-filters" class="ui-row"><div id="records-period" class="ui-segmented" role="radiogroup" aria-label="Period"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="all">All time</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="12m">12 months</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="30d">30 days</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="7d">7 days</button></div><div id="records-outcome" class="ui-segmented" role="radiogroup" aria-label="Outcome"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="all">All</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="won">Won</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="lost">Lost</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="abandoned">Abandoned</button></div></div>
               <p id="records-won-only" class="ui-text ui-text--muted">The Top 10, the averages and both charts count won games only; the outcome choice filters the recent games.</p>
               <div id="records-charts" class="ui-columns ui-columns--pair">
                 <canvas id="records-chart" role="img" aria-label="No won games on this board yet, so there is nothing to chart.">No won games on this board yet, so there is nothing to chart.</canvas>
@@ -501,36 +489,43 @@
               <div id="records-tabs" class="ui-tabs" role="tablist" aria-label="Lists"><button type="button" class="ui-tabs__tab" role="tab" aria-selected="true" id="records-tab-recent" aria-controls="records-recent" data-value="recent">Recent games</button><button type="button" class="ui-tabs__tab" role="tab" aria-selected="false" id="records-tab-top" aria-controls="records-top" data-value="top">Top 10</button><button type="button" class="ui-tabs__tab" role="tab" aria-selected="false" id="records-tab-replays" aria-controls="records-replays" data-value="replays">Replays</button><button type="button" class="ui-tabs__tab" role="tab" aria-selected="false" id="records-tab-leaderboards" aria-controls="records-leaderboards" data-value="leaderboards">Leaderboards</button></div>
               <div id="records-recent" role="tabpanel" aria-labelledby="records-tab-recent">
                 <p id="records-games-empty" class="ui-text ui-text--muted hidden">No games match these filters.</p>
-                <table id="records-games" class="ui-table">
-                  <caption class="ui-text ui-text--muted" id="records-page"></caption>
-                  <thead><tr><th scope="col">Date</th><th scope="col">Outcome</th><th scope="col">Time</th><th scope="col">3BV</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col">Board code</th><th scope="col" id="records-games-replay" class="hidden">Replay</th></tr></thead>
-                  <tbody id="records-games-body"></tbody>
-                </table>
+                <div id="records-games-scroll">
+                  <table id="records-games" class="ui-table">
+                    <caption class="ui-text ui-text--muted" id="records-page"></caption>
+                    <thead><tr><th scope="col">Date</th><th scope="col">Outcome</th><th scope="col" class="ui-table__figure">Time</th><th scope="col" class="ui-table__figure">3BV</th><th scope="col" class="ui-table__figure">3BV/s</th><th scope="col" class="ui-table__figure">Eff.</th><th scope="col" data-label="Board code">Board code</th><th scope="col" id="records-games-replay" class="hidden">Replay</th></tr></thead>
+                    <tbody id="records-games-body"></tbody>
+                  </table>
+                </div>
                 <nav id="records-games-pager" class="ui-pager hidden" aria-label="Recent games pages"></nav>
               </div>
               <div id="records-top" class="hidden" role="tabpanel" aria-labelledby="records-tab-top">
-                <div id="records-top-stat" class="ui-segmented" role="radiogroup" aria-label="Rank by"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="time">Time</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="bbbvPerSecond">3BV/s</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="efficiency">Efficiency</button></div>
+                <div id="records-top-rank" class="ui-row"><span class="ui-text ui-text--muted" id="records-top-stat-label">Rank by</span><div id="records-top-stat" class="ui-segmented" role="radiogroup" aria-labelledby="records-top-stat-label"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="time">Time</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="bbbvPerSecond">3BV/s</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="efficiency">Efficiency</button></div></div>
                 <p id="records-top-empty" class="ui-text ui-text--muted hidden">No won games on this board yet.</p>
-                <table id="records-top-table" class="ui-table">
-                  <thead><tr><th scope="col">Rank</th><th scope="col">Time</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col">Date</th><th scope="col">3BV</th><th scope="col">Clicks</th><th scope="col">Board code</th><th scope="col" id="records-top-replay" class="hidden">Replay</th></tr></thead>
-                  <tbody id="records-top-body"></tbody>
-                </table>
+                <div id="records-top-scroll">
+                  <table id="records-top-table" class="ui-table">
+                    <thead><tr><th scope="col">#</th><th scope="col" class="ui-table__figure">Time</th><th scope="col" class="ui-table__figure">3BV/s</th><th scope="col" class="ui-table__figure">Eff.</th><th scope="col">Date</th><th scope="col" class="ui-table__figure">3BV</th><th scope="col" class="ui-table__figure">Clicks</th><th scope="col" data-label="Board code">Board code</th><th scope="col" id="records-top-replay" class="hidden">Replay</th></tr></thead>
+                    <tbody id="records-top-body"></tbody>
+                  </table>
+                </div>
               </div>
               <div id="records-replays" class="hidden" role="tabpanel" aria-labelledby="records-tab-replays">
-                <div class="ui-row"><label class="ui-checkbox"><input type="checkbox" id="records-pinned-first" class="ui-checkbox__input"><span class="ui-checkbox__label">Pinned first</span></label>
-                <button type="button" id="records-replays-open" class="ui-button ui-button--secondary ui-button--sm hidden">Open replay file</button></div>
+                <div id="records-replays-tools" class="ui-row"><label class="ui-checkbox"><input type="checkbox" id="records-pinned-first" class="ui-checkbox__input"><span class="ui-checkbox__label">Pinned first</span></label>
+                <button type="button" id="records-replays-open" class="ui-button ui-button--secondary ui-button--sm hidden" data-icon="upload">Open replay file</button></div>
                 <p id="records-replays-empty" class="ui-text ui-text--muted hidden">No replays kept for this board yet.</p>
-                <table id="records-replays-table" class="ui-table">
-                  <caption class="ui-text ui-text--muted" id="records-replays-page"></caption>
-                  <thead><tr><th scope="col">Date</th><th scope="col">Outcome</th><th scope="col">Time</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col">Pin</th><th scope="col">Board code</th><th scope="col">Actions</th></tr></thead>
-                  <tbody id="records-replays-body"></tbody>
-                </table>
+                <div id="records-replays-scroll">
+                  <table id="records-replays-table" class="ui-table">
+                    <caption class="ui-text ui-text--muted" id="records-replays-page"></caption>
+                    <thead><tr><th scope="col">Date</th><th scope="col">Outcome</th><th scope="col" class="ui-table__figure">Time</th><th scope="col" class="ui-table__figure">3BV/s</th><th scope="col" class="ui-table__figure">Eff.</th><th scope="col">Pin</th><th scope="col" data-label="Board code">Board code</th><th scope="col">Actions</th></tr></thead>
+                    <tbody id="records-replays-body"></tbody>
+                  </table>
+                </div>
                 <nav id="records-replays-pager" class="ui-pager hidden" aria-label="Replays pages"></nav>
                 <div id="records-replays-confirm" class="ui-confirm ui-confirm--row hidden" role="alertdialog" aria-labelledby="records-replays-confirm-text"><p id="records-replays-confirm-text" class="ui-confirm__text"></p><div class="ui-actions ui-actions--row"><button type="button" id="records-replays-yes" class="ui-button ui-button--danger ui-button--sm" data-icon="trash">Delete replay</button><button type="button" id="records-replays-no" class="ui-button ui-button--secondary ui-button--sm">Cancel</button></div></div>
               </div>
               <div id="records-leaderboards" class="ui-panel ui-panel--muted hidden" role="tabpanel" aria-labelledby="records-tab-leaderboards">
-                <h4 class="ui-heading">Leaderboards are coming soon</h4>
-                <p class="ui-text ui-text--muted">They will rank this board against other players, beside your own records.</p>
+                <span class="ui-card__icon" id="records-leaderboards-icon" aria-hidden="true"><svg class="ui-icon" data-icon="trophy" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4a2 2 0 0 0 0 4h3M17 6h3a2 2 0 0 1 0 4h-3"/></svg></span>
+                <div id="records-leaderboards-text"><h4 class="ui-card__title" id="records-leaderboards-title">Leaderboards are coming soon</h4>
+                <p class="ui-text ui-text--muted">They will rank this board against other players, beside your own records.</p></div>
               </div>
             </div>
           </div>

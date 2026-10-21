@@ -489,7 +489,7 @@ const SHELL = createRouter({
     [DAILY_SCREEN]: { defaultFocus: () => DAILY_VIEW.defaultFocus(), show: () => { MODES.leave(); showMenuBackdrop(); ui.showDaily(); showDaily(); } },
     'board-choice': { defaultFocus: '[data-preset][aria-pressed="true"]', show: (d = {}, from) => { MODES.leave(); GEN_3D.warm(); showMenuBackdrop(); ui.showBoardChoice(); showChoice3D(from); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
-    records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
+    records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); recordsBackLabel(); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); SETTINGS_EXPORT.show(RECORDS_EXPORT.hasGames()); } },
     'classic-2d-choice': { defaultFocus: '[data-size][aria-pressed="true"]', show: (d = {}, from) => { MODES.leave(); mode2d.warm(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current, from); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, LOCK_FALLBACK.readyMessage(d.msg), { rules: FIRST_USE.rules3D && !S.learn, blocked: LOCK_FALLBACK.blocked, learn: FIRST_USE.rules3D && !S.learn && !S.started }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
@@ -1219,6 +1219,14 @@ const SETTINGS_EXPORT = bindExportActions({
 // Watch shows once the replay viewer's route is registered; Back closes a Delete confirmation, else
 // is the back stack. The Pinned first switch is remembered in its own document, loaded at start-up.
 const RECORDS_VIEW_PREFS = createRecordsViewPrefs({ storage });
+// Records' Back reads "Main menu" when it returns to the menu, else "Back" (the results screen, a replay's
+// way back): data-to-menu on #records-back picks the label.
+function recordsBackLabel() {
+  const back = document.getElementById('records-back');
+  const toMenu = (SHELL.stack.at(-1) ?? 'menu') === 'menu';
+  back.toggleAttribute('data-to-menu', toMenu);
+  back.setAttribute('aria-label', toMenu ? 'Back to Main menu' : 'Back');
+}
 const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, router: SHELL, viewPrefs: RECORDS_VIEW_PREFS,
   exporter: RECORDS_EXPORT, files: REPLAY_FILES,
   view: createRecordsView({

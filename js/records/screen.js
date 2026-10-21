@@ -3,9 +3,10 @@
 // are DOM-free; createRecordsView() binds the #records markup handed in.
 //
 // The switch chooses a mode (RECORDS_MODES: Classic 2D, 3D) and the picker lists that mode's boards:
-// for Classic 2D, Beginner, Intermediate and Expert, for 3D the presets (PRESETS_3D
-// order), each without no-guess then with it, then every custom board of the mode played
-// (boardsPlayed(mode), most recently played first), labelled by boardLabel. The screen opens on
+// for Classic 2D, Beginner, Intermediate and Expert, for 3D the presets (PRESETS_3D order), every one
+// without no-guess, then every one with it, then its Daily board (DAILY_OPTION), then every custom
+// board of the mode played (boardsPlayed(mode), most recently played first), labelled by boardLabel;
+// the chosen board's own label (content.board.label) is always its boardLabel. The screen opens on
 // the board it was asked
 // for (a board key, which also sets the mode), otherwise on the mode asked for and its last board
 // played, otherwise on the last board played in either mode — the board whose latest game ended
@@ -15,16 +16,16 @@
 // "9 Oct 2026" (formatDate) and a game's or a replay's end "9 Oct 2026 14:32" (formatDateTime, local,
 // 24-hour); a win rate a whole percentage; anything missing DASH. The counters of the board and
 // of the mode overall show the completed games' win rate and best streak beside the reference win
-// rate and longest streak, labelled for what they leave out (games abandoned by a restart, Back to
-// menu or a closed page).
+// rate and longest streak ("Win rate, completed", "Best streak, completed": they leave out games
+// abandoned by a restart, Back to menu or a closed page).
 //
 // recordsContent(records, { mode, boardKey, notSaved, page, replays, replayPage, pinnedFirst, canWatch,
 //   replaysNotSaved, period, outcome, tab, topStat, now, exportable }) → { mode, modes: [{ value, label,
 //   selected }], boards: [{ key, label, selected }], board: { key, label }, empty, emptyText,
 //   bests: [{ stat, label, value, date, watch }], counters: [{ key, label, value }], overallTitle,
-//   overall: [{ key, label, value }], notes, filters: { period, outcome, wonOnly }, chart: { points, text },
-//   bestChart: { steps, start, end, emptyText, text }, averages: { columns: [{ key, label }],
-//   rows: [{ stat, label, values }], winRates: [{ key, label, value, detail }] }, tab, tabs,
+//   overall: [{ key, label, value }], overallLine, notes, filters: { period, outcome, wonOnly },
+//   chart: { points, emptyText, text }, bestChart: { steps, start, end, emptyText, text },
+//   averages: { columns: [{ key, label }], rows: [{ stat, label, values }], winRate }, tab, tabs,
 //   games: { headers, rows: [{ id, date, outcome, time, bbbv, rate, efficiency, watch, code }], empty, emptyText,
 //   page, pages, label, pager }, top: { stat, stats, headers, rows: [{ id, rank, time, rate, efficiency,
 //   date, bbbv, clicks, watch, code }], empty, emptyText }, exportable, replays, canWatch }
@@ -39,13 +40,16 @@
 // counters and the mode's overall row are all-time. The Top 10 (topGames) ranks the period's won games by
 // topStat, in the shared ranking the results screen's rank reads; the averages are the means over the
 // period's last 10, last 50 and all won games, a column short of its size labelled with its count ("Last 50 (12)"),
-// and the win rates are over its last 50 games of every outcome, with the completed games' beside it;
+// and averages.winRate is one line over its last 50 games of every outcome, the completed games' beside
+// it, a span short of 50 games with its count ("Win rate, last 50 (12): 67% (completed games 75%)");
 // the best-time chart's steps are the period's new standing bests, start and end its first and last
 // won game. A filter leaving nothing gives each view its empty line, never the board's empty state;
 // on a board with no games the recent games' empty line is the board's (EMPTY_TEXT).
 // exportable says whether the export actions are enabled.
-// The bests show as the screen's three stat tiles; the board's counters and the mode's overall
-// figures are two separate rows. A game's bbbv is its board's 3BV from its history entry.
+// The bests show as the screen's three stat tiles; the board's counters as a grid of tiles; the
+// mode's overall figures as one sentence, overallLine ("Games 1,207 · Wins 702 · Win rate 58%
+// (completed 66%) · Current streak 7 · Longest 12 (completed 14)", counts grouped by thousands).
+// A game's bbbv is its board's 3BV from its history entry.
 // replays is the library view (js/records/replay-list.js) of the chosen board over the replay
 // library handed in, on its page replayPage, pinned ones first under pinnedFirst. With canWatch, a best's and a game's watch
 // is its summary id when the library keeps its replay (replays.has), else null; without, null.
@@ -87,32 +91,36 @@
 // on its board. An imported replay is watched there, never added to the library.
 //
 // createRecordsView({ root, onSelect, onBack, onPage, onMode?, onWatch?, onTogglePin?, onPinnedFirst?,
-// onReplayPage?, onDelete?, onPeriod?, onOutcome?, onTab?, onTopStat?, onExport?, onDownload?, onOpenFile?, onCopy?, chart?, bestChart? }) → { show(content), hide(),
-// closeConfirm(), isConfirmOpen() }: fills #records by id, the replays panel through
-// createReplayListView; the 2D | 3D switch (#records-mode, a kit segmented choice whose two options
-// are in the markup) shows content.mode and calls onMode(mode); a best and a recent game whose
-// watch is set get a Watch button calling onWatch(id), every recent game, Top 10 and library row its
-// board code as a code chip whose Copy and Copy link call onCopy, a recent game its outcome
-// as a kit chip (outcomeChip), a counter its label from the content (a Daily board's days in a row),
-// and the games list gains its Replay column while content.canWatch; the picker is a kit segmented
-// choice whose options are rebuilt only when the board list changes; the chart (createHistoryChart over
-// #records-chart by default) is drawn after the screen shows; the recent games' kit pager
-// (#records-games-pager, bindPager) calls onPage with the page to show. The period, outcome and Top 10
-// stat choices (#records-period, #records-outcome, #records-top-stat, kit segmented choices whose
-// options are in the markup) call onPeriod, onOutcome and onTopStat; the tabs (#records-tabs, a kit
-// tablist whose tabs are in the markup, bindTabs) call onTab, and the selected tab shows the panel its
-// aria-controls names (#records-recent, #records-top, #records-replays or #records-leaderboards, the
-// last a coming-soon panel with no pager), another tab closing the replays' Delete confirmation
-// without moving focus; an empty board hides the period and outcome choices, the
-// charts and the averages, the tabs staying; the best-time chart (createHistoryChart kind 'best' over
-// #records-best-chart by default) is drawn beside the other; the export actions (#records-export-csv,
-// #records-export-json, bindExportActions) call onExport(format).
+// onReplayPage?, onDelete?, onPeriod?, onOutcome?, onTab?, onTopStat?, onExport?, onDownload?, onOpenFile?, chart?, bestChart? }) →
+// { show(content), hide(), closeConfirm(), isConfirmOpen() }: fills #records by id, the replays panel through
+// createReplayListView; the 2D | 3D switch (#records-mode in the head, #records-mode-touch the phone's
+// bar under it: kit segmented choices whose two options are in the markup) shows content.mode and calls
+// onMode(mode); the section label #records-board names the board ("<board> · Bests"); a best's tile
+// shows its figure and, under it, its date with an inline Watch link (a ui-link calling onWatch(id))
+// when its watch is set, nothing for a best not set; a counter its label from the content (a Daily
+// board's days in a row); the averages table, then the win rate line (#records-win-rate, hidden on a
+// board with no games); the overall line (#records-overall-line). Every recent game and Top 10 row shows
+// its cells in the kit table's classes (the date ui-table__date, the figures ui-table__figure, a rank
+// ui-table__rank), its board code as plain text (codeCell), a recent game its outcome as a kit chip
+// (outcomeChip), and, while content.canWatch, a Replay column whose kept games get a quiet small Watch
+// led by its film icon, calling onWatch(id); the picker is a kit segmented choice whose options are
+// rebuilt only when the board list changes; both charts (createHistoryChart over #records-chart and,
+// kind 'best', #records-best-chart by default) are drawn on every show, an empty one its empty line
+// alone; the recent games' kit pager (#records-games-pager, bindPager) calls onPage with the page to
+// show; every show scrolls the chosen picker option into view inside #records-picker-scroll. The
+// period, outcome and Top 10 stat choices (#records-period, #records-outcome,
+// #records-top-stat, kit segmented choices whose options are in the markup) call onPeriod, onOutcome
+// and onTopStat; the tabs (#records-tabs, a kit tablist whose tabs are in the markup, bindTabs) call
+// onTab, and the selected tab shows the panel its aria-controls names (#records-recent, #records-top,
+// #records-replays or #records-leaderboards, the last a coming-soon panel with no pager), another tab
+// closing the replays' Delete confirmation without moving focus; the export actions
+// (#records-export-csv, #records-export-json, bindExportActions) call onExport(format).
 
 import { MODE_3D, PRESETS_3D, STANDARD_BOARDS, boardKey, boardLabel, createBoardIdentity, parseBoardKey } from './board.js';
 import { DAILY_BOARDS, codeOf, dateText } from './board-code.js';
 import { daysInARow } from './model.js';
 import { DASH, NOTES, formatTime, formatRate, formatEfficiency, formatWinRate } from '../results/view.js';
-import { bindSegmented, bindTabs, bindPager, pagerState } from '../ui/components.js';
+import { bindSegmented, bindTabs, bindPager, pagerState, createButton } from '../ui/components.js';
 import { BEST_STATS, bbbvPerSecond, countedClicks, efficiency } from './summary.js';
 import {
   NO_WON_GAMES, NO_WON_GAMES_PERIOD, NO_BEST_TIME, NO_BEST_TIME_PERIOD, chartPoints, chartText, bestTimeText, formatDate, pageOf, createHistoryChart,
@@ -122,6 +130,10 @@ import { bindExportActions } from './export.js';
 import { REPLAY_SCREEN, REPLAYS_NOT_SAVED, replayList, togglePin, watchRoute, createReplayListView, codeCell, outcomeChip } from './replay-list.js';
 
 export const RECORDS_SCREEN = 'records';
+// The width of the fade over the picker's end (css/style.css #records-picker-clip::after), kept clear of the chosen option.
+const PICKER_FADE = 40;
+/** The picker's option for a mode's Daily board. */
+export const DAILY_OPTION = 'Daily';
 export const EMPTY_TEXT = 'No games on this board yet.';
 const MODE_2D = 'classic-2d';
 /** The mode each controller trigger chooses on the Records screen. */
@@ -147,10 +159,11 @@ export function formatDateTime(iso) {
 }
 export { formatWinRate };
 
+// Each mode's named boards: every one without no-guess, then every one with it.
 const NAMED = Object.freeze({
-  [MODE_2D]: STANDARD_BOARDS.flatMap(({ width, height, mines }) => [false, true].map((noGuess) =>
+  [MODE_2D]: [false, true].flatMap((noGuess) => STANDARD_BOARDS.map(({ width, height, mines }) =>
     createBoardIdentity({ mode: MODE_2D, grid: 'square', width, height, mines, noGuess }))),
-  [MODE_3D]: PRESETS_3D.flatMap(({ width, height, depth, mines }) => [false, true].map((noGuess) =>
+  [MODE_3D]: [false, true].flatMap((noGuess) => PRESETS_3D.map(({ width, height, depth, mines }) =>
     createBoardIdentity({ mode: MODE_3D, width, height, depth, mines, noGuess }))),
 });
 
@@ -168,10 +181,10 @@ const COUNTERS = Object.freeze([
   { key: 'games', label: 'Games' },
   { key: 'wins', label: 'Wins' },
   { key: 'winRate', label: 'Win rate', rate: true },
-  { key: 'completedWinRate', label: 'Win rate, completed games', rate: true },
+  { key: 'completedWinRate', label: 'Win rate, completed', rate: true },
   { key: 'currentStreak', label: 'Current streak' },
   { key: 'longestStreak', label: 'Longest streak' },
-  { key: 'longestCompletedStreak', label: 'Best streak, completed games' },
+  { key: 'longestCompletedStreak', label: 'Best streak, completed' },
 ]);
 const EMPTY_COUNTERS = Object.freeze({
   games: 0, wins: 0, currentStreak: 0, longestStreak: 0, completed: 0, currentCompletedStreak: 0, longestCompletedStreak: 0,
@@ -179,8 +192,8 @@ const EMPTY_COUNTERS = Object.freeze({
 const NO_RATES = Object.freeze({ winRate: null, completedWinRate: null });
 const OUTCOME_LABELS = Object.freeze({ won: 'Won', lost: 'Lost', abandoned: 'Abandoned' });
 const outcomeLabel = (outcome) => OUTCOME_LABELS[outcome] ?? outcome;
-const GAME_HEADERS = Object.freeze(['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Efficiency']);
-const TOP_HEADERS = Object.freeze(['Rank', 'Time', '3BV/s', 'Efficiency', 'Date', '3BV', 'Clicks']);
+const GAME_HEADERS = Object.freeze(['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Eff.']);
+const TOP_HEADERS = Object.freeze(['#', 'Time', '3BV/s', 'Eff.', 'Date', '3BV', 'Clicks']);
 /** The lists' tabs, in order, the first the default. */
 export const GAME_TABS = Object.freeze([
   Object.freeze({ value: 'recent', label: 'Recent games' }),
@@ -208,10 +221,10 @@ const choiceOf = (list, value) => (list.some((c) => c.value === value) ? value :
 const choices = (list, value) => list.map((c) => ({ value: c.value, label: c.label, selected: c.value === value }));
 
 const attempt = (fn, fallback) => { try { return fn(); } catch { return fallback; } };
-const entry = (board) => ({ key: boardKey(board), label: boardLabel(board), board });
+const entry = (board) => ({ key: boardKey(board), label: board.daily ? DAILY_OPTION : boardLabel(board), board });
 const keyOf = (key) => attempt(() => boardKey(parseBoardKey(key)), null);
 
-/** The picker's boards for a mode: its named boards, its Daily board, then every custom board of the mode played. */
+/** The picker's boards for a mode: its named boards, its Daily board (labelled DAILY_OPTION), then every custom board of the mode played. */
 export function pickerBoards(records, mode = MODE_2D) {
   const list = [...NAMED[mode], ...DAILY[mode]].map(entry);
   const keys = new Set(list.map((b) => b.key));
@@ -290,15 +303,20 @@ function averagesPanel(history) {
     return { key: w.key, label: short ? `${WINDOW_LABELS[w.key]} (${count})` : WINDOW_LABELS[w.key] };
   });
   const games = recent?.games ?? 0;
-  const detail = games > 0 && games < RECENT_GAMES ? `${games} game${games === 1 ? '' : 's'} so far` : '';
+  const span = games > 0 && games < RECENT_GAMES ? `last ${RECENT_GAMES} (${games})` : `last ${RECENT_GAMES}`;
   return {
     columns,
     rows: AVERAGE_ROWS.map(({ stat, label, format }) => ({ stat, label, values: AVERAGE_WINDOWS.map((w, i) => format(avg?.rows[stat][i] ?? null)) })),
-    winRates: [
-      { key: 'recentWinRate', label: `Win rate, last ${RECENT_GAMES} games`, value: formatWinRate(recent?.winRate ?? null), detail },
-      { key: 'recentCompletedWinRate', label: `Win rate, last ${RECENT_GAMES}, completed games`, value: formatWinRate(recent?.completedWinRate ?? null), detail },
-    ],
+    winRate: `Win rate, ${span}: ${formatWinRate(recent?.winRate ?? null)} (completed games ${formatWinRate(recent?.completedWinRate ?? null)})`,
   };
+}
+
+const COUNT = new Intl.NumberFormat('en-US');
+// The mode's overall figures as one sentence: counts grouped by thousands, each completed figure beside its reference one.
+function overallLine(counters, rates) {
+  const n = (k) => COUNT.format(counters[k] ?? 0);
+  return `Games ${n('games')} · Wins ${n('wins')} · Win rate ${formatWinRate(rates.winRate)} (completed ${formatWinRate(rates.completedWinRate)})`
+    + ` · Current streak ${n('currentStreak')} · Longest ${n('longestStreak')} (completed ${n('longestCompletedStreak')})`;
 }
 
 /** The board and mode to show: the key asked for, else the mode's last board, else the last board played. */
@@ -336,11 +354,14 @@ export function recordsContent(records, {
   const identity = attempt(() => parseBoardKey(key), null);
   const days = identity?.daily ? daysInARow(counters, dateText(now)) : null;
   const empty = !(counters.games > 0);
+  const overallRates = attempt(() => ({
+    winRate: records.overallWinRate(mode), completedWinRate: records.overallCompletedWinRate(mode),
+  }), NO_RATES);
   return {
     mode,
     modes: RECORDS_MODES.map((m) => ({ value: m.value, label: m.label, selected: m.value === mode })),
     boards: boards.map((b) => ({ key: b.key, label: b.label, selected: b.key === key })),
-    board: { key, label: chosen.label },
+    board: { key, label: boardLabel(chosen.board) },
     empty,
     emptyText: EMPTY_TEXT,
     bests: BESTS.map(({ stat, label, format }) => {
@@ -349,12 +370,11 @@ export function recordsContent(records, {
     }),
     counters: counterFigures(counters, attempt(() => ({ winRate: records.winRate(key), completedWinRate: records.completedWinRate(key) }), NO_RATES), days),
     overallTitle: RECORDS_MODES.find((m) => m.value === mode).overallTitle,
-    overall: counterFigures(overall, attempt(() => ({
-      winRate: records.overallWinRate(mode), completedWinRate: records.overallCompletedWinRate(mode),
-    }), NO_RATES)),
+    overall: counterFigures(overall, overallRates),
+    overallLine: overallLine(overall, overallRates),
     notes: [...(notSaved ? [NOTES.notSaved] : []), ...(replaysNotSaved ? [REPLAYS_NOT_SAVED] : [])],
     filters: { period: choices(PERIODS, period), outcome: choices(OUTCOME_FILTERS, outcome), wonOnly: WON_ONLY_TEXT },
-    chart: { points, text: chartText(points, filtered ? NO_WON_GAMES_PERIOD : NO_WON_GAMES) },
+    chart: { points, emptyText: filtered ? NO_WON_GAMES_PERIOD : NO_WON_GAMES, text: chartText(points, filtered ? NO_WON_GAMES_PERIOD : NO_WON_GAMES) },
     bestChart: {
       steps, start: won[0]?.endedAt ?? null, end: won.at(-1)?.endedAt ?? null,
       emptyText: filtered ? NO_BEST_TIME_PERIOD : NO_BEST_TIME, text: bestTimeText(steps, filtered ? NO_BEST_TIME_PERIOD : NO_BEST_TIME),
@@ -509,22 +529,33 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
 export function createRecordsView({
   root, onSelect, onMode = () => {}, onBack, onPage, onWatch = () => {}, onTogglePin = () => {}, onPinnedFirst = () => {},
   onReplayPage = () => {}, onDelete = () => {}, onPeriod = () => {}, onOutcome = () => {}, onTab = () => {}, onTopStat = () => {},
-  onExport = () => {}, onDownload = () => {}, onOpenFile = () => {}, onCopy = () => {}, chart = null, bestChart = null,
+  onExport = () => {}, onDownload = () => {}, onOpenFile = () => {}, chart = null, bestChart = null,
 }) {
   const $ = (id) => root.querySelector(`#${id}`);
-  const list = createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage: onReplayPage, onDelete, onDownload, onOpenFile, onCopy });
+  const doc = root.ownerDocument;
+  const list = createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage: onReplayPage, onDelete, onDownload, onOpenFile });
+  // A list row's Watch: a quiet small button led by its film icon.
   const watchButton = (id, label) => {
-    const b = root.ownerDocument.createElement('button');
-    b.type = 'button';
-    b.className = 'ui-button ui-button--secondary';
-    b.textContent = 'Watch';
+    const b = createButton(doc, { label: 'Watch', icon: 'film', variant: 'quiet', size: 'sm' });
     b.setAttribute('aria-label', label);
     b.dataset.watch = id;
     b.addEventListener('click', () => onWatch(id));
     return b;
   };
-  const modes = $('records-mode');
-  bindSegmented(modes, { onChange: (mode) => onMode(mode) });
+  // A best's Watch: an inline link in its tile's note.
+  const watchLink = (id, label) => {
+    const a = doc.createElement('a');
+    a.className = 'ui-link';
+    a.href = '#';
+    a.textContent = 'Watch';
+    a.setAttribute('aria-label', label);
+    a.dataset.watch = id;
+    a.addEventListener('click', (e) => { e.preventDefault(); onWatch(id); });
+    return a;
+  };
+  // The 2D | 3D switch: in the head, and on a phone the bar under it; each shows the mode.
+  const modeGroups = ['records-mode', 'records-mode-touch'].map($).filter(Boolean);
+  for (const group of modeGroups) bindSegmented(group, { onChange: (mode) => onMode(mode) });
   const picker = $('records-picker');
   const canvas = $('records-chart');
   const history = chart ?? createHistoryChart({ canvas });
@@ -557,8 +588,25 @@ export function createRecordsView({
   };
   $('records-back').addEventListener('click', () => onBack());
 
+  // A table cell: its text, its column's name as data-label, and its kit class.
+  const cell = (text, header, className = '') => {
+    const td = doc.createElement('td');
+    td.textContent = text;
+    td.dataset.label = header;
+    if (className) td.className = className;
+    return td;
+  };
+  const replayCell = (watch, label) => {
+    const td = doc.createElement('td');
+    td.dataset.label = 'Replay';
+    if (watch) td.append(watchButton(watch, label));
+    return td;
+  };
+  const refocus = (body, watching) => {
+    if (watching) [...body.querySelectorAll('[data-watch]')].find((w) => w.dataset.watch === watching)?.focus({ preventScroll: true });
+  };
+
   const showGames = (games, canWatch) => {
-    const doc = root.ownerDocument;
     const body = $('records-games-body');
     const watching = body.contains(doc.activeElement) ? doc.activeElement.dataset.watch : null;
     $('records-games-replay').classList.toggle('hidden', !canWatch);
@@ -566,46 +614,31 @@ export function createRecordsView({
     empty.textContent = games.emptyText;
     empty.classList.toggle('hidden', !games.empty);
     $('records-games').classList.toggle('hidden', games.empty);
+    const [date, outcome, time, bbbv, rate, eff] = games.headers;
     body.replaceChildren(...games.rows.map((g) => {
       const tr = doc.createElement('tr');
-      [g.date, g.outcome, g.time, g.bbbv, g.rate, g.efficiency].forEach((text, i) => {
-        const td = doc.createElement('td');
-        if (i === 1) td.append(outcomeChip(doc, text));
-        else td.textContent = text;
-        td.dataset.label = games.headers[i];
-        tr.append(td);
-      });
-      tr.append(codeCell(doc, g.code, onCopy));
-      if (canWatch) {
-        const td = doc.createElement('td');
-        td.dataset.label = 'Replay';
-        if (g.watch) td.append(watchButton(g.watch, `Watch the replay of this ${g.outcome.toLowerCase()} game, ${g.time}`));
-        tr.append(td);
-      }
+      const result = cell('', outcome);
+      result.append(outcomeChip(doc, g.outcome));
+      tr.append(cell(g.date, date, 'ui-table__date'), result, cell(g.time, time, 'ui-table__figure'), cell(g.bbbv, bbbv, 'ui-table__figure'),
+        cell(g.rate, rate, 'ui-table__figure'), cell(g.efficiency, eff, 'ui-table__figure'), codeCell(doc, g.code));
+      if (canWatch) tr.append(replayCell(g.watch, `Watch the replay of this ${g.outcome.toLowerCase()} game, ${g.time}`));
       return tr;
     }));
-    if (watching) [...body.querySelectorAll('[data-watch]')].find((w) => w.dataset.watch === watching)?.focus({ preventScroll: true });
+    refocus(body, watching);
     $('records-page').textContent = games.label;
     pager.show(games.pager);
   };
 
   // A segmented choice in the markup, its options checked from the content's list.
-  const check = (group, list) => {
+  const check = (group, choicesList) => {
     for (const o of group.querySelectorAll('.ui-segmented__option')) {
-      const on = list.some((c) => c.value === o.dataset.value && c.selected);
+      const on = choicesList.some((c) => c.value === o.dataset.value && c.selected);
       o.setAttribute('aria-checked', String(on));
       o.tabIndex = on ? 0 : -1;
     }
   };
-  const cells = (doc, tr, values, headers) => values.forEach((text, i) => {
-    const td = doc.createElement('td');
-    td.textContent = text;
-    td.dataset.label = headers[i];
-    tr.append(td);
-  });
 
   const showTop = (top, canWatch) => {
-    const doc = root.ownerDocument;
     const body = $('records-top-body');
     const watching = body.contains(doc.activeElement) ? doc.activeElement.dataset.watch : null;
     check(statGroup, top.stats);
@@ -614,45 +647,54 @@ export function createRecordsView({
     empty.textContent = top.emptyText;
     empty.classList.toggle('hidden', !top.empty);
     $('records-top-table').classList.toggle('hidden', top.empty);
+    const [rank, time, rate, eff, date, bbbv, clicks] = top.headers;
     body.replaceChildren(...top.rows.map((g) => {
       const tr = doc.createElement('tr');
-      cells(doc, tr, [g.rank, g.time, g.rate, g.efficiency, g.date, g.bbbv, g.clicks], top.headers);
-      tr.append(codeCell(doc, g.code, onCopy));
-      if (canWatch) {
-        const td = doc.createElement('td');
-        td.dataset.label = 'Replay';
-        if (g.watch) td.append(watchButton(g.watch, `Watch the replay of the number ${g.rank} game, ${g.time}`));
-        tr.append(td);
-      }
+      tr.append(cell(g.rank, rank, 'ui-table__rank'), cell(g.time, time, 'ui-table__figure'), cell(g.rate, rate, 'ui-table__figure'),
+        cell(g.efficiency, eff, 'ui-table__figure'), cell(g.date, date, 'ui-table__date'), cell(g.bbbv, bbbv, 'ui-table__figure'),
+        cell(g.clicks, clicks, 'ui-table__figure'), codeCell(doc, g.code));
+      if (canWatch) tr.append(replayCell(g.watch, `Watch the replay of the number ${g.rank} game, ${g.time}`));
       return tr;
     }));
-    if (watching) [...body.querySelectorAll('[data-watch]')].find((w) => w.dataset.watch === watching)?.focus({ preventScroll: true });
+    refocus(body, watching);
   };
 
-  const showAverages = (averages) => {
-    const doc = root.ownerDocument;
+  const showAverages = (averages, empty) => {
     averages.columns.forEach((c) => { $(`records-avg-${c.key}`).textContent = c.label; });
     $('records-averages-body').replaceChildren(...averages.rows.map((r) => {
       const tr = doc.createElement('tr');
       const th = doc.createElement('th');
       th.scope = 'row';
       th.textContent = r.label;
-      tr.append(th);
-      cells(doc, tr, r.values, averages.columns.map((c) => c.label));
+      tr.append(th, ...r.values.map((v, i) => cell(v, averages.columns[i].label)));
       return tr;
     }));
-    for (const w of averages.winRates) {
-      const el = $(`rec-${w.key}`);
-      el.querySelector('.ui-stat__value').textContent = w.value;
-      el.querySelector('.ui-stat__detail').textContent = w.detail;
-    }
+    const line = $('records-win-rate');
+    line.textContent = averages.winRate;
+    line.classList.toggle('hidden', empty);
+  };
+
+  // A best's tile: its figure, and under it its date with the inline Watch when its replay is kept.
+  const showBest = (b) => {
+    const el = $(`rec-${b.stat}`);
+    el.querySelector('.ui-stat__value').textContent = b.value;
+    const note = el.querySelector('.ui-stat__detail');
+    const old = note.querySelector('[data-watch]');
+    const hadFocus = old !== null && old === doc.activeElement;
+    const date = b.date === DASH ? '' : b.date;
+    note.replaceChildren();
+    if (b.watch) {
+      const w = watchLink(b.watch, `Watch the replay of the ${b.label.toLowerCase()}`);
+      note.append(date ? `${date} · ` : '', w);
+      if (hadFocus) w.focus({ preventScroll: true });
+    } else note.textContent = date;
   };
 
   const buildPicker = (boards) => {
-    const hadFocus = picker.contains(root.ownerDocument.activeElement);
+    const hadFocus = picker.contains(doc.activeElement);
     unbind();
     picker.replaceChildren(...boards.map((b) => {
-      const o = root.ownerDocument.createElement('button');
+      const o = doc.createElement('button');
       o.type = 'button';
       o.className = 'ui-segmented__option';
       o.setAttribute('role', 'radio');
@@ -667,11 +709,7 @@ export function createRecordsView({
 
   return {
     show(content) {
-      for (const o of modes.querySelectorAll('.ui-segmented__option')) {
-        const on = o.dataset.value === content.mode;
-        o.setAttribute('aria-checked', String(on));
-        o.tabIndex = on ? 0 : -1;
-      }
+      for (const group of modeGroups) check(group, content.modes);
       const keys = content.boards.map((b) => b.key).join('\n');
       if (keys !== pickerKeys) {
         pickerKeys = keys;
@@ -683,13 +721,7 @@ export function createRecordsView({
           o.tabIndex = on ? 0 : -1;
         }
       }
-      $('records-board').textContent = content.board.label;
-      const empty = $('records-empty');
-      empty.textContent = content.emptyText;
-      empty.classList.toggle('hidden', !content.empty);
-      $('records-bests').classList.toggle('hidden', content.empty);
-      $('records-counters').classList.toggle('hidden', content.empty);
-      for (const id of ['records-period', 'records-outcome', 'records-won-only', 'records-charts', 'records-averages']) $(id).classList.toggle('hidden', content.empty);
+      $('records-board').textContent = `${content.board.label} · Bests`;
       check(periodGroup, content.filters.period);
       check(outcomeGroup, content.filters.outcome);
       $('records-won-only').textContent = content.filters.wonOnly;
@@ -705,35 +737,29 @@ export function createRecordsView({
       }
       showGames(content.games, content.canWatch);
       showTop(content.top, content.canWatch);
-      showAverages(content.averages);
+      showAverages(content.averages, content.empty);
       exportActions.show(content.exportable);
-      for (const b of content.bests) {
-        const el = $(`rec-${b.stat}`);
-        el.querySelector('.ui-stat__value').textContent = b.value;
-        el.querySelector('.ui-stat__detail').textContent = b.date;
-        const old = el.querySelector('[data-watch]');
-        if (old?.dataset.watch === b.watch) continue;
-        const hadFocus = old !== null && old === root.ownerDocument.activeElement;
-        old?.remove();
-        if (b.watch) {
-          const w = watchButton(b.watch, `Watch the replay of the ${b.label.toLowerCase()}`);
-          el.append(w);
-          if (hadFocus) w.focus({ preventScroll: true });
-        }
-      }
+      for (const b of content.bests) showBest(b);
       if (content.tab !== 'replays') list.hide();
       list.show(content.replays);
       fill('rec', content.counters);
       $('records-overall-title').textContent = content.overallTitle;
-      fill('ro', content.overall);
+      $('records-overall-line').textContent = content.overallLine;
       const note = $('records-note');
       note.textContent = content.notes.join(' ');
       note.classList.toggle('hidden', !content.notes.length);
       root.classList.remove('hidden');
-      if (!content.empty) {
-        history.draw(content.chart.points);
-        best.draw(content.bestChart);
+      // The chosen option in view inside the picker's sideways scroll (clear of the fade at its end), the page and the focus unmoved.
+      const chosen = picker.querySelector('[aria-checked="true"]');
+      const scroller = $('records-picker-scroll');
+      if (chosen && scroller) {
+        const left = chosen.offsetLeft - picker.offsetLeft;
+        const right = left + chosen.offsetWidth + PICKER_FADE;
+        if (left < scroller.scrollLeft) scroller.scrollLeft = left;
+        else if (right > scroller.scrollLeft + scroller.clientWidth) scroller.scrollLeft = right - scroller.clientWidth;
       }
+      history.draw(content.chart.points, content.chart.emptyText);
+      best.draw(content.bestChart);
     },
     closeConfirm: () => list.closeConfirm(),
     isConfirmOpen: () => list.isConfirmOpen(),
