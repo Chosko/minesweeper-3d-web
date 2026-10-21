@@ -269,8 +269,9 @@ it, which makes it ready for a first public release — Early Access, a Next
 Fest demo, or both.
 
 Exit criteria:
-- One 2D and one 3D daily board each day, identical for every player, each
-  with its own leaderboard ranked by 3BV/s.
+- One 2D and one 3D daily board each day, identical for every player, and
+  each daily board — 2D, 3D, Hexagon and Triangle — with its own leaderboard
+  ranked by 3BV/s.
 - A demo build with exactly the demo content for what exists at this point:
   unlimited 2D Beginner, Intermediate and Expert on the square grid,
   unlimited 3D Beginner, the first 5 levels of each campaign, 3 themes;
@@ -285,8 +286,9 @@ what a public release needs to convert and retain players, and both depend
 on the campaigns and leaderboards before them.
 
 Covers:
-- product-design.md § Daily board — the 2D and 3D daily boards with their
-  leaderboards.
+- product-design.md § Daily board — the 2D and 3D daily boards, and a
+  leaderboard for each daily board: 2D, 3D, Hexagon and Triangle. The
+  Hexagon and Triangle daily boards themselves are m2c-flat-grids'.
 - product-design.md § Demo edition — the locks, visible locked content and
   the *Buy full game* entry, for the content that exists at this milestone;
   3 themes offered, the rest visible and locked in the Settings theme list.
