@@ -551,7 +551,7 @@ test('the replay viewer plays a frame\'s changes while playing, and a seek drops
     update(changed, options) { calls.push(['update', [...changed], options]); },
     dropMotion() { calls.push(['drop']); },
   };
-  const sim = { grid: { width: 9, height: 9 }, game: {}, replay: { movement: [], sampleIntervalMs: 50 } };
+  const sim = { grid: { width: 9, height: 9 }, game: {}, replay: { header: { board: { grid: 'square', width: 9, height: 9 } }, movement: [], sampleIntervalMs: 50 } };
   const viewer = createViewer2D({ view, sim, pointer: { place() {}, hide() {} } });
   viewer.draw({ time: 100, changed: [3, 4] }, { playing: true });
   assert.deepEqual(calls, [['update', [3, 4], { motion: true }]]);

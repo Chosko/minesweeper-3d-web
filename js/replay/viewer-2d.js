@@ -8,8 +8,8 @@
 //   split into its pointer samples and cursor cells, for lookups by time; interval is the replay's
 //   movement sampling interval (its sampleIntervalMs), js/replay/sampler-2d.js SAMPLE_INTERVAL_MS
 //   when not given.
-// pointerAt(track, t) → [x, y] the recorded pointer at replay time t in cells from the board's
-//   top-left corner. Between two samples it holds the earlier one until one interval before the
+// pointerAt(track, t) → [x, y] the recorded pointer at replay time t in board units from the board's
+//   top-left corner (js/replay/sampler-2d.js boardPoint). Between two samples it holds the earlier one until one interval before the
 //   later one, then interpolates linearly to it (throughout, across a gap of one interval or less):
 //   the recorder stores no sample equal to the previous one, so a longer gap is a still stretch.
 //   Held at the last sample; null before the first. Off the board the values run below 0 or past
@@ -19,25 +19,32 @@
 //   ring hidden); one that opens on a cell was made while the ring showed from the start, before
 //   it hid, and that opening cell counts as -1, so its ring shows from its next cursor event.
 // pointerPixel(layout, scroll, [x, y]) → { x, y } that point in canvas CSS pixels, through the board
-//   view's layout and scroll (the inverse of js/replay/sampler-2d.js boardPoint).
-// trailPoints(track, t, ms?) → [[x, y]] the recorded pointer's trail behind replay time t, in cells,
+//   view's layout and scroll: a board unit is the layout's pitch, as the board view's boardPoint
+//   reports it (the inverse of js/replay/sampler-2d.js boardPoint).
+// replayGeometry(board) → the grid geometry (js/geometry/index.js) of a replay's 2D board identity
+//   ({ grid, width, height }, js/records/board.js); an unknown grid kind is a RangeError.
+// trailPoints(track, t, ms?) → [[x, y]] the recorded pointer's trail behind replay time t, in board units,
 //   newest first: the pointer every TRAIL_STEP_MS back over the last ms (TRAIL_MS), where it was
 //   elsewhere than at t; none before the first sample.
-// paintBbbv(ctx, rects, colours) paints Show 3BV's rects on a 2D canvas context: each a tile-sized
-//   square, its corners rounded TINT_RADIUS, in colours[tint] at TINT_ALPHA of it — the colours of
-//   BBBV_TINT_TOKENS, three of the confetti tokens —; a tint past them (an isolated number) is left
-//   unpainted.
+// paintBbbv(ctx, rects, colours) paints Show 3BV's rects on a 2D canvas context, each filling its
+//   tile's outline — a square's box with its corners rounded TINT_RADIUS, any other shape the polygon
+//   of its points — in colours[tint] at TINT_ALPHA of it — the colours of BBBV_TINT_TOKENS, three of
+//   the confetti tokens —; a tint past them (an isolated number) is left unpainted.
 //
-// createViewer2D({ view, sim, pointer, overlay? }) → { track, draw(frame, { playing }), place(),
-//   setScale(scale), press(actions), still(), showBbbv(tints), destroy() }
-//   view     the board view (js/classic2d/board-view.js) over the simulator's square grid and its square
-//            geometry (js/geometry/index.js); the viewer
-//            hands it the simulator's game, which it draws and never changes.
+// createViewer2D({ view, sim, pointer, overlay?, geometry? }) → { track, draw(frame, { playing }),
+//   place(), setScale(scale), press(actions), still(), showBbbv(tints), destroy() }
+//   view     the board view (js/classic2d/board-view.js) over the simulator's grid and the same
+//            geometry; the viewer hands it the simulator's game, which it draws and never changes.
 //   sim      the simulator (js/replay/simulator.js).
+//   geometry the board's grid geometry, rebuilt from the replay's board (replayGeometry) when not
+//            given, so an unknown grid kind is refused here and never at draw time. The pointer's
+//            cell is the one the geometry hit-tests under it, a press ring's centre and a tint's
+//            outline the geometry's, at the layout's tile and gap.
 //   pointer  { place(x, y), hide(), trail?(points), ring?(x, y, kind) } — the pointer drawn over the
 //            board, its trail and the press rings, in canvas CSS pixels.
-//   overlay  { paint(rects), clear() } — Show 3BV's paint: rects [{ x, y, size, tint }] in canvas CSS
-//            pixels, tint as js/replay/viewer.js regionTints.
+//   overlay  { paint(rects), clear() } — Show 3BV's paint: rects [{ x, y, size, width, height, shape,
+//            points, tint }], each cell's outline (its box, shape and corners) in canvas CSS pixels,
+//            size the layout's tile, tint as js/replay/viewer.js regionTints.
 //   draw(frame, { playing }) a simulator frame: redraws the cells it changed — playing their cell
 //            events (reveal, flag, unflag) when playback drew the frame; a seek drops the running ones
 //            and starts none —, moves the focus ring to the recorded cursor and the pointer to its
@@ -56,8 +63,8 @@
 //   setScale(scale)  the board scale (js/classic2d/board-view.js BOARD_SCALES) changed: the view
 //            refits and repaints, and the pointer follows.
 //
-// mountViewer2D({ container, sim, scale?, win? }) → the viewer plus destroy(): the board view
-// mounted in container in its board frame (js/classic2d/board-view.js mountBoardView, framed, no
+// mountViewer2D({ container, sim, scale?, win? }) → the viewer plus destroy(): the board view on the
+// geometry rebuilt from the replay's board, mounted in container in its board frame (js/classic2d/board-view.js mountBoardView, framed, no
 // play input), the whole board fitted in the container at any tile up to the board scale's cap, so
 // it never scrolls, the pointer, its trail and the press rings
 // as elements over it (.replay-pointer, .replay-trail, .replay-ring--<kind>, coloured from tokens),
@@ -119,6 +126,10 @@ export function pointerPixel(layout, scroll, [x, y]) {
   return { x: layout.offsetX - scroll.x + x * layout.pitch, y: layout.offsetY - scroll.y + y * layout.pitch };
 }
 
+export function replayGeometry(board) {
+  return createGeometry(board.grid, board.width, board.height);
+}
+
 export function trailPoints(track, t, ms = TRAIL_MS) {
   const now = pointerAt(track, t);
   if (!now) return [];
@@ -132,19 +143,24 @@ export function trailPoints(track, t, ms = TRAIL_MS) {
   return points;
 }
 
-export function createViewer2D({ view, sim, pointer, overlay = null }) {
+export function createViewer2D({ view, sim, pointer, overlay = null, geometry = replayGeometry(sim.replay.header.board) }) {
   const track = movementTrack(sim.replay.movement, sim.replay.sampleIntervalMs);
-  const { width, height } = sim.grid;
   view.setGame(sim.game);
 
+  // The layout's tile, gap and pitch (a board unit), and the board's corner on the canvas now.
+  const placing = () => {
+    const { layout, scroll } = view;
+    return { tile: layout.tile, gap: layout.pitch - layout.tile, pitch: layout.pitch, dx: layout.offsetX - scroll.x, dy: layout.offsetY - scroll.y };
+  };
+  // The cell the geometry hit-tests under a point in board units, or -1.
   const cellOf = (p) => {
     if (!p) return -1;
-    const col = Math.floor(p[0]), row = Math.floor(p[1]);
-    return col >= 0 && row >= 0 && col < width && row < height ? col + width * row : -1;
+    const { tile, gap, pitch } = placing();
+    return geometry.cellAt(p[0] * pitch, p[1] * pitch, tile, gap);
   };
 
-  let point = null; // the pointer in cells at the last frame drawn
-  let trail = [];   // its trail in cells
+  let point = null; // the pointer in board units at the last frame drawn
+  let trail = [];   // its trail in board units
   let placed = '';  // the layout and scroll it was last placed through
   let tints = null; // Show 3BV's, while shown
   let painted = '';
@@ -158,12 +174,15 @@ export function createViewer2D({ view, sim, pointer, overlay = null }) {
     const key = layoutKey();
     if (!force && key === painted) return;
     painted = key;
-    const size = view.layout.tile;
+    const { tile, gap, dx, dy } = placing();
     const rects = [];
     for (let c = 0; c < tints.length; c++) {
       if (tints[c] < 0) continue;
-      const at = pixel([c % width, Math.floor(c / width)]);
-      rects.push({ x: at.x, y: at.y, size, tint: tints[c] });
+      const o = geometry.outline(c, tile, gap);
+      rects.push({
+        x: dx + o.x, y: dy + o.y, size: tile, width: o.width, height: o.height, shape: o.shape,
+        points: o.points.map(([x, y]) => [dx + x, dy + y]), tint: tints[c],
+      });
     }
     overlay.paint(rects);
   }
@@ -207,10 +226,14 @@ export function createViewer2D({ view, sim, pointer, overlay = null }) {
     press(actions) {
       for (const a of actions) {
         const p = pointerAt(track, a.time);
-        const half = view.layout.tile / view.layout.pitch / 2; // the tile's centre, in pitches
-        const centre = [a.cell % width + half, Math.floor(a.cell / width) + half];
-        const at = pixel(p && cellOf(p) === a.cell ? p : centre);
-        pointer.ring?.(at.x, at.y, a.kind);
+        if (p && cellOf(p) === a.cell) {
+          const at = pixel(p);
+          pointer.ring?.(at.x, at.y, a.kind);
+          continue;
+        }
+        const { tile, gap, dx, dy } = placing();
+        const centre = geometry.centre(a.cell, tile, gap);
+        if (centre) pointer.ring?.(dx + centre.x, dy + centre.y, a.kind);
       }
     },
     showBbbv(next) {
@@ -231,12 +254,16 @@ export const TINT_ALPHA = 0.42;
 const TINT_RADIUS = 4;
 
 export function paintBbbv(ctx, rects, colours) {
-  for (const { x, y, size, tint } of rects) {
+  for (const { x, y, size, width = size, height = size, shape = 'square', points, tint } of rects) {
     if (tint < 0 || tint >= colours.length) continue;
     ctx.globalAlpha = TINT_ALPHA;
     ctx.fillStyle = colours[tint];
     ctx.beginPath();
-    ctx.roundRect(x, y, size, size, TINT_RADIUS);
+    if (shape === 'square') ctx.roundRect(x, y, width, height, TINT_RADIUS);
+    else {
+      points.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+      ctx.closePath();
+    }
     ctx.fill();
     ctx.globalAlpha = 1;
   }
@@ -244,7 +271,7 @@ export function paintBbbv(ctx, rects, colours) {
 
 export function mountViewer2D({ container, sim, scale, win = globalThis }) {
   const doc = win.document;
-  const geometry = createGeometry('square', sim.grid.width, sim.grid.height);
+  const geometry = replayGeometry(sim.replay.header.board);
   const view = mountBoardView({ container, grid: sim.grid, geometry, scale, win, framed: true, minTile: 1 });
   const mark = (className) => {
     const node = doc.createElement('div');
@@ -301,7 +328,7 @@ export function mountViewer2D({ container, sim, scale, win = globalThis }) {
     },
     clear() { if (canvas) canvas.hidden = true; },
   };
-  const viewer = createViewer2D({ view, sim, pointer, overlay });
+  const viewer = createViewer2D({ view, sim, pointer, overlay, geometry });
   const offTheme = onThemeChange(() => viewer.repaint());
   return {
     track: viewer.track,

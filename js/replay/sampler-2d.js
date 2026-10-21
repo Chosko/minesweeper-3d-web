@@ -2,9 +2,10 @@
 // keyboard and controller cursor's cell whenever it moves, fed to the session's recorder. DOM-free
 // at import: createSampler2D is driven by calls; mountSampler2D is its browser wiring.
 //
-// boardPoint(layout, scroll, x, y, steps?) → [bx, by]: canvas position x, y (CSS pixels) in cell
-//   units from the board's top-left corner — a unit is the layout's pitch, a cell's tile and the
-//   gap after it, so a point's whole part is the cell under it in any theme — quantised to 1/steps of a cell (SAMPLE_STEPS by
+// boardPoint(view, x, y, steps?) → [bx, by]: canvas position x, y (CSS pixels) in the board view's
+//   board units from the board's top-left corner (js/classic2d/board-view.js boardPoint: on the
+//   square geometry a unit is the layout's pitch, a cell's tile and the gap after it, so a point's
+//   whole part is the cell under it in any theme), quantised to 1/steps of a unit (SAMPLE_STEPS by
 //   default; another step is for the measurement, dev/measure-replays.mjs); off the board the
 //   values run below 0 or past the board's size, so a replay plays at any window size and zoom.
 //
@@ -24,7 +25,7 @@
 //
 // mountSampler2D({ view, session, win?, interval? }) → { sampler, tick(), cursor(c), destroy() }:
 // the last pointer position over the page (`win` mousemove), read through the board view's canvas
-// rectangle, layout and scroll at each sample.
+// rectangle and its board point at each sample.
 
 // Both set from dev/measure-replays.mjs (simulated games played through the session, Node 22): at
 // 1/64 of a cell one step is under 2 px on the largest standard tile (Beginner on a 1920 × 1080
@@ -35,16 +36,15 @@
 /** Game time between two pointer samples: about 20 a second. */
 export const SAMPLE_INTERVAL_MS = 50;
 
-/** A sample's unit: 1/SAMPLE_STEPS of a cell. */
+/** A sample's unit: 1/SAMPLE_STEPS of a board unit. */
 export const SAMPLE_STEPS = 64;
 
 const LIMIT = 2 ** 30;
 const clampInt = (v) => Math.max(-LIMIT, Math.min(LIMIT, Math.round(v)));
 
-export function boardPoint(layout, scroll, x, y, steps = SAMPLE_STEPS) {
-  const bx = (x - layout.offsetX + scroll.x) / layout.pitch;
-  const by = (y - layout.offsetY + scroll.y) / layout.pitch;
-  return [clampInt(bx * steps), clampInt(by * steps)];
+export function boardPoint(view, x, y, steps = SAMPLE_STEPS) {
+  const { u, v } = view.boardPoint(x, y);
+  return [clampInt(u * steps), clampInt(v * steps)];
 }
 
 export function createSampler2D({ session, point, interval = SAMPLE_INTERVAL_MS }) {
@@ -80,7 +80,7 @@ export function mountSampler2D({ view, session, win = globalThis, interval }) {
   const point = () => {
     if (!client) return null;
     const box = view.canvas.getBoundingClientRect();
-    return boardPoint(view.layout, view.scroll, client[0] - box.left, client[1] - box.top);
+    return boardPoint(view, client[0] - box.left, client[1] - box.top);
   };
   const sampler = createSampler2D({ session, point, interval });
   win.addEventListener('mousemove', onMove);

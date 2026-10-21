@@ -9,7 +9,8 @@ import assert from 'node:assert/strict';
 import {
   boardPoint, createSampler2D, mountSampler2D, SAMPLE_INTERVAL_MS, SAMPLE_STEPS,
 } from '../js/replay/sampler-2d.js';
-import { boardLayout } from '../js/classic2d/board-view.js';
+import { createBoardView } from '../js/classic2d/board-view.js';
+import { createGeometry } from '../js/geometry/index.js';
 import { createSession as openSession } from '../js/classic2d/session.js';
 
 // A session whose standard board is placed by the fake client's place(), as the worker would answer.
@@ -72,20 +73,60 @@ function replayAgain(replay) {
 
 // ---------- board coordinates ----------
 
-test('boardPoint: the pointer in cell units, quantised to 1/SAMPLE_STEPS of a cell, off the board too', () => {
-  const layout = boardLayout({ cols: 9, rows: 9, width: 600, height: 500 });
-  const { tile, offsetX, offsetY } = layout;
+// A board view of a cols × rows board on a canvas `width` × `height`, its board module's gap
+// `gap` of the tile (none by default), its canvas at `box` on the page.
+function boardView({ cols = 9, rows = 9, width = 600, height = 500, gap = 0, geometry, box = { left: 0, top: 0 } } = {}) {
+  const ctx = new Proxy({}, { get: (t, k) => (k in t ? t[k] : () => ({ addColorStop() {} })), set: (t, k, v) => { t[k] = v; return true; } });
+  const canvas = { width: 0, height: 0, style: {}, getContext: () => ctx, getBoundingClientRect: () => box };
+  const board = {
+    style2d: { name: 'flat', params: { radius: 0, gap, frameRadius: 0 } },
+    palette: { boardGround: '#fefefe', faces2d: { marked: { ring: '#123456' } } },
+    cursor: { color: '#0a0a0a', inner: '#f0f0f0', width: 3, innerWidth: 2, radius: { tile: 0.15, px: 3 } },
+  };
+  const createSkin = () => ({ drawTile() {}, board: () => board, dispose() {} });
+  const view = createBoardView({ canvas, grid: { width: cols, height: rows }, geometry, createSkin, scale: 'fit', token: () => '#808080' });
+  view.resize(width, height, 1);
+  return view;
+}
+
+test('boardPoint: the pointer in the view\'s board units, quantised to 1/SAMPLE_STEPS of a unit, off the board too', () => {
+  const view = boardView();
+  const { tile, offsetX, offsetY } = view.layout;
   assert.ok(offsetX > 0 && offsetY >= 0, 'a centred board');
-  const at = (col, row, scroll = { x: 0, y: 0 }) => boardPoint(layout, scroll, offsetX + col * tile, offsetY + row * tile);
+  const at = (col, row) => boardPoint(view, offsetX + col * tile, offsetY + row * tile);
   assert.deepEqual(at(2.5, 3.5), [2.5 * SAMPLE_STEPS, 3.5 * SAMPLE_STEPS]);
   assert.deepEqual(at(0, 0), [0, 0]);
   assert.deepEqual(at(-1, 10), [-SAMPLE_STEPS, 10 * SAMPLE_STEPS], 'off the board');
   for (const v of at(1.013, 2.97)) assert.ok(Number.isInteger(v));
 
-  const scrolled = boardLayout({ cols: 30, rows: 16, width: 400, height: 300 });
-  assert.ok(scrolled.scrolls);
-  const p = boardPoint(scrolled, { x: 3 * scrolled.tile, y: scrolled.tile }, scrolled.tile / 2, scrolled.tile / 2);
+  const scrolled = boardView({ cols: 30, rows: 16, width: 400, height: 300 });
+  assert.ok(scrolled.layout.scrolls);
+  const { pitch } = scrolled.layout;
+  scrolled.scrollTo(3 * pitch, pitch);
+  const p = boardPoint(scrolled, scrolled.layout.offsetX + pitch / 2, scrolled.layout.offsetY + pitch / 2);
   assert.deepEqual(p, [3.5 * SAMPLE_STEPS, 1.5 * SAMPLE_STEPS], 'the scroll position counts');
+});
+
+test('boardPoint quantises whatever board units the view\'s geometry reports, and reads nothing else of the view', () => {
+  const asked = [];
+  const view = { boardPoint: (x, y) => { asked.push([x, y]); return { u: x / 7, v: -y / 3 }; } };
+  assert.deepEqual(boardPoint(view, 14, 9), [2 * SAMPLE_STEPS, -3 * SAMPLE_STEPS]);
+  assert.deepEqual(boardPoint(view, 1, 1, 8), [Math.round(8 / 7), Math.round(-8 / 3)], 'another step');
+  assert.deepEqual(asked, [[14, 9], [1, 1]]);
+});
+
+test('on the square geometry the samples are byte-identical to the pitch arithmetic, with any gap and scroll', () => {
+  const pitchPoint = (layout, scroll, x, y) => [(x - layout.offsetX + scroll.x) / layout.pitch, (y - layout.offsetY + scroll.y) / layout.pitch]
+    .map((v) => Math.max(-(2 ** 30), Math.min(2 ** 30, Math.round(v * SAMPLE_STEPS))));
+  for (const [cols, rows, width, height, gap] of [[9, 9, 600, 500, 0], [16, 16, 700, 500, 0.09], [30, 16, 400, 300, 0.12], [8, 8, 333, 271, 0.2]]) {
+    const view = boardView({ cols, rows, width, height, gap, geometry: createGeometry('square', cols, rows) });
+    if (view.layout.scrolls) view.scrollTo(37, 23);
+    for (let x = -20; x < width + 20; x += 7.3) {
+      for (let y = -20; y < height + 20; y += 9.1) {
+        assert.deepEqual(boardPoint(view, x, y), pitchPoint(view.layout, view.scroll, x, y), `${cols} × ${rows} at ${x}, ${y}`);
+      }
+    }
+  }
 });
 
 // ---------- the sampler on a real session ----------
@@ -256,8 +297,8 @@ test('mountSampler2D: the last pointer position over the page, read through the 
     addEventListener(type, fn) { listeners.set(type, fn); },
     removeEventListener(type, fn) { if (listeners.get(type) === fn) listeners.delete(type); },
   };
-  const layout = boardLayout({ cols: 9, rows: 9, width: 600, height: 500 });
-  const view = { layout, scroll: { x: 0, y: 0 }, canvas: { getBoundingClientRect: () => ({ left: 10, top: 20 }) } };
+  const view = boardView({ box: { left: 10, top: 20 } });
+  const { layout } = view;
   let t = 0;
   const samples = [];
   const cursors = [];

@@ -72,8 +72,8 @@
 //            runs on the frames that draw nothing, to follow a board view that refitted; press
 //            shows a press ring for each action [{ index, time, kind, cell }]; still() says
 //            playback paused; showBbbv hands Show 3BV's tints (regionTints, null to clear);
-//            setFree switches a 3D camera between Free and Follow. Classic 2D's square is
-//            js/replay/viewer-2d.js; the 3D box is js/replay/viewer-3d.js, which js/main.js mounts on
+//            setFree switches a 3D camera between Free and Follow. A 2D board's is
+//            js/replay/viewer-2d.js, on the grid geometry of the replay's board; the 3D box is js/replay/viewer-3d.js, which js/main.js mounts on
 //            its renderer, and offers only with WebGL 2. A 3D (box) replay with no viewer says
 //            FAILURES.webgl2; any other replay with no viewer for its graph says FAILURES.unsupported.
 //            A mount that leaves the screen (a lost graphics context) is destroyed and nothing plays.

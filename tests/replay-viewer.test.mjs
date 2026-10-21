@@ -9,7 +9,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SPEEDS, DEFAULT_SPEED, LEAD_IN_MS, createPlaybackClock } from '../js/replay/clock.js';
-import { movementTrack, pointerAt, cursorAt, pointerPixel, createViewer2D, trailPoints, paintBbbv, TRAIL_MS } from '../js/replay/viewer-2d.js';
+import { movementTrack, pointerAt, cursorAt, pointerPixel, createViewer2D, trailPoints, paintBbbv, replayGeometry, TRAIL_MS } from '../js/replay/viewer-2d.js';
+import { createGeometry } from '../js/geometry/index.js';
 import {
   FAILURES, COMMANDS, REPLAY_KEYS, REPLAY_PAD, REPLAY_KEY_LINE, SEEK_STEP_MIN_MS, MAX_REPLAY_FILE_BYTES, BBBV_TINTS, BBBV_TINT_TOKENS, seekStep, clockText, overlayFigures, endLine,
   pauseMarks, pausesText, seekTicks, actionCue, regionTints, prepareReplay, createReplayViewer, replayCode, replayTitle, replayFigures,
@@ -1595,6 +1596,141 @@ test('a 2D press ring sits on the recorded pointer, or on the acted cell\'s cent
   const first = replay.actions[0];
   v.press([{ index: 0, ...first }]);
   assert.deepEqual(pointer.rings.at(-1), [(first.cell % 9 + 0.5) * 40, (Math.floor(first.cell / 9) + 0.5) * 40, 'reveal'], 'no pointer yet: the cell\'s centre');
+});
+
+// ---------------------------------------------------------------- the 2D viewer on the grid geometry
+
+// A geometry `width` × `height` laid out transposed — cell c (column c % width, row c / width) at the
+// square geometry's column row, row column — each tile's outline a triangle in its square's box: a
+// board on which no square pitch arithmetic finds a cell, its centre or its tint's shape.
+function transposedGeometry(width, height) {
+  const base = createGeometry('square', height, width);
+  const to = (c) => (Number.isInteger(c) && c >= 0 && c < width * height ? Math.floor(c / width) + height * (c % width) : -1);
+  const from = (v) => (v < 0 ? -1 : Math.floor(v / height) + width * (v % height));
+  return {
+    kind: 'transposed', width, height, count: width * height, minTile: base.minTile, tileCap: base.tileCap,
+    extent: (tile, gap) => base.extent(tile, gap),
+    outline(c, tile, gap) {
+      const o = base.outline(to(c), tile, gap);
+      return o && { ...o, shape: 'triangle', orientation: 'up', points: [[o.x + o.width / 2, o.y], [o.x + o.width, o.y + o.height], [o.x, o.y + o.height]] };
+    },
+    centre: (c, tile, gap) => base.centre(to(c), tile, gap),
+    glyphBox: (c, tile, gap) => base.glyphBox(to(c), tile, gap),
+    cellAt: (x, y, tile, gap) => from(base.cellAt(x, y, tile, gap)),
+    neighbour: () => -1,
+  };
+}
+
+// A fake board view laid out with a gap: tile 40, pitch 44, the board's corner at 5, 7.
+function gapView() {
+  const view = fakeView();
+  view.layout = { ...view.layout, tile: 40, pitch: 44, gap: 4, offsetX: 5, offsetY: 7 };
+  return view;
+}
+
+test('the 2D viewer rebuilds its geometry from the replay\'s board, and refuses an unknown grid kind when it is made', () => {
+  const { header } = decodeReplay(blobOf(WON));
+  const square = replayGeometry(header.board);
+  assert.deepEqual([square.kind, square.width, square.height], ['square', 9, 9]);
+  const played = createSimulator(blobOf(WON));
+  const { header: h } = played.replay;
+  const sim = { grid: played.grid, game: played.game, replay: { ...played.replay, header: { ...h, board: { ...h.board, grid: 'nonagon' } } } };
+  const view = fakeView();
+  assert.throws(() => createViewer2D({ view, sim, pointer: fakePointer() }), RangeError, 'at setup, not at draw time');
+  assert.deepEqual(view.calls.game, [], 'before the view is handed the game');
+});
+
+test('on another geometry the 2D viewer finds the pointer\'s cell, the press rings\' centres and the tints\' outlines through it', () => {
+  const geometry = transposedGeometry(9, 9);
+  const replay = decodeReplay(blobOf(WON));
+  const act = replay.actions.find((a) => a.cell % 9 !== Math.floor(a.cell / 9));
+  const t = act.time;
+  const { x: cx, y: cy } = geometry.centre(act.cell, 40, 4);
+  const values = [Math.round((cx / 44) * 64), Math.round((cy / 44) * 64)];
+  replay.movement = [{ time: 0, type: 'cursor', cell: -1 }, { time: t, type: 'sample', values }];
+  const sim = createSimulator(replay);
+  const view = gapView();
+  view.layout = { ...view.layout, scrolls: true };
+  const rings = [];
+  const pointer = { ...fakePointer(), trail() {}, ring: (x, y, kind) => rings.push([x, y, kind]) };
+  let painted = null;
+  const overlay = { paint: (rects) => { painted = rects; }, clear() {} };
+  const v = createViewer2D({ view, sim, pointer, overlay, geometry });
+
+  v.draw(sim.seek(t));
+  assert.deepEqual(view.calls.ensure, [act.cell], 'a view that scrolls follows the geometry\'s cell under the pointer');
+  const at = { x: 5 + (values[0] / 64) * 44, y: 7 + (values[1] / 64) * 44 };
+  assert.deepEqual(pointer.at.at(-1), [at.x, at.y], 'the pointer in board units: the layout\'s pitch');
+  v.press([{ index: 0, ...act }]);
+  assert.deepEqual(rings.at(-1), [at.x, at.y, act.kind], 'the pointer is on the acted cell as the geometry hit-tests it');
+  const other = replay.actions.find((a) => a.time < t && a.cell !== act.cell);
+  if (other) {
+    const c = geometry.centre(other.cell, 40, 4);
+    v.press([{ index: 0, ...other }]);
+    assert.deepEqual(rings.at(-1), [5 + c.x, 7 + c.y, other.kind], 'off the pointer: the geometry\'s centre of the cell');
+  }
+  const first = replay.actions[0];
+  const c0 = geometry.centre(first.cell, 40, 4);
+  v.press([{ index: 0, ...first }]);
+  assert.deepEqual(rings.at(-1), [5 + c0.x, 7 + c0.y, first.kind], 'before the first sample: the cell\'s centre');
+
+  const tints = new Array(81).fill(-1);
+  tints[act.cell] = 1;
+  v.showBbbv(tints);
+  const o = geometry.outline(act.cell, 40, 4);
+  assert.deepEqual(painted, [{
+    x: 5 + o.x, y: 7 + o.y, size: 40, width: o.width, height: o.height, shape: 'triangle',
+    points: o.points.map(([px, py]) => [5 + px, 7 + py]), tint: 1,
+  }], 'the tint fills the tile\'s outline where the geometry puts it');
+});
+
+test('Show 3BV fills an outline other than a square as its polygon, at the same alpha', () => {
+  const ops = [];
+  const ctx = {
+    set globalAlpha(v) { ops.push(['alpha', v]); }, set fillStyle(v) { ops.push(['fill', v]); },
+    beginPath() { ops.push(['begin']); }, roundRect(...a) { ops.push(['round', ...a]); }, fill() { ops.push(['paint']); },
+    moveTo(...a) { ops.push(['move', ...a]); }, lineTo(...a) { ops.push(['line', ...a]); }, closePath() { ops.push(['close']); },
+  };
+  paintBbbv(ctx, [
+    { x: 0, y: 0, size: 40, width: 40, height: 40, shape: 'triangle', points: [[20, 0], [40, 40], [0, 40]], tint: 2 },
+    { x: 50, y: 0, size: 40, width: 40, height: 40, shape: 'square', points: [[50, 0], [90, 0], [90, 40], [50, 40]], tint: 0 },
+  ], ['#a', '#b', '#c']);
+  assert.deepEqual(ops, [
+    ['alpha', 0.42], ['fill', '#c'], ['begin'], ['move', 20, 0], ['line', 40, 40], ['line', 0, 40], ['close'], ['paint'], ['alpha', 1],
+    ['alpha', 0.42], ['fill', '#a'], ['begin'], ['round', 50, 0, 40, 40, 4], ['paint'], ['alpha', 1],
+  ], 'a square keeps its rounded tile-sized square');
+});
+
+test('every 2D fixture draws its pointer, trail, press rings and tints where the square pitch arithmetic put them', () => {
+  for (const name of ['2d-beginner-won', '2d-expert-abandoned', '2d-intermediate-lost']) {
+    const sim = createSimulator(new Uint8Array(readFileSync(join(ROOT, `tests/fixtures/replays/${name}.msrp`))));
+    const { width } = sim.grid;
+    const view = gapView();
+    const trails = [];
+    const rings = [];
+    const pointer = { ...fakePointer(), trail: (points) => trails.push(points), ring: (x, y, kind) => rings.push([x, y, kind]) };
+    let painted = null;
+    const v = createViewer2D({ view, sim, pointer, overlay: { paint: (rects) => { painted = rects; }, clear() {} } });
+    const px = ([x, y]) => [5 + x * 44, 7 + y * 44];
+    for (let t = 0; t <= sim.duration; t += Math.max(1, Math.floor(sim.duration / 40))) {
+      v.draw(sim.seek(t), { playing: true });
+      const p = pointerAt(v.track, t);
+      assert.deepEqual(pointer.at.at(-1), p ? px(p) : null, `${name} at ${t}: the pointer`);
+      if (p) assert.deepEqual(trails.at(-1), trailPoints(v.track, t).map(px), `${name} at ${t}: the trail`);
+    }
+    for (const a of sim.replay.actions) {
+      v.press([{ index: 0, ...a }]);
+      const p = pointerAt(v.track, a.time);
+      const col = a.cell % width, row = Math.floor(a.cell / width);
+      const on = p && Math.floor(p[0]) === col && Math.floor(p[1]) === row;
+      assert.deepEqual(rings.at(-1), [...(on ? px(p) : [5 + col * 44 + 20, 7 + row * 44 + 20]), a.kind], `${name}: the ring of action at ${a.time}`);
+    }
+    const tints = Array.from({ length: sim.grid.graph.count }, (_, c) => (c % 5 === 4 ? -1 : c % 3));
+    v.showBbbv(tints);
+    const want = [];
+    tints.forEach((tint, c) => { if (tint >= 0) want.push([5 + (c % width) * 44, 7 + Math.floor(c / width) * 44, 40, tint]); });
+    assert.deepEqual(painted.map((r) => [r.x, r.y, r.size, r.tint]), want, `${name}: each tint on its tile`);
+  }
 });
 
 test('the press rings take the canvas\'s look, 30 px in a 3 px border, the flag\'s at .6, and keep their expanding fade', () => {

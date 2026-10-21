@@ -1391,7 +1391,7 @@ Feature: flat-grid-geometry
 
 ## 252. 2D movement sampler and replay viewer in board units
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/sampler-2d.js, js/replay/viewer-2d.js, js/replay/viewer.js, tests/replay-2d.test.mjs, tests/replay-viewer.test.mjs
 Preconditions: 249
