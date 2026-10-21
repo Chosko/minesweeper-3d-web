@@ -258,7 +258,7 @@ Context:
 
 Done: 2026-10-21, commit `aef0c93` (27 files, +525/-354). Decisions: the xl fit with 3D bindings shown is built and tested here (`tests/settings-page.test.mjs`), but task 233's body does not carry the clause yet; `js/settings/bindings.js` now holds three lists — full, help (`helpListHtml`, pause card and H panel) and ready card (`readyListHtml`, formerly hard-coded in `index.html`); the list is a new `ui-controls` kit part. Following the canvas drops some working keys from every surface (3D Enter / ' and Home / R, 2D wheel-scroll and H / M).
 
-## [~] 21. Implement task 234 — Pause card to the canvas
+## [x] 21. Implement task 234 — Pause card to the canvas
 
 Depends on: 8, 20
 
@@ -268,6 +268,8 @@ Context:
 ```prompt
 /task-implement 234 --review
 ```
+
+Done: 2026-10-21, commit `491f6b5` (27 files, +300/-122). Decisions: "no game in progress" excludes a first-click board being generated (`status().pending` in `js/classic2d/mode.js`); an ended game shows the canvas's single not-started line and loses its final figures (owner to decide); the confirm box follows the task body ("Leave this game?", "Confirm") over the canvas; Back to start has no Home hint since the key does not work there. Back before the first click still resumes, against `game-shell.md` § Pause rules (pre-existing).
 
 ## [x] 22. Implement task 235 — 3D ready card, HUD readouts and the touch stick
 
