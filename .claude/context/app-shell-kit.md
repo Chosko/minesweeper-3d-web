@@ -14,7 +14,7 @@ screens' markup in `index.html` and the shell stylesheet are
 | ---- | -------------- |
 | `css/components.css` | the component kit's structure (base stylesheet): `ui-*` classes, layout, sizes, the hidden default of every decoration slot; its head comment is the catalogue (element, role, accessible name, markup pattern, states, focus contract, screens built from them) |
 | `js/ui/kit-catalogue.js` | the kit catalogue as data (DOM-free): every component and composition, its parts, each interactive part's states as the selectors a theme styles, its decoration slots; `CONTRAST_ROLES`; `REQUIRED_TOKENS`, the token set every theme declares |
-| `dev/components.html` | the kit gallery (development only): every catalogued component in every state (`data-force` previews) and every decoration slot, the icon set and a button of each size with its icon, the confirm box (with its heading, text only, and as a table row) and the notes, the overlay bar, the counters and the figures panel (with and without its progress bar and pace row, and with its head bar), the results layout `#g-results`, under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
+| `dev/components.html` | the kit gallery (development only), the theme's page beside the canvas's J-Components artboard: every catalogued component in every state (`data-force` previews) and every decoration slot, and every part J-Components draws, each marked `data-canvas="<part>"` — the quiet button, Swap clicks and the Tap choice, the hint strip, the view chip and the HUD key strip (their text from `js/settings/bindings.js`, as the game's), the board status cards, the confirm box (with its heading, text only, and as a table row) and the notes, the H help card, the crosshair, aim readout and off-screen arrow on a still scene panel, the invalid field, the switch row, the icon set and a button of each size with its icon, the Settings theme list (`settingControlHtml`, bound to the applier: a pick switches the theme), and the menu's previews in their scene panels — the Classic 2D demo board by `bindMenuPreview` and its board view, the 3D demo board by the 3D renderer on the panel's own canvas (the still panel without WebGL 2); the overlay's parts carry the ids the theme draws them by and the gallery's `<style>` lays them out as `css/style.css` does in the game. Beside them the parts the artboard does not draw stay as kit coverage (the menu list, the overlay bar, the wordmark, the board frame, the banner, the link, the columns, a counter without its icon, the forced states, the field's adjusted state), with the counters, the figures panel (with its progress bar and pace row, a board with no best's — its bar, no pace row —, and with its head bar) and the results layout `#g-results`; the cards sit apart in the page grid, so no part overlaps another; all under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
 
 ## PUBLIC API
 
@@ -57,8 +57,14 @@ optional, and `digits`; `data-negative` below zero), `ui-counter-strip`
 `ui-figure` (`label`, `value`, `detail`, `bar`, `fill`; variant
 `ui-figure--progress`) and the figures panel `ui-figures` (`head`,
 `title`, `action` — the optional head bar —, `body`, `foot` with the
-controls reminder, `live`); and the icon `ui-icon`, a composition the
-control around it inks.
+controls reminder, `live`); the icon `ui-icon`, a composition the
+control around it inks; and the overlay's own parts, laid out by
+`css/style.css` and drawn by the theme by their classes and ids:
+`hud-panel` (variant `hud-tools`, the HUD key strip; parts `hint`
+`#hint-strip`, `step`, `dismiss` `.hint-close`, `help` `#help`, `title`
+`#help-title`, `foot` `.help-foot`, all optional), the view chip `chip`,
+`crosshair` and `crosshair-arrow` (`halo`, `line`), `aim-readout` (`sep`)
+and `touch-stick` (`knob`).
 
 ## INTERNAL PATTERNS
 
@@ -67,9 +73,12 @@ control around it inks.
   part and state selectors of `js/ui/kit-catalogue.js`; renaming either
   breaks every screen and every theme. A new component, part or slot goes
   into the head comment, `KIT_CATALOGUE`, every registered theme's
-  stylesheet, the gallery (every state) and `COMPONENTS` in
-  `tests/components.test.mjs`; a new composition into the catalogue and
-  `COMPOSITIONS`.
+  stylesheet, the gallery (every state) and, for a kit component with its
+  structure in the base, `COMPONENTS` in `tests/components.test.mjs`; a new
+  composition into the catalogue and `COMPOSITIONS`. A part the canvas's
+  J-Components artboard draws is also marked in the gallery and listed in
+  that test file's `CANVAS_PARTS`; every class the gallery shows is
+  catalogued or the gallery's own layout.
 - **Controls.** Every interactive control is a native `<button>`, `<input>`
   or `<a>`. Buttons, menu entries, mode entries and board options have one
   selected state — hover and focus alike, no outline; *Joyful tiles* draws

@@ -3229,7 +3229,7 @@ test('in-game markup: counters named and never live, the strip holding Restart b
     return { head: Boolean(head), bar: within(parts, '.ui-figure__bar').length === 1, pace: labels.includes('Pace vs PB'), foot: Boolean(foot), labels };
   });
   assert.ok(shapes.some((s) => s.bar && s.pace && s.foot && !s.head), 'the panel with its progress bar and pace row');
-  assert.ok(shapes.some((s) => !s.bar && !s.pace), 'the panel without its progress bar and pace row');
+  assert.ok(shapes.some((s) => s.bar && !s.pace && !s.head), 'the panel of a board with no best: its progress bar, no pace row');
   assert.ok(shapes.some((s) => s.head), 'the panel with its head bar, as the 3D game\'s');
   for (const s of shapes) assert.deepEqual(s.labels.filter((l) => l !== 'Pace vs PB'), ['3BV', '3BV/s', 'Clicks', 'Flags'], 'the live figures in their order');
 });
@@ -4009,4 +4009,163 @@ test('the board status cards: centred on the board column, the canvas\'s spinner
   // In 3D: a scrim over the scene, and no HUD, figures or hint strip behind the card.
   assert.match(bodyOf(THEME_RULES, '#m3d-status'), /0 0 0 100vmax var\(--color-backdrop\)/);
   assert.match(bodyOf(rules(STYLE), 'body:has(> #m3d-status:not(.hidden)) #hud'), /visibility: hidden;/);
+});
+
+// ---------------------------------------------------------------- the gallery beside J-Components
+
+// Every part the canvas's components artboard (J-Components) draws, as the gallery marks it
+// (data-canvas="<name>") and the class of the marked element, which the kit catalogue lists.
+const CANVAS_PARTS = Object.freeze({
+  'quiet-button': 'ui-button--quiet',
+  'swap-clicks': 'ui-button--quiet',
+  'tap-toggle': 'ui-segmented',
+  'hint-strip': 'hud-panel',
+  'view-chip': 'chip',
+  'hud-key-strip': 'hud-tools',
+  'status-generating': 'ui-card',
+  'status-failed': 'ui-card',
+  'confirmation': 'ui-confirm',
+  'help-card': 'hud-panel',
+  'crosshair': 'crosshair',
+  'aim-readout': 'aim-readout',
+  'offscreen-arrow': 'crosshair-arrow',
+  'field-invalid': 'ui-field__input',
+  'board-preview': 'ui-scene-panel',
+  '3d-preview': 'ui-scene-panel',
+  'note-warn': 'ui-note--warn',
+  'note-err': 'ui-note--err',
+  'switch-row': 'ui-switchrow',
+  'icon-set': 'icon-set',
+  'theme-list': 'theme-list',
+  'touch-stick': 'touch-stick',
+});
+const CATALOGUED = new Set(KIT_CATALOGUE.flatMap((c) => [
+  c.selector, ...(c.base ? [`.${c.base}`] : []), ...c.variants.map((v) => `.${v}`),
+  ...c.parts.flatMap((p) => [p.selector, ...Object.values(p.states ?? {})]), ...c.slots.map((x) => x.selector),
+]).flatMap((sel) => [...sel.matchAll(/\.([\w-]+)/g)].map((m) => m[1])));
+// The gallery's own layout classes: the ones its inline <style> lays out and no theme draws.
+const GALLERY_STYLE = [...GALLERY.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
+const GALLERY_LAYOUT = new Set([...GALLERY_STYLE.matchAll(/\.([a-z][\w-]*)/g)].map((m) => m[1]).filter((c) => !CATALOGUED.has(c)));
+const GALLERY_BODY_TAGS = TAGS.filter((t) => t.index > GALLERY.indexOf('<body>') && t.index < GALLERY.indexOf('<script type="module">'));
+
+test('the gallery shows every part J-Components draws, each in the class the kit catalogue lists', () => {
+  for (const [name, cls] of Object.entries(CANVAS_PARTS)) {
+    const marked = GALLERY_BODY_TAGS.filter((t) => t.attrs['data-canvas'] === name);
+    assert.ok(marked.length > 0, `the gallery shows ${name}`);
+    assert.ok(marked.every((t) => classesOf(t).includes(cls)), `${name} is a ${cls}`);
+    if (!['icon-set', 'theme-list'].includes(name)) assert.ok(CATALOGUED.has(cls), `the catalogue lists ${cls}`);
+  }
+  const swap = GALLERY_BODY_TAGS.filter((t) => t.attrs['data-canvas'] === 'swap-clicks');
+  assert.deepEqual(swap.map((t) => t.attrs['aria-pressed']).sort(), ['false', 'true'], 'Swap clicks off and on');
+  assert.ok(swap.every((t) => hasClasses(t, '.ui-button--sm') && 'title' in t.attrs), 'small, with its tooltip, as the game window\'s');
+  const tap = GALLERY_BODY_TAGS.filter((t) => t.attrs['data-canvas'] === 'tap-toggle');
+  assert.equal(tap.length, 2, 'Tap: Reveal and Tap: Flag, each chosen');
+  assert.ok(GALLERY_BODY_TAGS.some((t) => t.attrs['data-canvas'] === 'hud-key-strip' && hasClasses(t, '.hud-panel')), 'the HUD key strip is a HUD panel');
+  assert.ok(GALLERY_BODY_TAGS.some((t) => t.attrs.id === 'hint-strip-close' && t.attrs['aria-label']), 'the hint strip\'s dismiss button, named');
+  assert.ok(GALLERY_BODY_TAGS.some((t) => t.attrs['data-canvas'] === 'view-chip' && hasClasses(t, '.chip')), 'a view chip');
+  assert.ok(GALLERY_BODY_TAGS.some((t) => t.attrs['data-canvas'] === 'field-invalid' && hasClasses(t, '.is-invalid') && t.attrs['aria-invalid'] === 'true'), 'the field\'s invalid state');
+  for (const id of ['crosshair', 'crosshair-arrow', 'aim-readout', 'hint-strip', 'help']) {
+    assert.ok(GALLERY_BODY_TAGS.some((t) => t.attrs.id === id), `#${id}, the id the theme draws it by`);
+  }
+  // The game's markup carries the classes the catalogue names these parts by.
+  for (const [id, cls] of [['crosshair', 'crosshair'], ['crosshair-arrow', 'crosshair-arrow'], ['aim-readout', 'aim-readout'], ['touch-stick', 'touch-stick']]) {
+    assert.match(INDEX, new RegExp(`<div id="${id}" class="(?:[\\w-]+ )*${cls}(?: [\\w-]+)*"`), `index.html's #${id} is a ${cls}`);
+  }
+  // The text the canvas shows comes from the same sources as the game's.
+  for (const name of ['hintStripHtml', 'hudStripHtml', 'helpListHtml', 'helpFootHtml']) assert.match(GALLERY, new RegExp(`\\b${name}\\('classic-2d', 'keyboard'\\)`), `the gallery draws ${name} as the game does`);
+  assert.match(GALLERY, /settingControlHtml\('theme'/, 'the theme list is the Settings page\'s');
+  assert.match(GALLERY, /bindSettingControls\(/, 'bound as the Settings page binds it');
+  assert.match(GALLERY, /bindMenuPreview\(/, 'the Classic 2D board drawn into its scene panel as the menu draws it');
+  assert.match(GALLERY, /new BoardRenderer\(/, 'the 3D preview drawn by the 3D renderer');
+});
+
+test('the kit catalogue lists every part the gallery shows; the rest is the gallery\'s own layout', () => {
+  const shown = new Set(GALLERY_BODY_TAGS.flatMap(classesOf));
+  for (const cls of shown) {
+    assert.ok(CATALOGUED.has(cls) || GALLERY_LAYOUT.has(cls) || PLAIN_CONTENT.has(cls), `${cls} is catalogued or the gallery's layout`);
+  }
+  for (const cls of GALLERY_LAYOUT) assert.ok(!THEME_RULES.some(([sel]) => new RegExp(`\\.${cls}(?![\\w-])`).test(sel)), `no theme draws the gallery's layout class ${cls}`);
+  // The overlay's own parts are catalogued components every theme is held to.
+  for (const name of ['hud-panel', 'chip', 'crosshair', 'crosshair-arrow', 'aim-readout', 'touch-stick']) {
+    assert.equal(kit(name)?.kind, 'component', `${name} is catalogued`);
+  }
+  assert.deepEqual(kit('hud-panel').variants, ['hud-tools']);
+  assert.deepEqual(kit('hud-panel').parts.map((p) => [p.name, p.selector]), [
+    ['hint', '#hint-strip'], ['step', '.hint-step'], ['dismiss', '.hint-close'], ['help', '#help'], ['title', '#help-title'], ['foot', '.help-foot'],
+  ]);
+});
+// Plain content inside a catalogued component, drawn by the component around it in its ink: the
+// overlay's glyphs (laid out by css/style.css) and a note's text.
+const PLAIN_CONTENT = new Set(['aim-icon', 'aim-icon--cube', 'aim-icon--flag', 'chip__icon', 'ui-note__text']);
+
+test('the gallery lays its demos out with gaps: the columns blocks, the results body and the cards', () => {
+  assert.match(GALLERY_STYLE, /\.columns-demo \{[^}]*display: flex; flex-direction: column; gap: var\(--space-\d\)/, 'a gap between the columns blocks');
+  assert.match(GALLERY_STYLE, /#g-results \.ui-frame__body \{[^}]*display: flex; flex-direction: column; gap: 18px;/, 'the results body as the screen lays it out');
+  assert.doesNotMatch(GALLERY, /<div class="wide">/, 'no wrapper stacks the cards without the grid\'s gap');
+});
+
+test('in a browser, the gallery beside J-Components: no part overlaps another, every canvas part drawn, the theme list and both previews', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    for (const width of [1280, 760]) {
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.goto(`${base}/dev/components.html`);
+      await page.evaluate(() => globalThis.galleryReady);
+      await page.waitForFunction(() => document.querySelector('[data-canvas="3d-preview"]').dataset.shows
+        && document.querySelector('[data-canvas="board-preview"] canvas')
+        && [...document.querySelectorAll('[data-canvas="theme-list"] .ui-segmented__swatch')].every((s) => s.style.background), null, { timeout: patience(10000) });
+      const got = await page.evaluate(() => {
+        const box = (el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width, height: r.height }; };
+        const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+        const cards = [...document.querySelectorAll('.grid > *')].map(box);
+        const cardOverlaps = [];
+        for (let i = 0; i < cards.length; i++) for (let j = i + 1; j < cards.length; j++) if (overlap(cards[i], cards[j])) cardOverlaps.push([i, j]);
+        const blocks = [...document.querySelectorAll('.columns-demo > .ui-columns')].map(box);
+        const results = document.getElementById('g-results');
+        const middle = document.querySelectorAll('.figures-row > .ui-figures')[1];
+        const bar = middle.querySelector('.ui-figure__bar');
+        const parts = {};
+        for (const el of document.querySelectorAll('[data-canvas]')) {
+          const b = box(el);
+          parts[el.dataset.canvas] = Math.min(parts[el.dataset.canvas] ?? Infinity, b.width * b.height);
+        }
+        const list = document.querySelector('[data-canvas="theme-list"] .ui-segmented--list');
+        const preview3d = document.querySelector('[data-canvas="3d-preview"]');
+        const board = document.querySelector('[data-canvas="board-preview"] canvas');
+        return {
+          cardOverlaps,
+          gaps: blocks.slice(1).map((b, i) => b.top - blocks[i].bottom),
+          resultsGap: box(results.querySelector('.ui-stat-row')).top - box(results.querySelector('.ui-frame__body > .ui-text')).bottom,
+          bar: bar ? box(bar).height : 0,
+          parts,
+          list: list && {
+            options: [...list.querySelectorAll('.ui-segmented__option')].map((o) => [o.dataset.value, o.getAttribute('aria-checked')]),
+            current: document.documentElement.dataset.theme,
+          },
+          preview3d: { shows: preview3d.dataset.shows, canvas: !!preview3d.querySelector('canvas'), tag: preview3d.querySelector('.ui-scene-panel__tag').textContent },
+          board: board && box(board),
+          boardTag: document.querySelector('[data-canvas="board-preview"] .ui-scene-panel__tag').textContent,
+        };
+      });
+      assert.deepEqual(got.cardOverlaps, [], `${width}: no card overlaps another`);
+      assert.ok(got.gaps.length >= 2 && got.gaps.every((g) => g >= 12), `${width}: the columns blocks stand apart (${got.gaps})`);
+      assert.ok(got.resultsGap >= 12, `${width}: the results' tiles stand below the board line (${got.resultsGap})`);
+      assert.ok(got.bar > 0, `${width}: the panel with no best keeps its 3BV progress bar`);
+      for (const name of Object.keys(CANVAS_PARTS)) assert.ok(got.parts[name] > 0, `${width}: ${name} is drawn`);
+      assert.ok(got.list.options.length > 0 && got.list.options.every(([id, on]) => on === String(id === got.list.current)), `${width}: the theme list shows the active theme chosen`);
+      assert.equal(got.boardTag, 'Classic 2D · Intermediate');
+      assert.ok(got.board.width > 100 && got.board.height > 100, `${width}: the Classic 2D board drawn in its scene panel`);
+      assert.match(got.preview3d.tag, /^3D · Demo board \d+ × \d+ × \d+$/);
+      if (got.preview3d.shows === 'scene') assert.ok(got.preview3d.canvas, `${width}: the 3D preview drawn by the renderer`);
+      else assert.ok(got.preview3d.shows === 'still' && !got.preview3d.canvas, `${width}: without WebGL 2 the 3D preview is its still panel`);
+      assert.deepEqual(errors, []);
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
 });

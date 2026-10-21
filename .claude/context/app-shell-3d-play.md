@@ -98,8 +98,9 @@ presses and releases Enter and ' through `input.actions` as their keys do;
   it only under the `aimReadout` setting in 3D play; `ui.setCrosshair`
   draws the crosshair's arms only while a cell is targeted, with no
   ring. Picking is cached by
-  `S.pickKey`. Spacing resets per game to `SPACING_START`; the menu demo (`makeDemo`,
-  decorative) keeps its own spacing and an orbiting camera.
+  `S.pickKey`. Spacing resets per game to `SPACING_START`; the menu demo
+  (`demoBoard3D`, decorative, [app-shell-menu.md](app-shell-menu.md)) uses
+  `DEMO_SPACING_3D` and an orbiting camera.
 - **Spacing.** Every change in play goes through `setSpacing(s)`: clamped
   to `SPACING_MIN`–`SPACING_MAX`, the camera rescaled about the board centre by new / old
   (`FlyCamera.rescale`, yaw and pitch kept; the orbit's distance too),

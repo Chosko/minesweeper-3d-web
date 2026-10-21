@@ -465,6 +465,34 @@
               bindFiguresLive(panel).announce(text) at most once a second
               (LIVE_FIGURES_INTERVAL), the latest text winning.
 
+   The overlay's own parts. Laid over the board or the 3D scene in
+   index.html and laid out by css/style.css, not by this base; the theme
+   draws them, by the classes and ids below, as it draws the kit.
+     hud-panel        a HUD surface: the first-use hint strip
+                      (<div id="hint-strip" class="hud-panel" role="note">,
+                      its optional .hint-step, its text, then the dismiss
+                      <button class="hint-close" aria-label="Dismiss hint">);
+                      the H help card (<aside id="help" class="hud-panel">,
+                      its #help-title, the ui-controls list, the .help-foot
+                      line); hud-tools, the HUD key strip (<div
+                      class="hud-panel hud-tools">, each binding a .kbd-hint).
+     chip             a view chip (<span class="chip">: its eye icon
+                      .chip__icon, then "Shift: neighbours only"), shown with
+                      .on while its view mode is held.
+     crosshair        the 3D game's crosshair (<div id="crosshair"
+                      class="crosshair">: an svg of four arms, each a
+                      .crosshair__line over a .crosshair__halo), aria-hidden.
+     crosshair-arrow  the off-screen arrow beside it (<div
+                      id="crosshair-arrow" class="crosshair-arrow">: a line
+                      and chevron, .crosshair-arrow__line over
+                      .crosshair-arrow__halo), aria-hidden.
+     aim-readout      the aimed-cell readout (<div id="aim-readout"
+                      class="aim-readout">: the cube icon and the cubes, then
+                      an .aim-sep and the flag icon and the flags),
+                      aria-hidden.
+     touch-stick      the 3D touch stick (<div class="touch-stick">, its
+                      .touch-stick__knob), aria-hidden.
+
    ui-wordmark — the game's title in one line (the main menu, the board choices)
      Element: <h1 class="ui-wordmark" aria-label="Minesweeper 3D">
                 <span class="ui-wordmark__word" aria-hidden="true">Mine</span>

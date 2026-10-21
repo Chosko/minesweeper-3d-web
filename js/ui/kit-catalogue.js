@@ -295,6 +295,27 @@ export const KIT_CATALOGUE = Object.freeze([
     ],
   }),
 
+  // The overlay's own parts over the board or the scene (index.html, laid out by css/style.css): a
+  // HUD panel — the first-use hint strip with its step and dismiss button, the H help card with its
+  // title and foot line, and hud-tools, the HUD key strip —, the view chip, the 3D game's crosshair,
+  // off-screen arrow and aimed-cell readout, and the 3D touch stick.
+  component('hud-panel', {
+    variants: ['hud-tools'],
+    parts: [
+      part('hint', '#hint-strip', { optional: true }),
+      part('step', '.hint-step', { optional: true }),
+      part('dismiss', '.hint-close', { optional: true }),
+      part('help', '#help', { optional: true }),
+      part('title', '#help-title', { optional: true }),
+      part('foot', '.help-foot', { optional: true }),
+    ],
+  }),
+  component('chip'),
+  component('crosshair', { parts: [part('halo', '.crosshair__halo'), part('line', '.crosshair__line')] }),
+  component('crosshair-arrow', { parts: [part('halo', '.crosshair-arrow__halo'), part('line', '.crosshair-arrow__line')] }),
+  component('aim-readout', { parts: [part('sep', '.aim-sep')] }),
+  component('touch-stick', { parts: [part('knob', '.touch-stick__knob')] }),
+
   composition('ui-screen', { variants: ['ui-screen--wide', 'ui-screen--columns'] }),
   composition('ui-row'),
   composition('ui-grid'),

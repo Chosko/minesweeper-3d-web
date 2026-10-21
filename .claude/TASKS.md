@@ -1301,7 +1301,7 @@ Feature: shared-screen-layout
 
 ## 243. Component gallery coverage and the theme list
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: dev/components.html, js/ui/kit-catalogue.js, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 218, 219, 220, 221, 222, 223

@@ -360,8 +360,8 @@ test('the menu module is DOM-free and reaches storage only through what it is ha
 test('the 3D preview\'s tag names the demo board the shell builds, from one size', () => {
   const { X, Y, Z } = DEMO_BOARD_3D;
   assert.equal(menuPreview('3d', { missing: [] }).tag, `3D · Demo board ${X} × ${Y} × ${Z}`);
-  const demo = read('js/main.js').match(/function makeDemo\(\) \{[\s\S]*?\n\}/)[0];
-  assert.match(demo, /create3DGame\(\{ \.\.\.DEMO_BOARD_3D,/, 'makeDemo builds the board of that size');
+  const demo = read('js/shell/menu-preview.js').match(/export function demoBoard3D\(random = Math\.random\) \{[\s\S]*?\n\}/)[0];
+  assert.match(demo, /create3DGame\(\{ \.\.\.DEMO_BOARD_3D,/, 'demoBoard3D builds the board of that size');
   assert.doesNotMatch(demo, /\b(343|=== 6)\b|X: 7/, 'and states no size of its own');
 });
 

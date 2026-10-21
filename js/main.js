@@ -16,9 +16,9 @@ import { create3DMode, createFiguresFeed } from './shell/mode-3d.js';
 import { createSession, create3DGame } from './mode3d/session.js';
 import { createSampler3D } from './replay/sampler-3d.js';
 import { createGenerationClient } from './generation/client.js';
-import { createMenu, createLastMode, createLastBoardChoice, openingEntry, menuPreview, entryReasonLine, buildLabel, DEMO_BOARD_3D, UNAVAILABLE_REASONS, WEB_MISSING } from './shell/menu.js';
+import { createMenu, createLastMode, createLastBoardChoice, openingEntry, menuPreview, entryReasonLine, buildLabel, UNAVAILABLE_REASONS, WEB_MISSING } from './shell/menu.js';
 import { VERSION } from './version.js';
-import { bindMenuPreview, demoBoard2D, dailyBoard2D } from './shell/menu-preview.js';
+import { bindMenuPreview, demoBoard2D, dailyBoard2D, demoBoard3D, DEMO_SPACING_3D } from './shell/menu-preview.js';
 import { boardBests } from './shell/returning.js';
 import { aimReadout } from './readability.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
@@ -1585,26 +1585,6 @@ function pauseInfo(note = '') {
   return { state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft, inProgress, note, mode: '3d' };
 }
 
-function makeDemo() {
-  const mines = new Set();
-  const { X, Y, Z } = DEMO_BOARD_3D;
-  while (mines.size < 30) mines.add(Math.floor(Math.random() * X * Y * Z));
-  const play = create3DGame({ ...DEMO_BOARD_3D, minePositions: [...mines] });
-  const g = play.view;
-  // reveal a few safe cells on the outer shell and flag a few mines, purely decorative
-  const shell = (idx) => {
-    const [i, j, k] = g.coords(idx);
-    return i === 0 || j === 0 || k === 0 || i === X - 1 || j === Y - 1 || k === Z - 1;
-  };
-  const closed = () => { let c = 0; for (let idx = 0; idx < g.n; idx++) c += !g.pressed[idx]; return c; };
-  for (let t = 0; t < 400 && closed() > g.n * 0.55; t++) {
-    const idx = Math.floor(Math.random() * g.n);
-    if (shell(idx) && g.number[idx] > 0 && !g.pressed[idx]) play.reveal(idx);
-  }
-  let flags = 0;
-  for (let idx = 0; idx < g.n && flags < 8; idx++) if (g.number[idx] === -1 && shell(idx) && Math.random() < 0.5) { play.toggleFlag(idx); flags++; }
-  return g;
-}
 
 function showMainMenu() { SHELL.go('menu'); }
 /** The menu screens orbit the camera about the board behind them or in their scene panel (the decorative demo board, the Daily screen's cube); without WebGL 2, the page's static background. */
@@ -1631,11 +1611,11 @@ function leaveGame() {
 /** Put the decorative demo board behind the menu; without WebGL 2 there is none to put. */
 function showMenuBackdrop() {
   if (!WEBGL2) return;
-  if (!S.demo) S.demo = makeDemo();
+  if (!S.demo) S.demo = demoBoard3D().view;
   renderer.setGame(S.demo);
   applyPixelRatio(S.demo.n);
   renderer.setSelected(-1);
-  S.spacing = 1.25;
+  S.spacing = DEMO_SPACING_3D;
 }
 
 /**

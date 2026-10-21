@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="../css/tokens.css">
   <link rel="stylesheet" href="../css/components.css">
   <script src="../js/theme.js"></script>
+  <script type="importmap">
+    { "imports": { "three": "../vendor/three/three.module.min.js" } }
+  </script>
   <style>
     /* layout only: the theme stylesheet draws the page and every component */
     body { margin: 0; padding: var(--space-6); font-size: var(--font-size-md); }
@@ -40,11 +43,46 @@
     /* the in-game components */
     .figures-row { align-items: stretch; margin-top: var(--space-6); }
     .figures-demo { width: 300px; min-height: 560px; }
+    .columns-demo { display: flex; flex-direction: column; gap: var(--space-4); }
+    #g-results { grid-column: 1 / -1; }
+    #g-results .ui-frame__body { display: flex; flex-direction: column; gap: 18px; }
+    /* the parts J-Components draws, laid out as the game lays them out */
+    .tap-demo .ui-segmented__option { min-height: 40px; min-width: 96px; }
+    .status-row { align-items: flex-start; }
+    .status-demo { flex: 1 1 360px; margin: 0; }
+    .status-demo > .ui-row { gap: var(--space-4); }
+    .status-demo .ui-card__title { margin: 0; font-size: var(--font-size-xl); }
+    .status-demo .ui-row .ui-text { margin: 4px 0 0; font-size: 15px; }
+    #hint-strip { box-sizing: border-box; max-width: 100%; display: inline-flex; align-items: center; gap: 14px; padding: 7px 8px 7px 18px; font-size: 15px; font-weight: var(--font-weight-bold); }
+    #hint-strip-text { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) 14px; min-width: 0; }
+    .hint-close { appearance: none; border: 0; padding: 0; display: grid; place-items: center; width: 30px; height: 30px; cursor: pointer; }
+    .chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: 6px 14px; font-size: var(--font-size-sm); font-weight: var(--font-weight-heavy); }
+    .chip__icon { flex: none; }
+    .hud-tools { display: inline-flex; gap: 16px; padding: 7px 16px; font-size: 14px; white-space: nowrap; }
+    :is(#hint-strip, .hud-tools) kbd { display: inline-block; min-width: 1.6em; padding: 0.05em 0.4em; margin: 0 0.08em; font-size: max(11px, 0.78em); font-weight: var(--font-weight-bold); line-height: 1.5; text-align: center; }
+    #help { box-sizing: border-box; width: min(320px, 100%); padding: 18px 20px; }
+    #help-title { margin: 0 0 6px; }
+    .help-foot { margin: 6px 0 0; }
+    .aim-demo { width: 100%; height: 200px; margin-top: var(--space-4); }
+    .aim-demo .crosshair, .aim-demo .crosshair-arrow { position: absolute; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -14px; }
+    .aim-demo .crosshair { left: 30%; }
+    .aim-demo .crosshair svg { display: block; }
+    .aim-demo .crosshair-arrow { left: 62%; }
+    .aim-demo .crosshair-arrow svg { position: absolute; left: 44px; top: -6px; }
+    .aim-demo .aim-readout { position: absolute; left: calc(30% + 22px); top: calc(50% + 18px); display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); white-space: nowrap; }
+    #aim-flag-part { display: inline-flex; align-items: center; gap: 6px; }
+    .aim-readout .aim-icon { display: block; flex: none; width: 14px; height: 14px; }
+    .preview-demo { flex: 1 1 320px; height: 340px; }
+    .preview-demo .ui-scene-panel__stage { overflow: hidden; }
+    .preview-demo .ui-scene-panel__stage > [data-preview] { position: absolute; inset: 36px; display: grid; place-items: center; }
+    .preview-demo .ui-scene-panel__stage > [data-preview][hidden] { display: none; }
+    .preview-demo .ui-scene-panel__stage > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .theme-list { max-width: 420px; }
   </style>
 </head>
 <body>
   <h1>Component kit</h1>
-  <p class="intro ui-text ui-text--muted">Every component of <code>css/components.css</code> in every state and every decoration slot, drawn by the theme picked below (or named by <code>?theme=&lt;id&gt;</code>; an unknown id shows the default). Hover, pressed and focused are previewed with <code>data-force</code>; on buttons, menu entries and board options hover and focus are one selected state.</p>
+  <p class="intro ui-text ui-text--muted">Every component of <code>css/components.css</code> in every state and every decoration slot, and every part the canvas's J-Components artboard draws (the overlay's own parts among them), drawn by the theme picked below (or named by <code>?theme=&lt;id&gt;</code>; an unknown id shows the default). Hover, pressed and focused are previewed with <code>data-force</code>; on buttons, menu entries and board options hover and focus are one selected state.</p>
   <div class="ui-segmented intro" id="g-theme" role="radiogroup" aria-label="Theme"></div>
 
   <div class="grid">
@@ -145,7 +183,7 @@
         <span class="state">Hover</span><div><label class="ui-field"><span class="ui-field__label">Height</span><input type="number" class="ui-field__input" min="1" max="100" step="1" value="10" data-force="hover"></label></div>
         <span class="state">Pressed</span><div><label class="ui-field"><span class="ui-field__label">Depth</span><input type="number" class="ui-field__input" min="1" max="100" step="1" value="10" data-force="active"></label></div>
         <span class="state">Focused</span><div><label class="ui-field"><span class="ui-field__label">Mines</span><input type="number" class="ui-field__input" min="1" max="1000" step="1" value="25" data-force="focus"></label></div>
-        <span class="state">Invalid</span><div><label class="ui-field"><span class="ui-field__label">Mines</span><input type="number" class="ui-field__input is-invalid" min="1" max="1000" step="1" value="1000" aria-invalid="true"></label></div>
+        <span class="state">Invalid</span><div><label class="ui-field"><span class="ui-field__label">Mines</span><input type="number" class="ui-field__input is-invalid" min="1" max="1000" step="1" value="1000" aria-invalid="true" data-canvas="field-invalid"></label></div>
         <span class="state">Disabled</span><div><label class="ui-field"><span class="ui-field__label">Mines</span><input type="number" class="ui-field__input" min="1" max="1000" step="1" value="25" disabled></label></div>
       </div>
     </section>
@@ -190,7 +228,7 @@
           <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-mode="space" aria-pressed="true">Space</button>
           <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-mode="ctrl" aria-pressed="false">Ctrl</button>
         </div>
-        <div class="stick-box" aria-hidden="true"><div class="touch-stick"><span class="touch-stick__knob"></span></div></div>
+        <div class="stick-box" aria-hidden="true"><div class="touch-stick" data-canvas="touch-stick"><span class="touch-stick__knob"></span></div></div>
       </div>
     </section>
 
@@ -226,7 +264,6 @@
       </div>
     </section>
 
-    <div class="wide">
     <!-- component: stat tile -->
     <section class="ui-card wide" aria-labelledby="g-tile">
       <h2 class="ui-card__title" id="g-tile">Stat tile</h2>
@@ -339,7 +376,7 @@
       <div class="board-frame-demo"><div class="ui-board-frame" aria-hidden="true" style="--board-frame-radius: 14px"></div></div>
     </section>
 
-    <section class="ui-card" aria-labelledby="g-rows">
+    <section class="ui-card wide" aria-labelledby="g-rows">
       <h2 class="ui-card__title" id="g-rows">List rows, controls list, table and divider</h2>
       <ul class="ui-list" aria-label="Recent games">
         <li class="ui-list-row"><span class="ui-list-row__date">16 Oct 2026 14:02</span><span class="ui-list-row__board">Intermediate</span><span class="ui-list-row__figure">51.744 s</span><span class="ui-chip ui-chip--won">Won</span></li>
@@ -352,9 +389,13 @@
       <div class="ui-row divider-demo"><span class="ui-text">Left</span><div class="ui-divider ui-divider--vertical" role="separator" aria-orientation="vertical"></div><span class="ui-text">Right</span></div>
     </section>
 
-    <section class="ui-card" aria-labelledby="g-scene">
+    <section class="ui-card wide" aria-labelledby="g-scene">
       <h2 class="ui-card__title" id="g-scene">Scene panel</h2>
-      <figure class="ui-scene-panel scene-demo" aria-labelledby="g-scene-2d"><div class="ui-scene-panel__stage"></div><figcaption class="ui-scene-panel__tag" id="g-scene-2d">Classic 2D · Intermediate</figcaption></figure>
+      <p class="ui-text ui-text--muted">The menu's previews: the Classic 2D board drawn by its board view in its frame, and the 3D demo board drawn live by the 3D renderer (its still panel without WebGL 2); then a card with an entry's badge.</p>
+      <div class="ui-row">
+        <figure class="ui-scene-panel preview-demo" id="g-preview-2d" aria-labelledby="g-scene-2d" data-canvas="board-preview"><div class="ui-scene-panel__stage" id="g-preview-2d-stage"></div><figcaption class="ui-scene-panel__tag" id="g-scene-2d"></figcaption></figure>
+        <figure class="ui-scene-panel preview-demo" id="g-preview-3d" aria-labelledby="g-scene-3d" data-canvas="3d-preview"><div class="ui-scene-panel__stage"><canvas aria-hidden="true"></canvas></div><figcaption class="ui-scene-panel__tag" id="g-scene-3d"></figcaption></figure>
+      </div>
       <div class="ui-row">
         <figure class="ui-scene-panel scene-demo scene-demo--card" aria-labelledby="g-scene-hex"><div class="ui-scene-panel__stage"><div class="ui-scene-panel__card"><span class="ui-scene-panel__badge" data-entry="hexagon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8.7 5v10L12 22l-8.7-5V7z"/><path d="M12 7l4.3 2.5v5L12 17l-4.3-2.5v-5z"/></svg></span><span class="ui-scene-panel__name">Hexagon</span><span class="ui-scene-panel__note">Coming soon</span></div></div><figcaption class="ui-scene-panel__tag" id="g-scene-hex">Hexagon</figcaption></figure>
         <figure class="ui-scene-panel scene-demo scene-demo--card" aria-labelledby="g-scene-records"><div class="ui-scene-panel__stage"><div class="ui-scene-panel__card"><span class="ui-scene-panel__badge" data-entry="records" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span><span class="ui-scene-panel__name">Records</span></div></div><figcaption class="ui-scene-panel__tag" id="g-scene-records">Records</figcaption></figure>
@@ -362,7 +403,7 @@
       </div>
     </section>
 
-    <section class="ui-card" aria-labelledby="g-tabs">
+    <section class="ui-card wide" aria-labelledby="g-tabs">
       <h2 class="ui-card__title" id="g-tabs">Tabs and checkbox</h2>
       <div class="states">
         <span class="state">Tabs</span><div><div class="ui-tabs" role="tablist" aria-label="Lists"><button type="button" role="tab" aria-selected="true" class="ui-tabs__tab" id="g-tab-recent" aria-controls="g-tabpanel" data-value="recent">Recent games</button><button type="button" role="tab" aria-selected="false" class="ui-tabs__tab" id="g-tab-top" aria-controls="g-tabpanel" data-value="top">Top 10</button><button type="button" role="tab" aria-selected="false" class="ui-tabs__tab" id="g-tab-replays" aria-controls="g-tabpanel" data-value="replays">Replays</button></div><div role="tabpanel" id="g-tabpanel" aria-labelledby="g-tab-recent"><p class="ui-text ui-text--muted">The shown list.</p></div></div>
@@ -382,7 +423,7 @@
     <section class="ui-card" aria-labelledby="g-switchrow">
       <h2 class="ui-card__title" id="g-switchrow">Switch row</h2>
       <div class="states">
-        <span class="state">On, with help</span><div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="g-sr-1">No-guess</label><span class="ui-switchrow__help" id="g-sr-1-help">Every board solvable by logic</span></span><input type="checkbox" role="switch" class="ui-toggle__input" id="g-sr-1" aria-describedby="g-sr-1-help" checked></div>
+        <span class="state">On, with help</span><div class="ui-switchrow" data-canvas="switch-row"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="g-sr-1">No-guess</label><span class="ui-switchrow__help" id="g-sr-1-help">Every board solvable by logic</span></span><input type="checkbox" role="switch" class="ui-toggle__input" id="g-sr-1" aria-describedby="g-sr-1-help" checked></div>
         <span class="state">Off</span><div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="g-sr-2">Sound</label></span><input type="checkbox" role="switch" class="ui-toggle__input" id="g-sr-2"></div>
         <span class="state">Locked</span><div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="g-sr-3">No-guess</label><span class="ui-switchrow__help" id="g-sr-3-help">Not on a side of 2 cells</span></span><input type="checkbox" role="switch" class="ui-toggle__input" id="g-sr-3" aria-describedby="g-sr-3-help" disabled></div>
       </div>
@@ -400,7 +441,7 @@
     <section class="ui-card" aria-labelledby="g-quiet">
       <h2 class="ui-card__title" id="g-quiet">Quiet button and latched toggle</h2>
       <div class="states">
-        <span class="state">At rest</span><div><button type="button" class="ui-button ui-button--quiet">Watch</button> <button type="button" class="ui-button ui-button--quiet ui-button--sm">Watch</button></div>
+        <span class="state">At rest</span><div><button type="button" class="ui-button ui-button--quiet" data-canvas="quiet-button">Watch</button> <button type="button" class="ui-button ui-button--quiet ui-button--sm">Watch</button></div>
         <span class="state">Selected</span><div><button type="button" class="ui-button ui-button--quiet" data-force="focus">Watch</button> <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-force="focus">Watch</button></div>
         <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--quiet" data-force="active">Watch</button> <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-force="active">Watch</button></div>
         <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--quiet" disabled>Watch</button> <button type="button" class="ui-button ui-button--quiet ui-button--sm" disabled>Watch</button></div>
@@ -408,9 +449,76 @@
         <span class="state">Toggle on</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="true">Show 3BV</button></div>
       </div>
     </section>
+    <section class="ui-card" aria-labelledby="g-game-toggles">
+      <h2 class="ui-card__title" id="g-game-toggles">Swap clicks and Tap toggles</h2>
+      <div class="states">
+        <span class="state">Swap off</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false" title="Swap left and right click on closed cells" data-canvas="swap-clicks"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button></div>
+        <span class="state">Swap on</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="true" title="Swap left and right click on closed cells" data-canvas="swap-clicks"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button></div>
+        <span class="state">Tap: Reveal</span><div class="ui-segmented tap-demo" role="radiogroup" aria-label="Tap action" data-canvas="tap-toggle"><button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="reveal">Tap: Reveal</button><button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="flag">Tap: Flag</button></div>
+        <span class="state">Tap: Flag</span><div class="ui-segmented tap-demo" role="radiogroup" aria-label="Tap action, flag" data-canvas="tap-toggle"><button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="reveal">Tap: Reveal</button><button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="flag">Tap: Flag</button></div>
+      </div>
+      <p class="ui-text ui-text--muted">Swap clicks in the game window's head on a fine pointer, never focused; Tap under the board on a coarse pointer.</p>
+    </section>
+
+    <section class="ui-card wide" aria-labelledby="g-hud-title" id="g-hud">
+      <h2 class="ui-card__title" id="g-hud-title">Hint strip, view chip and HUD key strip</h2>
+      <div class="states">
+        <span class="state">Hint strip</span><div><div id="hint-strip" class="hud-panel" role="note" data-canvas="hint-strip"><span id="hint-strip-text"></span><button type="button" id="hint-strip-close" class="hint-close" aria-label="Dismiss hint"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
+        <span class="state">View chip</span><div><span class="chip" data-canvas="view-chip"><svg class="chip__icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Shift: neighbours only</span></div>
+        <span class="state">HUD key strip</span><div><div class="hud-panel hud-tools" id="g-hud-tools" data-canvas="hud-key-strip"></div></div>
+      </div>
+    </section>
+
+    <section class="ui-card wide" aria-labelledby="g-status-title">
+      <h2 class="ui-card__title" id="g-status-title">Board status cards</h2>
+      <div class="ui-row status-row">
+        <section class="ui-card ui-screen status-demo" aria-labelledby="g-status-generating" role="status" data-canvas="status-generating">
+          <div class="ui-row">
+            <span class="ui-spinner" aria-hidden="true"></span>
+            <div>
+              <h3 class="ui-card__title" id="g-status-generating">Generating the board&hellip;</h3>
+              <p id="c2d-progress" class="ui-text ui-text--muted">candidate 12 &middot; 3 s</p>
+            </div>
+          </div>
+          <div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--secondary">Cancel</button><button type="button" class="ui-button ui-button--secondary">Play a standard board</button></div>
+        </section>
+        <section class="ui-card ui-screen status-demo" aria-labelledby="g-status-failed" role="status" data-canvas="status-failed">
+          <div class="ui-row"><div><h3 class="ui-card__title" id="g-status-failed">No board found</h3></div></div>
+          <p class="ui-text">No no-guess board was found for this first click. Try again, or play a standard board of the same size.</p>
+          <div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--primary" data-icon="refresh">Retry</button><button type="button" class="ui-button ui-button--secondary">Play a standard board</button><button type="button" class="ui-button ui-button--secondary">Main menu</button></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="ui-card" aria-labelledby="g-help-demo">
+      <h2 class="ui-card__title" id="g-help-demo">H help card</h2>
+      <aside id="help" class="hud-panel" aria-labelledby="help-title" data-canvas="help-card">
+        <h3 class="ui-card__title" id="help-title">Controls</h3>
+        <dl class="ui-controls" id="g-help-list"></dl>
+        <p id="help-foot" class="help-foot"></p>
+      </aside>
+    </section>
+
+    <section class="ui-card" aria-labelledby="g-aim">
+      <h2 class="ui-card__title" id="g-aim">Crosshair, aim readout and off-screen arrow</h2>
+      <figure class="ui-scene-panel aim-demo" data-shows="still" aria-labelledby="g-aim-tag">
+        <div class="ui-scene-panel__stage">
+          <div id="crosshair" class="crosshair" aria-hidden="true" data-canvas="crosshair"><svg width="28" height="28" viewBox="0 0 28 28"><path class="crosshair__halo" d="M14 2v8M14 18v8M2 14h8M18 14h8"/><path class="crosshair__line" d="M14 3v7M14 18v7M3 14h7M18 14h7"/></svg></div>
+          <div id="aim-readout" class="aim-readout" aria-hidden="true" data-canvas="aim-readout"><svg class="aim-icon aim-icon--cube" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-label="cubes"><path d="M12 2l9 5v10l-9 5-9-5V7z"/></svg> <span id="aim-cubes">5</span><span id="aim-flag-part"> <span class="aim-sep">-</span> <svg class="aim-icon aim-icon--flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-label="flags"><path d="M5 21V4"/><path d="M5 4h12l-3 4 3 4H5"/></svg> <span id="aim-flags">2</span></span></div>
+          <div id="crosshair-arrow" class="crosshair-arrow" aria-hidden="true" data-canvas="offscreen-arrow"><svg width="40" height="40" viewBox="0 0 40 40"><path class="crosshair-arrow__halo" d="M6 20h22M20 10l10 10-10 10"/><path class="crosshair-arrow__line" d="M6 20h22M20 10l10 10-10 10"/></svg></div>
+        </div>
+        <figcaption class="ui-scene-panel__tag" id="g-aim-tag">Over the 3D scene</figcaption>
+      </figure>
+    </section>
+
+    <section class="ui-card" aria-labelledby="g-theme-list-title">
+      <h2 class="ui-card__title" id="g-theme-list-title">Theme list</h2>
+      <div class="theme-list" id="g-theme-list" data-canvas="theme-list"></div>
+      <p class="ui-text ui-text--muted">The Settings page's theme list: a card per registered theme, its swatch, the active theme chosen with its check. A pick switches the gallery's theme.</p>
+    </section>
     <section class="ui-card wide" aria-labelledby="g-icons">
       <h2 class="ui-card__title" id="g-icons">Icon set and leading icon</h2>
-      <div class="icon-set" id="g-icon-set"></div>
+      <div class="icon-set" id="g-icon-set" data-canvas="icon-set"></div>
       <div class="states" id="g-icon-buttons">
         <span class="state">Small</span><div><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-icon="arrow-left">Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><kbd class="ui-key-hint__key">Esc</kbd></span></button> <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-icon="download">Export history (CSV)</button></div>
         <span class="state">Medium</span><div><button type="button" class="ui-button ui-button--secondary" data-icon="chart">Records</button> <button type="button" class="ui-button ui-button--primary" data-icon="refresh">Retry</button></div>
@@ -427,12 +535,12 @@
     <section class="ui-card wide" aria-labelledby="g-feedback-title" id="g-feedback">
       <h2 class="ui-card__title" id="g-feedback-title">Confirm box and notes</h2>
       <div class="states">
-        <span class="state">With heading</span><div class="ui-confirm" role="alertdialog" aria-labelledby="g-confirm-title"><h3 class="ui-confirm__title" id="g-confirm-title">Leave this game?</h3><p class="ui-confirm__text">This game will count as a loss.</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger">Confirm</button><button type="button" class="ui-button ui-button--secondary">Cancel</button></div></div>
+        <span class="state">With heading</span><div class="ui-confirm" role="alertdialog" aria-labelledby="g-confirm-title" data-canvas="confirmation"><h3 class="ui-confirm__title" id="g-confirm-title">Leave this game?</h3><p class="ui-confirm__text">This game will count as a loss.</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger">Confirm</button><button type="button" class="ui-button ui-button--secondary">Cancel</button></div></div>
         <span class="state">Text only</span><div class="ui-confirm" role="alertdialog" aria-labelledby="g-confirm-text"><p class="ui-confirm__text" id="g-confirm-text">Delete your records, game history, replays and settings from this browser? This cannot be undone.</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger" data-icon="trash">Reset all data</button><button type="button" class="ui-button ui-button--secondary">Cancel</button></div></div>
         <span class="state">Table row</span><div><table class="ui-table"><thead><tr><th scope="col">Date</th><th scope="col" class="ui-table__figure">Time</th><th scope="col">Actions</th></tr></thead><tbody><tr><td>16 Oct 2026 13:40</td><td class="ui-table__figure">47.380 s</td><td><button type="button" class="ui-button ui-button--quiet ui-button--sm" data-icon="trash" aria-label="Delete replay"></button></td></tr><tr><td colspan="3"><div class="ui-confirm ui-confirm--row" role="alertdialog" aria-labelledby="g-confirm-row"><p class="ui-confirm__text" id="g-confirm-row">Delete the replay of 16 Oct 2026 13:40?</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger ui-button--sm" data-icon="trash">Delete replay</button><button type="button" class="ui-button ui-button--secondary ui-button--sm">Cancel</button></div></div></td></tr></tbody></table></div>
         <span class="state">Warn, a notice</span><div><p class="ui-note ui-note--warn" data-icon="info"><span class="ui-note__text">This is a 3D board code. Paste it in the 3D board choice.</span></p></div>
-        <span class="state">Warn, a refusal</span><div><p class="ui-note ui-note--warn" data-icon="warning"><span class="ui-note__text">Mines must be a whole number from 1 to 99 on a 30 × 16 board.</span></p></div>
-        <span class="state">Err</span><div><p class="ui-note ui-note--err" data-icon="warning"><span class="ui-note__text">This code is incomplete: it is missing its last part.</span></p></div>
+        <span class="state">Warn, a refusal</span><div><p class="ui-note ui-note--warn" data-icon="warning" data-canvas="note-warn"><span class="ui-note__text">Mines must be a whole number from 1 to 99 on a 30 × 16 board.</span></p></div>
+        <span class="state">Err</span><div><p class="ui-note ui-note--err" data-icon="warning" data-canvas="note-err"><span class="ui-note__text">This code is incomplete: it is missing its last part.</span></p></div>
         <span class="state">Accepted code</span><div><p class="ui-text ui-text--success">Intermediate · a challenge, not eligible for bests</p></div>
       </div>
     </section>
@@ -442,7 +550,7 @@
     <!-- components: in-game -->
     <section class="ui-card wide" aria-labelledby="g-in-game-title" id="g-in-game">
       <h2 class="ui-card__title" id="g-in-game-title">Counters, Restart and live figures</h2>
-      <p class="ui-text ui-text--muted">The counter strip; a negative mine counter (it stops at -99) and a counter without its icon; the figures panel with its progress bar and pace row, without them (a board with no best, controller hints), and with its head bar as the 3D game's.</p>
+      <p class="ui-text ui-text--muted">The counter strip; a negative mine counter (it stops at -99) and a counter without its icon; the figures panel with its progress bar and pace row, without the pace row (a board with no best, controller hints), and with its head bar as the 3D game's.</p>
       <div class="states">
         <span class="state">Strip</span><div class="ui-counter-strip" role="group" aria-label="Counters"><div class="ui-counter" role="group" aria-label="Mines left"><svg class="ui-counter__icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"></path><path d="M5 4h12l-3 4 3 4H5"></path></svg><span class="ui-counter__digits">024</span></div><button type="button" class="ui-button ui-button--secondary ui-button--sm"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>Restart <span class="ui-key-hint" data-action="restart" aria-hidden="true"><kbd class="ui-key-hint__key">F2</kbd></span></button><div class="ui-counter" role="group" aria-label="Time"><span class="ui-counter__digits">020</span><svg class="ui-counter__icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></div></div>
         <span class="state">Negative</span><div class="ui-counter-strip" role="group" aria-label="Counters"><div class="ui-counter" role="group" aria-label="Mines left" data-negative><svg class="ui-counter__icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"></path><path d="M5 4h12l-3 4 3 4H5"></path></svg><span class="ui-counter__digits">-05</span></div><button type="button" class="ui-button ui-button--secondary ui-button--sm"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>Restart <span class="ui-key-hint" data-action="restart" aria-hidden="true"><kbd class="ui-key-hint__key">F2</kbd></span></button><div class="ui-counter" role="group" aria-label="Time"><span class="ui-counter__digits">020</span><svg class="ui-counter__icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></div></div>
@@ -450,7 +558,7 @@
       </div>
       <div class="ui-row figures-row">
         <section class="ui-figures figures-demo" aria-label="Live figures"><div class="ui-figures__body"><div class="ui-figure ui-figure--progress" role="group" aria-labelledby="fg-a-bbbv"><span class="ui-figure__label" id="fg-a-bbbv">3BV</span><span class="ui-figure__value">54 / 118</span><span class="ui-figure__bar" role="progressbar" aria-labelledby="fg-a-bbbv" aria-valuemin="0" aria-valuemax="118" aria-valuenow="54"><span class="ui-figure__fill" style="width: 46%"></span></span></div><div class="ui-figure" role="group" aria-labelledby="fg-a-pace"><span class="ui-figure__label" id="fg-a-pace">Pace vs PB</span><span class="ui-figure__value">−2.063 s</span><span class="ui-figure__detail">ahead of 48.213 s</span></div><div class="ui-figure" role="group" aria-labelledby="fg-a-rate"><span class="ui-figure__label" id="fg-a-rate">3BV/s</span><span class="ui-figure__value">2.70</span><span class="ui-figure__detail">PB 2.91</span></div><div class="ui-figure" role="group" aria-labelledby="fg-a-clicks"><span class="ui-figure__label" id="fg-a-clicks">Clicks</span><span class="ui-figure__value">61</span><span class="ui-figure__detail">efficiency 88.5%</span></div><div class="ui-figure" role="group" aria-labelledby="fg-a-flags"><span class="ui-figure__label" id="fg-a-flags">Flags</span><span class="ui-figure__value">16</span><span class="ui-figure__detail">24 mines left</span></div><footer class="ui-figures__foot"><div class="ui-key-hints"><span class="ui-key-hint"><kbd class="ui-key-hint__key">Left</kbd><span class="ui-key-hint__label">reveal</span></span><span class="ui-key-hint"><kbd class="ui-key-hint__key">Right</kbd><span class="ui-key-hint__label">flag</span></span><span class="ui-key-hint"><kbd class="ui-key-hint__key">Left</kbd>+<kbd class="ui-key-hint__key">Right</kbd><span class="ui-key-hint__label">chord</span></span></div></footer></div><p class="ui-figures__live" role="status" aria-live="polite" aria-atomic="true"></p></section>
-        <section class="ui-figures figures-demo" aria-label="Live figures"><div class="ui-figures__body"><div class="ui-figure" role="group" aria-labelledby="fg-b-bbbv"><span class="ui-figure__label" id="fg-b-bbbv">3BV</span><span class="ui-figure__value">54 / 118</span></div><div class="ui-figure" role="group" aria-labelledby="fg-b-rate"><span class="ui-figure__label" id="fg-b-rate">3BV/s</span><span class="ui-figure__value">2.70</span></div><div class="ui-figure" role="group" aria-labelledby="fg-b-clicks"><span class="ui-figure__label" id="fg-b-clicks">Clicks</span><span class="ui-figure__value">61</span><span class="ui-figure__detail">efficiency 88.5%</span></div><div class="ui-figure" role="group" aria-labelledby="fg-b-flags"><span class="ui-figure__label" id="fg-b-flags">Flags</span><span class="ui-figure__value">16</span><span class="ui-figure__detail">24 mines left</span></div><footer class="ui-figures__foot"><div class="ui-key-hints"><span class="ui-key-hint ui-key-hint--pad"><kbd class="ui-key-hint__key">A</kbd><span class="ui-key-hint__label">reveal</span></span><span class="ui-key-hint ui-key-hint--pad"><kbd class="ui-key-hint__key">X</kbd><span class="ui-key-hint__label">flag</span></span><span class="ui-key-hint ui-key-hint--pad"><kbd class="ui-key-hint__key">Y</kbd><span class="ui-key-hint__label">chord</span></span></div></footer></div><p class="ui-figures__live" role="status" aria-live="polite" aria-atomic="true"></p></section>
+        <section class="ui-figures figures-demo" aria-label="Live figures"><div class="ui-figures__body"><div class="ui-figure ui-figure--progress" role="group" aria-labelledby="fg-b-bbbv"><span class="ui-figure__label" id="fg-b-bbbv">3BV</span><span class="ui-figure__value">54 / 118</span><span class="ui-figure__bar" role="progressbar" aria-labelledby="fg-b-bbbv" aria-valuemin="0" aria-valuemax="118" aria-valuenow="54"><span class="ui-figure__fill" style="width: 46%"></span></span></div><div class="ui-figure" role="group" aria-labelledby="fg-b-rate"><span class="ui-figure__label" id="fg-b-rate">3BV/s</span><span class="ui-figure__value">2.70</span></div><div class="ui-figure" role="group" aria-labelledby="fg-b-clicks"><span class="ui-figure__label" id="fg-b-clicks">Clicks</span><span class="ui-figure__value">61</span><span class="ui-figure__detail">efficiency 88.5%</span></div><div class="ui-figure" role="group" aria-labelledby="fg-b-flags"><span class="ui-figure__label" id="fg-b-flags">Flags</span><span class="ui-figure__value">16</span><span class="ui-figure__detail">24 mines left</span></div><footer class="ui-figures__foot"><div class="ui-key-hints"><span class="ui-key-hint ui-key-hint--pad"><kbd class="ui-key-hint__key">A</kbd><span class="ui-key-hint__label">reveal</span></span><span class="ui-key-hint ui-key-hint--pad"><kbd class="ui-key-hint__key">X</kbd><span class="ui-key-hint__label">flag</span></span><span class="ui-key-hint ui-key-hint--pad"><kbd class="ui-key-hint__key">Y</kbd><span class="ui-key-hint__label">chord</span></span></div></footer></div><p class="ui-figures__live" role="status" aria-live="polite" aria-atomic="true"></p></section>
         <section class="ui-figures figures-demo" aria-labelledby="fg-c-title"><header class="ui-figures__head"><h2 class="ui-figures__title" id="fg-c-title" title="3D · Cube Intermediate">3D</h2><button type="button" class="ui-button ui-button--primary ui-button--sm ui-figures__action"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>Pause</button></header><div class="ui-figures__body"><div class="ui-figure ui-figure--progress" role="group" aria-labelledby="fg-c-bbbv"><span class="ui-figure__label" id="fg-c-bbbv">3BV</span><span class="ui-figure__value">212 / 540</span><span class="ui-figure__bar" role="progressbar" aria-labelledby="fg-c-bbbv" aria-valuemin="0" aria-valuemax="540" aria-valuenow="212"><span class="ui-figure__fill" style="width: 39%"></span></span></div><div class="ui-figure" role="group" aria-labelledby="fg-c-pace"><span class="ui-figure__label" id="fg-c-pace">Pace vs PB</span><span class="ui-figure__value">+6.240 s</span><span class="ui-figure__detail">behind 71.902 s</span></div><div class="ui-figure" role="group" aria-labelledby="fg-c-rate"><span class="ui-figure__label" id="fg-c-rate">3BV/s</span><span class="ui-figure__value">0.93</span><span class="ui-figure__detail">PB 1.12</span></div><div class="ui-figure" role="group" aria-labelledby="fg-c-clicks"><span class="ui-figure__label" id="fg-c-clicks">Clicks</span><span class="ui-figure__value">241</span><span class="ui-figure__detail">efficiency 88.0%</span></div><div class="ui-figure" role="group" aria-labelledby="fg-c-flags"><span class="ui-figure__label" id="fg-c-flags">Flags</span><span class="ui-figure__value">6</span><span class="ui-figure__detail">34 mines left</span></div><footer class="ui-figures__foot"><div class="ui-key-hints"><span class="ui-key-hint"><kbd class="ui-key-hint__key">Left</kbd><span class="ui-key-hint__label">reveal</span></span><span class="ui-key-hint"><kbd class="ui-key-hint__key">Right</kbd><span class="ui-key-hint__label">flag</span></span><span class="ui-key-hint"><kbd class="ui-key-hint__key">Left</kbd>+<kbd class="ui-key-hint__key">Right</kbd><span class="ui-key-hint__label">chord</span></span></div></footer></div><p class="ui-figures__live" role="status" aria-live="polite" aria-atomic="true"></p></section>
       </div>
     </section>
@@ -460,6 +568,7 @@
     <section class="ui-card wide" aria-labelledby="g-columns">
       <h2 class="ui-card__title" id="g-columns">Columns</h2>
       <p>One column below 1024 px; side by side at 1024 px and wider.</p>
+      <div class="columns-demo">
       <div class="ui-columns ui-columns--two">
         <div class="ui-column"><div class="ui-panel">First column, first panel</div><div class="ui-panel">First column, second panel</div></div>
         <div class="ui-column"><div class="ui-panel">Second column</div></div>
@@ -470,6 +579,7 @@
       </div>
       <div class="ui-columns ui-columns--pair">
         <div class="ui-panel">A pair, first (a chart)</div><div class="ui-panel">A pair, second (a chart)</div>
+      </div>
       </div>
     </section>
     <!-- /composition: columns -->
@@ -499,7 +609,6 @@
       </footer>
     </section>
     <!-- /composition: results -->
-    </div>
   </div>
 
   <script type="module">
@@ -507,6 +616,14 @@
     import { THEMES } from '../js/themes/registry.js';
     import { themeApplier } from '../js/themes/applier.js';
     import { bindBoardArt } from '../js/shell/board-art.js';
+    import { bindScenePalette } from '../js/shell/scene-palette.js';
+    import { hintStripHtml, hudStripHtml, helpListHtml, helpFootHtml } from '../js/settings/bindings.js';
+    import { settingControlHtml, bindSettingControls } from '../js/settings/page.js';
+    import { menuPreview } from '../js/shell/menu.js';
+    import { bindMenuPreview, demoBoard2D, demoBoard3D, DEMO_SPACING_3D } from '../js/shell/menu-preview.js';
+    import { mountBoardView } from '../js/classic2d/board-view.js';
+    import * as THREE from 'three';
+    import { BoardRenderer } from '../js/render.js';
 
     // The theme picker: one option per registered theme, in catalogue order.
     const picker = document.getElementById('g-theme');
@@ -538,6 +655,11 @@
       figure.append(createIcon(document, name), caption);
       set.append(figure);
     }
+    // The overlay's parts J-Components draws, their text from the sources the game draws them from.
+    document.getElementById('hint-strip-text').innerHTML = hintStripHtml('classic-2d', 'keyboard');
+    document.getElementById('g-hud-tools').innerHTML = hudStripHtml('classic-2d', 'keyboard');
+    document.getElementById('g-help-list').innerHTML = helpListHtml('classic-2d', 'keyboard');
+    document.getElementById('help-foot').innerHTML = helpFootHtml('classic-2d', 'keyboard');
     applyIcons(document);
 
     initComponents(document);
@@ -549,7 +671,67 @@
     // A Classic 2D board on the page draws from the theme's board module, as in the game.
     bindBoardArt({ applier, fonts: document.fonts });
     const requested = new URL(location.href).searchParams.get('theme');
-    globalThis.galleryReady = applier.start().then(() => applier.setTheme(requested)).then(showPicked);
+    globalThis.galleryReady = applier.start().then(() => applier.setTheme(requested)).then((id) => {
+      showThemeList();
+      return showPicked(id);
+    });
+    applier.onThemeChange(showPicked);
+
+    // The Settings page's theme list, bound to the applier as the page binds it: a pick switches the theme.
+    function showThemeList() {
+      const host = document.getElementById('g-theme-list');
+      host.innerHTML = settingControlHtml('theme', applier.current(), { labelledBy: 'g-theme-list-title' });
+      bindSettingControls(host.querySelectorAll('[data-setting]'), { set() {} }, { theme: applier });
+    }
+
+    // The menu's previews: the Classic 2D demo board drawn by its board view in its board frame…
+    const board2d = { key: 'demo', ...demoBoard2D() };
+    bindMenuPreview({
+      panel: document.getElementById('g-preview-2d'),
+      stage: document.getElementById('g-preview-2d-stage'),
+      tag: document.getElementById('g-scene-2d'),
+      iconOf: () => null,
+      mountBoard: ({ container, grid }) => mountBoardView({ container, grid, minTile: 1, framed: true }),
+      boardOf: () => board2d,
+    }).show(menuPreview('classic-2d'));
+    // …and the 3D demo board drawn by the 3D renderer into its panel, or the still panel without WebGL 2.
+    show3DPreview(document.getElementById('g-preview-3d'));
+
+    function show3DPreview(panel) {
+      const canvas = panel.querySelector('canvas');
+      const preview = menuPreview('3d');
+      panel.querySelector('.ui-scene-panel__tag').textContent = preview.tag;
+      const before = THREE.getConsoleFunction();
+      THREE.setConsoleFunction(() => {}); // three's report of a refused WebGL 2 context is expected here
+      let renderer = null;
+      try { renderer = new BoardRenderer(canvas); } catch { renderer = null; } finally { THREE.setConsoleFunction(before); }
+      if (!renderer) {
+        canvas.remove();
+        panel.dataset.shows = 'still';
+        return;
+      }
+      // The panel's own canvas, sized to the panel, drawn over the panel's sky (the game's renderer draws
+      // into the window, beneath a ui-scene-panel--live).
+      renderer.resize = () => {
+        const w = Math.max(1, canvas.clientWidth), h = Math.max(1, canvas.clientHeight);
+        renderer.renderer.setSize(w, h, false);
+        renderer.camera.aspect = w / h;
+        renderer.camera.updateProjectionMatrix();
+      };
+      // The menu's demo board, the same on every load here.
+      let seed = 20261016;
+      renderer.setGame(demoBoard3D(() => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32)).view);
+      renderer.setSpacing(DEMO_SPACING_3D);
+      const camera = renderer.camera;
+      camera.position.set(0, 24, 62); // the menu's orbit, at its start
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld(true);
+      const draw = () => { renderer.resize(); renderer.render(); };
+      bindScenePalette({ renderer, onApplied: draw });
+      new ResizeObserver(draw).observe(canvas);
+      panel.dataset.shows = preview.kind;
+    }
+
     picker.addEventListener('change', (e) => {
       const url = new URL(location.href);
       url.searchParams.set('theme', e.detail.value);

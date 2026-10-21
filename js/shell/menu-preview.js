@@ -6,6 +6,10 @@
 // demoBoard2D()       → { grid, game }: an Intermediate board (STANDARD_SIZES) with a fixed mine set,
 //                       an opening revealed and a few flags placed — a real engine game, the same on
 //                       every load.
+// demoBoard3D(random?) → the 3D game the menu's 3D preview and backdrop show: a DEMO_BOARD_3D box
+//                       with mines from `random` (Math.random by default), some cells of its outer shell
+//                       revealed until about 55 % stay closed, a few mines flagged; DEMO_SPACING_3D the
+//                       spacing it is drawn at.
 // dailyBoard2D(daily) → { grid, game, mark }: `daily` the shell's dailyPreview(now) (js/shell/daily.js);
 //                       the closed board awaiting its first click, its start cell the mark.
 // bindMenuPreview({ panel, stage, tag, iconOf, mountBoard, boardOf }) → { show(preview), shown }:
@@ -27,6 +31,8 @@ import { createSquareGrid } from '../engine/square-grid.js';
 import { createGame, createGameWithMines } from '../engine/rules.js';
 import { REFERENCE_PROFILE } from '../engine/profiles.js';
 import { STANDARD_SIZES } from '../classic2d/board-setup.js';
+import { DEMO_BOARD_3D } from './menu.js';
+import { create3DGame } from '../mode3d/session.js';
 
 /** A small deterministic generator: the demo board is the same on every load. */
 function lcg(seed) {
@@ -58,6 +64,29 @@ export function demoBoard2D() {
     if (grid.graph.neighbours(c).some((n) => game.cellState(n) === 'revealed')) { game.toggleFlag(c); flags++; }
   }
   return { grid, game };
+}
+
+export const DEMO_SPACING_3D = 1.25;
+
+export function demoBoard3D(random = Math.random) {
+  const mines = new Set();
+  const { X, Y, Z } = DEMO_BOARD_3D;
+  while (mines.size < 30) mines.add(Math.floor(random() * X * Y * Z));
+  const play = create3DGame({ ...DEMO_BOARD_3D, minePositions: [...mines] });
+  const g = play.view;
+  // reveal a few safe cells on the outer shell and flag a few mines, purely decorative
+  const shell = (idx) => {
+    const [i, j, k] = g.coords(idx);
+    return i === 0 || j === 0 || k === 0 || i === X - 1 || j === Y - 1 || k === Z - 1;
+  };
+  const closed = () => { let c = 0; for (let idx = 0; idx < g.n; idx++) c += !g.pressed[idx]; return c; };
+  for (let t = 0; t < 400 && closed() > g.n * 0.55; t++) {
+    const idx = Math.floor(random() * g.n);
+    if (shell(idx) && g.number[idx] > 0 && !g.pressed[idx]) play.reveal(idx);
+  }
+  let flags = 0;
+  for (let idx = 0; idx < g.n && flags < 8; idx++) if (g.number[idx] === -1 && shell(idx) && random() < 0.5) { play.toggleFlag(idx); flags++; }
+  return play;
 }
 
 export function dailyBoard2D(daily) {
