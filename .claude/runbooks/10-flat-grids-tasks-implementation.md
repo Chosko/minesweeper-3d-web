@@ -3,7 +3,7 @@
 Created: 2026-10-21 · Source: /runbook-create interview (runbook flat-grids-planning step 6) · Model: opus
 Last step number: 33
 
-## [ ] 1. Implement task 248 — Flat grid geometry contract and the square geometry
+## [x] 1. Implement task 248 — Flat grid geometry contract and the square geometry
 
 Depends on: none
 
@@ -13,11 +13,14 @@ Context: none
 /task-implement 248 --review
 ```
 
+Done: 2026-10-21, commit `f550202` (5 files, +320/-1). The geometry works in CSS pixels from the board's top-left, taking the tile size and the layout's whole-pixel gap (not the board module's gap fraction); `js/geometry/square.js` imports the tile floor and cap from `js/classic2d/`.
+
 ## [ ] 2. Implement task 249 — Classic 2D board view on the grid geometry
 
 Depends on: 1
 
-Context: none
+Context:
+- 2026-10-21 (from step 1): js/geometry/square.js imports MIN_TILE_SIZE from js/classic2d/tile-skin.js and tileCap from js/classic2d/board-view.js, so making the board view import js/geometry/ creates an import cycle — safe as written (values read at build time, not load time); a deferred review advisory says to move the floor and cap into a small shared module if the cycle bites.
 
 ```prompt
 /task-implement 249 --review
