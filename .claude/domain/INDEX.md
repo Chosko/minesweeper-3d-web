@@ -50,6 +50,13 @@ layer.
 | [features/shared-screen-layout.md](./features/shared-screen-layout.md) | The redesigned shared layout: backdrop, screen frame and the new kit components; the main menu, the board choice screens with their bests and the 3D presets, the Daily screen, and the other screens in the frame; the 3D scene in a panel |
 | [features/in-game-layout.md](./features/in-game-layout.md) | The redesigned game window for Classic 2D and 3D: head, counter strip with Restart, the live figures panel (3BV progress, pace vs PB, 3BV/s, clicks, flags) and the foot line |
 | [features/theme-implement-skill.md](./features/theme-implement-skill.md) | The project skill that adds or updates a theme from its Claude Design canvas: reading artboards, mapping them to the contract, fonts, verification, stop conditions, commit |
+| [features/flat-grid-geometry.md](./features/flat-grid-geometry.md) | The flat grid geometry contract — layout, outline, hit-testing, cursor moves, floor and scale cap — with Classic 2D's board view, painter, motion, end effect, inputs, sampler and 2D replay viewer written against it; the square geometry |
+| [features/hexagon-grid.md](./features/hexagon-grid.md) | The hexagonal grid: flat-top columns with odd columns lower, 6 neighbours, its generation description and start cell, its geometry, Hexagon's standard boards and custom limits, its board identity and board-code token |
+| [features/triangle-grid.md](./features/triangle-grid.md) | The triangle grid: alternating triangles with 12 neighbours, its generation description and start cell, its geometry, Triangle's standard boards and custom limits, its board identity and board-code token |
+| [features/hex-tri-board-art.md](./features/hex-tri-board-art.md) | Hexagonal and triangle tiles in the theme: per-grid gap and radius, 2D numbers to 12, the recipe's outlines, the board checks per grid, Joyful tiles' values and the theme skill's reading of the two sheets |
+| [features/flat-grid-modes.md](./features/flat-grid-modes.md) | The Hexagon and Triangle modes from the Classic 2D flow: configuration, board choice screens, last board choice, board codes, session, game window, mouse, keyboard, controller and touch, help, end effect, results |
+| [features/flat-grid-records-replays.md](./features/flat-grid-records-replays.md) | Hexagon and Triangle in the records: per-mode counters and the format step, the Records screen's mode switch; their replays: format version, recording, playback and the library |
+| [features/flat-grid-menu-entries.md](./features/flat-grid-menu-entries.md) | The Hexagon and Triangle menu entries opening their modes, their board previews, the last mode played, and Daily keeping both as Coming soon |
 
 ## Features
 

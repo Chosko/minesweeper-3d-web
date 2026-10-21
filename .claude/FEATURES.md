@@ -298,3 +298,66 @@ Source: product-design.md § Visual design system (m2b-themes)
 Tasks: 188, 189
 
 ---
+
+## flat-grid-geometry — Flat grid geometry: Classic 2D's board, inputs, sampler and 2D viewer over a grid geometry
+
+Status: [NEW]
+Doc: .claude/domain/features/flat-grid-geometry.md
+Source: product-design.md § Hexagon (m2c-flat-grids)
+Tasks: none
+
+---
+
+## hexagon-grid — Hexagon grid: graph, generation kind, geometry, standard boards, limits, identity and code token
+
+Status: [NEW]
+Doc: .claude/domain/features/hexagon-grid.md
+Source: product-design.md § Hexagon (m2c-flat-grids)
+Tasks: none
+
+---
+
+## triangle-grid — Triangle grid: graph, generation kind, geometry, standard boards, limits, identity and code token
+
+Status: [NEW]
+Doc: .claude/domain/features/triangle-grid.md
+Source: product-design.md § Triangle (m2c-flat-grids)
+Tasks: none
+
+---
+
+## hex-tri-board-art — Hexagon and triangle tiles in the board module and tile recipe, with Joyful tiles' values
+
+Status: [NEW]
+Doc: .claude/domain/features/hex-tri-board-art.md
+Source: product-design.md § Visual design system (m2c-flat-grids)
+Tasks: none
+
+---
+
+## flat-grid-modes — Hexagon and Triangle modes: board choice, last choice, session, game window, inputs and results
+
+Status: [NEW]
+Doc: .claude/domain/features/flat-grid-modes.md
+Source: product-design.md § Hexagon (m2c-flat-grids)
+Tasks: none
+
+---
+
+## flat-grid-records-replays — Hexagon and Triangle in records, the Records mode switch, and their replays
+
+Status: [NEW]
+Doc: .claude/domain/features/flat-grid-records-replays.md
+Source: product-design.md § Hexagon (m2c-flat-grids)
+Tasks: none
+
+---
+
+## flat-grid-menu-entries — Hexagon and Triangle menu entries open their modes, with previews and the last mode played
+
+Status: [NEW]
+Doc: .claude/domain/features/flat-grid-menu-entries.md
+Source: product-design.md § Main menu and game shell (m2c-flat-grids)
+Tasks: none
+
+---
