@@ -355,9 +355,9 @@ Tasks: 272, 273, 274, 275, 276
 
 ## flat-grid-menu-entries — Hexagon and Triangle menu entries open their modes, with previews and the last mode played
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/flat-grid-menu-entries.md
 Source: product-design.md § Main menu and game shell (m2c-flat-grids)
-Tasks: none
+Tasks: 277, 278, 279
 
 ---

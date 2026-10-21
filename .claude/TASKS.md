@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 276
+Last task number: 279
 
 ---
 
@@ -1636,5 +1636,35 @@ Target: claude
 Files: .claude/context/records.md, .claude/context/records-store.md, .claude/context/records-screen.md, .claude/context/records-screen-view.md, .claude/context/records-library-view.md, .claude/context/replay.md, .claude/context/replay-samplers.md, .claude/context/replay-playback.md, .claude/context/replay-viewers.md, .claude/context/replay-viewer-screen.md, .claude/context/replay-library.md, .claude/context/app-shell-replay.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-records-replays.md
 Preconditions: 272, 273, 274, 275
 Feature: flat-grid-records-replays
+
+---
+
+## 277. Menu previews for Hexagon and Triangle
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/menu-preview.js, js/shell/menu.js, js/main.js, tests/shell-menu.test.mjs, tests/components-menu-screens.test.mjs
+Preconditions: 264, 268
+Feature: flat-grid-menu-entries
+
+---
+
+## 278. Menu routes, last mode played and Daily for Hexagon and Triangle
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/menu.js, js/shell/returning.js, js/shell/daily.js, js/main.js, tests/shell-menu.test.mjs, tests/shell-returning.test.mjs, tests/shell-daily.test.mjs
+Preconditions: 268
+Feature: flat-grid-menu-entries
+
+---
+
+## 279. Update documentation for feature `flat-grid-menu-entries`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell-menu.md, .claude/context/app-shell-daily.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-menu-entries.md
+Preconditions: 277, 278
+Feature: flat-grid-menu-entries
 
 ---
