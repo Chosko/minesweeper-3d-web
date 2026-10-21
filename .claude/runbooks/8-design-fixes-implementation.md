@@ -299,7 +299,7 @@ Context:
 
 Done: 2026-10-21, commit `3a5553b` (14 files, +155/-43). Decisions: Try again takes the canvas's restart icon (play on a win), against the task body; `UI.setTimed` became `UI.setLearn(on)` and `hud-figures--untimed` is gone; on phones Learn 3D keeps the existing phone layouts, which the canvas does not draw. The loss title stays "That cube was a mine." (the canvas says "That was a mine").
 
-## [~] 24. Implement task 237 — Results screen to the canvas
+## [x] 24. Implement task 237 — Results screen to the canvas
 
 Depends on: 9, 10
 
@@ -309,6 +309,8 @@ Context:
 ```prompt
 /task-implement 237 --review
 ```
+
+Done: 2026-10-21, commit `7159569` (24 files, +384/-177). Decisions: Watch replay takes the canvas's `film` icon, not the task's "grid"; a first-use toast is hidden (`toast--first-use`) while results show; a loss with no streak ended reads "beat <time>"; the 3D rank joins the board line; "Board code" is a section label outside the chip. Three feature documents were edited to match (`shared-screen-layout`, `results-screen`, `3d-results-records-screens`).
 
 ## [~] 25. Implement task 238 — Records screen to the canvas
 
@@ -364,7 +366,8 @@ Context: none
 
 Depends on: 17, 24
 
-Context: none
+Context:
+- 2026-10-21 (from step 24): task 237 set the Results loss row with no streak ended to "beat <time>" (no wording was given) and appended the 3D rank to the board line.
 
 ```prompt
 /task-implement 242 --review
