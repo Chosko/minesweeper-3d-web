@@ -394,7 +394,7 @@ Context: none
 /task-implement 243 --review
 ```
 
-## [~] 31. Implement task 244 — Update documentation for feature `shared-screen-layout`
+## [x] 31. Implement task 244 — Update documentation for feature `shared-screen-layout`
 
 Depends on: 5, 6, 7, 8, 9, 10, 15, 16, 17, 20, 21, 22, 24, 25, 26, 27, 28, 29
 
@@ -404,7 +404,9 @@ Context: none
 /task-implement 244 --review
 ```
 
-## [ ] 32. Implement task 245 — Update documentation for feature `in-game-layout`
+Done: 2026-10-21, commit `3cc9fb5` (20 files, +71/-56).
+
+## [~] 32. Implement task 245 — Update documentation for feature `in-game-layout`
 
 Depends on: 18, 19, 23
 
