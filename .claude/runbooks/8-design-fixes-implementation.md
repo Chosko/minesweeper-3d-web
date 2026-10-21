@@ -220,7 +220,7 @@ Context: none
 
 Done: 2026-10-21, commit `dfb4809` (16 files, +245/-143). Premise wrong: K11's Last played chip position contradicts the canvas; it follows the canvas (right after the name, a new `ui-option__line` kit part). The option sizes live in the shared option rule, so Daily's mode options take them too; the board-choice switch now sits at the right edge, changing pad-walk order.
 
-## [~] 18. Implement task 231 — Classic 2D window layout and HUD density
+## [x] 18. Implement task 231 — Classic 2D window layout and HUD density
 
 Depends on: 10, 14
 
@@ -230,11 +230,14 @@ Context: none
 /task-implement 231 --review
 ```
 
-## [ ] 19. Implement task 232 — First-use hint strip and the Tap: Reveal / Flag segmented choice
+Done: 2026-10-21, commit `a1f181a` (17 files, +456/-89). Decisions: the window fits its board through JavaScript (`js/ui.js`, `js/main.js`, `js/classic2d/mode.js`), which measures the chrome's room and sizes the board area; HUD sizes are documented in `app-shell-ui.md` § HUD density, not `app-shell-3d.md`. `tests/shell-menu.test.mjs` failed once in ten runs on a preview not yet mounted (load-dependent, unproven).
+
+## [~] 19. Implement task 232 — First-use hint strip and the Tap: Reveal / Flag segmented choice
 
 Depends on: 18
 
-Context: none
+Context:
+- 2026-10-21 (from step 18): task 231 sizes the Classic 2D window to its board in JavaScript (`js/ui.js`, `js/main.js`, `js/classic2d/mode.js`) and still keeps the hint strip's 64 px room around the board area; this task removes that room.
 
 ```prompt
 /task-implement 232 --review
@@ -244,7 +247,8 @@ Context: none
 
 Depends on: 10
 
-Context: none
+Context:
+- 2026-10-21 (from step 27): the user answered task 240's parked question with option a — the Settings criterion "at 1920 × 1080 everything fits without the body scrolling, with the 3D bindings shown" moves to task 233 (both amended through /pipeline-revise by step 27), since the overflow comes only from the long 3D keyboard rows this task shortens. Task 233's body may not carry the clause yet.
 
 ```prompt
 /task-implement 233 --review
