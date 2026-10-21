@@ -30,7 +30,7 @@ Design both modes in slice mode for milestone m2c-flat-grids (product-roadmap.md
 
 Done: 2026-10-21, commit `447ca6c` (10 files, +961/-3). Seven features: flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, flat-grid-modes, flat-grid-records-replays, flat-grid-menu-entries. Answered on the owner's delegated authority: touch play in both modes (product design updated, roadmap m2c exit criteria not yet), daily boards stay Coming soon, canvas board sizes, Classic 2D custom mine cap.
 
-## [ ] 3. Point the shipped feature documents' hex/tri deferrals at m2c-flat-grids
+## [x] 3. Point the shipped feature documents' hex/tri deferrals at m2c-flat-grids
 
 Depends on: 2
 
@@ -40,6 +40,8 @@ Context:
 ```prompt
 Several feature documents under .claude/domain/features/ say hexagonal and triangle work is "deferred to m6-launch" (find them with `grep -rniE "hexag|triang" .claude/domain/features`). Milestone m2c-flat-grids now delivers that work through the feature documents step 2 wrote (see .claude/FEATURES.md entries whose Source line names m2c-flat-grids). For each older document whose text is now wrong — a non-goal naming m6-launch for something m2c delivers, or a contract the new features extend — run `/architect amend feature=<slug>[,<slug>...] "<change>"` with a change that repoints the deferral at m2c-flat-grids and the owning new feature, keeping in m6-launch only what stays there (Steam leaderboards, achievements, demo locks, colour-blind numbers, Surface). Amend only text the new features make stale; design no new behaviour here — that was step 2's. If no document is stale, finish with no change and say so.
 ```
+
+Done: 2026-10-21, commit `ac9442a` (12 files, +37/-21). Twelve documents amended, four more than step 2 listed (replay-playback, theme-system, square-tile-skin, design-tokens-and-themes); all editorial, no task went [STALE].
 
 ## [ ] 4. Place the m2c-flat-grids features in the production plan
 
