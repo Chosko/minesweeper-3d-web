@@ -371,7 +371,7 @@ Context: none
 
 Done: 2026-10-21, commit `0e26273` (14 files, +227/-39). Decisions: leaving cards (ready, ctx-lost, learn-end, placeholder, pause and Settings confirm boxes) fade out over `--duration-slow` with clicks passing through, so a browser test measures a card only after its animations end and "gone" means `display: none` (now in `testing-browser.md`); Reset all data's Yes acts only while its confirmation is open (`js/settings/page.js`).
 
-## [~] 29. Implement task 242 — Copy alignment with the canvas
+## [x] 29. Implement task 242 — Copy alignment with the canvas
 
 Depends on: 17, 24
 
@@ -381,6 +381,8 @@ Context:
 ```prompt
 /task-implement 242 --review
 ```
+
+Done: 2026-10-21, commit `d6ca35d` (31 files, +153/-95). Decisions: the version refusal keeps two reasons (newer: "Reload the page to update." as text; older: "It cannot be played here."), where the canvas gives one; a cut-off code gets a new "incomplete" refusal; a pace exactly on the best reads "ahead of"; an accepted code's line now ends "· starts on the marked cell" ("cube" in 3D) instead of "not eligible for bests".
 
 ## [~] 30. Implement task 243 — Component gallery coverage and the theme list
 
@@ -392,7 +394,7 @@ Context: none
 /task-implement 243 --review
 ```
 
-## [ ] 31. Implement task 244 — Update documentation for feature `shared-screen-layout`
+## [~] 31. Implement task 244 — Update documentation for feature `shared-screen-layout`
 
 Depends on: 5, 6, 7, 8, 9, 10, 15, 16, 17, 20, 21, 22, 24, 25, 26, 27, 28, 29
 
