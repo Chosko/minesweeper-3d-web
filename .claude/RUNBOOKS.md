@@ -1,6 +1,6 @@
 # Runbooks
 
-Last runbook number: 9
+Last runbook number: 10
 
 ---
 
@@ -51,5 +51,15 @@ File: .claude/runbooks/9-flat-grids-planning.md
 Created: 2026-10-21
 Source: /runbook-create interview
 Steps: 5/6
+
+---
+
+## 10. flat-grids-tasks-implementation — Implement every task of milestone m2c-flat-grids
+
+Status: [PENDING]
+File: .claude/runbooks/10-flat-grids-tasks-implementation.md
+Created: 2026-10-21
+Source: /runbook-create interview (runbook flat-grids-planning step 6)
+Steps: 0/32
 
 ---
