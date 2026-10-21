@@ -173,6 +173,13 @@ test('mounted, swap on: a shift + primary press on a board that scrolls is still
 
 // ---------- the toggle on the board, in a browser ----------
 
+// A browser without WebGL 2, for a test where 3D is irrelevant: the menu keeps no 3D backdrop
+// redrawing under software rendering.
+function removeWebGL2() {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+}
+
 test('in a browser: the swap toggle shows on the Classic 2D board while unpaused, swaps a click, keeps across games and never takes focus', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
@@ -181,6 +188,7 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     const ms = (fn, arg) => page.evaluate(fn, arg);

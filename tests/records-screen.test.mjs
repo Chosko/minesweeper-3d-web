@@ -705,7 +705,7 @@ function removeWebGL2() {
   const getContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
-test('in a browser, the menu opens the records screen on the last board played, the picker chooses a board, Back returns', async (t) => {
+test('in a browser, the menu opens the records screen on the last board played, the picker chooses a board, Back returns; Records lays out in columns at 1280 px, one column at 900 and 390 px, never scrolling sideways; Back closes a Delete confirmation first', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -806,23 +806,9 @@ test('in a browser, the menu opens the records screen on the last board played, 
 
     await page.click('#records-back');
     assert.equal(await mode(), 'menu', 'the Back button returns to the menu');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
 
-test('in a browser, Records lays out in columns at 1280 px, one column at 900 and 390 px, never scrolling sideways; Back closes a Delete confirmation first', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.addInitScript(removeWebGL2);
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    // Records laid out at each window size, and a Delete confirmation closed by Back.
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.evaluate(() => {
       const clicks = { reveal: { effective: 25, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } };
       for (let i = 0; i < 14; i++) {
@@ -863,6 +849,8 @@ test('in a browser, Records lays out in columns at 1280 px, one column at 900 an
     // Esc, the browser's Back and the controller's Back close an open Delete confirmation first, staying on Records.
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.click('#menu-entry-records');
+    // The custom board's game is the latest played, so Records opens on it: Beginner holds the replays.
+    await page.click('#records-picker [data-value="classic-2d:square:9x9:10:guess"]');
     await page.click('#records-tab-replays');
     assert.equal(await page.evaluate(() => document.querySelectorAll('#records-replays-body tr').length), 10, 'ten replays a page');
     assert.equal(await page.evaluate(() => document.getElementById('records-replays-page').textContent), 'Replays 1–10 of 12');

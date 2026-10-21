@@ -670,7 +670,7 @@ test('in a browser, the menu shows the nine entries with the selected one\'s pre
   }
 });
 
-test('in a browser, the menu fits each window: the title\'s size, the entries as tall as the preview, the selected one taller, no sideways scroll; a phone shows no preview', async (t) => {
+test('in a browser, the menu fits each window: the title\'s size, the entries as tall as the preview, the selected one taller, no sideways scroll; a phone shows no preview; the Classic 2D and Daily previews draw the whole board in its frame; a coarse pointer keeps every unselected entry a 44 px touch target; the key hints follow the active device', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -684,13 +684,21 @@ test('in a browser, the menu fits each window: the title\'s size, the entries as
       { width: 1024, height: 768, title: 50, entries: [36, 390, 106, 596], preview: [462, 526], gap: 10, block: 30, grow: 1.4, label: [20, 25], icon: [36, 48], glyph: [20, 24] },
       { width: 390, height: 844, title: 31, entries: [20, 350, 100], phone: true, gap: 10, block: 28, grow: 1.35, label: [19, 24], icon: [36, 48], glyph: [20, 24] },
     ];
-    for (const size of SIZES) {
+    // [the Classic 2D preview's tile, the Daily preview's tile] per desktop artboard (J-Menu-xl, -l, -m; J-Menu-extra).
+    const PREVIEW = { 1920: [41, 27], 1366: [27, null], 1024: [23, null] };
+    // Laid out at the window's size: two frames, then every animation that ends (the selected entry's move) done.
+    const settle = async (page) => {
+      await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getComputedTiming().endTime === Infinity),
+        null, { timeout: patience(2000) });
+    };
+    const resize = async (page, width, height) => {
+      await page.setViewportSize({ width, height });
+      await page.focus('#menu-entry-classic-2d');
+      await settle(page);
+    };
+    const fit = async (page, size) => {
       const { width, height, title, phone } = size;
-      const context = await browser.newContext({ viewport: { width, height }, ...(phone ? { hasTouch: true, isMobile: true } : {}) });
-      const page = await context.newPage();
-      await page.goto(`${base}/index.html?still-backdrop`);
-      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
-      await page.waitForTimeout(300); // the selected entry's move
       const m = await page.evaluate(() => {
         const rect = (el) => el.getBoundingClientRect();
         const px = (el, prop) => parseFloat(getComputedStyle(el)[prop]);
@@ -746,8 +754,81 @@ test('in a browser, the menu fits each window: the title\'s size, the entries as
         assert.ok(Math.abs(m.list[2] - m.preview[2]) <= 1 && Math.abs(m.list[3] - m.preview[3]) <= 1, `${label}: the entries together as tall as the preview`);
         assert.ok(Math.abs(m.tops[8] + m.heights[8] - (m.preview[2] + m.preview[3])) <= 1, `${label}: the last entry ends with the preview`);
       }
-      await context.close();
+    };
+    const framed = (page, kind) => page.waitForFunction((k) => {
+      const layer = document.querySelector(`#menu-preview-stage > [data-preview="${k}"]:not([hidden])`);
+      const frame = layer?.querySelector(':scope > .ui-board-frame');
+      if (!frame || frame.classList.contains('hidden')) return null;
+      const r = frame.getBoundingClientRect();
+      const box = layer.getBoundingClientRect();
+      if (r.width === 0 || layer.querySelector('canvas').style.width !== `${Math.round(box.width)}px`) return null; // laid out in the layer as it stands
+      // Settled: the same frame on two polls running, the menu's own layout done moving.
+      const key = `${k} ${r.x} ${r.y} ${r.width} ${r.height} ${box.width} ${box.height}`;
+      const same = globalThis.__framePoll === key;
+      globalThis.__framePoll = key;
+      if (!same) return null;
+      return {
+        width: Math.round(r.width), height: Math.round(r.height),
+        inside: r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5,
+        background: getComputedStyle(frame).backgroundColor, radius: parseFloat(getComputedStyle(frame).borderTopLeftRadius),
+      };
+    }, kind, { polling: 100 }).then((h) => h.jsonValue());
+    // The tile a frame of n columns was laid out at: n tiles, the gaps between them and a gap either side.
+    const tileOf = (n, w) => Array.from({ length: 80 }, (_, i) => i + 1).find((tile) => n * tile + (n + 1) * Math.round(tile * 0.09) === w);
+
+    // One mouse page, a controller connected but not yet used, resized through the desktop artboards.
+    const { page, press } = await controllerPage(browser, base);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
+    for (const size of SIZES.filter((s) => !s.phone)) {
+      const { width, height } = size;
+      await resize(page, width, height);
+      await fit(page, size);
+      const [classic, daily] = PREVIEW[width];
+      const label = `${width} × ${height}`;
+      const c = await framed(page, 'board');
+      const ct = tileOf(16, c.width);
+      assert.equal(ct, classic, `${label}: the Classic 2D preview at ${classic} px (frame ${c.width} px)`);
+      assert.deepEqual([c.inside, c.height, c.background, Math.round(c.radius)], [true, c.width, 'rgb(255, 255, 255)', Math.round(ct * 0.3)], `${label}: the whole Intermediate board in its white frame`);
+      await page.focus('#menu-entry-daily');
+      const d = await framed(page, 'daily');
+      const dt = tileOf(30, d.width);
+      assert.ok(dt && d.inside, `${label}: the whole daily Expert board in its frame (${dt} px)`);
+      if (daily !== null) assert.deepEqual([dt, d.width], [daily, 872], `${label}: the Daily preview at ${daily} px, 872 px wide`);
     }
+    // The key hints follow the active device: the keyboard's arrows and Enter, then the controller's buttons.
+    const hints = () => page.evaluate(() => [...document.querySelectorAll('#menu-hints .ui-key-hint')]
+      .map((h) => [h.dataset.action, h.classList.contains('hidden'), [...h.querySelectorAll('.ui-key-hint__key')].map((k) => k.textContent).join(' '), h.textContent.replace(/\s+/g, '')]));
+    assert.deepEqual(await hints(), [['move', false, '↑ ↓', '↑↓Move'], ['select', false, 'Enter', 'EnterSelect']]);
+    await press(PAD_BTN.DOWN);
+    const pad = await hints();
+    assert.deepEqual(pad.map(([a, hidden]) => [a, hidden]), [['move', false], ['select', false]]);
+    assert.equal(pad[0][2], 'D-pad');
+    assert.notEqual(pad[1][2], 'Enter', 'the controller\'s button');
+    await page.close();
+
+    // One touch page: the phone's artboard and its hints, then resized to a coarse pointer at 1366 and 1024.
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const phone = await context.newPage();
+    await phone.goto(`${base}/index.html?still-backdrop`);
+    await phone.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
+    await settle(phone);
+    await fit(phone, SIZES.find((s) => s.phone));
+    assert.deepEqual(await phone.evaluate(() => [...document.querySelectorAll('#menu-hints .ui-key-hint')].map((h) => h.classList.contains('hidden'))), [true, true],
+      'a touch device: no key hints');
+    assert.equal(await phone.evaluate(() => document.getElementById('touch-note').classList.contains('hidden')), false, 'the touch note instead');
+    for (const [width, height] of [[1366, 768], [1024, 768]]) {
+      await resize(phone, width, height);
+      const m = await phone.evaluate(() => ({
+        coarse: matchMedia('(pointer: coarse)').matches,
+        width: innerWidth,
+        heights: [...document.querySelectorAll('#menu-entries .ui-mode-entry')].filter((b) => b !== document.activeElement).map((b) => b.getBoundingClientRect().height),
+      }));
+      assert.ok(m.coarse, 'a coarse pointer');
+      assert.equal(m.width, width);
+      assert.equal(m.heights.length, 8);
+      assert.ok(m.heights.every((h) => h >= 44), `${width}: every unselected entry at least 44 px (${m.heights})`);
+    }
+    await context.close();
   } finally {
     await browser.close();
   }
@@ -974,109 +1055,6 @@ test('in a browser, the menu\'s scene panel: radius 30, its tag at 26 × 22, a c
     await page.focus('#menu-entry-quit');
     const quit = await look();
     assert.match(quit.card.badge[3], /inset/, 'the locked badge keeps its inset highlight');
-    await context.close();
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser, the menu\'s Classic 2D and Daily previews draw the whole board in the board frame, padded by its gap, at each window size', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    // [width, height, the Classic 2D preview's tile, the Daily preview's tile] per artboard (J-Menu-xl, -l, -m; J-Menu-extra).
-    for (const [width, height, classic, daily] of [[1920, 1080, 41, 27], [1366, 768, 27, null], [1024, 768, 23, null]]) {
-      const context = await browser.newContext({ viewport: { width, height } });
-      const page = await context.newPage();
-      await page.goto(`${base}/index.html?still-backdrop`);
-      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
-      const framed = (kind) => page.waitForFunction((k) => {
-        const layer = document.querySelector(`#menu-preview-stage > [data-preview="${k}"]:not([hidden])`);
-        const frame = layer?.querySelector(':scope > .ui-board-frame');
-        if (!frame || frame.classList.contains('hidden')) return null;
-        const r = frame.getBoundingClientRect();
-        const box = layer.getBoundingClientRect();
-        if (r.width === 0 || layer.querySelector('canvas').style.width !== `${Math.round(box.width)}px`) return null; // laid out in the layer as it stands
-        // Settled: the same frame on two polls running, the menu's own layout done moving.
-        const key = `${k} ${r.x} ${r.y} ${r.width} ${r.height} ${box.width} ${box.height}`;
-        const same = globalThis.__framePoll === key;
-        globalThis.__framePoll = key;
-        if (!same) return null;
-        return {
-          width: Math.round(r.width), height: Math.round(r.height),
-          inside: r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5,
-          background: getComputedStyle(frame).backgroundColor, radius: parseFloat(getComputedStyle(frame).borderTopLeftRadius),
-        };
-      }, kind, { polling: 100 }).then((h) => h.jsonValue());
-      // The tile a frame of n columns was laid out at: n tiles, the gaps between them and a gap either side.
-      const tileOf = (n, w) => Array.from({ length: 80 }, (_, i) => i + 1).find((tile) => n * tile + (n + 1) * Math.round(tile * 0.09) === w);
-      const label = `${width} × ${height}`;
-      const c = await framed('board');
-      const ct = tileOf(16, c.width);
-      assert.equal(ct, classic, `${label}: the Classic 2D preview at ${classic} px (frame ${c.width} px)`);
-      assert.deepEqual([c.inside, c.height, c.background, Math.round(c.radius)], [true, c.width, 'rgb(255, 255, 255)', Math.round(ct * 0.3)], `${label}: the whole Intermediate board in its white frame`);
-      await page.focus('#menu-entry-daily');
-      const d = await framed('daily');
-      const dt = tileOf(30, d.width);
-      assert.ok(dt && d.inside, `${label}: the whole daily Expert board in its frame (${dt} px)`);
-      if (daily !== null) assert.deepEqual([dt, d.width], [daily, 872], `${label}: the Daily preview at ${daily} px, 872 px wide`);
-      await context.close();
-    }
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser with a coarse pointer, every unselected menu entry is a 44 px touch target at 1366 and 1024', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    for (const [width, height] of [[1366, 768], [1024, 768]]) {
-      const context = await browser.newContext({ viewport: { width, height }, hasTouch: true, isMobile: true });
-      const page = await context.newPage();
-      await page.goto(`${base}/index.html?still-backdrop`);
-      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
-      await page.waitForTimeout(300);
-      const m = await page.evaluate(() => ({
-        coarse: matchMedia('(pointer: coarse)').matches,
-        width: innerWidth,
-        heights: [...document.querySelectorAll('#menu-entries .ui-mode-entry')].filter((b) => b !== document.activeElement).map((b) => b.getBoundingClientRect().height),
-      }));
-      assert.ok(m.coarse, 'a coarse pointer');
-      assert.equal(m.width, width);
-      assert.equal(m.heights.length, 8);
-      assert.ok(m.heights.every((h) => h >= 44), `${width}: every unselected entry at least 44 px (${m.heights})`);
-      await context.close();
-    }
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser, the menu\'s key hints follow the active device: the keyboard\'s arrows and Enter, the controller\'s buttons, none on touch', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const { page, press } = await controllerPage(browser, base);
-    const hints = () => page.evaluate(() => [...document.querySelectorAll('#menu-hints .ui-key-hint')]
-      .map((h) => [h.dataset.action, h.classList.contains('hidden'), [...h.querySelectorAll('.ui-key-hint__key')].map((k) => k.textContent).join(' '), h.textContent.replace(/\s+/g, '')]));
-    assert.deepEqual(await hints(), [['move', false, '↑ ↓', '↑↓Move'], ['select', false, 'Enter', 'EnterSelect']]);
-    await press(PAD_BTN.DOWN);
-    const pad = await hints();
-    assert.deepEqual(pad.map(([a, hidden]) => [a, hidden]), [['move', false], ['select', false]]);
-    assert.equal(pad[0][2], 'D-pad');
-    assert.notEqual(pad[1][2], 'Enter', 'the controller\'s button');
-    await page.close();
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-    const phone = await context.newPage();
-    await phone.goto(`${base}/index.html?still-backdrop`);
-    await phone.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
-    assert.deepEqual(await phone.evaluate(() => [...document.querySelectorAll('#menu-hints .ui-key-hint')].map((h) => h.classList.contains('hidden'))), [true, true],
-      'a touch device: no key hints');
-    assert.equal(await phone.evaluate(() => document.getElementById('touch-note').classList.contains('hidden')), false, 'the touch note instead');
     await context.close();
   } finally {
     await browser.close();

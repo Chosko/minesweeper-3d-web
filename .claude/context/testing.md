@@ -17,7 +17,8 @@ test's name alone:
   `shell-focus-containment`, the menu's controller walk and the router's
   arrow-key walk) and the flavour checks of animation timing, frame counts
   and motion (the menu backdrop's frame count, the 3D loss wave, the flag
-  flash, the fixture replays played to the end). A functional
+  flash, the fixture replays played to the end, the Classic 2D flood's
+  frame budget). A functional
   browser check stays untagged. No test name outside the slow tier carries
   the tag, since the runners match it anywhere in a name;
   `tests/affected-tests.test.mjs` pins that every tagged test is a browser
@@ -68,7 +69,8 @@ reached them: a change to the page shell (`js/main.js`, `index.html`,
 `css/**`) selects `SHELL_SMOKE` — the fewest browser files that open every
 screen and play a game of each mode to its end — and a change to
 `js/render.js` selects `RENDER_SMOKE` — the fewest browser files that draw a
-3D game to its end and a 3D replay; `affected-tests.mjs` lists both sets.
+3D game to its end; `affected-tests.mjs` lists both sets, each file holding
+a test that runs with `[slow]` skipped.
 No file outside `tests/` matches Node's default test patterns, so
 a bare `node --test` from the root finds the suite's files.
 `tests/affected-tests.test.mjs` pins the scripts, the runner's modes, the

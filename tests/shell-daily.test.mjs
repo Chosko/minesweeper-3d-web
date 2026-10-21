@@ -418,122 +418,13 @@ test('the shell routes the Daily screen, pre-generates when the menu shows and s
 
 // ---------------------------------------------------------------- in a browser
 
-test('in a browser, the Daily screen\'s Classic 2D preview is the whole board in its frame on the screen\'s body, with no scene panel behind it', async (t) => {
+test('in a browser, the Daily screen matches its artboards at each size: key hints and icons, status row, board code, foot, panels and density; its Classic 2D preview is the whole board in its frame on the screen\'s body, with no scene panel behind it', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
-    // [width, height, the board's tile] per artboard (J-Daily-xl, -l, -m)
-    for (const [width, height, tile] of [[1920, 1080, 17], [1366, 768, 16], [1024, 768, 15]]) {
-      const page = await browser.newPage({ viewport: { width, height } });
-      await page.addInitScript(() => {
-        const get = HTMLCanvasElement.prototype.getContext;
-        HTMLCanvasElement.prototype.getContext = function (kind, ...rest) { return kind === 'webgl2' ? null : get.call(this, kind, ...rest); };
-      });
-      await page.goto(`${base}/index.html`);
-      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
-      await page.click('#menu-entry-daily');
-      const got = await page.waitForFunction(() => {
-        const panel = document.getElementById('daily-preview');
-        const frame = panel.querySelector('[data-preview="daily"]:not([hidden]) > .ui-board-frame');
-        if (!frame || frame.classList.contains('hidden') || frame.getBoundingClientRect().width === 0) return null;
-        const r = frame.getBoundingClientRect();
-        const box = panel.getBoundingClientRect();
-        // Settled: the same frame on two polls running.
-        const key = `${r.x} ${r.y} ${r.width} ${r.height} ${box.width} ${box.height}`;
-        const same = globalThis.__framePoll === key;
-        globalThis.__framePoll = key;
-        if (!same) return null;
-        const style = getComputedStyle(panel);
-        return {
-          shows: panel.dataset.shows, background: style.backgroundImage, colour: style.backgroundColor, shadow: style.boxShadow,
-          inside: r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5,
-          width: Math.round(r.width),
-        };
-      }, null, { polling: 100 }).then((h) => h.jsonValue());
-      const label = `${width} × ${height}`;
-      assert.deepEqual([got.shows, got.background, got.colour, got.shadow], ['daily', 'none', 'rgba(0, 0, 0, 0)', 'none'], `${label}: no dark scene panel behind the board`);
-      assert.equal(got.inside, true, `${label}: the whole board in the panel`);
-      const at = Array.from({ length: 60 }, (_, i) => i + 1).find((x) => 30 * x + 31 * Math.round(x * 0.09) === got.width);
-      assert.ok(at && Math.abs(at - tile) <= 2, `${label}: the Expert board at about ${tile} px (${at})`);
-      await page.close();
-    }
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser, the menu pre-generates today\'s Expert, Daily plays it on the marked cell, and leaving it uses the day\'s attempt', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.addInitScript(() => {
-      const get = HTMLCanvasElement.prototype.getContext;
-      HTMLCanvasElement.prototype.getContext = function (kind, ...rest) { return kind === 'webgl2' ? null : get.call(this, kind, ...rest); };
-    });
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
-    const code = dailyGame('expert', dateText()).code;
-    await page.waitForFunction((c) => globalThis.__ms.daily.has(c), code, { timeout: patience(10000) });
-    // The Daily entry opens the second block, before Records.
-    const entries = await page.evaluate(() => [...document.querySelectorAll('#menu [data-entry]')].map((b) => b.dataset.entry));
-    assert.deepEqual(entries, ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit']);
-    await page.click('#menu-entry-daily');
-    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'daily');
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'daily-entry-classic-2d', 'the first playable mode has the focus');
-    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#daily [data-mode]')].map((b) => b.dataset.mode)), ['classic-2d', 'hexagon', 'triangle', 'surface', '3d']);
-    assert.equal(await page.evaluate(() => document.querySelector('#daily [data-code] .ui-code__value').textContent), code);
-    assert.equal(await page.evaluate(() => document.getElementById('daily-entry-3d').disabled), true, 'no WebGL 2: the cube cannot be played');
-    assert.equal(await page.evaluate(() => document.querySelector('#daily-entry-3d [data-line]').textContent), UNAVAILABLE_REASONS.webgl2);
-    assert.equal(await page.evaluate(() => { const l = document.querySelector('#daily-preview [data-preview="daily"]'); return !!l && !l.hidden && !!l.querySelector('canvas'); }), true, 'the closed Expert board in the panel');
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'no horizontal scroll');
-    await page.click('#daily-entry-hexagon');
-    assert.equal(await page.evaluate(() => document.getElementById('daily-play').disabled), true, 'a coming-soon mode cannot be played');
-    await page.click('#daily-entry-classic-2d');
-    await page.click('#daily-play');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
-    const mark = dailyGame('expert', dateText()).startCell;
-    assert.equal(await page.evaluate(() => globalThis.__ms.board2D.mark), mark);
-    const at = await page.evaluate((cell) => {
-      const v = globalThis.__ms.board2D;
-      const r = v.cellRect(cell);
-      const b = v.canvas.getBoundingClientRect();
-      return { x: b.left + r.x + r.size / 2, y: b.top + r.y + r.size / 2 };
-    }, mark);
-    await page.mouse.click(at.x, at.y);
-    await page.waitForFunction(() => globalThis.__ms.modes.state.started === true);
-    assert.equal(await page.evaluate(() => document.getElementById('c2d-status').classList.contains('hidden')), true, 'the pre-generated board: no generating card');
-    const summary = await page.evaluate(() => globalThis.__ms.modes.summary());
-    assert.equal(summary.daily, dateText());
-    assert.equal(summary.board.daily, true);
-    // Leaving counts as a loss, on the day's Daily board.
-    await page.keyboard.press('Escape');
-    await page.click('#p-menu');
-    await page.click('#p-confirm-yes');
-    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
-    await page.click('#menu-entry-daily');
-    assert.equal(await page.evaluate(() => document.querySelector('#daily-entry-classic-2d [data-state]').textContent), 'Lost');
-    assert.equal(await page.evaluate(() => document.getElementById('daily-play').disabled), true, 'the counted attempt is used');
-    assert.equal(await page.evaluate(() => globalThis.__ms.daily.has(document.querySelector('#daily [data-code] .ui-code__value').textContent)), false, 'nothing asked for a used attempt');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser, the Daily screen matches its artboards at each size: key hints and icons, status row, board code, foot, panels and density', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    // [width, height, size] per artboard (J-Daily-xl, -l, -m, -p)
-    for (const [width, height, size] of [[1920, 1080, 'xl'], [1366, 768, 'l'], [1024, 768, 'm'], [390, 844, 'p']]) {
-      const phone = size === 'p';
-      const page = await browser.newPage({ viewport: { width, height }, ...(phone ? { hasTouch: true, isMobile: true } : {}) });
+    const open = async (options) => {
+      const page = await browser.newPage(options);
       await page.addInitScript(() => {
         const get = HTMLCanvasElement.prototype.getContext;
         HTMLCanvasElement.prototype.getContext = function (kind, ...rest) { return kind === 'webgl2' ? null : get.call(this, kind, ...rest); };
@@ -542,6 +433,19 @@ test('in a browser, the Daily screen matches its artboards at each size: key hin
       await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
       await page.evaluate(() => document.getElementById('menu-entry-daily').click());
       await page.waitForFunction(() => globalThis.__ms.state.mode === 'daily');
+      return page;
+    };
+    // One mouse page resized through the desktop artboards, then a phone's.
+    // [width, height, size, the Classic 2D preview's tile] per artboard (J-Daily-xl, -l, -m, -p)
+    let page = await open({ viewport: { width: 1920, height: 1080 } });
+    for (const [width, height, size, tile] of [[1920, 1080, 'xl', 17], [1366, 768, 'l', 16], [1024, 768, 'm', 15], [390, 844, 'p', null]]) {
+      const phone = size === 'p';
+      if (phone) {
+        await page.close();
+        page = await open({ viewport: { width, height }, hasTouch: true, isMobile: true });
+      } else {
+        await page.setViewportSize({ width, height });
+      }
       const label = `${width} × ${height}`;
       // A won row's time in the option row, shown as the binder shows it after a win.
       await page.evaluate(() => { const t = document.querySelector('#daily-entry-classic-2d [data-time]'); t.textContent = '48.213 s'; t.classList.remove('hidden'); });
@@ -651,9 +555,95 @@ test('in a browser, the Daily screen matches its artboards at each size: key hin
           return [Math.round(r.height), s.borderTopLeftRadius, s.boxShadow];
         });
         assert.deepEqual(still, [280, '20px', 'none'], `${label}: the still 3D panel 280 px tall, radius 20, no edge and no elevation`);
+        // The Classic 2D preview, chosen again: the whole Expert board in its frame.
+        await page.click('#daily-entry-classic-2d');
+        const shown = await page.waitForFunction(() => {
+          const panel = document.getElementById('daily-preview');
+          const frame = panel.querySelector('[data-preview="daily"]:not([hidden]) > .ui-board-frame');
+          if (!frame || frame.classList.contains('hidden') || frame.getBoundingClientRect().width === 0) return null;
+          const r = frame.getBoundingClientRect();
+          const box = panel.getBoundingClientRect();
+          // Settled: the same frame on two polls running.
+          const key = `${r.x} ${r.y} ${r.width} ${r.height} ${box.width} ${box.height}`;
+          const same = globalThis.__framePoll === key;
+          globalThis.__framePoll = key;
+          if (!same) return null;
+          const style = getComputedStyle(panel);
+          return {
+            shows: panel.dataset.shows, background: style.backgroundImage, colour: style.backgroundColor, shadow: style.boxShadow,
+            inside: r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5,
+            width: Math.round(r.width),
+          };
+        }, null, { polling: 100 }).then((h) => h.jsonValue());
+        assert.deepEqual([shown.shows, shown.background, shown.colour, shown.shadow], ['daily', 'none', 'rgba(0, 0, 0, 0)', 'none'], `${label}: no dark scene panel behind the board`);
+        assert.equal(shown.inside, true, `${label}: the whole board in the panel`);
+        const at = Array.from({ length: 60 }, (_, i) => i + 1).find((x) => 30 * x + 31 * Math.round(x * 0.09) === shown.width);
+        assert.ok(at && Math.abs(at - tile) <= 2, `${label}: the Expert board at about ${tile} px (${at})`);
       }
-      await page.close();
     }
+    await page.close();
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the menu pre-generates today\'s Expert, Daily plays it on the marked cell, and leaving it uses the day\'s attempt', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(() => {
+      const get = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (kind, ...rest) { return kind === 'webgl2' ? null : get.call(this, kind, ...rest); };
+    });
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    const code = dailyGame('expert', dateText()).code;
+    await page.waitForFunction((c) => globalThis.__ms.daily.has(c), code, { timeout: patience(10000) });
+    // The Daily entry opens the second block, before Records.
+    const entries = await page.evaluate(() => [...document.querySelectorAll('#menu [data-entry]')].map((b) => b.dataset.entry));
+    assert.deepEqual(entries, ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit']);
+    await page.click('#menu-entry-daily');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'daily');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'daily-entry-classic-2d', 'the first playable mode has the focus');
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#daily [data-mode]')].map((b) => b.dataset.mode)), ['classic-2d', 'hexagon', 'triangle', 'surface', '3d']);
+    assert.equal(await page.evaluate(() => document.querySelector('#daily [data-code] .ui-code__value').textContent), code);
+    assert.equal(await page.evaluate(() => document.getElementById('daily-entry-3d').disabled), true, 'no WebGL 2: the cube cannot be played');
+    assert.equal(await page.evaluate(() => document.querySelector('#daily-entry-3d [data-line]').textContent), UNAVAILABLE_REASONS.webgl2);
+    assert.equal(await page.evaluate(() => { const l = document.querySelector('#daily-preview [data-preview="daily"]'); return !!l && !l.hidden && !!l.querySelector('canvas'); }), true, 'the closed Expert board in the panel');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'no horizontal scroll');
+    await page.click('#daily-entry-hexagon');
+    assert.equal(await page.evaluate(() => document.getElementById('daily-play').disabled), true, 'a coming-soon mode cannot be played');
+    await page.click('#daily-entry-classic-2d');
+    await page.click('#daily-play');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
+    const mark = dailyGame('expert', dateText()).startCell;
+    assert.equal(await page.evaluate(() => globalThis.__ms.board2D.mark), mark);
+    const at = await page.evaluate((cell) => {
+      const v = globalThis.__ms.board2D;
+      const r = v.cellRect(cell);
+      const b = v.canvas.getBoundingClientRect();
+      return { x: b.left + r.x + r.size / 2, y: b.top + r.y + r.size / 2 };
+    }, mark);
+    await page.mouse.click(at.x, at.y);
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started === true);
+    assert.equal(await page.evaluate(() => document.getElementById('c2d-status').classList.contains('hidden')), true, 'the pre-generated board: no generating card');
+    const summary = await page.evaluate(() => globalThis.__ms.modes.summary());
+    assert.equal(summary.daily, dateText());
+    assert.equal(summary.board.daily, true);
+    // Leaving counts as a loss, on the day's Daily board.
+    await page.keyboard.press('Escape');
+    await page.click('#p-menu');
+    await page.click('#p-confirm-yes');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+    await page.click('#menu-entry-daily');
+    assert.equal(await page.evaluate(() => document.querySelector('#daily-entry-classic-2d [data-state]').textContent), 'Lost');
+    assert.equal(await page.evaluate(() => document.getElementById('daily-play').disabled), true, 'the counted attempt is used');
+    assert.equal(await page.evaluate(() => globalThis.__ms.daily.has(document.querySelector('#daily [data-code] .ui-code__value').textContent)), false, 'nothing asked for a used attempt');
+    assert.deepEqual(errors, []);
   } finally {
     await browser.close();
   }

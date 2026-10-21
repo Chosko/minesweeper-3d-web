@@ -599,7 +599,7 @@ async function floodReveal() {
   return { opened, animating, median: times[Math.floor(times.length / 2)], pointerEvents: style.pointerEvents, above: layer.previousElementSibling === view.canvas };
 }
 
-test('in a browser, a flood reveal on a 100 × 100 board stays within the frame budget behind MOTION_CAP', async (t) => {
+test('[slow] in a browser, a flood reveal on a 100 × 100 board stays within the frame budget behind MOTION_CAP', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;

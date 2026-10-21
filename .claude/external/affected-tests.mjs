@@ -33,10 +33,9 @@ export const SHELL_SMOKE = [
   'tests/replay-viewer.test.mjs', // the replay viewer
 ];
 
-/** The 3D renderer's smoke set, beside its importers: a 3D game drawn to its end with its waves, a 3D replay. */
+/** The 3D renderer's smoke set, beside its importers: a 3D game drawn to its end with its waves. */
 export const RENDER_SMOKE = [
   'tests/mode3d-end.test.mjs',
-  'tests/replay-viewer-3d.test.mjs',
 ];
 
 const rel = (root, file) => relative(root, file).split('\\').join('/');

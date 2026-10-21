@@ -131,6 +131,7 @@ test('a slow-tagged test is a browser test, and the long walks and the timing an
   assert.ok(tagged('tests/mode3d-end.test.mjs', 'the loss wave reaches the far side'), 'the wave timing');
   assert.ok(tagged('tests/render-3d-flag-flash.test.mjs', 'flashes the cubes it changed'), 'the flash');
   assert.ok(tagged('tests/replay-viewer.test.mjs', 'plays from its fixture through to the end'), 'the playback timing');
+  assert.ok(tagged('tests/classic2d-motion.test.mjs', 'stays within the frame budget'), 'the frame budget');
   assert.ok(!testNames('tests/shell-menu.test.mjs').some((n) => n.includes('[slow]') && n.includes('nine entries')), 'a functional check stays untagged');
 });
 
@@ -176,16 +177,19 @@ test('the browser files split out of components.test.mjs are selected by every c
   }
 });
 
-test('the smoke sets are small sets of present browser test files: the screens and both games for the shell, a 3D game to its end and a 3D replay for the renderer', () => {
+test('the smoke sets are small sets of present browser test files, each running a test with the slow ones skipped: the screens and both games for the shell, a 3D game to its end for the renderer', () => {
   const browser = testFiles(ROOT).filter((f) => isBrowserTest(f, ROOT));
   for (const set of [SHELL_SMOKE, RENDER_SMOKE]) {
     assert.ok(set.length < browser.length / 8, 'small');
-    for (const f of set) assert.ok(browser.includes(f), `${f} is a browser test file`);
+    for (const f of set) {
+      assert.ok(browser.includes(f), `${f} is a browser test file`);
+      assert.ok(testNames(f).some((n) => n.includes('in a browser') && !n.includes('[slow]')), `${f} runs a browser test in a smoke run`);
+    }
   }
   for (const f of ['components-menu-screens', 'components-pause', 'results', 'mode3d-end', 'replay-viewer']) {
     assert.ok(SHELL_SMOKE.includes(`tests/${f}.test.mjs`), `${f} stands for its screens`);
   }
-  for (const f of ['mode3d-end', 'replay-viewer-3d']) assert.ok(RENDER_SMOKE.includes(`tests/${f}.test.mjs`), f);
+  assert.deepEqual(RENDER_SMOKE, ['tests/mode3d-end.test.mjs'], 'a 3D game drawn to its end');
 });
 
 test('a change to js/main.js, index.html or css/ selects the smoke set, slow tests skipped, not every browser test', () => {
