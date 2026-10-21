@@ -61,8 +61,9 @@ Non-goals:
   importing one are in scope; sharing is not.
 - A ghost compare of two replays of the same board, playing one over the
   other — a later follow-on, not part of this slice.
-- Campaign, hexagonal, triangle and Surface replays — deferred with their
-  modes. Daily replays play like any replay.
+- Campaign and Surface replays — deferred with their modes. Hexagonal and
+  triangle replays — `flat-grid-records-replays` (`m2c-flat-grids`). Daily
+  replays play like any replay.
 
 ## Architecture
 

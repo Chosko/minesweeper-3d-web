@@ -40,8 +40,9 @@ In scope (m1-classic-2d):
 
 Non-goals:
 
-- Hexagonal and triangle graphs — deferred to `m6-launch`; they slot in as
-  further graph providers with no engine change.
+- Hexagonal and triangle graphs — `hexagon-grid` and `triangle-grid`
+  (`m2c-flat-grids`); they slot in as further graph providers with no
+  engine change.
 - The 3D and Surface graphs. The 3D mode keeps the existing engine
   ([logic.md](../../context/logic.md)) in m1; moving it onto this engine,
   with its unlinking and its own right-click rule, is the 3D mode slice of

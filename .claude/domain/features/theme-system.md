@@ -86,8 +86,9 @@ Non-goals:
 - The redesigned arrangement of the screens — `shared-screen-layout` and
   `in-game-layout`. This feature styles whatever kit components exist; it
   does not move them.
-- Hexagonal, triangle and Surface styling, and the colour-blind-safe number
-  set — deferred to `m6-launch`.
+- Hexagonal and triangle styling — `hex-tri-board-art` (`m2c-flat-grids`).
+  Surface styling and the colour-blind-safe number set — deferred to
+  `m6-launch`.
 - Loading fonts from a font service at run time — the Steam build is
   offline; every font file is the game's own.
 

@@ -96,8 +96,11 @@ Non-goals:
   action — deferred to `m3-on-steam` (`leaderboards-menu-entry`).
 - The demo's menu entries (*Buy full game*, visible locks) — deferred to
   `m5-core-complete`.
-- The Hexagon, Triangle and Surface modes and their daily boards — deferred
-  to `m6-launch`; until then their entries and Daily rows say *Coming soon*.
+- The Hexagon and Triangle modes — `flat-grid-modes`, their menu entries
+  `flat-grid-menu-entries` (`m2c-flat-grids`); their daily boards are not
+  scheduled, and their Daily rows stay *Coming soon*. The Surface mode and
+  its daily board — deferred to `m6-launch`; until then its entry and Daily
+  row say *Coming soon*.
 - The records screen's contents and the results screen — Results and
   records (m1-classic-2d). The shell only routes to them.
 - The layout and look of any screen — `shared-screen-layout`,

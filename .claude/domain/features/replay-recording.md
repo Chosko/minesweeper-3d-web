@@ -44,8 +44,9 @@ Non-goals:
 - Replays of campaign levels and daily boards — deferred to `m4-campaigns`
   and `m5-core-complete`; the header's board description is what they will
   extend.
-- Hexagonal, triangle and Surface boards — deferred to `m6-launch`; the
-  header names the graph kind, so they add a kind rather than a format.
+- Hexagonal and triangle boards — `flat-grid-records-replays`
+  (`m2c-flat-grids`), which adds their graph kinds to the header in a new
+  format version. Surface boards — deferred to `m6-launch`.
 - Recording press feedback, sounds or effects. Playback derives them from
   the actions.
 - Exporting a replay to a file or sharing it — in no milestone's slice.

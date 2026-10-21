@@ -50,7 +50,8 @@ Non-goals:
 - The 3D mode's safe first click and no-guess switch — `3d-play-flow`
   (m2-3d-joins). The generator works over any cell graph; the 3D mode adds
   only the box graph description.
-- Hexagonal and triangle grids — deferred to `m6-launch`.
+- Hexagonal and triangle grids — `hexagon-grid` and `triangle-grid`
+  (`m2c-flat-grids`).
 - A forced starting cell in free play. A board pre-generated for the
   marked start cell is used only when the first click lands there; a first
   click anywhere else discards it and the board is generated around that

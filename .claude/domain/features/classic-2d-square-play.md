@@ -89,8 +89,10 @@ In scope (m1-classic-2d):
 
 Non-goals:
 
-- Hexagonal and triangle grids, and grid choice in the menu — deferred to
-  `m6-launch`.
+- Hexagonal and triangle grids, and grid choice in the menu —
+  `hexagon-grid`, `triangle-grid`, `flat-grid-modes` and
+  `flat-grid-menu-entries` (`m2c-flat-grids`); `flat-grid-geometry` writes
+  this feature's board view against its geometry contract.
 - Leaderboards and Steam ranks — deferred to `m3-on-steam`.
 - Replays — deferred to `m2-3d-joins`.
 - Campaign levels — deferred to `m4-campaigns`.

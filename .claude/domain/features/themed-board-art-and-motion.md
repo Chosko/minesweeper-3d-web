@@ -99,8 +99,10 @@ Non-goals:
   end effect reading it from the board module (**The Classic 2D end
   effect** above).
 - Changing the 3D mode's controls, pick rules, view modes or rules.
-- Hexagonal, triangle and Surface tiles, and the colour-blind-safe number
-  set — deferred to `m6-launch`.
+- Hexagonal and triangle tiles in *Joyful tiles* — `hex-tri-board-art`
+  (`m2c-flat-grids`), which extends this feature's board module and tile
+  recipe. Hexagonal and triangle tiles in later themes, Surface tiles and
+  the colour-blind-safe number set — deferred to `m6-launch`.
 - A tile drawing style no theme in the catalogue uses yet — a later theme
   that needs one stops the theme skill and becomes a task
   (`theme-implement-skill`).

@@ -287,8 +287,10 @@ Non-goals:
   `classic-2d-square-play`). This feature arranges and styles them; it adds
   only the board choice screens' bests, a view over the records store, and
   changes only the 3D presets (**3D presets**).
-- The Hexagon, Triangle and Surface modes and their screens — deferred to
-  `m6-launch`; until then their entries open the placeholder screen. The
+- The Hexagon and Triangle modes and their screens — `flat-grid-modes` and
+  `flat-grid-menu-entries` (`m2c-flat-grids`). The Surface mode and its
+  screens — deferred to `m6-launch`; until then its entry opens the
+  placeholder screen. The
   Campaign and demo entries — each arrives with its milestone.
 - Text the artboards carry as placeholder (sample figures, the build
   label's version, the 3D daily code) — the screens show the game's real

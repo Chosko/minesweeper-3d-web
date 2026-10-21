@@ -52,8 +52,8 @@ Non-goals:
   theme id; the list is [theme-system](./theme-system.md)'s.
 - Tile and number styling — `square-tile-skin`. Component styling —
   `screen-components`.
-- Hexagonal and triangle tiles and Surface styling — deferred to
-  `m6-launch`.
+- Hexagonal and triangle tiles — `hex-tri-board-art` (`m2c-flat-grids`);
+  Surface styling — deferred to `m6-launch`.
 - A colour-blind-safe number set, unless it falls out of the base palette —
   deferred to `m6-launch`.
 

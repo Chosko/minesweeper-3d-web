@@ -106,7 +106,8 @@ Non-goals:
   same board (no Steam rank, no ghost).
 - Showing the board's mine layout, 3BV per region or any figure that would
   help solve the board.
-- Hexagon, Triangle and Surface game screens — deferred to `m6-launch`.
+- Hexagon and Triangle game screens — `flat-grid-modes` (`m2c-flat-grids`);
+  the Surface game screen — deferred to `m6-launch`.
 
 ## Architecture
 
