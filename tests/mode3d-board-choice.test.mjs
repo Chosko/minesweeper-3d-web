@@ -470,11 +470,11 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
 test('the shell stylesheet lays both board choices out alike: the wordmark pinned at the top, the window centred under it, the 3D one placed as the Classic 2D one, one column on a phone', () => {
   // The rules themselves are pinned by tests/classic2d-mode.test.mjs; here, that both screens share them.
   const css = read('css/style.css');
-  assert.match(css, /\n#c2d-choice, #board-choice \{ flex-direction: column; justify-content: flex-start;/);
-  assert.match(css, /\n#c2d-choice-top, #board-choice-top \{ position: absolute; top: 44px;/);
-  assert.match(css, /\n#c2d-choice::before, #board-choice::before \{ content: ""; flex: 1 1 0; min-height: 176px; \}/, 'the 3D window centres as the Classic 2D one');
-  assert.match(css, /\n#c2d-choice::after, #board-choice::after \{ content: ""; flex: 1 1 0;/);
-  assert.match(css, /\n#c2d-choice-frame, #board-choice-frame \{ flex: 0 1 auto; width: 1120px; \}/);
+  assert.match(css, /\n#c2d-choice, #board-choice, #daily \{ flex-direction: column; justify-content: flex-start;/);
+  assert.match(css, /\n#c2d-choice-top, #board-choice-top, #daily-top \{ position: absolute; top: 44px;/);
+  assert.match(css, /\n#c2d-choice::before, #board-choice::before, #daily::before \{ content: ""; flex: 1 1 0; min-height: 176px; \}/, 'the 3D window centres as the Classic 2D one');
+  assert.match(css, /\n#c2d-choice::after, #board-choice::after, #daily::after \{ content: ""; flex: 1 1 0;/);
+  assert.match(css, /\n#c2d-choice-frame, #board-choice-frame, #daily-frame \{ flex: 0 1 auto; width: 1120px; \}/);
   assert.match(css, /#custom > \.ui-row \{ display: grid; grid-template-columns: repeat\(4, minmax\(0, 1fr\)\); gap: 10px; \}/, 'the four fields fill one row');
   assert.doesNotMatch(css, /\n#board-choice-top \{|\n#board-choice::before \{/, 'no placement of its own');
   assert.doesNotMatch(css, /\n#c2d-choice-frame \{|\n#c2d-choice-top \{/, 'no rule for one board choice that the other repeats');

@@ -557,33 +557,39 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
    Random, the bests; its option rows, Play and the tiles grow denser on the smaller desktop windows.
    On a phone: one full-bleed column, no wordmark, no bests and no summary, a rule between the
    options and the settings, Back reading "Back", the bar pinned over the column's foot. The Daily
-   screen (#daily) is the Classic 2D board choice's composition: every mode on the left, the selected
-   one's board in its scene panel — the Classic 2D board framed on the body, the panel showing none
-   of itself —, its state and code on the right; on a phone no preview either. */
-#c2d-choice, #board-choice { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
-#c2d-choice-top, #board-choice-top { position: absolute; top: 44px; left: 0; right: 0; display: flex; justify-content: center; }
-#c2d-choice::before, #board-choice::before { content: ""; flex: 1 1 0; min-height: 176px; }
-#c2d-choice::after, #board-choice::after { content: ""; flex: 1 1 0; min-height: 14px; }
-#c2d-choice-frame, #board-choice-frame { flex: 0 1 auto; width: 1120px; }
-#c2d-choice-back [data-label="phone"], #board-choice-back [data-label="phone"] { display: none; }
+   screen (#daily) is the Classic 2D board choice's composition and placement: every mode on the
+   left in a column of fixed width, the selected one's board on the right — the Classic 2D board
+   framed on the body, the panel showing none of itself; the 3D scene and a coming-soon mode's card in
+   a fixed-height panel —, its status row (the state at the left, the days in a row at the right) and
+   the board code under its label; on a phone no preview either, and the code chip full width. */
+#c2d-choice, #board-choice, #daily { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
+#c2d-choice-top, #board-choice-top, #daily-top { position: absolute; top: 44px; left: 0; right: 0; display: flex; justify-content: center; }
+#c2d-choice::before, #board-choice::before, #daily::before { content: ""; flex: 1 1 0; min-height: 176px; }
+#c2d-choice::after, #board-choice::after, #daily::after { content: ""; flex: 1 1 0; min-height: 14px; }
+#c2d-choice-frame, #board-choice-frame, #daily-frame { flex: 0 1 auto; width: 1120px; }
+#c2d-choice-back [data-label="phone"], #board-choice-back [data-label="phone"], #daily-back [data-label="phone"] { display: none; }
 #c2d-choice-body, #board-choice-body { display: grid; grid-template-columns: minmax(0, 480fr) auto minmax(0, 640fr); padding: 0; }
 #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 24px 26px; }
 #c2d-choice-detail, #board-choice-detail { gap: 18px; }
 #c2d-choice-options .ui-divider, #board-choice-options .ui-divider { margin: var(--space-1) 0; }
-#daily { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
-#daily-top { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; }
-#daily-wordmark { margin: clamp(24px, 4vh, 44px) 0 var(--space-6); }
-#daily::after { content: ""; flex: 1 1 0; min-height: var(--space-4); }
-#daily-frame { flex: 0 1 auto; width: 1120px; }
-#daily-body { display: grid; grid-template-columns: minmax(0, 480fr) auto minmax(0, 640fr); padding: 0; }
-#daily-modes, #daily-detail { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: var(--space-6); }
-#daily-detail { gap: var(--space-5); }
+#daily-body { display: grid; grid-template-columns: 480px auto minmax(0, 1fr); padding: 0; }
+#daily-modes, #daily-detail { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 24px 26px; }
+#daily-modes > .ui-options { gap: var(--space-3); }
 #daily-modes > p, #daily-detail > p { margin: 0; }
+#daily-intro { margin-bottom: var(--space-1); font-size: 14px; }
+#daily-note { font-size: 15px; }
+#daily .ui-option__meta { font-weight: var(--font-weight-regular); }
 #daily-preview { flex: none; aspect-ratio: 16 / 9; min-height: 0; }
+#daily-preview:not([data-shows="daily"]) { aspect-ratio: auto; width: 100%; height: 280px; }
 #daily-preview-stage > [data-preview] { position: absolute; inset: var(--space-4); display: grid; place-items: center; }
 #daily-preview-stage > [data-preview][hidden] { display: none; }
 #daily-preview[data-shows="daily"] { background: none; box-shadow: none; }
-#daily-status { flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+#daily-preview .ui-scene-panel__card { gap: var(--space-3); }
+#daily-preview .ui-scene-panel__badge { width: 96px; height: 96px; }
+#daily-preview .ui-scene-panel__name { font-size: 20px; }
+#daily-status { flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); }
+#daily-outcome, #daily [data-outcome] { flex-wrap: nowrap; gap: var(--space-2); }
+#daily-code-group { display: flex; flex-direction: column; gap: var(--space-2); }
 #c2d-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel]),
 #board-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel]) { display: flex; flex-direction: column; gap: var(--space-3); }
 #board-choice :where([data-preset-settings], [data-custom-settings]) { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -601,41 +607,36 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 #c2d-choice [data-code-panel] > .ui-field, #c2d-code, #board-choice [data-code-panel] > .ui-field, #bc-code { width: 100%; box-sizing: border-box; }
 :is(#c2d-bests, #bc-bests) .ui-stat--tile { gap: 3px; padding: var(--space-3) var(--space-4); }
 @media (max-width: 1439px) {
-  #c2d-choice-top, #board-choice-top { top: 26px; }
-  #c2d-choice-wordmark, #board-choice-wordmark { font-size: 58px; }
-  #c2d-choice::before, #board-choice::before { min-height: 106px; }
-  #c2d-choice-frame, #board-choice-frame { width: 1080px; }
+  #c2d-choice-top, #board-choice-top, #daily-top { top: 26px; }
+  #c2d-choice-wordmark, #board-choice-wordmark, #daily-wordmark { font-size: 58px; }
+  #c2d-choice::before, #board-choice::before, #daily::before { min-height: 106px; }
+  #c2d-choice-frame, #board-choice-frame, #daily-frame { width: 1080px; }
   #c2d-play, #bc-play { min-height: 54px; padding: 12px 22px; font-size: 21px; }
   :is(#c2d-bests, #bc-bests) .ui-stat--tile { padding: 10px 14px; }
   :is(#c2d-bests, #bc-bests) .ui-stat__value { font-size: 26px; }
 }
 @media (max-width: 1199px) {
-  #c2d-choice-top, #board-choice-top { top: 24px; }
-  #c2d-choice-wordmark, #board-choice-wordmark { font-size: 50px; }
-  #c2d-choice::before, #board-choice::before { min-height: 96px; }
-  #c2d-choice-frame, #board-choice-frame { width: 984px; }
+  #c2d-choice-top, #board-choice-top, #daily-top { top: 24px; }
+  #c2d-choice-wordmark, #board-choice-wordmark, #daily-wordmark { font-size: 50px; }
+  #c2d-choice::before, #board-choice::before, #daily::before { min-height: 96px; }
+  #c2d-choice-frame, #board-choice-frame, #daily-frame { width: 984px; }
+  #daily-body { grid-template-columns: 420px auto minmax(0, 1fr); }
 }
 /* The denser rows of the smaller desktop windows, never a phone's. */
 @media (min-width: 720px) and (max-width: 1439px) {
   #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { gap: 10px; padding: 18px 22px; }
   #c2d-choice-detail, #board-choice-detail { gap: 14px; }
   #c2d-choice-options > .ui-options, #board-choice-options > .ui-options { gap: var(--space-2); }
-  #c2d-choice .ui-option, #board-choice .ui-option { min-height: 46px; padding: 6px 14px; }
-  #c2d-choice .ui-option__name, #board-choice .ui-option__name { font-size: 18px; }
-  #c2d-choice .ui-option__meta, #board-choice .ui-option__meta { font-size: 13px; }
-  #c2d-choice .ui-option__check, #board-choice .ui-option__check { width: 24px; height: 24px; margin-inline-start: 10px; }
+  #c2d-choice .ui-option, #board-choice .ui-option, #daily .ui-option { min-height: 46px; padding: 6px 14px; }
+  #c2d-choice .ui-option__name, #board-choice .ui-option__name, #daily .ui-option__name { font-size: 18px; }
+  #c2d-choice .ui-option__meta, #board-choice .ui-option__meta, #daily .ui-option__meta { font-size: 13px; }
+  #c2d-choice .ui-option__check, #board-choice .ui-option__check, #daily .ui-option__check { width: 24px; height: 24px; margin-inline-start: 10px; }
   #board-choice .ui-option__badge { width: 32px; height: 32px; margin-inline-end: 10px; }
+  #daily-modes, #daily-detail { padding: 18px 22px; }
+  #daily-modes { gap: 10px; }
+  #daily-modes > .ui-options { gap: var(--space-2); }
 }
-@media (max-width: 1439px) {
-  #daily-frame { width: 1080px; }
-  #daily-modes, #daily-detail { padding: var(--space-5) var(--space-6); }
-  #daily-detail { gap: var(--space-4); }
-  #daily .ui-option { min-height: 46px; padding: 6px 14px; }
-  #daily .ui-option__name { font-size: 18px; }
-  #daily .ui-option__meta { font-size: 13px; }
-  #daily .ui-option__check { width: 24px; height: 24px; }
-}
-@media (max-width: 1199px) { #daily-frame { width: 984px; } }
+@media (min-width: 1200px) and (max-width: 1439px) { #daily-body { grid-template-columns: 460px auto minmax(0, 1fr); } }
 /* The placeholder (#coming-soon): its window centred on the backdrop at the canvas's size, the body
    centring its line and Back; on a phone the window is full-bleed. */
 #coming-soon-frame { width: 900px; height: 560px; }
@@ -662,11 +663,20 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
   #c2d-choice .ui-option__meta, #board-choice .ui-option__meta { font-size: 14px; }
   #c2d-choice-frame > .ui-frame__foot, #board-choice-frame > .ui-frame__foot { position: absolute; left: 0; right: 0; bottom: 0; }
   #daily { padding: 0; }
-  #daily-top, #daily-preview, #daily-summary, #daily-body > .ui-divider--vertical, #daily::after { display: none; }
-  #daily-frame { flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }
-  #daily-body { display: block; }
-  #daily-modes { padding-bottom: var(--space-3); }
-  #daily-detail { padding-top: var(--space-3); }
+  #daily-top, #daily-preview, #daily-summary, #daily::before, #daily::after { display: none; }
+  #daily-frame { position: relative; flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }
+  #daily-back [data-label="wide"] { display: none; }
+  #daily-back [data-label="phone"] { display: inline; }
+  #daily-body { display: flex; flex-direction: column; gap: 18px; padding: 16px 18px 112px; }
+  #daily-modes, #daily-detail { gap: var(--space-3); padding: 0; }
+  #daily-detail { gap: 14px; }
+  #daily-body > .ui-divider--vertical { width: 100%; height: 1px; }
+  #daily-modes > .ui-options { gap: 10px; }
+  #daily .ui-option { min-height: 56px; padding: 9px 14px; }
+  #daily .ui-option__name { font-size: 19px; }
+  #daily .ui-option__meta { font-size: 14px; }
+  #daily-code { width: 100%; }
+  #daily-frame > .ui-frame__foot { position: absolute; left: 0; right: 0; bottom: 0; }
   #coming-soon { padding: 0; }
   #coming-soon-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
 }

@@ -14,13 +14,15 @@ is the head comment of `css/components.css` (*Daily*); its ids are
 ## PUBLIC API
 
 `js/shell/daily.js` (its head comment is the contract)
-- `DAILY_SCREEN` = `'daily'`, `NOT_PLAYED`, `LOST`; `dailyIdentity(id)`,
+- `DAILY_SCREEN` = `'daily'`, `NOT_PLAYED`, `WON`, `LOST`; `dailyIdentity(id)`,
   `countedAttempt(records, id, date)` — the first daily game of that date
   on the row's Daily board.
 - `dailyRows({records, replays?, now?, unavailable?})` → per daily board
   `{id, mode, label, board, line, date, dateLabel, code, state, result,
-  current, longest, streak, canPlay, attempt, watch, reason}`; `result` a
-  won row's time in the standard time format (`formatTime`, *Won 48.213 s*).
+  time, current, longest, streak, canPlay, attempt, watch, reason}`;
+  `result` a won row's time in the standard time format (`formatTime`, *Won
+  48.213 s*), `time` that time alone (null unless won) — the screen shows
+  the state chip (*Won*) and the time apart from it.
 - `dailyModes({records, replays?, now?, unavailable?, entries?})` → one
   entry per mode of `MENU_ENTRIES` in menu order, `{mode, label, daily,
   line, title, summary, note, canPlay}`, `daily` null (*Coming soon*) for a
@@ -31,7 +33,8 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   has(code)}`: today's unused boards pre-generated through each mode's
   client, held by code; `take` hands one over once.
 - `bindDailyScreen({root, onPlay, onWatch, onBack, onCopy?, onSelect?})` →
-  `{show(entries), select(mode), selected, defaultFocus()}` over `#daily`.
+  `{show(entries), select(mode), selected, defaultFocus()}` over `#daily`;
+  the parts it fills are its head comment's.
 
 `js/shell/challenge.js`
 - `resolveCode(text, {today, mode?})` → `{kind: 'refused' | 'daily' |
@@ -44,6 +47,18 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   `STARTED_TOAST`.
 
 ## INTERNAL PATTERNS
+
+- **Layout.** The Daily screen takes the Classic 2D board choice's placement
+  and step rules in `css/style.css` (the wordmark band, the window widths,
+  the denser rows of the smaller desktop windows, the phone's full-bleed
+  column with its pinned bar), with its own fixed-width mode column per
+  size; the Classic 2D preview keeps the panel's proportions, the 3D scene
+  and a coming-soon card a fixed-height plain panel (`#daily-preview`,
+  styled in the theme). Back and Play carry key hints (`#daily` is one of
+  `js/ui.js`'s `showKeyHints` roots); the code chip is Daily's own markup
+  under its "Board code" section label (`#daily-code-group`). The parts and
+  their order are the composition comment in `css/components.css`
+  (*Daily*).
 
 - **Daily and challenges in `js/main.js`.** `DAILY_BOARDS_HELD` (clients:
   `mode2d.client`, `GEN_3D` given WebGL 2) is prepared on every menu show;

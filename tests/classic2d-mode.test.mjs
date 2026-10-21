@@ -1237,15 +1237,15 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
 test('the shell stylesheet lays the board choice out: the wordmark pinned at the top, the window centred under it unless the page is too short, denser rows on the smaller desktops only, one column on a phone', () => {
   // The rules are the 3D board choice's too (tests/mode3d-board-choice.test.mjs).
   const css = read('css/style.css');
-  assert.match(css, /\n#c2d-choice-top, #board-choice-top \{ position: absolute; top: 44px;/, 'the wordmark pinned at the top');
-  assert.match(css, /\n#c2d-choice::before, #board-choice::before \{ content: ""; flex: 1 1 0; min-height: 176px; \}/, 'the space above the window grows with the page, never shorter than the wordmark\'s band');
-  assert.match(css, /\n#c2d-choice::after, #board-choice::after \{ content: ""; flex: 1 1 0; min-height: 14px; \}/, 'as much as the space below it');
-  assert.match(css, /\n#c2d-choice-frame, #board-choice-frame \{ flex: 0 1 auto; width: 1120px; \}/);
-  assert.match(css, /@media \(max-width: 1439px\) \{\n  #c2d-choice-top, #board-choice-top \{ top: 26px; \}\n  #c2d-choice-wordmark, #board-choice-wordmark \{ font-size: 58px; \}\n  #c2d-choice::before, #board-choice::before \{ min-height: 106px; \}\n  #c2d-choice-frame, #board-choice-frame \{ width: 1080px; \}\n  #c2d-play, #bc-play \{ min-height: 54px; padding: 12px 22px; font-size: 21px; \}/,
+  assert.match(css, /\n#c2d-choice-top, #board-choice-top, #daily-top \{ position: absolute; top: 44px;/, 'the wordmark pinned at the top');
+  assert.match(css, /\n#c2d-choice::before, #board-choice::before, #daily::before \{ content: ""; flex: 1 1 0; min-height: 176px; \}/, 'the space above the window grows with the page, never shorter than the wordmark\'s band');
+  assert.match(css, /\n#c2d-choice::after, #board-choice::after, #daily::after \{ content: ""; flex: 1 1 0; min-height: 14px; \}/, 'as much as the space below it');
+  assert.match(css, /\n#c2d-choice-frame, #board-choice-frame, #daily-frame \{ flex: 0 1 auto; width: 1120px; \}/);
+  assert.match(css, /@media \(max-width: 1439px\) \{\n  #c2d-choice-top, #board-choice-top, #daily-top \{ top: 26px; \}\n  #c2d-choice-wordmark, #board-choice-wordmark, #daily-wordmark \{ font-size: 58px; \}\n  #c2d-choice::before, #board-choice::before, #daily::before \{ min-height: 106px; \}\n  #c2d-choice-frame, #board-choice-frame, #daily-frame \{ width: 1080px; \}\n  #c2d-play, #bc-play \{ min-height: 54px; padding: 12px 22px; font-size: 21px; \}/,
     'compact: the wordmark, the band above the window, the window and Play');
-  assert.match(css, /@media \(max-width: 1199px\) \{\n  #c2d-choice-top, #board-choice-top \{ top: 24px; \}\n  #c2d-choice-wordmark, #board-choice-wordmark \{ font-size: 50px; \}\n  #c2d-choice::before, #board-choice::before \{ min-height: 96px; \}\n  #c2d-choice-frame, #board-choice-frame \{ width: 984px; \}/);
+  assert.match(css, /@media \(max-width: 1199px\) \{\n  #c2d-choice-top, #board-choice-top, #daily-top \{ top: 24px; \}\n  #c2d-choice-wordmark, #board-choice-wordmark, #daily-wordmark \{ font-size: 50px; \}\n  #c2d-choice::before, #board-choice::before, #daily::before \{ min-height: 96px; \}\n  #c2d-choice-frame, #board-choice-frame, #daily-frame \{ width: 984px; \}/);
   const dense = css.match(/@media \(min-width: 720px\) and \(max-width: 1439px\) \{\n([\s\S]*?)\n\}/)?.[1] ?? '';
-  assert.match(dense, /#c2d-choice \.ui-option, #board-choice \.ui-option \{ min-height: 46px; padding: 6px 14px; \}/, 'the denser rows, never on a phone');
+  assert.match(dense, /#c2d-choice \.ui-option, #board-choice \.ui-option, #daily \.ui-option \{ min-height: 46px; padding: 6px 14px; \}/, 'the denser rows, never on a phone');
   assert.doesNotMatch(css, /@media \(max-width: 1439px\) \{[^}]*\.ui-option[^}]*min-height: 46px/, 'no dense rule reaching a phone');
   const phone = css.match(/@media \(max-width: 719px\) \{\n  #c2d-choice, #board-choice \{ padding: 0; \}\n([\s\S]*?)\n\}/)?.[1] ?? '';
   assert.match(phone, /#c2d-choice-top, #board-choice-top, #c2d-bests, #bc-bests, #c2d-summary, #bc-summary,\n  #c2d-choice::before, #board-choice::before, #c2d-choice::after, #board-choice::after \{ display: none; \}/);

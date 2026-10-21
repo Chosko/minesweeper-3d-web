@@ -856,7 +856,7 @@ export class UI {
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
-    for (const id of ['menu-hints', 'c2d-choice', 'c2d', 'hud', 'board-choice', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
+    for (const id of ['menu-hints', 'c2d-choice', 'c2d', 'hud', 'board-choice', 'daily', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
     this._renderReminder();
     this._renderHelp();
     this._renderHudStrip();

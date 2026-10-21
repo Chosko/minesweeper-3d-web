@@ -769,25 +769,34 @@
      choice.
      Default focus: the last board choice, the chosen option.
    Daily (index.html #daily, filled by js/shell/daily.js): the Classic 2D
-     board choice's composition (below), titled "Daily". On the left a
-     ui-section-label "Today" with the date as its aside, a ui-text--muted
-     intro line and a ui-options of one ui-option per mode in menu order
-     (data-mode: Classic 2D, Hexagon, Triangle, Surface, 3D) — a mode with
-     a daily board shows its state ui-chip (--muted "Not played", --won
-     "Won 48.213 s", --lost "Lost") beside its name and its board line as
-     meta, disabled with its reason as meta while it cannot run here; the
-     others read "Coming soon". On the right the selected mode's
-     ui-section-label title, its ui-scene-panel (the closed Expert board
-     with its marked start cell, the 3D scene live, or a coming-soon
-     mode's badge card), a ui-text--warning reason line, a ui-text--muted
-     note for a coming-soon mode, a ui-row of its state ui-chip and days
-     in a row, and the ui-code chip of today's code. The foot: the summary,
-     Watch replay (secondary, shown for a kept replay) and Play (primary,
-     large, with its select key hint; disabled once the day's attempt is
-     used and on a mode that cannot be played). On a phone: one full-bleed
-     column, no wordmark, no preview and no summary, the bar pinned at the
-     bottom. Default focus: the selected mode, the first playable one when
-     the screen first shows.
+     board choice's composition and placement (below), titled "Daily", Back
+     the same "Main menu" with its arrow-left icon and back key hint. On the
+     left, a column of fixed width: a ui-section-label "Today" with the date
+     as its aside, a ui-text--muted intro line and a ui-options of one
+     ui-option per mode in menu order (data-mode: Classic 2D, Hexagon,
+     Triangle, Surface, 3D) — a mode with a daily board shows in its name
+     line its state ui-chip (--muted "Not played", --won "Won", --lost
+     "Lost") and, after a win, its time apart from the chip, a ui-text in
+     the mono face, and its board line as meta, disabled with its reason as
+     meta while it cannot run here; the others read "Coming soon". On the
+     right the selected mode's ui-section-label title, its ui-scene-panel
+     (the closed Expert board with its marked start cell on the body, the
+     panel showing none of itself; the 3D scene live or a coming-soon
+     mode's badge card in a panel of fixed height, plain: no edge and no
+     elevation), a ui-text--warning reason line, a ui-text--muted note for
+     a coming-soon mode, the status ui-row — at the left the state ui-chip
+     and a won time, at the right the days in a row, both figures in the
+     mono face — and the "Board code" ui-section-label over the ui-code
+     chip of today's code (quiet Copy and Copy link with their icons). The
+     foot: the summary, Watch replay (secondary, its film icon, shown for a
+     kept replay) and Play (primary, large, its play icon and select key
+     hint; disabled once the day's attempt is used and on a mode that
+     cannot be played). On the smaller desktop windows the columns and the
+     option rows are denser. On a phone: one full-bleed column, no
+     wordmark, no preview and no summary, a ui-divider between the mode
+     list and the detail, Back reading "Back" after its arrow, the code
+     chip full width, the bar pinned at the bottom. Default focus: the
+     selected mode, the first playable one when the screen first shows.
    Coming soon (index.html #coming-soon): the one placeholder every menu
      entry whose screen has not landed routes to; ui-backdrop holding a
      ui-frame (Main menu, a secondary button with its back key hint; the

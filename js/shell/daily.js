@@ -13,7 +13,8 @@
 // countedAttempt(records, id, date) → the row's counted history entry for date, or null.
 // dailyRows({ records, replays?, now?, unavailable? }) → one row per daily board, in DAILY_BOARDS
 //   order: { id, mode, label, board, line, date, dateLabel, code, state ('unplayed' | 'won' | 'lost'),
-//   result ("Not played", "Won 48.213 s" (formatTime, js/results/view.js), "Lost"), current, longest
+//   result ("Not played", "Won 48.213 s" (formatTime, js/results/view.js), "Lost"), time (a won row's
+//   time alone, "48.213 s", else null), current, longest
 //   (days in a row, daysInARow, js/records/model.js), streak ("Days in a row 3 · longest 5"),
 //   canPlay, attempt (its summary id or null), watch (that id for a won attempt whose replay the
 //   replay library keeps, else null), reason }. board is the records' label ("Expert · no-guess", a 3D board by
@@ -42,13 +43,15 @@
 //   generated, the start cell comes with the day's board (dailyGame).
 // bindDailyScreen({ root, onPlay, onWatch, onBack, onCopy?, onSelect? }) → { show(entries),
 //   select(mode), selected, defaultFocus() }: one option [data-mode="<mode>"] per entry (aria-pressed
-//   marks the selected one), its state chip [data-state] (the row's result, ui-chip--won, --lost or
-//   --muted; hidden for a coming-soon mode) and board line [data-line]; an entry whose row has a
-//   reason is disabled. Today's date [data-date]. For the selected entry: its title [data-title], the
-//   reason [data-reason] and the note [data-note] (each hidden without one), the state
-//   [data-status] — its chip [data-result] and days in a row [data-streak], hidden for a coming-soon
-//   mode —, the code chip [data-code] (js/ui/components.js bindCodeChip; hidden with no board; Copy
-//   and Copy link call onCopy), the summary [data-summary], Watch replay [data-watch] (shown for a
+//   marks the selected one), its state chip [data-state] (the state alone — NOT_PLAYED, WON, LOST —
+//   in ui-chip--muted, --won or --lost; hidden for a coming-soon mode), a won row's time apart from
+//   it [data-time] (hidden otherwise) and board line [data-line]; an entry whose row has a reason is
+//   disabled. Today's date [data-date]. For the selected entry: its title [data-title], the reason
+//   [data-reason] and the note [data-note] (each hidden without one), the state [data-status] — its
+//   chip [data-result], a won row's time [data-result-time] and days in a row [data-streak], hidden
+//   for a coming-soon mode —, the code chip [data-code] under its label, the two in
+//   [data-code-group] (js/ui/components.js bindCodeChip; hidden with no board; Copy and Copy link
+//   call onCopy), the summary [data-summary], Watch replay [data-watch] (shown for a
 //   kept replay; onWatch(replayId)) and Play [data-play] (disabled while canPlay is false;
 //   onPlay(id)); Back [data-back] calls onBack(). A click (a tap, the controller's A) selects an
 //   entry and calls onSelect(entry); Enter selects the entry it is pressed on and plays it, and
@@ -66,6 +69,7 @@ import { MENU_ENTRIES, COMING_SOON } from './menu.js';
 
 export const DAILY_SCREEN = 'daily';
 export const NOT_PLAYED = 'Not played';
+export const WON = 'Won';
 export const LOST = 'Lost';
 
 const attempt = (fn, fallback) => { try { return fn(); } catch { return fallback; } };
@@ -108,7 +112,8 @@ export function dailyRows({ records, replays = null, now = new Date(), unavailab
       dateLabel: dailyDateLabel(date),
       code: game.code,
       state,
-      result: state === 'unplayed' ? NOT_PLAYED : state === 'won' ? `Won ${formatTime(counted.elapsedMs)}` : LOST,
+      result: state === 'unplayed' ? NOT_PLAYED : state === 'won' ? `${WON} ${formatTime(counted.elapsedMs)}` : LOST,
+      time: state === 'won' ? formatTime(counted.elapsedMs) : null,
       current: days.current,
       longest: days.longest,
       streak: `Days in a row ${days.current} · longest ${days.longest}`,
@@ -196,17 +201,20 @@ export function createDailyBoards({ clients }) {
 }
 
 const CHIP = Object.freeze({ won: 'ui-chip--won', lost: 'ui-chip--lost', unplayed: 'ui-chip--muted' });
-/** A state chip showing a row's result in its outcome's variant. */
-function showChip(chip, row) {
-  chip.textContent = row?.result ?? '';
+const STATE = Object.freeze({ won: WON, lost: LOST, unplayed: NOT_PLAYED });
+/** A state chip showing a row's state in its outcome's variant, and a won row's time apart from it. */
+function showChip(chip, time, row) {
+  chip.textContent = STATE[row?.state] ?? '';
   for (const [state, cls] of Object.entries(CHIP)) chip.classList.toggle(cls, row?.state === state);
+  time.textContent = row?.time ?? '';
+  time.classList.toggle('hidden', !row?.time);
 }
 
 export function bindDailyScreen({ root, onPlay, onWatch, onBack, onCopy = () => {}, onSelect = () => {} }) {
   const part = (name) => root.querySelector(`[data-${name}]`);
   const options = new Map();
   for (const el of root.querySelectorAll('[data-mode]')) {
-    options.set(el.dataset.mode, { el, chip: el.querySelector('[data-state]'), line: el.querySelector('[data-line]') });
+    options.set(el.dataset.mode, { el, chip: el.querySelector('[data-state]'), time: el.querySelector('[data-time]'), line: el.querySelector('[data-line]') });
   }
   const date = part('date');
   const title = part('title');
@@ -214,7 +222,9 @@ export function bindDailyScreen({ root, onPlay, onWatch, onBack, onCopy = () => 
   const note = part('note');
   const status = part('status');
   const result = part('result');
+  const resultTime = part('result-time');
   const streak = part('streak');
+  const codeGroup = part('code-group');
   const chip = bindCodeChip(part('code'), { onCopy: (c) => onCopy(c) });
   const summary = part('summary');
   const watch = part('watch');
@@ -235,9 +245,10 @@ export function bindDailyScreen({ root, onPlay, onWatch, onBack, onCopy = () => 
     note.textContent = e?.note ?? '';
     note.classList.toggle('hidden', !e?.note);
     status.classList.toggle('hidden', !row);
-    showChip(result, row);
+    showChip(result, resultTime, row);
     streak.textContent = row?.streak ?? '';
     chip.show(row?.code ?? null);
+    codeGroup.classList.toggle('hidden', !row?.code);
     summary.textContent = e?.summary ?? '';
     watch.classList.toggle('hidden', !row?.watch);
     play.disabled = !e?.canPlay;
@@ -275,8 +286,8 @@ export function bindDailyScreen({ root, onPlay, onWatch, onBack, onCopy = () => 
       for (const e of list) {
         const o = options.get(e.mode);
         if (!o) continue;
+        showChip(o.chip, o.time, e.daily);
         o.chip.classList.toggle('hidden', !e.daily);
-        showChip(o.chip, e.daily);
         o.line.textContent = e.line;
         o.el.disabled = !!e.daily?.reason;
       }

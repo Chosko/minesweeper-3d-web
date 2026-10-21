@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  DAILY_SCREEN, NOT_PLAYED, LOST, dailyIdentity, countedAttempt, dailyRows, dailyModes, dailyPanel, createDailyBoards, bindDailyScreen,
+  DAILY_SCREEN, NOT_PLAYED, WON, LOST, dailyIdentity, countedAttempt, dailyRows, dailyModes, dailyPanel, createDailyBoards, bindDailyScreen,
   dailyDateLabel,
 } from '../js/shell/daily.js';
 import { dailyGame } from '../js/records/board-code.js';
@@ -54,6 +54,7 @@ test('daily rows: Expert and Cube, today\'s local date, not played, their codes,
     assert.equal(r.dateLabel, '11 Oct 2026');
     assert.equal(r.state, 'unplayed');
     assert.equal(r.result, NOT_PLAYED);
+    assert.equal(r.time, null, 'no time before a win');
     assert.equal(r.canPlay, true);
     assert.equal(r.code, dailyGame(r.id, '20261011').code);
     assert.equal(r.streak, 'Days in a row 0 · longest 0');
@@ -66,8 +67,8 @@ test('daily rows: the counted attempt is the first daily game of the date; its r
   const won = daily('expert', '20261011', { ms: 48291 });
   const records = store([daily('cube', '20261010'), won, daily('cube', '20261011', { outcome: 'lost' })]);
   const [expert, cube] = dailyRows({ records, now: TODAY, replays: { has: () => true } });
-  assert.deepEqual([expert.state, expert.result, expert.canPlay, expert.attempt, expert.watch], ['won', 'Won 48.291 s', false, won.id, won.id]);
-  assert.deepEqual([cube.state, cube.result, cube.canPlay, cube.watch], ['lost', LOST, false, null], 'a lost game\'s kept replay offers no Watch replay');
+  assert.deepEqual([expert.state, expert.result, expert.time, expert.canPlay, expert.attempt, expert.watch], ['won', 'Won 48.291 s', '48.291 s', false, won.id, won.id]);
+  assert.deepEqual([cube.state, cube.result, cube.time, cube.canPlay, cube.watch], ['lost', LOST, null, false, null], 'a lost game\'s kept replay offers no Watch replay');
   assert.deepEqual([cube.current, cube.longest], [2, 2]);
   assert.equal(cube.streak, 'Days in a row 2 · longest 2');
   assert.equal(countedAttempt(records, 'expert', '20261011').id, won.id);
@@ -237,8 +238,9 @@ function matches(n, sel) {
 // Play and Back.
 function fakeScreen() {
   const option = (mode) => el({ class: 'ui-option', type: 'button', id: `daily-entry-${mode}`, 'data-mode': mode },
-    el({ class: 'ui-chip hidden', 'data-state': '' }), el({ class: 'ui-option__meta', 'data-line': '' }));
-  const code = el({ class: 'ui-code', 'data-code': '' }, el({ class: 'ui-code__value' }), el({ type: 'button', 'data-copy': 'code' }), el({ type: 'button', 'data-copy': 'link' }));
+    el({ class: 'ui-option__line' }, el({ class: 'ui-chip hidden', 'data-state': '' }), el({ class: 'ui-text hidden', 'data-time': '' })),
+    el({ class: 'ui-option__meta', 'data-line': '' }));
+  const code = el({ 'data-code-group': '' }, el({ class: 'ui-code', 'data-code': '' }, el({ class: 'ui-code__value' }), el({ type: 'button', 'data-copy': 'code' }), el({ type: 'button', 'data-copy': 'link' })));
   return el({ id: 'daily' },
     el({ type: 'button', id: 'daily-back', 'data-back': '' }),
     el({ 'data-date': '' }),
@@ -246,7 +248,7 @@ function fakeScreen() {
     el({ 'data-title': '' }),
     el({ class: 'hidden', 'data-reason': '' }),
     el({ class: 'hidden', 'data-note': '' }),
-    el({ 'data-status': '' }, el({ class: 'ui-chip', 'data-result': '' }), el({ 'data-streak': '' })),
+    el({ 'data-status': '' }, el({}, el({ class: 'ui-chip', 'data-result': '' }), el({ class: 'ui-text hidden', 'data-result-time': '' })), el({ 'data-streak': '' })),
     code,
     el({ 'data-summary': '' }),
     el({ type: 'button', class: 'hidden', id: 'daily-watch', 'data-watch': '' }),
@@ -268,8 +270,11 @@ test('the Daily screen lists every mode with its state chip and board line, sele
   screen.show(dailyModes({ records: store([won]), now: TODAY, replays: { has: () => true } }));
   const opt = (mode) => at(root, `[data-mode="${mode}"]`);
   assert.equal(at(root, '[data-date]').textContent, '11 Oct 2026');
-  assert.equal(at(opt('classic-2d'), '[data-state]').textContent, 'Won 47.380 s', 'the results screen\'s formatTime, trailing zeros kept');
+  assert.equal(at(opt('classic-2d'), '[data-state]').textContent, WON, 'the Won badge holds the state alone');
   assert.equal(at(opt('classic-2d'), '[data-state]').classes.has('ui-chip--won'), true);
+  assert.equal(at(opt('classic-2d'), '[data-time]').textContent, '47.380 s', 'the time apart from it: the results screen\'s formatTime, trailing zeros kept');
+  assert.equal(at(opt('classic-2d'), '[data-time]').classes.has('hidden'), false);
+  assert.equal(at(opt('3d'), '[data-time]').classes.has('hidden'), true, 'no time for a row not won');
   assert.equal(at(opt('3d'), '[data-state]').textContent, NOT_PLAYED);
   assert.equal(at(opt('3d'), '[data-state]').classes.has('ui-chip--muted'), true);
   for (const mode of ['hexagon', 'triangle', 'surface']) {
@@ -283,6 +288,8 @@ test('the Daily screen lists every mode with its state chip and board line, sele
   assert.equal(screen.defaultFocus(), '#daily-entry-3d');
   assert.equal(at(root, '[data-title]').textContent, '3D · Cube 8 × 8 × 8 · 40 mines · no-guess');
   assert.equal(at(root, '[data-streak]').textContent, 'Days in a row 0 · longest 0');
+  assert.equal(at(root, '[data-result-time]').classes.has('hidden'), true);
+  assert.equal(at(root, '[data-code-group]').classes.has('hidden'), false);
   assert.equal(at(root, '.ui-code__value').textContent, dailyGame('cube', '20261011').code);
   assert.equal(at(root, '[data-summary]').textContent, 'Daily · 3D · Cube 8 × 8 × 8 · 40 mines · no-guess');
   assert.equal(at(root, '[data-play]').disabled, false);
@@ -301,7 +308,8 @@ test('the Daily screen: Play plays the selected mode\'s board, Watch replay only
   assert.equal(screen.selected, 'classic-2d');
   assert.equal(at(root, '[data-play]').disabled, true, 'today\'s try is used');
   assert.equal(at(root, '[data-watch]').classes.has('hidden'), false, 'its replay was kept');
-  assert.equal(at(root, '[data-result]').textContent, 'Won 47.380 s');
+  assert.deepEqual([at(root, '[data-result]').textContent, at(root, '[data-result-time]').textContent], [WON, '47.380 s'], 'a Won badge, then its time');
+  assert.equal(at(root, '[data-result-time]').classes.has('hidden'), false);
   assert.equal(at(root, '[data-summary]').textContent, 'Daily · Classic 2D · played today');
   at(root, '[data-watch]').click();
   at(root, '[data-play]').click();
@@ -309,6 +317,7 @@ test('the Daily screen: Play plays the selected mode\'s board, Watch replay only
   assert.equal(at(root, '[data-play]').disabled, true, 'a coming-soon mode cannot be played');
   assert.equal(at(root, '[data-watch]').classes.has('hidden'), true);
   assert.equal(at(root, '[data-code]').classes.has('hidden'), true, 'no board, no code');
+  assert.equal(at(root, '[data-code-group]').classes.has('hidden'), true, 'nor its label');
   assert.equal(at(root, '[data-status]').classes.has('hidden'), true, 'no state, no days in a row');
   assert.equal(at(root, '[data-note]').classes.has('hidden'), false);
   assert.equal(at(root, '[data-note]').textContent, 'Hexagon gets its own daily board when the mode arrives.');
@@ -359,14 +368,26 @@ test('index.html holds the Daily screen in the board choice composition: wordmar
   assert.match(DAILY_HTML, /^<section id="daily" class="overlay ui-backdrop hidden" aria-label="Daily">/);
   assert.match(DAILY_HTML, /<h1 class="ui-wordmark" id="daily-wordmark"/);
   assert.match(DAILY_HTML, /<section class="ui-frame" id="daily-frame" aria-labelledby="daily-title">/);
-  assert.match(DAILY_HTML, /id="daily-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  assert.match(DAILY_HTML, /id="daily-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/,
+    'Back: the arrow-left icon, "Main menu" (on a phone "Back") and its back key hint');
   const modes = [...DAILY_HTML.matchAll(/<button type="button" class="ui-option" aria-pressed="false" id="daily-entry-([\w-]+)" data-mode="([\w-]+)"/g)];
   assert.deepEqual(modes.map((m) => [m[1], m[2]]), MENU_ENTRIES.filter((e) => e.mode).map((e) => [e.mode, e.mode]), 'one option per mode, in menu order');
+  for (const mode of ['classic-2d', '3d']) {
+    assert.match(DAILY_HTML, new RegExp(`data-mode="${mode}"><span class="ui-option__line"><span class="ui-option__name">[^<]+</span><span class="ui-row" data-outcome><span class="ui-chip ui-chip--muted" data-state>Not played</span><span class="ui-text hidden" data-time></span></span></span>`),
+      `${mode}: its state badge and, apart from it, the time, kept together in the name line`);
+  }
+  assert.match(DAILY_HTML, /<p class="ui-text ui-text--muted" id="daily-intro">The same boards/);
   assert.match(DAILY_HTML, /<figure class="ui-scene-panel" id="daily-preview"/);
-  assert.match(DAILY_HTML, /<div class="ui-code" id="daily-code" data-code>/);
+  assert.match(DAILY_HTML, /<div class="ui-row" id="daily-status" data-status><span class="ui-row" id="daily-outcome"><span class="ui-chip ui-chip--muted" id="daily-result" data-result>Not played<\/span><span class="ui-text hidden" id="daily-time" data-result-time><\/span><\/span><span class="ui-text" id="daily-streak" data-streak><\/span><\/div>/,
+    'the status row: the state (and a won time) at the left, the days in a row at the right');
+  assert.match(DAILY_HTML, /<div id="daily-code-group" data-code-group><div class="ui-section-label"><h3 class="ui-section-label__text" id="daily-code-label">Board code<\/h3><\/div><div class="ui-code" id="daily-code" data-code role="group" aria-labelledby="daily-code-label">/,
+    'the code chip under its "Board code" section label');
+  assert.doesNotMatch(DAILY_HTML, /ui-code__label/, 'no label inside the chip');
+  assert.match(DAILY_HTML, /id="daily-copy" class="ui-button ui-button--quiet ui-button--sm" data-copy="code" data-icon="copy">Copy<\/button>/);
+  assert.match(DAILY_HTML, /id="daily-copy-link" class="ui-button ui-button--quiet ui-button--sm" data-copy="link" data-icon="link">Copy link<\/button>/);
   assert.match(DAILY_HTML, /<footer class="ui-frame__foot ui-frame__foot--action">\s*<p class="ui-frame__summary" id="daily-summary" data-summary><\/p>/);
-  assert.match(DAILY_HTML, /id="daily-watch" class="ui-button ui-button--secondary hidden" data-watch>Watch replay<\/button>/);
-  assert.match(DAILY_HTML, /id="daily-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
+  assert.match(DAILY_HTML, /id="daily-watch" class="ui-button ui-button--secondary hidden" data-watch data-icon="film">Watch replay<\/button>/);
+  assert.match(DAILY_HTML, /id="daily-play" class="ui-button ui-button--primary ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
   assert.doesNotMatch(DAILY_HTML, /ui-card/, 'no card');
   const classes = [...DAILY_HTML.matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/));
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden' || c === 'overlay', `kit class only: ${c}`);
@@ -376,6 +397,14 @@ test('the Daily screen on a phone: one full-bleed column, no wordmark, no previe
   const phone = STYLE.slice(STYLE.lastIndexOf('@media (max-width: 719px)'));
   assert.match(phone, /#daily-top[^{]*#daily-preview|#daily-preview[^{]*#daily-top/);
   assert.match(phone, /#daily-frame[^{]*\{[^}]*width: 100%[^}]*border-radius: 0[^}]*\}/);
+  assert.match(phone, /#daily-frame > \.ui-frame__foot[^{]*\{[^}]*position: absolute[^}]*bottom: 0/, 'the bar pinned at the bottom');
+});
+
+test('the Daily screen\'s Back and Play carry their key hints', () => {
+  const ui = read('js/ui.js');
+  const roots = /for \(const id of \[([^\]]*)\]\) showKeyHints/.exec(ui);
+  assert.ok(roots, 'js/ui.js fills the key hints of a list of roots');
+  assert.match(roots[1], /'daily'/, '#daily is one of them');
 });
 
 test('the shell routes the Daily screen, pre-generates when the menu shows and starts a daily with its board', () => {
@@ -491,6 +520,140 @@ test('in a browser, the menu pre-generates today\'s Expert, Daily plays it on th
     assert.equal(await page.evaluate(() => document.getElementById('daily-play').disabled), true, 'the counted attempt is used');
     assert.equal(await page.evaluate(() => globalThis.__ms.daily.has(document.querySelector('#daily [data-code] .ui-code__value').textContent)), false, 'nothing asked for a used attempt');
     assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the Daily screen matches its artboards at each size: key hints and icons, status row, board code, foot, panels and density', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    // [width, height, size] per artboard (J-Daily-xl, -l, -m, -p)
+    for (const [width, height, size] of [[1920, 1080, 'xl'], [1366, 768, 'l'], [1024, 768, 'm'], [390, 844, 'p']]) {
+      const phone = size === 'p';
+      const page = await browser.newPage({ viewport: { width, height }, ...(phone ? { hasTouch: true, isMobile: true } : {}) });
+      await page.addInitScript(() => {
+        const get = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (kind, ...rest) { return kind === 'webgl2' ? null : get.call(this, kind, ...rest); };
+      });
+      await page.goto(`${base}/index.html`);
+      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+      await page.evaluate(() => document.getElementById('menu-entry-daily').click());
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'daily');
+      const label = `${width} × ${height}`;
+      // A won row's time in the option row, shown as the binder shows it after a win.
+      await page.evaluate(() => { const t = document.querySelector('#daily-entry-classic-2d [data-time]'); t.textContent = '48.213 s'; t.classList.remove('hidden'); });
+      const got = await page.evaluate(() => {
+        const $ = (s) => document.querySelector(s);
+        const css = (s) => getComputedStyle(typeof s === 'string' ? $(s) : s);
+        const box = (s) => $(s).getBoundingClientRect();
+        const shown = (s) => { const e = typeof s === 'string' ? $(s) : s; return !!e && e.getClientRects().length > 0; };
+        const icon = (s) => { const i = $(`${s} > .ui-icon`); return i ? Math.round(i.getBoundingClientRect().width) : 0; };
+        const hint = (s) => [...document.querySelectorAll(`${s} .ui-key-hint__key`)].map((k) => k.textContent).join(' ');
+        const ink = css('#daily-title').color;
+        const option = $('#daily-entry-classic-2d');
+        const foot = $('#daily-frame > .ui-frame__foot');
+        return {
+          back: { wide: shown('#daily-back [data-label="wide"]'), phone: shown('#daily-back [data-label="phone"]'), name: $('#daily-back').getAttribute('aria-label'), hint: hint('#daily-back'), icon: icon('#daily-back') },
+          play: { hint: hint('#daily-play'), icon: icon('#daily-play'), right: Math.round(box('#daily-play').right) },
+          copy: [icon('#daily-copy'), icon('#daily-copy-link')],
+          watch: $('#daily-watch').getAttribute('data-icon'),
+          status: { justify: css('#daily-status').justifyContent, streakRight: Math.round(box('#daily-streak').right), statusRight: Math.round(box('#daily-status').right) },
+          streak: { family: css('#daily-streak').fontFamily, size: css('#daily-streak').fontSize, weight: css('#daily-streak').fontWeight, colour: css('#daily-streak').color, ink },
+          optionTime: (() => { const t = $('#daily-entry-classic-2d [data-time]'); const st = css(t); const c = $('#daily-entry-classic-2d [data-state]'); return { family: st.fontFamily, size: st.fontSize, weight: st.fontWeight, transform: st.textTransform, gap: Math.round(t.getBoundingClientRect().left - c.getBoundingClientRect().right), line: Math.abs(t.getBoundingClientRect().top - c.getBoundingClientRect().top) < 8 }; })(),
+          time: { family: css('#daily-time').fontFamily, size: css('#daily-time').fontSize, weight: css('#daily-time').fontWeight, transform: css('#daily-time').textTransform },
+          code: { labelBottom: box('#daily-code-label').bottom, chipTop: box('#daily-code').top, chip: Math.round(box('#daily-code').width), group: Math.round(box('#daily-code-group').width) },
+          foot: { padding: css(foot).padding, height: Math.round(foot.getBoundingClientRect().height), bottom: Math.round(foot.getBoundingClientRect().bottom), right: Math.round(foot.getBoundingClientRect().right), summary: [css('#daily-summary').fontSize, css('#daily-summary').fontWeight], summaryShown: shown('#daily-summary') },
+          rule: shown('#daily-body > .ui-divider--vertical') ? [Math.round(box('#daily-body > .ui-divider--vertical').width), Math.round(box('#daily-body > .ui-divider--vertical').height)] : null,
+          intro: [css('#daily-intro').fontSize, css('#daily-intro').fontWeight],
+          meta: css(option.querySelector('.ui-option__meta')).fontWeight,
+          option: { padding: css(option).padding, minHeight: css(option).minHeight, name: css(option.querySelector('.ui-option__name')).fontSize, metaSize: css(option.querySelector('.ui-option__meta')).fontSize },
+          modes: { width: Math.round(box('#daily-modes').width), padding: css('#daily-modes').padding },
+          detail: { padding: css('#daily-detail').padding },
+          body: css('#daily-body').padding,
+          scroll: document.documentElement.scrollWidth <= window.innerWidth,
+        };
+      });
+      assert.equal(got.back.name, 'Back to Main menu', `${label}: Back's name`);
+      assert.deepEqual([got.back.wide, got.back.phone], phone ? [false, true] : [true, false], `${label}: Back reads ${phone ? '"Back"' : '"Main menu"'}`);
+      assert.equal(got.back.icon, 18, `${label}: Back's 18 px arrow-left`);
+      assert.equal(got.play.icon, 24, `${label}: Play's 24 px play triangle`);
+      assert.deepEqual(got.copy, [14, 14], `${label}: Copy and Copy link's 14 px icons`);
+      assert.equal(got.watch, 'film', `${label}: Watch replay's icon`);
+      if (!phone) assert.deepEqual([got.back.hint, got.play.hint], ['Esc', 'Enter'], `${label}: "← Main menu [Esc]" and "▷ Play [Enter]"`);
+      assert.equal(got.status.justify, 'space-between', `${label}: the status row spreads its two ends`);
+      assert.ok(Math.abs(got.status.streakRight - got.status.statusRight) <= 1, `${label}: the days in a row at the right`);
+      assert.match(got.streak.family, /JetBrains Mono/, `${label}: the days in a row in the mono face`);
+      assert.deepEqual([got.streak.size, got.streak.weight, got.streak.colour], ['15px', '700', got.streak.ink], `${label}: 15 px bold ink`);
+      assert.match(got.time.family, /JetBrains Mono/, `${label}: a won time in the mono face`);
+      assert.deepEqual([got.time.size, got.time.weight, got.time.transform], ['15px', '700', 'none'], `${label}: 15 px bold, not uppercase`);
+      assert.match(got.optionTime.family, /JetBrains Mono/, `${label}: the option row's won time in the mono face`);
+      assert.deepEqual([got.optionTime.size, got.optionTime.weight, got.optionTime.transform, got.optionTime.gap, got.optionTime.line], ['15px', '700', 'none', 8, true], `${label}: 15 px bold, not uppercase, 8 px after its badge on its line`);
+      assert.ok(got.code.labelBottom <= got.code.chipTop + 0.5, `${label}: "Board code" above the chip`);
+      if (phone) assert.equal(got.code.chip, got.code.group, `${label}: the chip full width`);
+      assert.equal(got.intro.join(' '), '14px 500', `${label}: the intro line 14 px, weight 500`);
+      assert.equal(got.meta, '500', `${label}: the option meta weight 500`);
+      if (size === 'xl') {
+        assert.equal(got.foot.padding, '14px 24px 18px', `${label}: the foot's padding`);
+        assert.equal(got.option.padding, '12px 18px', `${label}: the option's padding`);
+        assert.deepEqual([got.modes.width, got.modes.padding, got.detail.padding], [480, '24px 26px', '24px 26px'], `${label}: the columns`);
+      } else if (!phone) {
+        assert.equal(got.foot.padding, '10px 20px 14px', `${label}: the foot's padding`);
+        assert.deepEqual([got.option.padding, got.option.minHeight], ['6px 14px', '46px'], `${label}: the denser option rows`);
+        assert.deepEqual([got.modes.width, got.modes.padding, got.detail.padding], [size === 'l' ? 460 : 420, '18px 22px', '18px 22px'], `${label}: the columns`);
+      } else {
+        assert.deepEqual([got.foot.height, got.foot.bottom], [92, height], `${label}: the 92 px bar fixed at the bottom`);
+        assert.ok(Math.abs(got.play.right - (got.foot.right - 16)) <= 1, `${label}: Play at the right`);
+        assert.equal(got.foot.summaryShown, false, `${label}: no summary`);
+        assert.deepEqual(got.rule, [width - 36, 1], `${label}: a rule between the mode list and the detail`);
+        assert.equal(got.body, '16px 18px 112px', `${label}: the content's padding`);
+        assert.deepEqual([got.option.minHeight, got.option.padding, got.option.name, got.option.metaSize], ['56px', '9px 14px', '19px', '14px'], `${label}: the phone's option rows, never the desktop's dense rule`);
+      }
+      if (!phone) assert.deepEqual(got.foot.summary, ['16px', '700'], `${label}: the summary 16 px bold`);
+      assert.equal(got.scroll, true, `${label}: no horizontal scroll`);
+      if (!phone) {
+        await page.click('#daily-entry-hexagon');
+        const card = await page.waitForFunction(() => {
+          const panel = document.getElementById('daily-preview');
+          const badge = panel.querySelector('[data-preview="card"]:not([hidden]) .ui-scene-panel__badge');
+          if (panel.dataset.shows !== 'badge' || !badge) return null;
+          const s = getComputedStyle(panel);
+          const b = getComputedStyle(badge);
+          const name = getComputedStyle(panel.querySelector('.ui-scene-panel__name'));
+          const detail = document.getElementById('daily-detail');
+          const d = getComputedStyle(detail);
+          const inner = detail.clientWidth - parseFloat(d.paddingLeft) - parseFloat(d.paddingRight);
+          return {
+            width: Math.round(panel.getBoundingClientRect().width), inner: Math.round(inner), height: Math.round(panel.getBoundingClientRect().height),
+            radius: s.borderTopLeftRadius, shadow: s.boxShadow,
+            badge: [Math.round(badge.getBoundingClientRect().width), Math.round(badge.getBoundingClientRect().height), b.borderTopLeftRadius],
+            edge: /0px 8px 0px/.test(b.boxShadow),
+            name: [name.fontSize, name.fontWeight], nameColour: name.color,
+            scene: (() => { const p = document.createElement('span'); p.style.color = 'var(--color-scene-ink)'; document.body.append(p); const c = getComputedStyle(p).color; p.remove(); return c; })(),
+            gap: getComputedStyle(panel.querySelector('.ui-scene-panel__card')).rowGap,
+            note: getComputedStyle(document.getElementById('daily-note')).fontSize,
+          };
+        }, null, { polling: 100 }).then((h) => h.jsonValue());
+        assert.deepEqual([card.width, card.height, card.radius, card.shadow], [card.inner, 280, '20px', 'none'], `${label}: the panel 100% wide, 280 px tall, radius 20, no edge and no elevation`);
+        assert.deepEqual(card.badge, [96, 96, '24px'], `${label}: the coming-soon card's 96 px badge, radius 24`);
+        assert.equal(card.edge, true, `${label}: its 8 px edge`);
+        assert.deepEqual([...card.name, card.nameColour], ['20px', '800', card.scene], `${label}: "Coming soon" 20 px heavy in the scene ink`);
+        assert.equal(card.gap, '12px', `${label}: the card's gap`);
+        assert.equal(card.note, '15px', `${label}: the note line`);
+        // The 3D panel's still (no WebGL 2) takes the same plain fixed-height panel; the cube's entry is disabled here, so the panel is set as the binder sets it.
+        const still = await page.evaluate(() => {
+          const panel = document.getElementById('daily-preview');
+          panel.dataset.shows = 'still';
+          const r = panel.getBoundingClientRect();
+          const s = getComputedStyle(panel);
+          return [Math.round(r.height), s.borderTopLeftRadius, s.boxShadow];
+        });
+        assert.deepEqual(still, [280, '20px', 'none'], `${label}: the still 3D panel 280 px tall, radius 20, no edge and no elevation`);
+      }
+      await page.close();
+    }
   } finally {
     await browser.close();
   }

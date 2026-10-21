@@ -1161,7 +1161,7 @@ Feature: shared-screen-layout
 
 ## 229. Daily screen to the canvas
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/shell/daily.js, js/ui.js, css/style.css, themes/joyful-tiles/theme.css, .claude/context/app-shell-daily.md
 Preconditions: 222, 223, 227, 228
