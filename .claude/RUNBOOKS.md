@@ -46,11 +46,11 @@ Steps: 34/35
 
 ## 9. flat-grids-planning — Plan Hexagon and Triangle as milestone m2c-flat-grids, through to its implementation runbook
 
-Status: [PENDING]
+Status: [DONE]
 File: .claude/runbooks/9-flat-grids-planning.md
 Created: 2026-10-21
 Source: /runbook-create interview
-Steps: 5/6
+Steps: 6/6
 
 ---
 

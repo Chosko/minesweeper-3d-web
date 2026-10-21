@@ -70,7 +70,7 @@ For each feature in .claude/PLAN.md under m2c-flat-grids, in plan order, run `/t
 
 Done: 2026-10-21, commits `0adf0e4`, `96c953e`, `e061837`, `e9db0d5`, `5925c75`, `9fd75ae`, `e45b136` (46 files, +1532/-21). Tasks 248–279; the Joyful tiles hex/tri art is task 263, not a /theme-implement run.
 
-## [ ] 6. Write the implementation runbook for m2c-flat-grids
+## [x] 6. Write the implementation runbook for m2c-flat-grids
 
 Depends on: 5
 
@@ -81,6 +81,8 @@ Context:
 ```prompt
 /runbook-create flat-grids-tasks-implementation — implement every task of milestone m2c-flat-grids. One step per task in .claude/TASKS.md belonging to an m2c-flat-grids feature, in .claude/PLAN.md order and each feature's task order, each prompt `/task-implement <N> --review`, with Depends on: lines from the tasks' Preconditions. If no task covers bringing the Joyful tiles hex/tri board art in from the Claude Design canvas, add a step `/theme-implement https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC joyful-tiles` right after the task that makes the theme board module hold hexagonal and triangle tiles, depending on it.
 ```
+
+Done: 2026-10-21, commit `9aaf596` (2 files, +340/-1). Runbook 10 flat-grids-tasks-implementation, 32 steps (tasks 248–279); no /theme-implement step, since task 263 carries the Joyful tiles hex/tri art.
 
 ## Do not re-propose
 
