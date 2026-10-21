@@ -4,7 +4,7 @@ Created: 2026-10-21 · Source: /runbook-create interview · Model: opus
 Last step number: 6
 Sequencing: each step is one pipeline stage and reads what the step before it wrote — roadmap, feature documents, plan, tasks, implementation runbook.
 
-## [ ] 1. Add milestone m2c-flat-grids to the roadmap for Hexagon and Triangle
+## [x] 1. Add milestone m2c-flat-grids to the roadmap for Hexagon and Triangle
 
 Depends on: none
 
@@ -13,6 +13,8 @@ Context: none
 ```prompt
 /product-roadmap amend "Add a milestone m2c-flat-grids — Hexagon and Triangle join the game — placed after m2b-themes and before m3-on-steam. It takes: product-design.md § Hexagon and § Triangle — each mode whole on the web preview and the desktop build alike: Beginner, Intermediate, Expert and Custom boards, the no-guess switch, rules matching Minesweeper Online exactly, the timer, mouse, keyboard and controller play, results with time, 3BV, 3BV/s and efficiency, personal bests, stats history and replays; product-design.md § Main menu and game shell — the Hexagon and Triangle entries each open its own mode instead of Coming soon, each keeps its last board choice, and Continue counts each as a mode of its own; product-design.md § Visual design system — hexagonal and triangle tiles in Joyful tiles, the catalogue's only theme, as drawn on the Claude Design canvas https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC. m6-launch keeps, for Hexagon and Triangle: their Steam leaderboards, their achievements, the demo's Hexagon/Triangle offers and locks, and the colour-blind-safe number set; trim m6-launch's exit criteria and Covers lines so they no longer claim what m2c delivers. Surface stays wholly in m6-launch. Rationale for m2c's place: the flat modes reuse the shipped rules engine, generator and Classic 2D flow and need no Steam work, so they land before m3, and m3's leaderboards then meet boards the game already plays."
 ```
+
+Done: 2026-10-21, commit `0d9df92` (1 file, +62/-16). The amend form refuses to add a milestone, so the step ran as a full `/product-roadmap "<same text>"` revision; the strategy paragraph now has Hexagon and Triangle land after the shipping look, and m6-launch keeps hex/tri tiles for themes added after Joyful tiles.
 
 ## [ ] 2. Architect Hexagon and Triangle for m2c-flat-grids
 
