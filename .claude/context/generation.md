@@ -56,8 +56,9 @@ unchanged.
   candidates }`; a malformed or impossible request throws `RangeError`.
   `onProgress({ candidates })` at most every `PROGRESS_INTERVAL_MS` (250);
   it never changes the result.
-- `graph` is a description, `{ kind: 'square', width, height }` or
-  `{ kind: 'box', X, Y, Z }`, built by `boardGraph(description)`.
+- `graph` is a description, `{ kind: 'square', width, height }`,
+  `{ kind: 'hex', width, height }` or `{ kind: 'box', X, Y, Z }`, built by
+  `boardGraph(description)`.
   `ATTEMPT_BUDGET` — 2000 candidates.
 - `startCell(description)` → the centre cell of each side (⌊side / 2⌋) as an
   index in the provider's order. A request input like any first click: no
@@ -87,7 +88,7 @@ unchanged.
   covers the seeded algorithm and seeding, how `int(n)` maps outputs, the
   placer's draw order (partial Fisher–Yates over the ascending pool), the
   solver's verdicts and the no-guess loop — changing any of them changes
-  boards and requires bumping `GENERATOR_VERSION`. The square grid's
+  boards and requires bumping `GENERATOR_VERSION`. Each provider's
   neighbour order feeds the solver too ([engine.md](engine.md)).
 - **No-guess loop.** One seeded source per request; candidates are drawn
   from it one after another with `placeMines`, and the first one `solve`
@@ -118,13 +119,15 @@ unchanged.
   the attempt budget's measurement.
 - [../domain/features/cell-graph-rules-engine.md](../domain/features/cell-graph-rules-engine.md)
   — the cell graph, the square-grid provider and the first-click hand-off.
+- [../domain/features/hexagon-grid.md](../domain/features/hexagon-grid.md)
+  — the `hex` description and its Expert no-guess timing.
 - `tests/fidelity/minesweeper-online.md` — "First-click guarantee", the
   reference rule the placer honours.
 
 ## CROSS-REFERENCES
 
-- [engine.md](engine.md) — the cell graph and square grid generation runs
-  over, and `supplyBoard`, which takes the mine set;
+- [engine.md](engine.md) — the cell graph and the square and hexagon grids
+  generation runs over, and `supplyBoard`, which takes the mine set;
   [engine-3d.md](engine-3d.md) — the box graph.
 - [classic2d-session.md](classic2d-session.md), [mode3d-session.md](mode3d-session.md) — the sessions'
   board requests, generating state and failure offer.

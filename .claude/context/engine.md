@@ -5,7 +5,8 @@
 The one rules engine every mode plays through: a board is an immutable graph of
 cells and neighbours, and reveal, flood fill, flag, chord, win, loss, 3BV and
 click counts are implemented once over that graph. Classic 2D plays the
-reference profile (Minesweeper Online, default options) on the square grid;
+reference profile (Minesweeper Online, default options) on the square grid,
+and the hexagon grid is a provider the same profile plays on unchanged;
 the 3D mode plays the 3D profile (the original 3D game's rules) on the box
 graph, read through the 3D state view ([engine-3d.md](engine-3d.md)).
 DOM-free, no three.js, no timer; it never places mines itself. Each module's
@@ -15,6 +16,7 @@ head comment states its full contract; this file is the map.
 | --- | --- |
 | `js/engine/graph.js` | the immutable cell graph (flat compressed rows) and the cell-graph interface every provider serves |
 | `js/engine/square-grid.js` | square-grid provider: index layout and neighbour order of the 8-neighbour board |
+| `js/engine/hex-grid.js` | hexagon-grid provider: index layout and neighbour order of the 6-neighbour board |
 | `js/engine/box-grid.js` | box graph provider ([engine-3d.md](engine-3d.md)) |
 | `js/engine/profiles.js` | rule-profile table keyed by profile and rules version, each marker's fidelity citation |
 | `js/engine/rules.js` | game state, phases, first-click hand-off, actions, queries, counts, summary, snapshot, action stream |
@@ -23,7 +25,7 @@ head comment states its full contract; this file is the map.
 
 ## PUBLIC API
 
-Cell graph and square grid
+Cell graph, square and hexagon grids
 - `createCellGraph(count, offsets, targets)` (compressed rows: cell i's
   neighbours are `targets[offsets[i] .. offsets[i+1]-1]`, in the provider's
   order; validated, copied, frozen), `cellGraphFromLists(count, lists)`.
@@ -35,6 +37,10 @@ Cell graph and square grid
   row), colRow(index) }`; `index = col + width * row`; neighbour order is
   reading order over the 3 × 3 block (NW N NE W E SW S SE), so every list is
   ascending.
+- `createHexGrid(width, height)` → the same shape and index; W columns of H
+  flat-top hexagons, odd columns half a tile lower, a tile's neighbours the
+  tiles sharing a side (the row above at the sides in an even column, the
+  row below in an odd one), every list ascending.
 
 Rule profiles (`profiles.js`)
 - `REFERENCE_PROFILE` (`'minesweeper-online'`, version 1), `PROFILE_3D`
@@ -84,8 +90,8 @@ Metrics (`metrics.js`)
   playing changes, records and counts nothing — a flag before the first
   click included.
 - **Neighbour order is the provider's** and is preserved exactly; flood fill
-  and generation follow it. Changing `square-grid.js`'s order changes
-  flood-fill order and every seeded board.
+  and generation follow it. Changing a provider's order (`square-grid.js`,
+  `hex-grid.js`) changes flood-fill order and every seeded board on it.
 - **No recursion.** Flood fill is an iterative queue walk over a
   preallocated `Int32Array(n)`, each cell enqueued once (a 1000 × 1000 zero
   board opens in one reveal).
@@ -144,7 +150,7 @@ overriding rule, checked against a recorded observation, not asserted.
 - Changing a rule, adding a profile marker or a rules version, or fixing a
   fidelity failure (`profiles.js`, then `rules.js`).
 - An action's exact effect under a profile: `rules.js`'s head comment.
-- Adding a graph provider or changing the square grid's index layout or
+- Adding a graph provider or changing a grid provider's index layout or
   neighbour order.
 - Adding an action or mutation path (see One mutation path).
 - Changing how 3BV, 3BV solved or wasted clicks are computed (`metrics.js`).

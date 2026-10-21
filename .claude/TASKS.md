@@ -1411,7 +1411,7 @@ Feature: flat-grid-geometry
 
 ## 254. Hexagon graph provider and the `hex` generation description
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/engine/hex-grid.js, js/generation/generate.js, js/generation/start-cell.js, js/generation/worker.js, tests/engine-hex-grid.test.mjs, tests/generation-placer.test.mjs, tests/generation-noguess.test.mjs
 Preconditions: none

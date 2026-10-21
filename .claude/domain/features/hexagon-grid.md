@@ -121,6 +121,7 @@ graph they supply; seeded generation in a Web Worker (see
 
 ## Open questions
 
-- No-guess generation time on Expert has not been measured on this graph.
-  If it misses the attempt budget's timing, the budget question goes back
-  to `board-generation`.
+- No-guess generation on hexagon Expert misses the attempt budget on most
+  seeds, while Beginner and Intermediate meet it
+  (`dev/measure-noguess-hex.mjs`); whether the budget changes for it is
+  `board-generation`'s question.

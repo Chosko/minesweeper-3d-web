@@ -81,7 +81,7 @@ Test files by name prefix:
 
 | Prefix | Code area | Context file |
 | ------ | --------- | ------------ |
-| `engine-` | cell-graph engine, rule profiles, metrics; box graph, 3D profile, 3D state view | [engine.md](engine.md), [engine-3d.md](engine-3d.md) |
+| `engine-` | cell-graph engine, rule profiles, metrics; the hexagon grid with the reference profile on it; box graph, 3D profile, 3D state view | [engine.md](engine.md), [engine-3d.md](engine-3d.md) |
 | `generation-` | seeded placer, solver, no-guess loop, worker and client | [generation.md](generation.md) |
 | `platform-` | storage interface and backends, blob store, start-up selection | [platform.md](platform.md) |
 | `classic2d-`, `tile-` | board setup; the board choice screen, its composition at every window size in a browser (`classic2d-mode`); session; mode; the end effect's win and loss waves and confetti from the module's `end2d` and palette (`classic2d-end-effect`); the game window, its figures feed and a few moves against a best in a browser (`classic2d-mode`); board view on the grid geometry (the square geometry's layout the grid's, a geometry's own placement, floor and caps, a mismatched size refused) with its pitch, ground, number list and marked start cell from the board module, the board frame padded by the module's gap, the board's extent, the end effect's drawing, and touch zoom (`classic2d-view`, with a browser theme switch mid-game); the module's cursor ring outside the tile on the ring layer, redrawing no cell (`classic2d-cursor`); cell motion — the motion layer, its event sources, its drops, motion on or off leaving game and replay identical, and the flood reveal within `MOTION_CAP`'s frame budget in a browser (`classic2d-motion`); pointer, touch and cursor input, button swap (`classic2d-touch` also holds the Playwright touch runs: Expert on a phone, the Tap choice's radiogroup with the hint strip clear of it, and the mouse pages unchanged); the tile recipe's drawing styles, depth, radius and fallback, the flat style's constant hairline and the glyphs — the knobbed mine, the wrong-flag cross, one- and two-digit numbers, the start cell's ring (`tile-art`); the tile skin from a board module, its cache keys and depth steps, the board art hand-off, the no-theme-import grep and every state legible at `MIN_TILE_SIZE` (`tile-skin`) | [classic2d.md](classic2d.md), [classic2d-session.md](classic2d-session.md), [classic2d-mode.md](classic2d-mode.md), [classic2d-board-view.md](classic2d-board-view.md), [classic2d-board-motion.md](classic2d-board-motion.md), [classic2d-input.md](classic2d-input.md), [classic2d-tile-skin.md](classic2d-tile-skin.md) |
@@ -120,7 +120,8 @@ Data beside the tests:
 - `dev/measure-*.mjs` — measurements, not tests, behind `NOGUESS_CELL_LIMIT`,
   the Cube Beginner preset's mine count
   (`measure-first-box-3d.mjs`), the replay sampler constants and
-  `MOTION_CAP` (`measure-cell-motion.mjs`); each head
+  `MOTION_CAP` (`measure-cell-motion.mjs`), and the hexagon boards'
+  no-guess timing against the attempt budget (`measure-noguess-hex.mjs`); each head
   comment says how to read it. `dev/find-learn-3d.mjs` is the search behind
   `LEARN_BOARD` (its `findLearnBoard` also used by `tests/mode3d-learn.test.mjs`).
 

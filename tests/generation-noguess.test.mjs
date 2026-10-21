@@ -7,12 +7,17 @@ import { GENERATOR_VERSION, placeMines } from '../js/generation/placer.js';
 import { createSeededSource } from '../js/generation/random.js';
 import { solve } from '../js/generation/solver.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
+import { createHexGrid } from '../js/engine/hex-grid.js';
+import { handleMessage } from '../js/generation/worker.js';
 
 const square = (width, height) => ({ kind: 'square', width, height });
+const hex = (width, height) => ({ kind: 'hex', width, height });
 const LEVELS = [
   { name: 'Beginner', graph: square(9, 9), mineCount: 10, seeds: 300 },
   { name: 'Intermediate', graph: square(16, 16), mineCount: 40, seeds: 150 },
   { name: 'Expert', graph: square(30, 16), mineCount: 99, seeds: 60 },
+  { name: 'hexagon Beginner', graph: hex(9, 9), mineCount: 13, seeds: 150 },
+  { name: 'hexagon Intermediate', graph: hex(16, 16), mineCount: 50, seeds: 60 },
 ];
 
 // ---------- request and result ----------
@@ -103,7 +108,8 @@ test('generate: an impossible or malformed request is rejected at once', () => {
   const ok = { graph: square(9, 9), mineCount: 10, firstClick: 40, noGuess: true, seed: 1 };
   assert.throws(() => generate({ ...ok, mineCount: 81 }), /do not fit/);
   assert.throws(() => generate({ ...ok, mineCount: 81, noGuess: false }), /do not fit/);
-  assert.throws(() => generate({ ...ok, graph: { kind: 'hex', width: 9, height: 9 } }), RangeError);
+  assert.throws(() => generate({ ...ok, graph: { kind: 'ring', width: 9, height: 9 } }), RangeError);
+  assert.throws(() => generate({ ...ok, graph: { kind: 'hex', width: 0, height: 9 } }), RangeError);
   assert.throws(() => generate({ ...ok, graph: undefined }), RangeError);
   assert.throws(() => generate({ ...ok, graph: square(0, 9) }), RangeError);
   assert.throws(() => generate({ ...ok, noGuess: 'yes' }), RangeError);
@@ -176,3 +182,70 @@ test('generate: a box no-guess board for its marked start cell is reproduced by 
   assert.deepEqual([...a.mines], [...b.mines]);
   assert.equal(a.mines.includes(firstClick), false);
 });
+
+// ---------- the hexagon description ----------
+
+test('generate: a hex description runs over the hexagon graph — a standard board is the placer\'s first draw', () => {
+  assert.equal(boardGraph(hex(5, 4)).count, 20);
+  assert.deepEqual([...boardGraph(hex(5, 4)).neighbours(7)], [...createHexGrid(5, 4).graph.neighbours(7)]);
+  const request = { graph: hex(9, 9), mineCount: 13, firstClick: 40, noGuess: false, seed: 2026 };
+  const r = generate(request);
+  const expected = placeMines({ graph: createHexGrid(9, 9).graph, mineCount: 13, firstClick: 40, source: createSeededSource(2026) });
+  assert.equal(r.ok, true);
+  assert.deepEqual([...r.mines], [...expected]);
+  assert.equal(r.generatorVersion, GENERATOR_VERSION);
+  assert.equal(GENERATOR_VERSION, 1, 'no generator version change');
+});
+
+test('generate: a hex no-guess board is pinned for a fixed seed, with the same attempt budget', () => {
+  const graph = hex(9, 9);
+  const r = generate({ graph, mineCount: 13, firstClick: startCell(graph), noGuess: true, seed: 2026 });
+  assert.deepEqual({ ...r, mines: [...r.mines] }, { ...PINNED_HEX_NOGUESS, generatorVersion: GENERATOR_VERSION });
+  // 3 × 3, first click on the centre tile (6 neighbours, 2 tiles apart), 7 mines: one other safe
+  // tile, either among the centre's neighbours or one of the 2 apart — a guess either way.
+  const fail = generate({ graph: hex(3, 3), mineCount: 7, firstClick: 4, noGuess: true, seed: 1 });
+  assert.equal(fail.ok, false);
+  assert.equal(fail.candidates, ATTEMPT_BUDGET);
+});
+
+test('generate: hexagon Expert no-guess — every accepted board clears, a miss spends the same budget', () => {
+  // Hexagon Expert (30 × 16, 123 mines) misses the attempt budget on most seeds
+  // (dev/measure-noguess-hex.mjs); the budget is board generation's, unchanged here.
+  const graph = hex(30, 16);
+  const cells = boardGraph(graph);
+  const firstClick = startCell(graph);
+  let accepted = 0, missed = 0;
+  for (const seed of [5, 1]) {
+    const r = generate({ graph, mineCount: 123, firstClick, noGuess: true, seed });
+    if (r.ok) {
+      accepted += 1;
+      assert.ok(r.candidates >= 1 && r.candidates <= ATTEMPT_BUDGET);
+      assert.equal(r.mines.length, 123);
+      assert.equal(r.mines.includes(firstClick), false);
+      assert.equal(solve({ graph: cells, mines: r.mines, firstClick }).cleared, true, `seed ${seed}`);
+    } else {
+      missed += 1;
+      assert.equal(r.candidates, ATTEMPT_BUDGET, `seed ${seed}`);
+      assert.equal(typeof r.reason, 'string');
+    }
+  }
+  assert.deepEqual([accepted, missed], [1, 1], 'seed 5 is accepted, seed 1 misses');
+});
+
+test('generate: the same hex request and seed give the same result in the worker and in Node', () => {
+  const plain = (x) => ({ ...x, mines: x.mines ? [...x.mines] : x.mines });
+  const cases = [[hex(9, 9), 13, true], [hex(16, 16), 50, true], [hex(30, 16), 123, false]];
+  // one Expert no-guess request, a miss (seed 1), for the failure result's parity
+  for (const [graph, mineCount, noGuess, seeds = [1, 5, 4000000000]] of [...cases, [hex(30, 16), 123, true, [1]]]) {
+    for (const seed of seeds) {
+      const request = { graph, mineCount, firstClick: startCell(graph), noGuess, seed };
+      const reply = handleMessage(structuredClone({ id: seed, request }));
+      assert.equal(reply.id, seed);
+      assert.deepEqual(plain(reply.result), plain(generate(request)));
+      assert.equal(reply.result.generatorVersion, GENERATOR_VERSION);
+    }
+  }
+});
+
+// Hexagon Beginner (9 × 9, 13 mines), no-guess, first click on the start cell, seed 2026.
+const PINNED_HEX_NOGUESS = { ok: true, mines: [0, 1, 10, 13, 44, 45, 47, 50, 53, 63, 68, 69, 80], seed: 2026, candidates: 2 };

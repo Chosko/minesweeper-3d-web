@@ -5,6 +5,7 @@ import { createSeededSource } from '../js/generation/random.js';
 import { placeMines, GENERATOR_VERSION } from '../js/generation/placer.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
 import { createBoxGrid } from '../js/engine/box-grid.js';
+import { createHexGrid } from '../js/engine/hex-grid.js';
 import { startCell } from '../js/generation/start-cell.js';
 import { cellGraphFromLists } from '../js/engine/graph.js';
 import { createGame, PHASE } from '../js/engine/rules.js';
@@ -138,6 +139,18 @@ test('placer: malformed requests are rejected', () => {
   assert.throws(() => placeMines({ graph: g, mineCount: 1, firstClick: 0 }), RangeError);
 });
 
+test('placer: over a hexagon graph — the requested distinct cells, never the first click, the same per seed', () => {
+  const grid = createHexGrid(30, 16);
+  const first = grid.index(15, 8);
+  const req = () => ({ graph: grid.graph, mineCount: 123, firstClick: first, source: createSeededSource(20261021) });
+  const a = placeMines(req());
+  assert.equal(a.length, 123);
+  assert.equal(new Set(a).size, 123);
+  assert.ok(!a.includes(first));
+  for (let i = 1; i < a.length; i++) assert.ok(a[i] > a[i - 1]);
+  assert.deepEqual(Array.from(a), Array.from(placeMines(req())));
+});
+
 test('placer: works over a non-square graph', () => {
   const g = cellGraphFromLists(6, [[1], [0, 2], [1, 3], [2, 4], [3, 5], [4]]);
   const mines = placeMines({ graph: g, mineCount: 3, firstClick: 2, source: createSeededSource(5) });
@@ -202,9 +215,21 @@ test('start cell: a box\'s is the cell floor(X / 2), floor(Y / 2), floor(Z / 2)'
   assert.equal(startCell({ kind: 'box', X: 1, Y: 1, Z: 1 }), 0);
 });
 
+test('start cell: a hexagon board\'s is the tile at the centre column and row, as on the square grid', () => {
+  const cases = [[9, 9], [16, 16], [30, 16], [1, 1], [1, 5], [5, 1], [2, 2], [4, 7], [100, 100]];
+  for (const [w, h] of cases) {
+    const grid = createHexGrid(w, h);
+    const c = startCell({ kind: 'hex', width: w, height: h });
+    assert.equal(c, grid.index(Math.floor(w / 2), Math.floor(h / 2)), `${w} x ${h}`);
+    assert.deepEqual(grid.colRow(c), [Math.floor(w / 2), Math.floor(h / 2)]);
+  }
+  assert.equal(startCell({ kind: 'hex', width: 30, height: 16 }), 8 * 30 + 15, 'Expert');
+  assert.throws(() => startCell({ kind: 'hex', width: 3 }), RangeError);
+});
+
 test('start cell: a pure function of the description, DOM-free, refusing an unknown description', () => {
   assert.equal(startCell({ kind: 'square', width: 16, height: 16 }), startCell({ kind: 'square', width: 16, height: 16 }));
-  assert.throws(() => startCell({ kind: 'hex', width: 3 }), RangeError);
+  assert.throws(() => startCell({ kind: 'ring', width: 3, height: 3 }), RangeError);
   assert.throws(() => startCell(undefined), RangeError);
   const src = readFileSync(new URL('../js/generation/start-cell.js', import.meta.url), 'utf8');
   for (const name of ['document', 'window', 'Math.random']) assert.equal(src.includes(name), false, name);
