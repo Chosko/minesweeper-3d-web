@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 261
+Last task number: 266
 
 ---
 
@@ -1486,5 +1486,55 @@ Target: claude
 Files: .claude/context/engine.md, .claude/context/generation.md, .claude/context/records.md, .claude/context/records-board-code.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/triangle-grid.md
 Preconditions: 258, 259, 260
 Feature: triangle-grid
+
+---
+
+## 262. Hexagon and triangle outlines in the tile recipe
+
+Status: [MISSING]
+Target: claude
+Files: js/tile-art.js, tests/tile-art.test.mjs
+Preconditions: none
+Feature: hex-tri-board-art
+
+---
+
+## 263. Board module per-grid shape, numbers to 12, checks, and Joyful tiles' values
+
+Status: [MISSING]
+Target: claude
+Files: js/themes/board-module.js, themes/joyful-tiles/board.js, tests/fixtures/themes/fixture-theme.js, tests/fixtures/themes/fixture-dusk, tests/fixtures/themes/fixture-fonts, tests/fixtures/themes/broken-themes.js, tests/board-module.test.mjs, tests/theme-conformance.test.mjs
+Preconditions: 255, 259, 262
+Feature: hex-tri-board-art
+
+---
+
+## 264. The tile painter draws hexagon and triangle tiles
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/tile-skin.js, js/classic2d/board-view.js, tests/classic2d-view.test.mjs, tests/tile-art.test.mjs
+Preconditions: 250, 262, 263
+Feature: hex-tri-board-art
+
+---
+
+## 265. The theme skill reads Hexagon and Triangle board sheets
+
+Status: [MISSING]
+Target: claude
+Files: .claude/skills/theme-implement/SKILL.md, .claude/skills/theme-implement/references/reading.md, .claude/skills/theme-implement/references/mapping.md, .claude/skills/theme-implement/references/verification.md, .claude/skills/theme-implement/references/stops.md
+Preconditions: 263
+Feature: hex-tri-board-art
+
+---
+
+## 266. Update documentation for feature `hex-tri-board-art`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell-board-module.md, .claude/context/app-shell-themes.md, .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-tile-motion.md, .claude/context/rendering-board-art.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/hex-tri-board-art.md
+Preconditions: 262, 263, 264, 265
+Feature: hex-tri-board-art
 
 ---

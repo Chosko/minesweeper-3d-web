@@ -328,10 +328,10 @@ Tasks: 258, 259, 260, 261
 
 ## hex-tri-board-art — Hexagon and triangle tiles in the board module and tile recipe, with Joyful tiles' values
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/hex-tri-board-art.md
 Source: product-design.md § Visual design system (m2c-flat-grids)
-Tasks: none
+Tasks: 262, 263, 264, 265, 266
 
 ---
 
