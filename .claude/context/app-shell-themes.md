@@ -119,7 +119,8 @@ getStyle, theme, dev?, log?})`.
 
 - [../domain/features/theme-system.md](../domain/features/theme-system.md)
   — the registry, the theme contract, base and theme stylesheets, fonts,
-  the applier and its failure contract, conformance tests.
+  the applier and its failure contract, conformance tests, the Settings
+  theme list and the component gallery per theme.
 - [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
   — token names, the contrast contract, the token reader.
 
@@ -128,9 +129,12 @@ getStyle, theme, dev?, log?})`.
 - [app-shell-board-module.md](app-shell-board-module.md) — the board
   module the applier imports and hands to its listeners.
 - [app-shell-kit.md](app-shell-kit.md) — the catalogue each theme
-  stylesheet styles, `REQUIRED_TOKENS`.
-- [settings.md](settings.md) — the theme setting driving `setTheme`, the
-  settings document `readStoredTheme` reads, the theme list.
+  stylesheet styles, `REQUIRED_TOKENS`, and the gallery that renders it
+  under any registered theme, its theme list switching it through the
+  applier.
+- [settings.md](settings.md) — the theme setting driving `setTheme` and the
+  settings document `readStoredTheme` reads;
+  [settings-page.md](settings-page.md) — the theme list.
 - [app-shell-markup.md](app-shell-markup.md) — `index.html`'s head and its
   `<noscript>`, the fatal card.
 - [testing.md](testing.md) — `tests/theme-registry.test.mjs`,

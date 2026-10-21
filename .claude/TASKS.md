@@ -1341,7 +1341,7 @@ Feature: themed-board-art-and-motion
 
 ## 247. Update documentation for feature `theme-system`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-themes.md, .claude/context/settings-page.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/theme-system.md
 Preconditions: 243

@@ -209,8 +209,16 @@ reader, and the kit stylesheet: [app-shell-themes.md](../../context/app-shell-th
   every state and every decoration slot under it, with no part overlapping
   another, and is what the theme skill screenshots for comparison with the
   artboards. It shows every part the canvas's components artboard draws,
-  and keeps the parts the artboard does not draw as kit coverage; the kit
-  catalogue lists every part the gallery shows.
+  each marked as a canvas part, and keeps the parts the artboard does not
+  draw as kit coverage; the kit catalogue lists every part the gallery
+  shows, and the gallery's own layout classes are ones no theme draws. The
+  parts come from the game's own sources: the in-game strips' text from
+  the bindings the game reads, the Settings theme list as the Settings page
+  builds and binds it, so a pick in it switches the gallery's theme, and
+  the menu's previews by the menu's board view and the 3D renderer (the
+  still panel where WebGL 2 is missing). The gallery loads no game
+  stylesheet: it lays the in-game parts out with its own copy of the game's
+  layout rules.
 
 ## Data and state
 

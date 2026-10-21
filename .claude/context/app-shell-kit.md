@@ -78,7 +78,7 @@ and `touch-stick` (`knob`).
   composition into the catalogue and `COMPOSITIONS`. A part the canvas's
   J-Components artboard draws is also marked in the gallery and listed in
   that test file's `CANVAS_PARTS`; every class the gallery shows is
-  catalogued or the gallery's own layout.
+  catalogued or the gallery's own layout, a class no theme draws.
 - **Controls.** Every interactive control is a native `<button>`, `<input>`
   or `<a>`. Buttons, menu entries, mode entries and board options have one
   selected state — hover and focus alike, no outline; *Joyful tiles* draws
@@ -198,6 +198,10 @@ and `touch-stick` (`knob`).
 - [app-shell-themes.md](app-shell-themes.md) — the theme stylesheets that
   style every catalogued part and state, `REQUIRED_TOKENS`' use.
 - [app-shell-markup.md](app-shell-markup.md) — the screens built from the kit.
+- [settings-page.md](settings-page.md) — the theme list's markup and binder
+  the gallery shows; [app-shell-menu.md](app-shell-menu.md) — the menu's
+  preview binder and demo boards the gallery draws;
+  [settings-bindings.md](settings-bindings.md) — the strips' text.
 - [app-shell-ui.md](app-shell-ui.md) — the `UI` methods that feed the
   counters and the figures panels.
 - [testing.md](testing.md) — `tests/theme-registry.test.mjs` (the kit

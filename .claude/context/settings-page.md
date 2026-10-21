@@ -11,7 +11,7 @@ binders touch only the elements they are handed. `page.js`'s and
 
 | File | Responsibility |
 | --- | --- |
-| `js/settings/page.js` | page markup from the schema, the bindings section, the Data panel and its confirmation's binder, the control binder for the page and the pause card |
+| `js/settings/page.js` | page markup from the schema, the bindings section, the Data panel and its confirmation's binder, the control binder for the page, the pause card and the component gallery's theme list |
 | `js/settings/reset.js` | Reset all data: clears every document, replay blob and reset key, then reloads; reports what could not be deleted |
 
 ## PUBLIC API
@@ -83,7 +83,9 @@ Page (`js/settings/page.js`)
   setting once the switch resolves, a failed one putting the selection back;
   each swatch is filled from `themeSheet(entry)` → Promise of the
   stylesheet's text (default: fetched from the site root), a failure leaving
-  it blank.
+  it blank. The component gallery shows the theme list through
+  `settingControlHtml` and this binder with the applier and a store that
+  saves nothing ([app-shell-kit.md](app-shell-kit.md)).
 - `SWATCH_TOKENS` (ground, head, accent fill, blue, teal),
   `themeSwatchColors(cssText, id)` → `{ token: value }` from the theme's
   `:root[data-theme="<id>"]` token block, `swatchBackground(colors)` → a
@@ -141,6 +143,8 @@ Reset (`js/settings/reset.js`)
   — clearing every document and the blob store.
 - [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
   — the page in the frame and its phone arrangement.
+- [../domain/features/theme-system.md](../domain/features/theme-system.md)
+  — the theme list, and its place in the component gallery.
 
 ## CROSS-REFERENCES
 
@@ -153,6 +157,8 @@ Reset (`js/settings/reset.js`)
   pause-card shortcuts; [app-shell-pause.md](app-shell-pause.md) — the
   leave-page guard.
 - [platform.md](platform.md) — `storage.clear()` and the blob store.
+- [app-shell-kit.md](app-shell-kit.md) — the component gallery, which shows
+  the theme list.
 - [replay-library.md](replay-library.md) — the replay library `waitFor` waits on.
 - [testing.md](testing.md) — `tests/settings-page.test.mjs`,
   `tests/settings-reset.test.mjs`.
