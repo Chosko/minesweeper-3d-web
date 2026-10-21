@@ -29,7 +29,7 @@ import { browserSuite } from './helpers/browser.mjs';
 import { TIME_SLACK } from './helpers/timing.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const suite = browserSuite({ args: [] });
+const suite = browserSuite();
 const SOURCES = ['js/classic2d/motion-layer.js', 'js/classic2d/board-view.js', 'js/cell-motion.js'];
 
 // ---------- fakes ----------

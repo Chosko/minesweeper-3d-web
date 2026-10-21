@@ -18,19 +18,23 @@ are designed, and why the architecture is what it is — read
 Testing policy for /task-implement: full-tdd
 
 This project has a test suite. Always run the tests-first sequence. Tests
-come in three tiers, and a task's "full test suite" is the first two:
+come in three tiers:
 
 - **Fast** — every test not named "in a browser". Runs on every change.
 - **Browser** — tests named "in a browser". Run only the files the change
-  reaches, as `run-affected-tests.sh` maps them; a change to the page shell
-  (`index.html`, `js/main.js`, shared CSS) does not by itself select every
-  browser file.
+  reaches, as `run-affected-tests.sh` maps them.
 - **Slow** — browser tests tagged `[slow]` in their name: long walks
   (controller and focus walks) and flavour checks of animation timing,
-  frame counts and motion. Run only when the change touches the code
-  they exercise, and in full before a milestone closes.
+  frame counts and motion. They run with the files the change reaches.
 
-The tag, the mapping and the runner scripts are `.claude/context/testing.md`'s.
+A task's "full test suite" is `.claude/external/run-full-tests.sh`: the
+whole fast tier and the browser tests the change reaches. Every browser
+file runs only before a milestone closes (`run-browser-tests.sh` and
+`run-slow-tests.sh`, with `MS3D_ALL_BROWSER=1`). Browser tests run only
+through these scripts — one Chromium per run, one file at a time, one run
+on the machine at a time — never through a bare `node --test`. The tag, the
+mapping, the runner and the hook that enforces this are
+`.claude/context/testing.md`'s.
 
 <!-- chosko-llm:editing-discipline:begin v0.1.0 -->
 

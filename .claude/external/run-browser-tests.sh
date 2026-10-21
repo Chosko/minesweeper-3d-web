@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Run the browser tier: only the tests named "in a browser", less those tagged [slow]. Extra arguments
-# pass to node --test.
+# Run every browser test less those tagged [slow], one file at a time on one shared Chromium. Milestone
+# close only: refused unless MS3D_ALL_BROWSER=1. Extra --flags pass to node --test.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-exec node --test --test-concurrency=2 --test-name-pattern="in a browser" --test-skip-pattern="\[slow\]" "tests/**/*.test.mjs" "$@"
+exec node .claude/external/run-tests.mjs browser "$@"

@@ -15,7 +15,7 @@ import { checkBoardModule } from '../js/themes/board-module.js';
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const suite = browserSuite({ args: [] });
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const exists = (p) => existsSync(join(ROOT, p));
 const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');

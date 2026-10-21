@@ -10,7 +10,7 @@ import { BOARD as FIXTURE } from './fixtures/themes/fixture-dusk/board.js';
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const suite = browserSuite({ args: [] });
+const suite = browserSuite();
 
 // The board modules the skin is tested with: Joyful tiles' (the flat style, with a gap and a corner
 // radius) and the fixture theme's (the bevel style, neither), every colour unlike the other's.

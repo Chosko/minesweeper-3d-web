@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Run the slow tier: only the browser tests tagged [slow] in their names. Extra arguments pass to node --test.
+# Run every browser test tagged [slow], one file at a time on one shared Chromium. Milestone close only:
+# refused unless MS3D_ALL_BROWSER=1. Extra --flags pass to node --test.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-exec node --test --test-concurrency=2 --test-timeout=180000 --test-name-pattern="\[slow\]" "tests/**/*.test.mjs" "$@"
+exec node .claude/external/run-tests.mjs slow "$@"

@@ -17,47 +17,61 @@ test's name alone:
   `shell-focus-containment`, the menu's controller walk and the router's
   arrow-key walk) and the flavour checks of animation timing, frame counts
   and motion (the menu backdrop's frame count, the 3D loss wave, the flag
-  flash, the pulse, the fixture replays played to the end). A functional
+  flash, the fixture replays played to the end). A functional
   browser check stays untagged. No test name outside the slow tier carries
   the tag, since the runners match it anywhere in a name;
   `tests/affected-tests.test.mjs` pins that every tagged test is a browser
   test.
 
-Running — five scripts under `.claude/external/`, each `cd`s to the repo root
-and passes extra arguments through to `node --test`; no `package.json`, no
-dependencies (Node 22's `node:test`, `node:assert/strict`):
-- `run-full-tests.sh` — the fast and browser tiers, every test except the
-  `[slow]` ones (`--test-skip-pattern`), at concurrency 2 with a per-test
-  timeout. Every script passes the `tests/**/*.test.mjs` glob, and no file
-  outside `tests/` matches Node's default test patterns
-  (`tests/affected-tests.test.mjs` pins this), so a bare `node --test` from the
-  root finds the same files (and runs the slow tier too); the concurrency cap
-  keeps the software-rendered browser tests from timing out on a 4-core box;
-  the per-test timeout stops a hung test holding the run.
-- `run-fast-tests.sh` — the fast tier; the regression tool to run after each
-  change.
-- `run-browser-tests.sh` — the browser tier less the `[slow]` tests, at
-  concurrency 2.
-- `run-slow-tests.sh` — the slow tier alone (`--test-name-pattern`), with the
-  full run's concurrency and timeout: run when a change touches the code a
-  slow test exercises, and in full before a milestone closes.
-- `run-affected-tests.sh [path...]` — a `tests/*.test.mjs` argument runs as
-  given; any other path is a changed file, mapped by `affected-tests.mjs` to
-  every test file whose import closure reaches it (relative static imports
-  and `import()` calls with a literal path, transitive). Those files run
-  whole, `[slow]` tests included. Two rules add files the page loads rather
-  than a test importing them, run with `[slow]` skipped unless the closure
-  also reached them: a change to the page shell (`js/main.js`, `index.html`,
-  `css/**`) selects the smoke set — one browser test file per screen, or the
-  closest file that drives it, `SHELL_SMOKE` in `affected-tests.mjs` — and a
-  change to `js/render.js` selects every browser test file. With no
-  arguments the changed files are git's against `HEAD` (staged, unstaged,
-  untracked). `tests/affected-tests.test.mjs` pins the scripts, the mapping
-  and the smoke set.
+Running — the scripts under `.claude/external/`; each `cd`s to the repo
+root, and an argument starting with `--` passes through to `node --test`. No
+`package.json`, no dependencies (Node 22's `node:test`,
+`node:assert/strict`). Browser tests run only where a change reaches them:
+- `run-fast-tests.sh` — the fast tier over `tests/**/*.test.mjs`, in
+  parallel; the regression tool to run after each change.
+- `run-affected-tests.sh [path...]` — the tests covering the changed files
+  (git's changes against `HEAD`, staged, unstaged and untracked, when no
+  path is given): the selected files' fast tests, then their browser tests.
+- `run-full-tests.sh [path...]` — a task's full test suite: the whole fast
+  tier, then the browser tests `run-affected-tests.sh` would run.
+- `run-browser-tests.sh` (every browser test less `[slow]`) and
+  `run-slow-tests.sh` (every `[slow]` test) — milestone close only; both
+  refuse to run unless `MS3D_ALL_BROWSER=1` is set.
 
-Measured on the 4-core cloud box with no GPU: the fast tier takes seconds,
-and the browser tier nearly all of the full run's wall time; the slow tier,
-run apart, holds a large share of the browser time.
+Every script but the fast one ends by `exec`-ing the runner
+`run-tests.mjs` in its mode. The runner runs the fast part as one parallel
+`node --test`, with no lock, and the browser part as `node --test` with
+concurrency 1 and a per-test timeout, so browser test files run strictly one
+after another, all on ONE Chromium the runner launches and closes. Before
+launching it the runner takes the machine-wide browser lock — a directory
+under `%LOCALAPPDATA%` (else the temp directory) holding the owner's pid,
+shared by every worktree and agent of the user, reclaimed when its pid is
+dead — and waits for it, so one browser run at a time runs on the machine.
+The Chromium never outlives its run: the runner closes it on exit, a
+signal or an uncaught error, stops itself and its test processes when its
+parent process dies, and a hard kill of the runner closes Playwright's pipe,
+which ends Chromium.
+
+`.claude/hooks/browser-tests-guard.mjs`, a PreToolUse hook on Bash and
+PowerShell in `.claude/settings.json`, denies an agent's `node --test` that
+may reach a browser test (no file named, a glob or directory, or a browser
+test file) unless it skips them (`--test-skip-pattern="in a browser"`), and
+the all-browser runs without `MS3D_ALL_BROWSER=1`, naming the script to use.
+
+The affected-tests mapping (`affected-tests.mjs`): a `tests/*.test.mjs`
+argument is selected as given; any other path is a changed file, mapped to
+every test file whose import closure reaches it (relative static imports and
+`import()` calls with a literal path, transitive). Those files run whole,
+`[slow]` tests included. Two rules add the files the page loads rather than
+a test importing them, run with `[slow]` skipped unless the closure also
+reached them: a change to the page shell (`js/main.js`, `index.html`,
+`css/**`) selects `SHELL_SMOKE` — the fewest browser files that open every
+screen and play a game of each mode to its end — and a change to
+`js/render.js` selects `RENDER_SMOKE` — a 3D game drawn, its end waves and a
+3D replay. No file outside `tests/` matches Node's default test patterns, so
+a bare `node --test` from the root finds the suite's files.
+`tests/affected-tests.test.mjs` pins the scripts, the runner's modes, the
+lock, the hook, the mapping and the smoke sets.
 
 Browser tests, slow ones included, sit in their area's test file.
 Every browser test file goes through the shared helper
@@ -85,7 +99,7 @@ Test files by name prefix:
 | `gamepad`, `input-`, `camera-` | `FlyCamera`, `MouseActions`, drag-to-look, spawn pose (`camera-spawn`); keyboard-only 3D (`input-keyboard-3d`); the 3D touch gesture machine (`input-touch-3d`); flight (`camera-flight`: forward vector, spacing step, toggle and camera scaling, fly-through fade and pick rule); the orbit camera (`camera-orbit`); gamepad helpers, rumble, `Controls` | [input.md](input.md), [input-camera.md](input-camera.md), [input-controller.md](input-controller.md), [app-shell-3d-camera.md](app-shell-3d-camera.md), [rendering.md](rendering.md) |
 | `audio-` | sound voices over recorded primitives | [audio.md](audio.md) |
 | `live-figures` | the live figures model: every figure and its note in the canvas's wording, a board with and without bests, the zero cases, pace ahead and behind, the efficiency against the game summary's, the change helper | [app-shell-hud.md](app-shell-hud.md) |
-| `affected-tests` | the runner scripts, the `[slow]` tag, the affected-tests mapping and the smoke set (`.claude/external/`) | this file |
+| `affected-tests` | the runner scripts and `run-tests.mjs`'s modes, the browser lock, the guard hook, the `[slow]` tag, the affected-tests mapping and the smoke sets (`.claude/external/`, `.claude/hooks/`) | this file |
 | `helpers` | the browser, timing and contrast helpers under `tests/helpers/` and the rule that browser files use them | this file, [testing-conventions.md](testing-conventions.md), [testing-browser.md](testing-browser.md) |
 
 Data beside the tests:

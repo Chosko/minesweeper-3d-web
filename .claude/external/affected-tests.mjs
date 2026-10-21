@@ -7,9 +7,8 @@
 // import closure reaches it — static imports and import() calls with a literal relative path. Those
 // two are the full group, run with their [slow] tests. The browser tests load the page shell
 // (js/main.js, index.html, css/**) and js/render.js through the page rather than by import, so a
-// change to the shell also selects the smoke set SHELL_SMOKE, and a change to js/render.js every
-// browser test file (one holding a test named "in a browser"); those not in the full group are the
-// smoke group, run with [slow] skipped. --full prints the full group, --smoke the smoke group, and
+// change to the shell also selects the smoke set SHELL_SMOKE, and a change to js/render.js the 3D
+// smoke set RENDER_SMOKE; those not in the full group are the smoke group, run with [slow] skipped. --full prints the full group, --smoke the smoke group, and
 // no flag both. With no paths, the changed files are those git reports against HEAD: staged,
 // unstaged and untracked.
 import { execFileSync } from 'node:child_process';
@@ -22,18 +21,23 @@ const BROWSER_TEST = /\b(?:test|it|describe)\(\s*(['"`])[^'"`\n]*in a browser/;
 const SHELL = (file) => file === 'js/main.js' || file === 'index.html' || file.startsWith('css/');
 const RENDERER = 'js/render.js';
 
-/** The shell's smoke set: one browser test file per screen, or the closest file that drives it. */
+/**
+ * The shell's smoke set: the page boots, every screen opens and lays out, and a game of each mode
+ * plays to its end — the fewest browser files that cover it.
+ */
 export const SHELL_SMOKE = [
-  'tests/shell-menu.test.mjs', // the main menu and the placeholder
-  'tests/shell-returning.test.mjs', // the 2D and 3D board choices
-  'tests/shell-daily.test.mjs', // the Daily screen
-  'tests/classic2d-view.test.mjs', // the Classic 2D game
-  'tests/mode3d-session.test.mjs', // the 3D game
-  'tests/shell-pause.test.mjs', // the pause card
-  'tests/results.test.mjs', // the results screen
-  'tests/records-screen.test.mjs', // the Records screen
-  'tests/settings-page.test.mjs', // the Settings page
+  'tests/components-menu-screens.test.mjs', // the main menu and every screen it opens
+  'tests/components-pause.test.mjs', // the pause card, its confirmation, the status card, the results layout
+  'tests/results.test.mjs', // a Classic 2D game through the shell to its results
+  'tests/mode3d-session.test.mjs', // a 3D game through the worker to its end
   'tests/replay-viewer.test.mjs', // the replay viewer
+];
+
+/** The 3D renderer's smoke set, beside its importers: a 3D game drawn, its end waves, a 3D replay. */
+export const RENDER_SMOKE = [
+  'tests/mode3d-session.test.mjs',
+  'tests/mode3d-end.test.mjs',
+  'tests/replay-viewer-3d.test.mjs',
 ];
 
 const rel = (root, file) => relative(root, file).split('\\').join('/');
@@ -93,8 +97,9 @@ export function selectRuns(changed, root) {
       const closure = importClosure(t, root, cache);
       if (sources.some((s) => closure.has(s))) full.add(t);
     }
-    if (sources.some(SHELL)) for (const t of SHELL_SMOKE) if (existsSync(join(root, t))) smoke.add(t);
-    if (sources.includes(RENDERER)) for (const t of tests) if (isBrowserTest(t, root)) smoke.add(t);
+    const addSmoke = (set) => { for (const t of set) if (existsSync(join(root, t))) smoke.add(t); };
+    if (sources.some(SHELL)) addSmoke(SHELL_SMOKE);
+    if (sources.includes(RENDERER)) addSmoke(RENDER_SMOKE);
   }
   for (const t of full) smoke.delete(t);
   return { full: [...full].sort(), smoke: [...smoke].sort() };

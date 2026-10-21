@@ -33,7 +33,7 @@ import { demoBoard2D, dailyBoard2D } from '../js/shell/menu-preview.js';
 import { dailyPreview } from '../js/shell/daily.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const suite = browserSuite({ args: [] });
+const suite = browserSuite();
 
 // ---------- fakes ----------
 

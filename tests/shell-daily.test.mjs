@@ -24,7 +24,7 @@ import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const suite = browserSuite({ args: [] });
+const suite = browserSuite();
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 
 const clicks = (n) => ({ reveal: { effective: n, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } });

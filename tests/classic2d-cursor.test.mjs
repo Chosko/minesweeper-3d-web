@@ -20,7 +20,7 @@ import { REFERENCE_PROFILE } from '../js/engine/profiles.js';
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const suite = browserSuite({ args: [] });
+const suite = browserSuite();
 
 // ---------- harness ----------
 

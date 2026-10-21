@@ -1,6 +1,7 @@
 // The shared test helpers under tests/helpers/: the browser helper (the Playwright loader with its
-// two global-install layouts, the SwiftShader launch flags, one Chromium and one static server per
-// test file with a fresh context per test) and the timing helper (the slack that timing assertions
+// two global-install layouts, the SwiftShader launch flags, the run's one Chromium that every test
+// file connects to, one static server per test file, a fresh context per test, and no browser test
+// outside the runner) and the timing helper (the slack that timing assertions
 // and waits get under load), plus the rule that every browser test file goes through the helper.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +9,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  SWIFTSHADER_ARGS, globalPlaywrightPaths, serveRoot, browserSuite,
+  SWIFTSHADER_ARGS, SHARED_BROWSER_ARGS, SHARED_BROWSER_ENV, NOT_IN_RUNNER, globalPlaywrightPaths, serveRoot, browserSuite, launchSharedBrowser,
 } from './helpers/browser.mjs';
 import { timeSlack, TIME_SLACK, timed, patience } from './helpers/timing.mjs';
 
@@ -53,9 +54,9 @@ test('the static server serves the repository root with content types, extra pag
   }
 });
 
-/** A fake Playwright whose chromium counts launches and hands out recording contexts. */
+/** A fake Playwright whose chromium counts connections and server launches and hands out recording contexts. */
 function fakePlaywright({ fail = false } = {}) {
-  const log = { launches: [], contexts: [], browserClosed: 0 };
+  const log = { connects: [], launches: [], contexts: [], browserClosed: 0, serverClosed: 0 };
   const browser = {
     async newContext(options) {
       const ctx = { options, closed: false, pages: [],
@@ -68,22 +69,45 @@ function fakePlaywright({ fail = false } = {}) {
   };
   return {
     log,
-    playwright: { chromium: { async launch(options) { log.launches.push(options); if (fail) throw new Error('no chromium\nmore'); return browser; } } },
+    playwright: { chromium: {
+      async connect(endpoint) { log.connects.push(endpoint); if (fail) throw new Error('no chromium\nmore'); return browser; },
+      async launchServer(options) {
+        log.launches.push(options);
+        if (fail) throw new Error('no chromium\nmore');
+        return { wsEndpoint: () => 'ws://fake', process: () => ({ pid: 4242, kill() {} }), async close() { log.serverClosed++; } };
+      },
+    } },
   };
 }
 const fakeT = () => { const t = { skipped: [], skip(m) { t.skipped.push(m); } }; return t; };
+const RUN_ENV = { [SHARED_BROWSER_ENV.endpoint]: 'ws://fake', [SHARED_BROWSER_ENV.runner]: String(process.pid) };
 
-test('a browser suite launches one Chromium for its file, on first use, and a fresh context per page', async () => {
+test('the runner launches the run\'s one Chromium with the SwiftShader flags and a software 2D canvas, or says why it cannot', async () => {
   const { log, playwright } = fakePlaywright();
-  const suite = browserSuite({ load: async () => playwright, hooks: false });
-  assert.equal(log.launches.length, 0, 'nothing launches before a test asks');
+  const shared = await launchSharedBrowser(async () => playwright);
+  assert.deepEqual([...SHARED_BROWSER_ARGS], [...SWIFTSHADER_ARGS, '--disable-accelerated-2d-canvas']);
+  assert.deepEqual(log.launches, [{ args: [...SHARED_BROWSER_ARGS] }]);
+  assert.equal(shared.endpoint, 'ws://fake');
+  assert.equal(shared.pid, 4242);
+  await shared.close();
+  assert.equal(log.serverClosed, 1);
+  assert.deepEqual(await launchSharedBrowser(async () => null), { skip: 'Playwright is not installed' });
+  const broken = fakePlaywright({ fail: true });
+  assert.deepEqual(await launchSharedBrowser(async () => broken.playwright), { skip: 'chromium could not start: no chromium' });
+});
+
+test('a browser suite connects its file to the run\'s Chromium on first use, with a fresh context per page', async () => {
+  const { log, playwright } = fakePlaywright();
+  const suite = browserSuite({ load: async () => playwright, env: RUN_ENV, hooks: false });
+  assert.equal(log.connects.length, 0, 'nothing connects before a test asks');
   const t1 = fakeT();
   const a = await suite.open(t1);
   const p1 = await a.browser.newPage({ viewport: { width: 800, height: 600 } });
   const p2 = await a.browser.newPage();
   const c3 = await a.browser.newContext({ deviceScaleFactor: 2 });
   assert.match(a.base, /^http:\/\/127\.0\.0\.1:\d+$/);
-  assert.deepEqual(log.launches, [{ args: [...SWIFTSHADER_ARGS] }], 'one launch, with the SwiftShader flags by default');
+  assert.deepEqual(log.connects, ['ws://fake'], 'one connection, to the runner\'s endpoint');
+  assert.deepEqual(log.launches, [], 'no launch of its own');
   assert.notEqual(p1.context(), p2.context(), 'each page in its own context');
   assert.deepEqual(log.contexts[0].options, { viewport: { width: 800, height: 600 } }, 'the page options go to its context');
   assert.deepEqual(c3.options, { deviceScaleFactor: 2 });
@@ -93,45 +117,50 @@ test('a browser suite launches one Chromium for its file, on first use, and a fr
 
   const b = await suite.open(fakeT());
   await b.browser.newPage();
-  assert.equal(log.launches.length, 1, 'the next test reuses the browser');
+  assert.equal(log.connects.length, 1, 'the next test reuses the connection');
   assert.equal(b.base, a.base, 'and the server');
   await b.browser.close();
   await suite.close();
   await suite.close();
-  assert.equal(log.browserClosed, 1, 'closed once, at the end of the file');
+  assert.equal(log.browserClosed, 1, 'disconnected once, at the end of the file');
   assert.deepEqual(t1.skipped, []);
 });
 
-test('a bare browser suite launches without flags', async () => {
+test('a browser test outside the runner fails, and never launches a browser', async () => {
   const { log, playwright } = fakePlaywright();
-  const suite = browserSuite({ args: [], load: async () => playwright, hooks: false });
-  await suite.open(fakeT());
-  assert.deepEqual(log.launches, [{ args: [] }]);
+  const suite = browserSuite({ load: async () => playwright, env: {}, hooks: false });
+  await assert.rejects(suite.open(fakeT()), { message: NOT_IN_RUNNER });
+  const orphan = browserSuite({ load: async () => playwright, env: { ...RUN_ENV, [SHARED_BROWSER_ENV.runner]: '999999999' }, hooks: false });
+  await assert.rejects(orphan.open(fakeT()), /the test runner \(pid 999999999\) is gone/);
+  assert.deepEqual([log.launches, log.connects], [[], []]);
   await suite.close();
+  await orphan.close();
 });
 
-test('a browser suite skips each test when Playwright is missing or Chromium cannot start, trying the launch once', async () => {
-  const missing = browserSuite({ load: async () => null, hooks: false });
+test('a browser suite skips each test when the runner has no Chromium or Playwright is missing, and fails when the Chromium is gone', async () => {
+  const none = browserSuite({ env: { [SHARED_BROWSER_ENV.skip]: 'Playwright is not installed' }, hooks: false });
   const t = fakeT();
-  assert.equal(await missing.open(t), null);
+  assert.equal(await none.open(t), null);
   assert.deepEqual(t.skipped, ['Playwright is not installed']);
-  await missing.close();
+  await none.close();
+
+  const missing = browserSuite({ load: async () => null, env: RUN_ENV, hooks: false });
+  const t0 = fakeT();
+  assert.equal(await missing.open(t0), null);
+  assert.deepEqual(t0.skipped, ['Playwright is not installed']);
 
   const { log, playwright } = fakePlaywright({ fail: true });
-  const broken = browserSuite({ load: async () => playwright, hooks: false });
-  const t1 = fakeT(), t2 = fakeT();
-  assert.equal(await broken.open(t1), null);
-  assert.equal(await broken.open(t2), null);
-  assert.deepEqual(t1.skipped, ['chromium could not start: no chromium']);
-  assert.deepEqual(t2.skipped, ['chromium could not start: no chromium']);
-  assert.equal(log.launches.length, 1);
+  const broken = browserSuite({ load: async () => playwright, env: RUN_ENV, hooks: false });
+  await assert.rejects(broken.open(fakeT()), /the run's Chromium is gone: no chromium/);
+  await assert.rejects(broken.open(fakeT()), /the run's Chromium is gone/);
+  assert.equal(log.connects.length, 1, 'tried once');
   await broken.close();
 });
 
 test('every browser test file goes through the helper: no launch or server of its own', () => {
   for (const f of testFiles()) {
     const src = readFileSync(join(ROOT, 'tests', f), 'utf8');
-    assert.doesNotMatch(src, /chromium\.launch\(/, `${f} launches Chromium itself`);
+    assert.doesNotMatch(src, /chromium\.(?:launch|launchServer|launchPersistentContext|connect|connectOverCDP)\(/, `${f} launches or connects to Chromium itself`);
     assert.doesNotMatch(src, /\bcreateServer\(/, `${f} runs its own server`);
     if (/test\(\s*['"`][^'"`]*in a browser/.test(src)) {
       assert.match(src, /from '\.\/helpers\/browser\.mjs'/, `${f} has browser tests but does not use the helper`);

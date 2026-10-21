@@ -12,23 +12,27 @@ tests go and how the suite runs is [testing.md](testing.md).
 ## PUBLIC API
 
 `tests/helpers/browser.mjs` — `browserSuite`, `serveRoot`,
-`SWIFTSHADER_ARGS`.
+`launchSharedBrowser`, `SHARED_BROWSER_ARGS`, `SWIFTSHADER_ARGS`.
 
-Every browser test file goes through this helper and launches no browser
-and runs no server of its own (`tests/helpers.test.mjs` pins this). `const suite = browserSuite()` at
-the top of the file gives it one Chromium and one static server, started by
-the first test that calls `suite.open(t)` and closed once after the file's
-last test; `open` returns `{ browser, base }`, where `browser.newPage(options)`
-and `browser.newContext(options)` open fresh contexts that the test's
-`browser.close()` closes, and `base` is the server's URL. `open` calls
-`t.skip` and returns null when Playwright is missing or Chromium fails to
-launch, so the Node layer runs green without them. Playwright loads by
-`import('playwright')`, falling back to a global install beside
+Every browser test file goes through this helper and launches or connects
+to no browser and runs no server of its own (`tests/helpers.test.mjs` pins
+this). The runner ([testing.md](testing.md) § OVERVIEW) launches the run's
+Chromium with `launchSharedBrowser` (`SHARED_BROWSER_ARGS`:
+`SWIFTSHADER_ARGS` for WebGL 2, and the 2D canvas rasterised in software)
+and hands its endpoint to each test file in `SHARED_BROWSER_ENV`.
+`const suite = browserSuite()` at the top of a file connects it to that
+Chromium and starts one static server on the first test that calls
+`suite.open(t)`, and disconnects and closes them after the file's last test;
+`open` returns `{ browser, base }`, where `browser.newPage(options)` and
+`browser.newContext(options)` open fresh contexts that the test's
+`browser.close()` closes, and `base` is the server's URL. `open` throws
+outside the runner, so a browser test never launches a browser of its own,
+and calls `t.skip` and returns null when Playwright is missing or Chromium
+fails to launch, so the Node layer runs green without them. Playwright loads
+by `import('playwright')`, falling back to a global install beside
 `process.execPath` in the Windows layout (`node_modules` in the binary's
-directory) or the POSIX one (`../lib/node_modules`). The launch flags default
-to `SWIFTSHADER_ARGS`; a file whose tests need no WebGL passes
-`browserSuite({ args: [] })`, and `pages` maps a path to an HTML string the
-server returns in place of a file.
+directory) or the POSIX one (`../lib/node_modules`). `pages` maps a path to
+an HTML string the server returns in place of a file.
 
 ## INTERNAL PATTERNS
 

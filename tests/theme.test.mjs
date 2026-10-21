@@ -19,7 +19,7 @@ const FIXTURE_ID = FIXTURE_THEME.id;
 const SCOPE = `:root[data-theme="${THEME_ID}"]`;
 const THEME_CSS = read('../themes/joyful-tiles/theme.css').replace(/\/\*[\s\S]*?\*\//g, '');
 const FIXTURE_CSS = read('./fixtures/themes/fixture-dusk/theme.css').replace(/\/\*[\s\S]*?\*\//g, '');
-const suite = browserSuite({ args: [] });
+const suite = browserSuite();
 
 registerTheme(FIXTURE_THEME);
 

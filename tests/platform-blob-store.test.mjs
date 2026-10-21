@@ -9,7 +9,7 @@ import { openIndexedDBBlobStore, DB_NAME, STORE_NAME } from '../js/platform/inde
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const suite = browserSuite({ args: [], pages: { '/': '<!doctype html><title>blob store</title>' } });
+const suite = browserSuite({ pages: { '/': '<!doctype html><title>blob store</title>' } });
 const bytes = (...values) => new Uint8Array(values);
 
 // A blob store over a fresh in-memory implementation, opened at once.

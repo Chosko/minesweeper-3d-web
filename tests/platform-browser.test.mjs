@@ -8,7 +8,7 @@ import { createBrowserBackend, DOC_PREFIX, ASIDE_PREFIX } from '../js/platform/b
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const suite = browserSuite({ args: [], pages: { '/': '<!doctype html><title>storage</title>' } });
+const suite = browserSuite({ pages: { '/': '<!doctype html><title>storage</title>' } });
 const raw = (version, data) => JSON.stringify({ version, data });
 
 // A fake Web Storage object: getItem/setItem/removeItem/key/length over a Map, with an optional
