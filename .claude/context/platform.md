@@ -47,7 +47,7 @@ Storage interface (`js/platform/storage.js`)
   error? }`, reason `'not-serializable'`, `'newer-version'` or
   `'write-failed'`. Never rejects.
 - `clear()` → every document, registered or not, and every kept-aside copy,
-  even when not available; Reset all data ([settings-page.md](settings-page.md)) is
+  even when not available; Reset all data ([settings-reset.md](settings-reset.md)) is
   its caller. Never rejects.
 - `available()` → whether anything persists; `false` if the backend throws.
 - `load` / `save` on an unregistered name throw synchronously.

@@ -87,7 +87,7 @@ the stylesheets (§ Learn 3D's screens).
   prompts name.
 - [engine-3d.md](engine-3d.md) — the 3D state view `lessonCells` and
   `closedAround` read.
-- [app-shell-ui.md](app-shell-ui.md) — the 3D overlay and the hint strip
+- [app-shell-hud.md](app-shell-hud.md) — the 3D overlay and the hint strip
   the play layout changes.
 - [testing.md](testing.md) — `tests/mode3d-learn.test.mjs` (the layout and
   the prompt strip in the Playwright lesson),

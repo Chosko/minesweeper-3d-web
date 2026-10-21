@@ -1,18 +1,17 @@
-# Settings — page, control binder, Reset all data
+# Settings — page and control binder
 
 ## OVERVIEW
 
-The Settings page generated from the schema ([settings.md](settings.md)), the
-binder that ties every setting control in the game to the store, and the
-Data panel with Reset all data, which clears everything the game keeps and
-reloads into a fresh profile. DOM-free: markup is returned as text and the
-binders touch only the elements they are handed. `page.js`'s and
-`reset.js`'s head comments state the full contracts.
+The Settings page generated from the schema ([settings.md](settings.md)) and
+the binder that ties every setting control in the game to the store.
+DOM-free: markup is returned as text and the binders touch only the
+elements they are handed. `page.js`'s head comment states the full
+contract. The Data panel's Reset all data is
+[settings-reset.md](settings-reset.md).
 
 | File | Responsibility |
 | --- | --- |
-| `js/settings/page.js` | page markup from the schema, the bindings section, the Data panel and its confirmation's binder, the control binder for the page, the pause card and the component gallery's theme list |
-| `js/settings/reset.js` | Reset all data: clears every document, replay blob and reset key, then reloads; reports what could not be deleted |
+| `js/settings/page.js` | page markup from the schema, the bindings section, the Data panel, the control binder for the page, the pause card and the component gallery's theme list |
 
 ## PUBLIC API
 
@@ -69,11 +68,8 @@ Page (`js/settings/page.js`)
   last; a focused control keeps the focus); `bindSettingsLayout(root, {
   matchMedia? })` → unbind places them for the window now and on every
   change of a layout's media — `UI` binds it once the page is generated.
-- `bindResetPanel({ open, panel, yes, no, note }, { reset })` → `{ isOpen,
-  close, clear }`: the confirmation opens with focus on Cancel; confirming
-  while it is open (a closed one fading out confirms nothing) disables both buttons and calls `reset()` once, a failure closing the
-  confirmation and writing its message in the err note (`setNote`); `close()` → false when
-  closed, true and nothing done while the reset runs.
+- `bindResetPanel` — the Data panel's confirmation
+  ([settings-reset.md](settings-reset.md)).
 - `bindSettingControls(elements, store, { onUserChange?, theme?,
   themeSheet? })` → unbind. Each root carrying `data-setting` shows the
   store's value (loaded and every change made elsewhere) and writes the
@@ -90,15 +86,6 @@ Page (`js/settings/page.js`)
   `themeSwatchColors(cssText, id)` → `{ token: value }` from the theme's
   `:root[data-theme="<id>"]` token block, `swatchBackground(colors)` → a
   stripe per token.
-
-Reset (`js/settings/reset.js`)
-- `RESET_KEYS` — `LEGACY_KEYS` and `FIRST_USE_LEGACY_KEY`
-  (`ms3d.hintH.done`); `ms3d.custom`, `ms3d.best.*` and `ms3d.lastPreset`
-  stay.
-- `createReset({ storage, blobStore, legacy?, waitFor?, reload })` →
-  `{ run }`; `run()` → `{ ok: true }` after `reload()`, or `{ ok: false,
-  failed, message }` (`failed` from `'documents'`, `'replays'`, `'keys'`)
-  with no reload, `message` always `RESET_FAILURE`. Never rejects.
 
 ## INTERNAL PATTERNS
 
@@ -119,28 +106,11 @@ Reset (`js/settings/reset.js`)
   `js/main.js` binds them (a `ui-switchrow` like a `ui-toggle`), so every
   copy shows the same value. A slider's
   `data-scale` converts its units to the stored value.
-- **Reset is clear, then reload.** `run()` awaits `waitFor()` (a rejection
-  ignored), then clears storage, deletes every blob `blobStore.list()`
-  names and removes `RESET_KEYS`, each part attempted whatever failed
-  before it. The fresh profile comes from the reload: every owner loads its
-  document at start-up, so no store has a reset of its own.
-- **Reset wiring.** `js/main.js` builds `RESET` with `storage`, `blobStore`,
-  `waitFor` the replay library's `load()` then `settled()` (so no owner
-  saves a cleared document back), and a `reload` that sets the leave-page
-  guard's `reloading` and calls `location.reload()`; `UI`'s `onResetAll`
-  runs it.
-- **Back closes the confirmation first.** `UI.closeResetConfirm()` (→ false
-  when none is open, or the page is hidden) comes after `closeConfirm` in
-  `shellBack` and `historyBack`, so Esc, the controller's
-  Back and the browser's Back close it before leaving the page;
-  `showSettings` opens the page with it closed.
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/settings.md](../domain/features/settings.md) — the
   page, its sections and the Data panel.
-- [../domain/features/platform-storage.md](../domain/features/platform-storage.md)
-  — clearing every document and the blob store.
 - [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
   — the page in the frame and its phone arrangement.
 - [../domain/features/theme-system.md](../domain/features/theme-system.md)
@@ -154,20 +124,15 @@ Reset (`js/settings/reset.js`)
   shows.
 - [app-shell-navigation.md](app-shell-navigation.md) — the Settings screen
   in the router; [app-shell-ui.md](app-shell-ui.md) — `UI.showSettings`, the
-  pause-card shortcuts; [app-shell-pause.md](app-shell-pause.md) — the
-  leave-page guard.
-- [platform.md](platform.md) — `storage.clear()` and the blob store.
+  pause-card shortcuts.
+- [settings-reset.md](settings-reset.md) — Reset all data behind the Data
+  panel.
 - [app-shell-kit.md](app-shell-kit.md) — the component gallery, which shows
   the theme list.
-- [replay-library.md](replay-library.md) — the replay library `waitFor` waits on.
-- [testing.md](testing.md) — `tests/settings-page.test.mjs`,
-  `tests/settings-reset.test.mjs`.
+- [testing.md](testing.md) — `tests/settings-page.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
 - A control not updating or not saving: the per-kind binders in `page.js`
   (`bindSlider`, `bindToggle`, `bindChoice`).
 - Adding a control kind or a section, or changing the Data panel's markup.
-- Adding something the game keeps outside platform storage and the blob
-  store, which Reset all data must also delete: `RESET_KEYS` and `run` in
-  `reset.js`.

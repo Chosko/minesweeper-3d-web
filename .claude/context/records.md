@@ -57,7 +57,7 @@ Summary (`js/records/summary.js`)
 - `buildSummary({ engine, outcome?, elapsedMs, pauses?, board, seed,
   generatorVersion, endedAt?, id? })` → record or null. `engine` is the
   engine's `summary()` (won/lost) or `counts()` (abandoned)
-  ([engine.md](engine.md)); `counts()` with `bbbv` null — left before the
+  ([engine-rules.md](engine-rules.md)); `counts()` with `bbbv` null — left before the
   first click — returns null. `id` defaults to `crypto.randomUUID()`.
 - `buildSummary` also takes `startCell`, `daily` (a Daily board's date,
   required with the daily flag) and `challenge` (`true`).
@@ -111,7 +111,7 @@ Summary (`js/records/summary.js`)
 - [records-store.md](records-store.md) — model, store, documents, marker.
 - [records-screen.md](records-screen.md), [records-history.md](records-history.md),
   [records-library-view.md](records-library-view.md) — the Records screen.
-- [engine.md](engine.md) — `summary()` and `counts()`, `CLICK_KINDS`.
+- [engine-rules.md](engine-rules.md) — `summary()` and `counts()`, `CLICK_KINDS`.
 - [generation.md](generation.md) — the seed and `GENERATOR_VERSION`.
 - [replay.md](replay.md) — replays sealed with the summary and keyed by
   `boardKey`.

@@ -17,7 +17,7 @@ layer, controller polling and shell navigation are
 | `js/picking.js` | `pickCell` (3D-DDA ray walk) and `pickCellBrute` (reference) | this file |
 
 `js/main.js` owns one `FlyCamera` (`cam`) and one `OrbitCamera` over it,
-and picks which one the camera inputs turn ([app-shell-3d-play.md](app-shell-3d-play.md)).
+and picks which one the camera inputs turn ([app-shell-3d-camera.md](app-shell-3d-camera.md)).
 
 ## PUBLIC API
 
@@ -116,8 +116,8 @@ permits; they must not alter any rule above.
 - [engine-3d.md](engine-3d.md) — the 3D state view `pickCell` reads.
 - [rendering.md](rendering.md) — `FlyCamera.apply` drives the renderer's camera; the picked cell
   becomes the renderer's selection; the renderer fades the glass within `FLY_THROUGH_DIST`.
-- [app-shell-3d-play.md](app-shell-3d-play.md) — `view3D()`, `setCameraMode`, `setSpacing`, `placeAtSpawn`, the
-  frame loop that runs `KeyLook` and the orbit's dolly.
+- [app-shell-3d-camera.md](app-shell-3d-camera.md) — `view3D()`, `setCameraMode`, `setSpacing`, `placeAtSpawn`, the
+  orbit's dolly; [app-shell-3d-play.md](app-shell-3d-play.md) — the frame loop that runs `KeyLook`.
 - [settings-appliers.md](settings-appliers.md) — `applyLook` (sensitivity, invert Y), `applyCamera` (the mode).
 - [input-controller.md](input-controller.md) — the sticks that feed `moveAxes` / `lookAxes`.
 - [testing.md](testing.md) — `tests/camera-flight.test.mjs` (forward vector, spacing step, toggle and

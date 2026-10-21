@@ -97,12 +97,12 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   tracked, their default prevented only while `canLook()`; Enter and ' act, their default (button
   activation, quick find) prevented, only while `canAct()`. Ctrl+other keys and `RETURN_KEYS`
   (`Home`, `KeyR`: back to the start view, ahead of `F2` and the results screen's `R`,
-  [app-shell-3d-play.md](app-shell-3d-play.md)) are swallowed while active. `onKey` skips auto-repeat except for
+  [app-shell-3d-camera.md](app-shell-3d-camera.md)) are swallowed while active. `onKey` skips auto-repeat except for
   `ARROW_KEYS`, whose repeats are the shell's held focus moves. Mouse deltas > 400 px are
   discarded (post-lock spikes).
 - **Wheel notches.** Normalized by `deltaMode`, wheel up = positive, Shift+wheel reads `deltaX`;
   the caller turns them into a spacing (`spacingStep`, timed on the event's arrival) in Fly and a
-  dolly in Orbit ([app-shell-3d-play.md](app-shell-3d-play.md)).
+  dolly in Orbit ([app-shell-3d-camera.md](app-shell-3d-camera.md)).
 
 ## DOMAIN DEPENDENCIES
 

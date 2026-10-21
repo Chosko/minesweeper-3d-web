@@ -63,7 +63,7 @@ mine positions) is listed in [app-shell.md](app-shell.md) § PUBLIC API.
   acts: `Input.isActive`, `canAct` and `canLook` are false, the frame loop moves no camera and
   changes no view mode, `handlePad` only releases held controls. After it
   the adapter releases lock and reports finished
-  ([app-shell-pause.md](app-shell-pause.md) § End delay). A null summary
+  ([app-shell-end-delay.md](app-shell-end-delay.md) § End delay). A null summary
   ends the guided board on the `learn-end` screen (`#learn-end`, Play Cube
   Intro → `playCubeIntro`, an ordinary pick saved as the last choice, or Try
   again → `PAUSE.restart`; Back to board choice) and the debug hook's fixed
@@ -83,7 +83,7 @@ mine positions) is listed in [app-shell.md](app-shell.md) § PUBLIC API.
 - [mode3d.md](mode3d.md) — Learn 3D's guided board and prompts;
   [mode3d-session.md](mode3d-session.md) — the session these wire;
   [generation.md](generation.md) (`GEN_3D`).
-- [app-shell-pause.md](app-shell-pause.md) — the end delay and its skip.
+- [app-shell-end-delay.md](app-shell-end-delay.md) — the end delay and its skip.
 - [app-shell-help.md](app-shell-help.md) — the hint strip and first-use
   state Learn 3D drives.
 - [rendering.md](rendering.md) — `setGame`, `setMark`, `sync`.

@@ -22,7 +22,7 @@ browser wiring, the viewer's binder and the 2D viewer's mount.
 | `js/replay/simulator.js` | Replay played on the engine, seeking with snapshots; `openReplay`. | [replay-playback.md](replay-playback.md) |
 | `js/replay/verify.js` | Verifier against the check values. | [replay-playback.md](replay-playback.md) |
 | `js/replay/clock.js` | Playback clock. | [replay-playback.md](replay-playback.md) |
-| `js/replay/viewer.js` | Replay viewer screen and the `#replay` binder. | [replay-viewer-screen.md](replay-viewer-screen.md) |
+| `js/replay/viewer.js` | Replay viewer screen and the `#replay` binder. | [replay-viewer-screen.md](replay-viewer-screen.md), [replay-viewer-view.md](replay-viewer-view.md) |
 | `js/replay/viewer-2d.js` | 2D viewer: read-only board view, recorded pointer and cursor. | [replay-viewers.md](replay-viewers.md) |
 | `js/replay/viewer-3d.js` | 3D viewer: recorded camera and view mode. | [replay-viewers.md](replay-viewers.md) |
 
@@ -111,8 +111,9 @@ which adds it to the library once its summary is recorded ([app-shell-results.md
 
 - [replay-samplers.md](replay-samplers.md) — the 2D and 3D movement samplers.
 - [replay-library.md](replay-library.md), [replay-playback.md](replay-playback.md), [replay-viewer-screen.md](replay-viewer-screen.md).
-- [engine.md](engine.md) — `CLICK_KINDS`, rule profiles and versions, the
-  state arrays the digest reads.
+- [engine.md](engine.md) — rule profiles and versions.
+- [engine-rules.md](engine-rules.md) — `CLICK_KINDS`, the state arrays the
+  digest reads.
 - [records.md](records.md) — board identity, `boardKey`, the summary record.
 - [classic2d-session.md](classic2d-session.md), [classic2d-mode.md](classic2d-mode.md),
   [mode3d-session.md](mode3d-session.md), [mode3d-adapter.md](mode3d-adapter.md) — the sessions' recorders and the modes' samplers.

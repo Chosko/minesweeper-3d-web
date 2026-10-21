@@ -13,13 +13,9 @@ How a Classic 2D tile looks. The area overview is
   (`js/themes/board-module.js`, [app-shell-board-module.md](app-shell-board-module.md)): its
   Classic 2D drawing style, palette and number font. It holds no palette,
   imports no theme and reads no stylesheet. DOM-free at import.
-- `js/tile-art.js` — the shared tile recipe both boards draw through (the
-  3D atlas, [rendering.md](rendering.md), and every Classic 2D tile): the
-  named drawing styles (`STYLES`) that draw the closed, sunk and revealed
-  faces at any size and depth, and the number, mine and flag glyphs, the
-  wrong-flag cross and the start cell's ring, every colour and parameter an
-  argument. It imports
-  nothing and touches no DOM.
+
+The shared tile recipe `js/tile-art.js` it draws through — the drawing
+styles and glyphs — is [tile-art.md](tile-art.md).
 
 ## PUBLIC API
 
@@ -28,7 +24,7 @@ How a Classic 2D tile looks. The area overview is
   shared by the skin, the view and the board conformance checks.
 - `TILE_STATES` — `closed`, `pressed`, `revealed`, `flagged`, `mine`,
   `exploded`, `wrong-flag`, `marked`: the engine's cell states
-  ([engine.md](engine.md), `CELL`) plus `pressed` and `marked` (the closed
+  ([engine-rules.md](engine-rules.md), `CELL`) plus `pressed` and `marked` (the closed
   start cell a pre-generated board waits for).
 - `DEPTH_STEPS`, `depthStep(depth)` — the depths the cache holds the
   raised states (closed, pressed, flagged) at, and the step nearest a
@@ -54,44 +50,8 @@ How a Classic 2D tile looks. The area overview is
   to `BOARD_ART`; `redraw` is the view's refit and repaint; `board()` the
   module it draws from, or null.
 
-`js/tile-art.js`
-- `STYLES` — the drawing styles, `bevel` first (the one an unknown name
-  falls back to) and `flat`, each with its default `params`.
-- `drawFace(ctx, size, face, {style, params, palette, depth, px})` — one of
-  `FACES` (`closed`, `sunk`, `revealed`) in a style, its parameters filling
-  the style's defaults, at a depth from 0 (flat) to 1 (fully raised); `px`
-  one device pixel, to snap every band.
-- `explodedParams(params)` — a style's parameters for the exploded tile's
-  revealed face: its `border` as the hairline, unchanged for a style
-  without one.
-- `drawNumberGlyph(ctx, S, n, {color, shadow, font?})`, `drawMineGlyph`,
-  `drawFlagGlyph`, `drawCross`, `drawMarkRing(ctx, S, {color, width?})`;
-  `NUMBER_FONT` (the fallback stack behind a theme's number font), `shade`,
-  `mix`, `roundRect`, `tileBands`.
-
 ## INTERNAL PATTERNS
 
-- **Drawing styles.** `bevel` is a raised face inside a thin edge framed
-  by four sloped sides, each side its own shade from the face toward
-  `bevelLight` or `bevelDark` or an exact `#rrggbb` colour (`sides`), the
-  slope's width scaled by the depth, so depth 0 is flat; a sunk face turns
-  each shade over (a colour mirrored through the face), and the
-  revealed face is flat inside its edge. `flat` is a face with a light top
-  band and a dark bottom edge (fractions of the size), the sunk face an
-  inset shade along its top (`press`, a fraction of the size) and the
-  revealed face flush inside a hairline whose width, like the exploded
-  tile's `border`, is in drawing units — CSS pixels on a Classic 2D tile, so
-  constant at every tile size; depth changes nothing it draws. Either style
-  takes a corner radius (a fraction of the size) that clips the tile to a
-  rounded square. An unknown style draws the first one with its own
-  parameters and is reported once in development.
-- **Glyphs.** The mine is a round body with eight spikes ending in round
-  knobs, three quarters of the tile from knob to knob, under its highlight;
-  the wrong-flag cross two butt-ended strokes in its own colour over a
-  wider outline; a number of one or two digits is set at the same height,
-  a wide one narrowed to fit; the start cell's ring a dashed circle inside
-  the tile. Their proportions are the recipe's, their colours the
-  caller's.
 - **Painter.** Each state is a face of the module's `style2d` from its
   `palette.faces2d`: closed and flagged the closed face, pressed the sunk
   face, revealed / mine / wrong flag the revealed face, exploded the
@@ -148,7 +108,7 @@ How a Classic 2D tile looks. The area overview is
 
 - [app-shell-board-module.md](app-shell-board-module.md) — owns the board module's shape and
   checks and `js/shell/board-art.js`, which feeds `BOARD_ART`;
-  [app-shell-themes.md](app-shell-themes.md) — the theme applier, `js/tokens.js` (`FALLBACK_COLOR`).
+  [app-shell-theme-runtime.md](app-shell-theme-runtime.md) — the theme applier, `js/tokens.js` (`FALLBACK_COLOR`).
 - [rendering.md](rendering.md) — the 3D tile atlas, drawn through the same
   `js/tile-art.js` in the module's 3D style.
 - [classic2d-board-canvas.md](classic2d-board-canvas.md) — the view that owns a
@@ -156,19 +116,14 @@ How a Classic 2D tile looks. The area overview is
   layer that draws from the cache's depth steps.
 - [classic2d-tile-motion.md](classic2d-tile-motion.md) — the cell motion
   player.
-- [testing.md](testing.md) — `tests/tile-art.test.mjs` the drawing styles;
-  `tests/tile-skin.test.mjs` the painter, cache, hand-off and
-  `MIN_TILE_SIZE`.
+- [tile-art.md](tile-art.md) — the recipe the painter draws through.
+- [testing.md](testing.md) — `tests/tile-skin.test.mjs` the painter, cache,
+  hand-off and `MIN_TILE_SIZE`.
 
 ## WHEN TO READ THE SOURCE
 
 - Changing how a state looks, or adding a state (the `paintTileWith` switch
-  and `TILE_STATES`); a change to `js/tile-art.js` changes the 3D atlas
-  too, which `tests/tile-art.test.mjs` and `tests/render-3d-feedback.test.mjs`
-  pin.
-- Adding a drawing style or a parameter (`STYLES`; the board checks read
-  each style's parameters and its relief entries in
-  `js/themes/board-module.js`).
+  and `TILE_STATES`); a change to the recipe is [tile-art.md](tile-art.md)'s.
 - Changing the cache key, the depth steps or what invalidates the cache
   (`drawTile`, `build`, the `art.onChange` subscription).
 - A legibility failure in the browser test: read its per-tile glyph pixel

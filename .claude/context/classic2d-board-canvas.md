@@ -94,7 +94,7 @@ overview [classic2d.md](classic2d.md).
   draws through.
 - [classic2d-input.md](classic2d-input.md) — the inputs that drive the
   pressed set, the cursor and the pan.
-- [engine.md](engine.md) — `changed` lists.
+- [engine-rules.md](engine-rules.md) — `changed` lists.
 - [testing.md](testing.md) — `tests/classic2d-view.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

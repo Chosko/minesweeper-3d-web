@@ -40,7 +40,7 @@ viewers [replay-viewers.md](replay-viewers.md).
 
 - **Seeking.** Forwards, the simulator applies the actions in between;
   backwards, it restores the nearest engine-state snapshot (`snapshot()` /
-  `restore()`, [engine.md](engine.md)) and replays from there. The start is
+  `restore()`, [engine-rules.md](engine-rules.md)) and replays from there. The start is
   always kept; a board of `SNAPSHOT_MIN_CELLS` or more keeps one every
   `SNAPSHOT_INTERVAL` actions, spread further when they would pass
   `SNAPSHOT_MEMORY`. The verifier keeps only the start.
@@ -62,7 +62,7 @@ viewers [replay-viewers.md](replay-viewers.md).
 - [replay-viewer-screen.md](replay-viewer-screen.md) — the screen that
   verifies, seeks and clocks a replay.
 - [replay.md](replay.md) — the format, decoder and sampling intervals.
-- [engine.md](engine.md) — `createGameWithMines`, `snapshot()` /
+- [engine-rules.md](engine-rules.md) — `createGameWithMines`, `snapshot()` /
   `restore()`.
 - [testing.md](testing.md) — `tests/replay-simulator.test.mjs`.
 

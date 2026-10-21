@@ -1,14 +1,15 @@
-# App shell — main menu, its preview and last choices
+# App shell — main menu and last choices
 
 ## OVERVIEW
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers `js/shell/menu.js` (the main menu's entries and routes, the
-placeholder, the opening selection, what each entry's preview shows, the
+placeholder, the opening selection, the
 last mode played and each mode's last board choice),
-`js/shell/menu-preview.js` (the preview binder and its Classic 2D boards),
 `js/shell/returning.js` (the board choices' bests, as text; pure, over the
-records' queries it is handed), and their wiring in `js/main.js`. The Daily
+records' queries it is handed), and their wiring in `js/main.js`. The
+selected entry's preview (`menuPreview`, `js/shell/menu-preview.js`) is
+[app-shell-menu-preview.md](app-shell-menu-preview.md). The Daily
 screen and board codes (`js/shell/daily.js`, `js/shell/challenge.js`) are
 [app-shell-daily.md](app-shell-daily.md). The screens' compositions are the
 head comment of `css/components.css` (*Main menu*, *Coming soon*); their
@@ -34,11 +35,8 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   `unavailable(id)`, `open(id)` (the route taken; null for an unavailable
   entry, which opens nothing).
 - `openingEntry(lastMode, {entries?, missing?})` → the entry of the last
-  mode played, else the first available entry.
-- `menuPreview(id, {entries?, missing?, hasMode?})` → what the preview
-  shows, as data: `{kind: 'board' | 'scene' | 'still' | 'daily' | 'badge',
-  …}` (its head comment); `DEMO_BOARD_3D`, the size of the 3D preview's
-  and the backdrop's demo board.
+  mode played, else the first available entry.- `menuPreview(id, …)` — what the preview shows
+  ([app-shell-menu-preview.md](app-shell-menu-preview.md)).
 - `LAST_MODE_DOC` = `'shell.lastMode'`, `LAST_MODE_VERSION` = 1;
   `createLastMode({storage, modes})` → `current`, `record(mode)`, `load()`
   (null for nothing or a malformed document), `dispose()`.
@@ -46,21 +44,6 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   `current` (`fallback` until loaded or saved), `played`, `load()`,
   `save(choice)` (`RangeError` on a choice `normalise` refuses); the 3D mode
   keeps `mode3d.lastChoice` with it.
-
-`js/shell/menu-preview.js` (its head comment is the contract)
-- `DEMO_SEED`; `demoBoard2D()` → `{grid, geometry, game}`, the Classic 2D
-  preview's Intermediate board and its square geometry, the same on every
-  load; `dailyBoard2D(daily)` → `{grid, geometry, game, mark}`, today's daily Expert board closed with its start
-  cell; `demoBoard3D(random?)` → the 3D game of the menu's 3D preview and
-  backdrop (a `DEMO_BOARD_3D` box, some shell cells revealed, a few mines
-  flagged; `Math.random` by default, the gallery's seeded) and
-  `DEMO_SPACING_3D`, the spacing it is drawn at.
-- `bindMenuPreview({panel, stage, tag, iconOf, mountBoard, boardOf})` →
-  `{show(preview), shown}` over a `ui-scene-panel`: a board view per board
-  kind, mounted once (`mountBoard({container, grid, geometry})`) and kept in its own `[data-preview]` layer; the panel
-  `ui-scene-panel--live` only for `scene` and carrying the kind as
-  `data-shows`; a card (badge, name, note) for `badge`. The Daily screen
-  reuses it.
 
 `js/shell/returning.js`
 - `boardBests(board, records)` → `[{stat, label, value, note}]`: the
@@ -105,19 +88,9 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   size below it); a block's first entry (`data-block-start`) sits a
   spacer further than the list's gap. Below xl the shell sizes the labels,
   icon boxes and glyphs at rest and selected; the theme rounds the icon box
-  to match. The preview's board layer (`[data-preview]`) is inset per size
-  so the board view's fit lands on the artboard's tile, and its card is the
-  large card (a bigger badge). At phone widths the preview goes and the
-  entries fill the screen above a fixed foot band.
-- **Preview.** `MENU_PREVIEW` follows the focus among the entries
-  (`focusin` → `showPreview`, the focused entry's or, with none focused,
-  the opening entry's): `menuPreview` gives the kind and `previewOf` names
-  the Daily preview's date. The Classic 2D boards are drawn by
-  `mountBoardView`, `framed`: each whole board in its board frame inside
-  the panel ([classic2d-board-canvas.md](classic2d-board-canvas.md));
-  the 3D one is the demo board the renderer draws into the panel
-  ([app-shell-3d.md](app-shell-3d.md) § Scene panel), drawn only while that
-  preview shows.
+  to match. The preview's inset per size:
+  [app-shell-menu-preview.md](app-shell-menu-preview.md). At phone widths
+  the preview goes and the entries fill the screen above a fixed foot band.
 - **Board choices.** `showChoice2D` / `showChoice3D` show the last board
   choice (`LAST_CHOICE_2D`, `LAST_CHOICE_3D`); each binder's `bests` is
   `boardBests` over `RECORDS`, `RECORDS.onChange` refreshes both, and
@@ -142,6 +115,8 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
 
 ## CROSS-REFERENCES
 
+- [app-shell-menu-preview.md](app-shell-menu-preview.md) — the preview
+  panel beside the entries.
 - [app-shell-daily.md](app-shell-daily.md) — the Daily screen, which
   reuses the preview binder, and board codes.
 - [platform.md](platform.md) — the storage interface the last mode and last
@@ -157,5 +132,3 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   `ui-mode-entry` in `#menu`, a router screen and a `LAYER_SCREEN` entry
   ([app-shell-ui.md](app-shell-ui.md) § Controller menus); the
   `ui-mode-list` takes it with no change to the menu's composition.
-- Changing what a preview shows: `menuPreview` and the head comment of
-  `js/shell/menu-preview.js`.

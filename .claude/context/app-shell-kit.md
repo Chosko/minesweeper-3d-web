@@ -1,4 +1,4 @@
-# App shell — component kit: catalogue, gallery, screen frame
+# App shell — component kit: catalogue, gallery, selected state
 
 ## OVERVIEW
 
@@ -7,7 +7,9 @@ The kit's behaviour helpers (`js/ui/components.js`) are
 [app-shell-kit-helpers.md](app-shell-kit-helpers.md); themes, tokens and
 deploy files [app-shell-themes.md](app-shell-themes.md); the board module
 and its hand-off [app-shell-board-module.md](app-shell-board-module.md). The
-screens' markup in `index.html` and the shell stylesheet are
+shared layout's components — icons, confirm box and notes, surfaces, the
+screen frame, the message card — and the screens composed in the kit are
+[app-shell-kit-layout.md](app-shell-kit-layout.md); the screens' markup is
 [app-shell-markup.md](app-shell-markup.md).
 
 | File | Responsibility |
@@ -99,83 +101,13 @@ and `touch-stick` (`knob`).
   by being the focused option under it — so one its screen focuses when
   opened by the mouse keeps its resting look. The shell sets
   `pointer-nav` on mouse input and drops it on a key
-  ([app-shell-ui.md](app-shell-ui.md)).
+  ([app-shell-ui.md](app-shell-ui.md) § Controller menus).
   `data-force` previews a state (gallery only). Only the selected segmented
   option is in the Tab order.
-- **The icon set and the leading-icon slot.** Every icon comes from one
-  source, `ICONS` in `js/ui/components.js`
-  ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)), the canvas's
-  stroke icons path for path, drawn in `currentColor` so the button's ink
-  colours them. A button's icon sits before its label, set off by the
-  button's gap; the slot's sizes by button size (sm and md, lg, a code
-  chip's buttons) are the base's `.ui-icon` rules. The icon is
-  `aria-hidden` and the label stays the name; an icon-only button carries
-  `aria-label`. The helpers that draw an icon into a button are
-  [app-shell-kit-helpers.md](app-shell-kit-helpers.md)'s; a button in
-  `index.html` names its set icon with `data-icon`. The icons inline in
-  `index.html` (Restart, Pause, Swap clicks, the message cards' badges and
-  the fatal card's Reload) are svg outside the set.
-- **The confirm box and the notes.** Every confirmation is a `ui-confirm`
-  — the danger fill, an optional heading, its text, then a
-  `ui-actions--row` of the danger action beside Cancel: the pause card's,
-  Settings' Reset all data, and the Records replay delete as a
-  `ui-confirm--row` filling a table row's one cell. A refusal, a hint or a
-  notice is a `ui-note--warn`, a refused value or a failure a
-  `ui-note--err`, each led by an icon of the set named by its `data-icon`
-  (the info icon for a notice, the warning icon for a refusal or a
-  failure) in the note's ink; a script writes its text with `setNote`
-  ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)), which also turns
-  the board code field's line between a plain line and a note. An
-  accepted code's line is `ui-text--success`.
-- **The surfaces.** The stat tile `ui-stat--tile` is plain by default
-  (white, its border, no drop) with `ui-stat--warm` the cream tile on its
-  edge; `data-new-best` rings it inside in the head colour, and its note
-  may carry an inline Watch `ui-link`. `ui-panel--muted` is a sunk panel
-  with no border and no drop. The table rules each full row, sets row
-  labels bold and their values in the monospace face, and on a phone
-  stacks a details table's labels (a table with no `thead`) over their values. The pager's buttons are
-  lighter than the kit's buttons, the current page an ink fill. The code chip has
-  one shape for every caller, built by `createCodeChip`
-  ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)): no inline label,
-  its *Board code* label a `ui-section-label` outside it, running the full
-  width on a phone. Their metrics live in the base and the theme stylesheets.
-- **The slider's fill.** The theme draws a slider's track filled from its
-  start to the thumb by `--slider-fill`, which the kit's fill updater
-  (`bindSliderFill`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md))
-  sets on the input; the kit's slider binder and the Settings and pause
-  controls' binder both install it.
-- **The screen frame.** Every non-game screen is a `ui-frame` on a
-  `ui-backdrop`, sized to its content and never larger than the window: a
-  head (Back with its back key hint, the title centred, an optional
-  action), a body that scrolls vertically while head and foot stay in
-  view, and a foot — a status line, or a bottom bar of the selection's
-  summary beside the screen's actions; the `window-chrome` slot is hidden
-  unless a theme draws it. The head and foot, their titles and the small
-  buttons follow the window-size steps — desktop, compact for the smaller
-  desktop windows, touch for a phone upright or sideways — whose values the
-  theme stylesheet holds; the title stays on one line. A screen's bar of
-  actions (the board choices, Daily, results) is the white action foot
-  `ui-frame__foot--action`, a bottom bar on a phone (the results' in flow
-  at the card's end); the Classic 2D game
-  window keeps the head-coloured foot. A `ui-scene-panel` is a framed region a mode's
-  own renderer draws into: a Classic 2D board view, the 3D scene through
-  the renderer's target rectangle while the panel is `--live`
-  ([app-shell-3d.md](app-shell-3d.md) § Scene panel), or a card with an
-  entry's badge.
-- **The message card.** A `ui-card` is a column, its badge, title, line and
-  actions an even gap apart; the title and line directly in it take the
-  message card's type, the line in ink. The cards over the game sit on one
-  scrim, the theme's backdrop colour unblurred, over 2D and 3D alike.
-- **Screens** composed in the kit — the main menu, both board choices,
-  Daily, the placeholder, Records, Settings, the Classic 2D game window,
-  the 3D game overlay, the board status cards, the pause card with its
-  confirmation, the 3D ready card, the context-lost card, the Learn 3D end
-  card, the results screen, the replay viewer, the toast, the fatal card,
-  the no-JavaScript notice and the 404 page — are
-  each described, element by element and by window size, at the end of the
-  head comment of `css/components.css`; the gallery shows the results
-  layout. Their markup, the ids the shell wires and the pointer sizes are
-  [app-shell-markup.md](app-shell-markup.md).
+- **Shared layout.** The icon set, the confirm box and the notes, the
+  surfaces, the slider's fill, the screen frame, the message card and the
+  screens composed in the kit are
+  [app-shell-kit-layout.md](app-shell-kit-layout.md).
 
 ## DOMAIN DEPENDENCIES
 
@@ -185,25 +117,26 @@ and `touch-stick` (`knob`).
   — component set, states, focus and controller contract, the kit-built
   screens.
 - [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
-  — the shared layout's components, the selected state, the screen frame,
-  the scene panel and every screen composed in them.
+  — the shared layout's components and the selected state.
 - [../domain/features/in-game-layout.md](../domain/features/in-game-layout.md)
   — the counter readouts, the figures panel and the in-game screens built
   from them.
 
 ## CROSS-REFERENCES
 
+- [app-shell-kit-layout.md](app-shell-kit-layout.md) — the shared layout's
+  components and the screens composed in them.
 - [app-shell-kit-helpers.md](app-shell-kit-helpers.md) — the binders and
   formats behind the catalogued components.
 - [app-shell-themes.md](app-shell-themes.md) — the theme stylesheets that
   style every catalogued part and state, `REQUIRED_TOKENS`' use.
 - [app-shell-markup.md](app-shell-markup.md) — the screens built from the kit.
 - [settings-page.md](settings-page.md) — the theme list's markup and binder
-  the gallery shows; [app-shell-menu.md](app-shell-menu.md) — the menu's
+  the gallery shows; [app-shell-menu-preview.md](app-shell-menu-preview.md) — the menu's
   preview binder and demo boards the gallery draws;
   [settings-bindings.md](settings-bindings.md) — the strips' text.
-- [app-shell-ui.md](app-shell-ui.md) — the `UI` methods that feed the
-  counters and the figures panels.
+- [app-shell-hud.md](app-shell-hud.md) — the counters and the figures
+  panels the in-game components show.
 - [testing.md](testing.md) — `tests/theme-registry.test.mjs` (the kit
   catalogue), `tests/components.test.mjs` (kit, screens, contrast),
   `tests/components-game3d.test.mjs` (the 3D overlay in a browser).
@@ -213,5 +146,3 @@ and `touch-stick` (`knob`).
 - Adding or changing a component or composition, or building a screen from
   the kit: the catalogue at the head of `css/components.css` and the
   gallery section in `dev/components.html`.
-- A screen's composition by window size: the end of the head comment of
-  `css/components.css`.

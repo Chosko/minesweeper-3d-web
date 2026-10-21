@@ -1,12 +1,13 @@
-# App shell — pause, confirmations, restart, hand-offs, end delay
+# App shell — pause, confirmations, restart, hand-offs
 
 ## OVERVIEW
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers the pause card and the pause controller (`js/shell/pause.js`: pause, resume, restart,
-back to menu, confirmations, game hand-offs, leave-page guard), the end
-delay's skip (`js/shell/end-skip.js`), and their wiring in `js/main.js`.
-Both modules are pure; their rules are documented in their head comments.
+back to menu, confirmations, game hand-offs, leave-page guard) and their
+wiring in `js/main.js`. The module is pure; its rules are documented in its
+head comment. Both modes' end delay and its skip are
+[app-shell-end-delay.md](app-shell-end-delay.md).
 
 ## PUBLIC API
 
@@ -28,15 +29,6 @@ Both modules are pure; their rules are documented in their head comments.
   `finished` / `abandoned` listeners receive `(summary, mode, replay)`
   (`replay` the sealed `{blob, listing}` or null); `inProgress` listeners
   `(summary, mode)`.
-
-`js/shell/end-skip.js`
-- `createEndSkip({ending, skip})` → `{keyDown({code, repeat}), keyUp({code}),
-  press(), release({buttons}), click({isTrusted}), pad(pressed), lockLost(),
-  reset()}`, each → whether the event is consumed (`lockLost` → whether it
-  skipped). During `ending()` a fresh press calls `skip()` and every click is
-  consumed; the skipping press stays consumed through its auto-repeat,
-  release and trusted clicks; a key already repeating is consumed until its
-  release.
 
 ## INTERNAL PATTERNS
 
@@ -100,11 +92,11 @@ Both modules are pure; their rules are documented in their head comments.
   `R` camera return), through `restartInput`, never with Ctrl/Alt/Meta:
   `F2` (default always prevented) → `PAUSE.restart('key')`; `R` on `results`
   → `RESULTS.playAgain('key')`. `Enter` on `results` is its own listener
-  (`resultsEnter`, [app-shell-results.md](app-shell-results.md)). `handlePad`
+  (`resultsEnter`, [app-shell-results-view.md](app-shell-results-view.md)). `handlePad`
   reads Start + Y after the end delay's skip: Y pressed while Start is held
   (read unsuppressed) → `PAUSE.restart('pad')`, then `layerChanged()`.
   `restartBlocked()` — an end delay or an open confirmation — stops all
-  three.
+  three ([app-shell-end-delay.md](app-shell-end-delay.md)).
 - **Hand-offs.** `PAUSE.attach(name, listener)`: `finished` and `abandoned`
   with the sealed replay beside the summary; `inProgress` at game started,
   at every pause of a started, unfinished game and on `pagehide`. The
@@ -117,26 +109,11 @@ Both modules are pure; their rules are documented in their head comments.
   context-lost reload and Reset all data's reload set `reloading` to bypass
   it. It does not guard a game in its end delay, which `pagehide` finishes
   at once (`activeMode().finishNow()`) so it is recorded finished.
-- **End delay.** Both modes end a won or lost game with an end delay before
-  reporting finished; `endDelay()` is `activeMode()`'s `ending`. While it
-  runs no board action, pause, Back or restart is offered. `END_SKIP`
-  (skipping with `activeMode()?.finishNow()`) is fed by capturing
-  `keydown`/`keyup`, `pointerdown`/`mousedown`, `pointerup`/`mouseup` and
-  `click`/`auxclick`/`contextmenu` listeners on `window`, which swallow
-  (`preventDefault`, `stopImmediatePropagation`) every event it reports
-  consumed; `handlePad` hands it each poll first; `onLockChange` hands it a
-  lock released during the delay; `blur` and the tab hiding call `reset()`.
-  The same listeners feed `LOOK_END`, which ends the look at a finished 3D
-  board ([app-shell-results.md](app-shell-results.md) § Look at the board).
-  The finished report then routes to `results` at once. The 3D-specific
-  freeze during the delay: [app-shell-3d-session.md](app-shell-3d-session.md) § End sequence.
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/game-shell.md](../domain/features/game-shell.md) —
   pause rules, confirmations, hand-offs, leave-page guard.
-- [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
-  — the end sequence and its skip.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — the replay beside the summary in the finished and abandoned reports.
 - [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
@@ -144,11 +121,13 @@ Both modules are pure; their rules are documented in their head comments.
 
 ## CROSS-REFERENCES
 
+- [app-shell-end-delay.md](app-shell-end-delay.md) — the end delay, which
+  stops pause, Back and restart while it runs.
 - [records-store.md](records-store.md) — the records store attached to the hand-offs.
 - [app-shell-results.md](app-shell-results.md) — the results flow on
   `finished` / `abandoned`.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (pause controller,
-  end-delay skip), `tests/replay-2d.test.mjs` (replay on the mode host and
+- [testing.md](testing.md) — `tests/shell-*.test.mjs` (pause controller),
+  `tests/replay-2d.test.mjs` (replay on the mode host and
   the hand-offs).
 
 ## WHEN TO READ THE SOURCE
@@ -157,6 +136,3 @@ Both modules are pure; their rules are documented in their head comments.
   hand-offs in the head comment of `js/shell/pause.js`.
 - Changing pause rules, confirmations or the leave-page guard:
   `js/shell/pause.js` and the `PAUSE` wiring in `js/main.js`.
-- Changing what a press during an end delay does: `js/shell/end-skip.js`
-  and the end-delay block of `js/main.js` (`END_SKIP`, `endDelay`,
-  `activeMode`).

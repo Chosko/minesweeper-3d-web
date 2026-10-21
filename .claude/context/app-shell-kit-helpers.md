@@ -62,7 +62,7 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   has none yet, and `js/main.js` calls it on the page once the `UI` has
   built the Settings page; `createButton(doc, {label, icon?, variant?,
   size?, iconOnly?})` builds a kit button. How an icon and its button are
-  named is [app-shell-kit.md](app-shell-kit.md)'s.
+  named is [app-shell-kit-layout.md](app-shell-kit-layout.md)'s.
 - The note: `setNote(el, text, {tone?, icon?})` writes `text` into `el`'s
   `.ui-note__text` after its leading icon (making the text part on first
   use, in place of any plain text), `tone` (`NOTE_TONES`: `'warn'`,
@@ -74,7 +74,7 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   `copyBoardCode({kind, code, clipboard, location, select, toast})` →
   Promise of whether it copied (a refusal selects the code and toasts
   `COPY_FALLBACK`, else `COPIED[kind]`); `createCodeChip(doc)` — the chip
-  ([app-shell-kit.md](app-shell-kit.md) holds its shape); `bindCodeChip(root, {onCopy})` →
+  ([app-shell-kit-layout.md](app-shell-kit-layout.md) holds its shape); `bindCodeChip(root, {onCopy})` →
   `{show(code | null), code}`.
 - The figures panel: `bindFigures(panel)` → `{show(figures, names?)}`
   writes the panel's `.ui-figure[data-figure]` rows from the live figures
@@ -113,7 +113,7 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
 
 - [app-shell-kit.md](app-shell-kit.md) — the catalogued markup each binder
   expects.
-- [app-shell-ui.md](app-shell-ui.md) — the live figures model `bindFigures`
+- [app-shell-hud.md](app-shell-hud.md) — the live figures model `bindFigures`
   shows and the panels it binds.
 - [settings-bindings.md](settings-bindings.md) — `keyHintKeys`, the keys
   `showKeyHints` writes.

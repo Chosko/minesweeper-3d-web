@@ -12,9 +12,12 @@ replay*, the Records screen's Watch best and library Watch, and Open
 replay file open it ([app-shell-replay.md](app-shell-replay.md),
 [records-screen.md](records-screen.md)).
 
+The `#replay` binder (`createReplayView`) is
+[replay-viewer-view.md](replay-viewer-view.md).
+
 - `js/replay/viewer.js` — the screen (opening, verifying, timeline,
-  commands, overlay, cues, Show 3BV, download); `createReplayView` fills
-  `#replay`. Head comment is the authority for the screen.
+  commands, overlay, cues, Show 3BV, download). Head comment is the
+  authority for the screen.
 
 ## PUBLIC API
 
@@ -43,7 +46,7 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
   `seekTicks(actions, duration, leadIn, px)` (one tick per action, merged
   under a pixel within its kind), `actionCue(kind, outcome)` (the game's
   sound cue for an action), `regionTints(partition, graph, cycle?)` (Show
-  3BV's paint of `bbbvPartition`, [engine.md](engine.md)).
+  3BV's paint of `bbbvPartition`, [engine-rules.md](engine-rules.md)).
 - `createReplayViewer({library, router, view, viewers?, sound?, files?,
   bests?})` →
   `show({replay?, replayId?, file?, returnTo?})`, `hide()`, `tick(ms)`,
@@ -54,39 +57,8 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
   mountViewer2D}`; `sound` is the sfx sink, `files.save(bytes, name)` the
   download, `bests(board)` the board's bests (`RECORDS.bests`);
   `state.live` is `replayFigures` at the playback position.
-- `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack,
-  onDownload?, onOpen?, onCopy?})` → the `#replay` binder (its ids in the
-  head comment): a `ui-frame` inset on the backdrop at the canvas's size
-  (`#replay-frame`; Back `#rp-back` with its arrow and the title
-  `#replay-title` in its head), whose body holds the strip across it — the
-  figures inline and unlabelled with the code chip `#rp-code` (Copy and
-  Copy link call `onCopy`; hidden while loading, failed or with no code) —,
-  then `#replay-main`: the board area `#replay-stage`, which takes the room
-  the strip, the panel and the controls leave, with the message card over
-  it, and beside it, down to its bottom, the figures panel `#rp-figures`
-  (`bindFigures`, `bindFiguresLive`; dashes while no replay plays; hidden
-  with the code chip on the narrower windows); then the controls: the seek
-  bar alone on its row (named Position, its played part following its
-  value through `bindSliderFill`, ticks above the track, hatched pause marks
-  on it), the tools row (transport — Play's icon follows its label: play,
-  pause, restart —, speed, the toggles — `#rp-camera` in 3D only —, the end
-  line with its outcome chip after them, Download and Open replay file at
-  the row's end), and the key line `#rp-keys` (`REPLAY_KEY_LINE`, its
-  controller buttons shown only under `body.pad-connected`, which the
-  shell sets while a pad is connected) beside the pauses' line. While a
-  replay opens or has failed the controls stay in place, those that need
-  a replay disabled. A failed replay whose header reads (no viewer for its
-  board, or it does not reproduce) is handed to `view.failed(message,
-  known)` as its title and timeline: the frame keeps the title, the seek
-  bar its marks and ticks, and the speed choice, Show 3BV and Download stay
-  enabled, `download()` saving it; its strip and panel read dashes. A 3D
-  replay marks `#replay` `replay--scene`: the shell draws its scene in the
-  board area, the frame keeping its white body
-  ([app-shell-replay.md](app-shell-replay.md)), and the free-camera notice
-  `#rp-free-note`, on the layer over the scene, shows while the camera is
-  free. The composition, by window size, is the head comment of
-  `css/components.css` (*Replay viewer*) and the `#replay` rules of
-  `css/style.css`.
+- `createReplayView` — the `#replay` binder the viewer drives
+  ([replay-viewer-view.md](replay-viewer-view.md)).
 
 ## INTERNAL PATTERNS
 
@@ -140,12 +112,13 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
 
 ## CROSS-REFERENCES
 
+- [replay-viewer-view.md](replay-viewer-view.md) — the `#replay` binder.
 - [replay-playback.md](replay-playback.md) — the simulator, verifier and
   clock the screen drives.
 - [replay-viewers.md](replay-viewers.md) — the 2D and 3D viewers a mount
   returns.
 - [replay-library.md](replay-library.md) — `bytes(id)` the viewer reads.
-- [engine.md](engine.md) — `bbbvPartition`.
+- [engine-rules.md](engine-rules.md) — `bbbvPartition`.
 - [records-board-code.md](records-board-code.md) — `codeOf`; [records-library-view.md](records-library-view.md)
   — `replayFileName`, `REPLAY_SCREEN`.
 - [app-shell-replay.md](app-shell-replay.md) — `REPLAY_VIEWER`, the 3D
@@ -158,9 +131,8 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
 
 ## WHEN TO READ THE SOURCE
 
-- Changing a control, a key or button, the strip, the figures panel, the
-  timeline or the failure lines: the head comment of `viewer.js` and the
-  `replay` wiring in `js/main.js`; the panel's place by window size, the
-  `#replay-main` and `#rp-figures` rules of `css/style.css`.
+- Changing a command, a key or button, the strip's or the panel's figures,
+  the timeline or the failure lines: the head comment of `viewer.js` and the
+  `replay` wiring in `js/main.js`.
 - Changing which action plays which sound: `actionCue`, beside the 3D
   game's `actionSounds` and Classic 2D's cue map it mirrors.

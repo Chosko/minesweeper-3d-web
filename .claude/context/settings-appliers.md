@@ -64,8 +64,9 @@ The module's head comment states its full contract.
 - [settings.md](settings.md) — the schema, the store the appliers
   subscribe to, the settings table.
 - [settings-page.md](settings-page.md) — the page the theme list sits on.
-- [app-shell-themes.md](app-shell-themes.md) — the theme registry and the
-  theme applier.
+- [app-shell-themes.md](app-shell-themes.md) — the theme registry;
+  [app-shell-theme-runtime.md](app-shell-theme-runtime.md) — the theme
+  applier.
 - [audio.md](audio.md) — `setVolume`, `setMuted`.
 - [rendering.md](rendering.md) — `BoardRenderer.setPixelRatio`, its `camera`'s `fov`.
 - [input-camera.md](input-camera.md) — `FlyCamera.sensitivity` / `invertY`; `OrbitCamera`, the Camera setting's Orbit.

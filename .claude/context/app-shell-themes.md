@@ -4,9 +4,10 @@
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 The theme registry, each theme's folder, the base and theme stylesheets and
-their head order, the pre-paint script, the run-time theme applier, the
-token reader and the GitHub Pages files. The board module a theme carries
-and its hand-off to both boards are
+their head order, the structural tokens and the GitHub Pages files. The
+pre-paint script, the run-time theme applier and the token reader are
+[app-shell-theme-runtime.md](app-shell-theme-runtime.md); the board module
+a theme carries and its hand-off to both boards are
 [app-shell-board-module.md](app-shell-board-module.md); the component kit
 the stylesheets style is [app-shell-kit.md](app-shell-kit.md).
 
@@ -15,9 +16,6 @@ the stylesheets style is [app-shell-kit.md](app-shell-kit.md).
 | `css/tokens.css` | the structural tokens only (base stylesheet): `--space-*`, `--z-*`, `--font-numeric-tabular`; nothing per-theme |
 | `js/themes/registry.js` | the theme registry (DOM-free): `THEMES` in catalogue order, the default id, the lookup; the one place a theme is registered |
 | `themes/<id>/` | one theme: `theme.css` (its stylesheet: tokens, every catalogued part and state, `@font-face`, DOM animation, every rule under `:root[data-theme="<id>"]`), `board.js` (its board module), `fonts/` (its `woff2` files and their licences) |
-| `js/theme.js` | classic pre-paint script: maps the stored theme, inserts its stylesheet render-blocking, sets root `data-theme`, exposes `globalThis.msThemeBoot` |
-| `js/themes/applier.js` | the run-time theme applier: takes over from `js/theme.js`, loads and switches themes, hands the board module to subscribers |
-| `js/tokens.js` | token reader for consumers that cannot read stylesheets, chiefly Canvas |
 | `404.html`, `CNAME`, `.nojekyll` | GitHub Pages: the not-found page (the fatal card's composition, "Page not found." and a link to `/`; the base and default theme stylesheets from the site root, no script, no remote file), `minesweeper3d.chosko.com`, files served as-is |
 
 ## PUBLIC API
@@ -29,25 +27,8 @@ order, demo}`, paths from the site root), `DEFAULT_THEME_ID`
 absent id), `isRegisteredTheme(id)`; `registerTheme(entry)` is test-only — a
 fixture theme found by the lookup and kept out of `THEMES`.
 
-`js/theme.js` — `globalThis.msThemeBoot` `{id, fellBackFrom, link, ready}`
-(`ready` resolves once the active stylesheet loaded, rejects when the
-default's fails); `globalThis.msThemePrePaint` for tests (`STYLESHEETS`,
-`DEFAULT_THEME`, `themeIdOf`, `readStoredTheme`, `boot`).
-
-`js/themes/applier.js` — `themeApplier()` (the page's one applier, over
-`msThemeBoot`); `createThemeApplier({doc, boot, base?, importModule?,
-lookup?, onError?})` → `current()`, `board()` (the active board module),
-`start({notice?})`, `setTheme(value)`, `onThemeChange(listener)` →
-unsubscribe, `listener(id, boardModule)` after start-up and after each
-switch (a throwing listener does not stop the others); `themeIdFor(value)`
-(a value the settings format step retires, or an unknown id → the default),
-`SITE_ROOT`, `START_FALLBACK`, `SWITCH_FAILED`.
-
-`js/tokens.js` — the active theme's computed tokens on the root, no copy
-held: `token(name)` (with or without `--`; unknown →
-`FALLBACK_COLOR`, logged once only in development),
-`onThemeChange(listener)` (the applier's), `createTokenReader({root,
-getStyle, theme, dev?, log?})`.
+`js/theme.js`, `js/themes/applier.js`, `js/tokens.js` —
+[app-shell-theme-runtime.md](app-shell-theme-runtime.md).
 
 ## INTERNAL PATTERNS
 
@@ -91,56 +72,33 @@ getStyle, theme, dev?, log?})`.
   replaces, and the default's stylesheet inside its `<noscript>` — and
   `404.html`, which runs no script, links the base and default theme
   stylesheets.
-- **Pre-paint.** `js/theme.js` runs synchronously in `<head>`;
-  `readStoredTheme` reads the settings document (`ms3d:doc:settings`, at
-  any version the store has written) straight from `localStorage`, and
-  `themeIdOf` maps it as `themeIdFor` does — a value the store's format
-  step retires ([settings.md](settings.md)) or an unknown or absent id → the
-  default. It cannot import the registry, so `STYLESHEETS` mirrors its
-  id → stylesheet table (`tests/theme.test.mjs` keeps the two equal). A non-default
-  stylesheet that fails falls back to the default here. It never writes:
-  the settings store owns the preference.
-- **Switching.** `js/main.js` calls `start()` once. A switch appends the new
-  stylesheet, imports its board module and loads its fonts
-  (`document.fonts.load`), and only then flips `data-theme` and removes the
-  old `<link>`. Removing a stylesheet makes Chromium rebuild every
-  `@font-face` face unloaded, so the switch loads every font file the new
-  theme declares again, from the cache, and only then notifies — a failure
-  of that second load goes to `onError` and the switch still completes.
-  Switches queue, each after the previous one settles; `setTheme` of the
-  active theme does nothing.
-- **Failure contract.** A non-default theme that fails at start-up falls
-  back to the default and `notice(START_FALLBACK)` tells the player once (a
-  toast in `js/main.js`); a failed switch keeps the current theme, rejects
-  and tells `SWITCH_FAILED` once; the default failing rejects `start()` and
-  `js/main.js` shows index.html's `#fatal-card`.
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/theme-system.md](../domain/features/theme-system.md)
   — the registry, the theme contract, base and theme stylesheets, fonts,
-  the applier and its failure contract, conformance tests, the Settings
-  theme list and the component gallery per theme.
+  conformance tests, the Settings theme list and the component gallery
+  per theme.
 - [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
-  — token names, the contrast contract, the token reader.
+  — token names, the contrast contract.
 
 ## CROSS-REFERENCES
 
 - [app-shell-board-module.md](app-shell-board-module.md) — the board
-  module the applier imports and hands to its listeners.
+  module each theme folder's `board.js` holds.
+- [app-shell-theme-runtime.md](app-shell-theme-runtime.md) — the
+  pre-paint script and the applier that load these stylesheets, the token
+  reader.
 - [app-shell-kit.md](app-shell-kit.md) — the catalogue each theme
   stylesheet styles, `REQUIRED_TOKENS`, and the gallery that renders it
   under any registered theme, its theme list switching it through the
   applier.
-- [settings.md](settings.md) — the theme setting driving `setTheme` and the
-  settings document `readStoredTheme` reads;
-  [settings-page.md](settings-page.md) — the theme list.
+- [settings-page.md](settings-page.md) — the theme list.
 - [app-shell-markup.md](app-shell-markup.md) — `index.html`'s head and its
   `<noscript>`, the fatal card.
 - [testing.md](testing.md) — `tests/theme-registry.test.mjs`,
   `tests/theme-conformance.test.mjs`, `tests/tokens.test.mjs`,
-  `tests/theme.test.mjs` (the pre-paint script, the applier, the token
-  reader), the fixture themes under `tests/fixtures/themes/`.
+  the fixture themes under `tests/fixtures/themes/`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -148,8 +106,5 @@ getStyle, theme, dev?, log?})`.
   `REQUIRED_TOKENS`.
 - Adding a theme: `THEMES`, the `STYLESHEETS` mirror in `js/theme.js` and
   the theme's folder; the conformance suite says what is missing.
-- Changing how start-up reads the stored theme (`readStoredTheme`, kept in
-  step with the settings document's key and versions), or the switch order
-  and failure handling (`switchTo` and `start` in `js/themes/applier.js`).
 - Changing deploy behaviour (custom domain, the not-found page, vendored
   three.js path).

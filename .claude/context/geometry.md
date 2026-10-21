@@ -81,11 +81,11 @@ comment states the full contract.
   rule on the geometry; [classic2d-tile-skin.md](classic2d-tile-skin.md) —
   a tile drawn through its outline and glyph box;
   [classic2d-input.md](classic2d-input.md) — the cursor's `neighbour`;
-  [classic2d-mode.md](classic2d-mode.md) — the end effect over the
+  [classic2d-end-effect.md](classic2d-end-effect.md) — the end effect over the
   geometry's centres and extent.
 - [replay-viewers.md](replay-viewers.md) — `replayGeometry` and the 2D
   viewer's hit-testing, rings and tints;
-  [app-shell-menu.md](app-shell-menu.md) — the previews' boards.
+  [app-shell-menu-preview.md](app-shell-menu-preview.md) — the previews' boards.
 - [testing.md](testing.md) — `tests/geometry-*.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

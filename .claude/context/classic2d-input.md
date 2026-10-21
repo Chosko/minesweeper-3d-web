@@ -91,7 +91,7 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
   nothing; lifted sooner it acts on the touched cell — a number chords, a
   closed cell reveals or, while `flagMode()`, toggles its flag
   (`flagMode` reads the mode's `tapMode`, set by the window's Tap choice
-  `#hud-tap`, [app-shell-ui.md](app-shell-ui.md) § Classic 2D window); moved
+  `#hud-tap`, [app-shell-hud.md](app-shell-hud.md) § Classic 2D window); moved
   `TAP_SLOP` or more it pans (`view.pan`) a board that scrolls, else acts on
   nothing. Press feedback reads `pressFeedback`, only for a tap that would
   reveal or chord. A second finger cancels the first's tap and starts the

@@ -100,7 +100,7 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
 
 - [classic2d.md](classic2d.md) — `boardSetup`, the choice the session plays.
 - [classic2d-mode.md](classic2d-mode.md) — the mode that holds the session.
-- [engine.md](engine.md) — the game the session holds and its `changed`
+- [engine-rules.md](engine-rules.md) — the game the session holds and its `changed`
   lists.
 - [generation.md](generation.md) — the client, request and `pregenerate`.
 - [records.md](records.md) — `buildSummary` and the board identity.

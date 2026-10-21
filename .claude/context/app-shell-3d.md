@@ -8,10 +8,11 @@ Covers how `js/main.js` leads the 3D game into play: the adapter's flow
 (`js/shell/lock-fallback.js`, pure), lockless and drag-to-look play, the
 scene panel and `sync3D`. The session, the board status card, Learn 3D's
 wiring and the end sequence are
-[app-shell-3d-session.md](app-shell-3d-session.md). The play inputs and the
-camera — action dispatch, keyboard-only and touch play, the controller in
-play, the Camera setting's Fly and Orbit, the camera aids, spacing and
-render on demand — are [app-shell-3d-play.md](app-shell-3d-play.md). The 3D
+[app-shell-3d-session.md](app-shell-3d-session.md). The play inputs —
+action dispatch, keyboard-only and touch play, the controller in play —
+are [app-shell-3d-play.md](app-shell-3d-play.md); the camera — the Camera
+setting's Fly and Orbit, the camera aids, spacing and render on demand —
+is [app-shell-3d-camera.md](app-shell-3d-camera.md). The 3D
 board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
 [mode3d.md](mode3d.md).
 
@@ -124,8 +125,8 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
   board status card, Learn 3D and end sequence.
 - [mode3d.md](mode3d.md), [engine-3d.md](engine-3d.md) (the 3D state view),
   [generation.md](generation.md) (`GEN_3D`).
-- [app-shell-3d-play.md](app-shell-3d-play.md) — the play inputs, camera
-  and render on demand.
+- [app-shell-3d-play.md](app-shell-3d-play.md) — the play inputs;
+  [app-shell-3d-camera.md](app-shell-3d-camera.md) — camera and render on demand.
 - [rendering.md](rendering.md) — `setTarget`, `setGame`, `sync`.
 - [input.md](input.md) — `Input`'s lock callbacks and `isDragLook`.
 - [testing.md](testing.md) — `tests/mode3d-*.test.mjs` (wiring), the

@@ -1,17 +1,17 @@
-# App shell — screens' markup, shell stylesheet, pointer sizes
+# App shell — screens' markup and the ids the shell wires
 
 ## OVERVIEW
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers the kit-built screens' static markup in `index.html` and the ids the
-shell wires, and the shell stylesheet `css/style.css`. The component kit is
-[app-shell-kit.md](app-shell-kit.md); tokens, themes and deploy files are
+shell wires. `css/style.css`, card motion and pointer sizes are
+[app-shell-stylesheet.md](app-shell-stylesheet.md); the kit is
+[app-shell-kit.md](app-shell-kit.md); themes and deploy files are
 [app-shell-themes.md](app-shell-themes.md).
 
 | File | Responsibility |
 | ---- | -------------- |
 | `index.html` | every overlay as static markup toggled by `.hidden`; importmap `three` → `vendor/three/three.module.min.js` (r186, no build step); a module `onerror` shows `.fatal` |
-| `css/style.css` | shell styling: fixed layers, each screen's placement in its frame (the main menu's grid, the board choices' and Daily's window under the wordmark, Records', Settings', the placeholder's and the replay viewer's window, the results frame's head, tiles and action bar, the ready card's columns) and what each gives way at the smaller window sizes and on a phone, the scene panel's canvas (`body.scene-off`, `body.scene-front`), the Classic 2D game window (its board area and panel, the figures panel beside or under the board or hidden, the phone layouts), the replay layer (the viewer's window, body, strip, seek bar, tools row and key line by window size; the layer over a 3D replay's scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; the controller's buttons in the key line only under `body.pad-connected`; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the HUD and the game window's chrome hidden behind the ready card, the pause card, the results and the 3D status card, the board status cards' placement and parts, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the toast's place and the message pages' (`.fatal`, `.noscript`, `.not-found`: the card's width and its margin from the window's edges), the 3D touch stick and toolbar, the 3D overlay's placement (the counter strip, the figures panel, the phone layouts) and the HUD's; declares no custom property |
 
 `index.html` head order: `css/tokens.css`, `css/components.css`,
 `css/style.css`, `js/theme.js` (which appends the theme stylesheet), then
@@ -80,8 +80,8 @@ bind.
     `#results-code-label` over the chip `#results-code`), `#results-note`,
     and the foot `#results-actions`:
     `#r-menu` at the start, `#r-watch`, `#r-watch-best`, `#r-records`,
-    `#r-again` at the end ([app-shell-results.md](app-shell-results.md));
-  - replay viewer `#replay` (its ids: [replay-viewer-screen.md](replay-viewer-screen.md)):
+    `#r-again` at the end ([app-shell-results-view.md](app-shell-results-view.md));
+  - replay viewer `#replay` (its ids: [replay-viewer-view.md](replay-viewer-view.md)):
     the frame `#replay-frame` with `#rp-back` and `#replay-title`, the
     strip `.replay-bar` with the code chip,
     `#replay-main` — the board area `#replay-stage` holding
@@ -120,34 +120,12 @@ bind.
     stylesheet, then `.noscript`, the same card titled `#noscript-title`),
     styled without JavaScript through the root's static `data-theme`;
     `404.html`'s `.not-found` is the same card ([app-shell-themes.md](app-shell-themes.md)).
-  - card motion, the theme's: the cards over the scene, the placeholder's
-    window, the fatal card and the confirm boxes pop in over
-    `--duration-slow`; the cards' layers and the pause card's and
-    Settings' confirm boxes, given `.hidden`, fade out over it, still
-    displayed and letting clicks through until it ends (`display`
-    transitioned `allow-discrete`), while Records' row confirm box, moved
-    back into its markup as it closes, goes at once; none under reduced
-    motion. How a browser check waits for it:
-    [testing-browser.md](testing-browser.md).
   `#c2d` is the Classic 2D game window (its ids:
-  [app-shell-ui.md](app-shell-ui.md) § Classic 2D window): `#c2d-board`
+  [app-shell-hud.md](app-shell-hud.md) § Classic 2D window): `#c2d-board`
   holds the panel `#c2d-panel` behind the canvas, and the hint strip lies
   over the board in `#c2d-stage`; `#c2d.c2d--measure` lays the window out at its
   largest for `UI.sizeBoard2D` to measure the board's room. `#hud` holds the 3D overlay `#hud-overlay`
   (§ 3D overlay there), hidden under `hud--2d`.
-- **Pointer sizes.** The text minimums hold on every pointer, in the
-  top-level rules: `ui-stat__label` 12 px (one step above `--font-size-xs`,
-  which stays 11 px) and `kbd` `max(11px, 0.78em)`. Only the 44 px hit areas
-  depend on the pointer: each stylesheet ends with one `@media (pointer:
-  coarse)` block — the kit's gives `ui-toggle__input` and
-  `ui-checkbox__input` a 44 px hit square (`::after`) and `ui-slider__input`
-  a 44 px height; the shell's shows `#hud-tap` in Classic 2D at 48 px, gives
-  `#hud-pause`, `#hud-restart` and `#c2d-restart` a 44 px band (`::after`),
-  `#touch-modes` buttons 76 × 44 px, and hides `#hud-swap` (every main menu
-  entry is at least 44 px on any pointer, [app-shell-menu.md](app-shell-menu.md)). Every
-  fine-pointer hit area stays as above (`tests/components.test.mjs` pins
-  both).
-
 
 ## DOMAIN DEPENDENCIES
 
@@ -159,10 +137,10 @@ bind.
 ## CROSS-REFERENCES
 
 - [app-shell-kit.md](app-shell-kit.md) — the catalogue every screen follows;
-  [app-shell-themes.md](app-shell-themes.md) — the tokens `css/style.css` reads.
+  [app-shell-kit-layout.md](app-shell-kit-layout.md) — their composition.
 - [app-shell-ui.md](app-shell-ui.md) — `UI.el`, which binds these ids.
-- [testing.md](testing.md) — `tests/components.test.mjs` (screens, the
-  pointer sizes).
+- [app-shell-stylesheet.md](app-shell-stylesheet.md) — the rules that place them.
+- [testing.md](testing.md) — `tests/components.test.mjs` (screens).
 
 ## WHEN TO READ THE SOURCE
 

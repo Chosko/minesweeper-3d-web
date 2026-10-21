@@ -10,17 +10,17 @@ others:
 | ---- | ------ |
 | this file | `js/main.js` as a whole, mode host, context loss, no-WebGL 2 path, start-up loading, storage, `__ms` |
 | [app-shell-navigation.md](app-shell-navigation.md), [app-shell-focus.md](app-shell-focus.md) | router and back stack, session history and the browser's Back, Back inputs; default focus, overlay focus containment, the focus walk |
-| [app-shell-pause.md](app-shell-pause.md) | pause controller, confirmations, restart keys, hand-offs, leave-page guard, both modes' end delay and its skip |
-| [app-shell-menu.md](app-shell-menu.md), [app-shell-daily.md](app-shell-daily.md) | main menu, placeholder, last mode and last board choices, the returning player's surfaces; the Daily screen, board codes and `#board=` links |
+| [app-shell-pause.md](app-shell-pause.md), [app-shell-end-delay.md](app-shell-end-delay.md) | pause controller, confirmations, restart keys, hand-offs, leave-page guard; both modes' end delay and its skip |
+| [app-shell-menu.md](app-shell-menu.md), [app-shell-menu-preview.md](app-shell-menu-preview.md), [app-shell-daily.md](app-shell-daily.md) | main menu, placeholder, the selected entry's preview, last mode and last board choices, the returning player's surfaces; the Daily screen, board codes and `#board=` links |
 | [app-shell-3d.md](app-shell-3d.md), [app-shell-3d-session.md](app-shell-3d-session.md) | the 3D game's flow: adapter flow, entering play, ready card and pointer lock, scene panel; session, board status card, Learn 3D, end sequence |
-| [app-shell-3d-play.md](app-shell-3d-play.md) | the 3D game's play inputs and camera: actions and rumble, keyboard-only, touch and controller play, the Camera setting's Fly and Orbit, camera aids, spacing, render on demand |
+| [app-shell-3d-play.md](app-shell-3d-play.md), [app-shell-3d-camera.md](app-shell-3d-camera.md) | the 3D game's play inputs: actions and rumble, keyboard-only, touch and controller play; its camera: the Camera setting's Fly and Orbit, camera aids, spacing, render on demand |
 | [app-shell-2d.md](app-shell-2d.md) | the Classic 2D mode's wiring: `FLOW_2D`, button swap, board area and panel, status card, controller |
-| [app-shell-results.md](app-shell-results.md) | results flow and view, Watch replay and Watch best, Look at the board |
+| [app-shell-results.md](app-shell-results.md), [app-shell-results-view.md](app-shell-results-view.md) | results flow and actions, Watch replay and Watch best; the results view, the screen over the board, Look at the board |
 | [app-shell-replay.md](app-shell-replay.md) | the replay viewer route, replay files, the 3D replay scene and its free camera |
-| [app-shell-ui.md](app-shell-ui.md) | `js/ui.js` (`UI`), each mode's counters and live figures, the Classic 2D window's and the 3D overlay's parts, aimed-cell readout, controller menus |
+| [app-shell-ui.md](app-shell-ui.md), [app-shell-hud.md](app-shell-hud.md) | `js/ui.js` (`UI`), what hides behind a card, controller menus; each mode's counters and live figures, the Classic 2D window's and the 3D overlay's parts, aimed-cell readout |
 | [app-shell-help.md](app-shell-help.md) | help surfaces from the bindings source, help panel, active device, first-use hints |
-| [app-shell-kit.md](app-shell-kit.md), [app-shell-kit-helpers.md](app-shell-kit-helpers.md), [app-shell-themes.md](app-shell-themes.md), [app-shell-board-module.md](app-shell-board-module.md) | component kit (catalogue, gallery, screen frame) and its behaviour helpers; themes, stylesheets, pre-paint, applier, token reader, deploy files; the board module and its hand-off to both boards |
-| [app-shell-markup.md](app-shell-markup.md) | kit-built screens' markup in `index.html` and the ids the shell wires, `css/style.css`, pointer sizes |
+| [app-shell-kit.md](app-shell-kit.md), [app-shell-kit-layout.md](app-shell-kit-layout.md), [app-shell-kit-helpers.md](app-shell-kit-helpers.md), [app-shell-themes.md](app-shell-themes.md), [app-shell-theme-runtime.md](app-shell-theme-runtime.md), [app-shell-board-module.md](app-shell-board-module.md) | component kit (catalogue, gallery; shared layout, screen frame) and its behaviour helpers; themes, stylesheets, pre-paint, applier, token reader, deploy files; the board module and its hand-off to both boards |
+| [app-shell-markup.md](app-shell-markup.md), [app-shell-stylesheet.md](app-shell-stylesheet.md) | kit-built screens' markup in `index.html` and the ids the shell wires; `css/style.css`, card motion, pointer sizes |
 
 `js/main.js` — entry module, exports nothing. Builds the renderer (null
 without WebGL 2; `WEBGL2`), `FlyCamera`, `Input`, `MouseActions`,

@@ -1,0 +1,128 @@
+# App shell — component kit: shared layout, icons, screen frame
+
+## OVERVIEW
+
+Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
+How the catalogued components of the shared layout behave and look: the
+icon set and the button's leading-icon slot, the confirm box and the
+notes, the surfaces (stat tile, muted panel, table, pager, code chip), the
+slider's fill, the screen frame and the scene panel, the message card and
+its scrim, and the screens composed in the kit. The catalogue itself, its
+data, the gallery and the selected-state contract are
+[app-shell-kit.md](app-shell-kit.md); the helpers that build and bind these
+parts are [app-shell-kit-helpers.md](app-shell-kit-helpers.md).
+
+| File | Responsibility |
+| ---- | -------------- |
+| `css/components.css` | the base structure and metrics of each component below; the end of its head comment composes every screen |
+
+## PUBLIC API
+
+None of its own: the components' classes and parts are `KIT_CATALOGUE`'s
+([app-shell-kit.md](app-shell-kit.md) § PUBLIC API); their builders and
+binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
+[app-shell-kit-helpers.md](app-shell-kit-helpers.md)'s.
+
+## INTERNAL PATTERNS
+
+- **The icon set and the leading-icon slot.** Every icon comes from one
+  source, `ICONS` in `js/ui/components.js`
+  ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)), the canvas's
+  stroke icons path for path, drawn in `currentColor` so the button's ink
+  colours them. A button's icon sits before its label, set off by the
+  button's gap; the slot's sizes by button size (sm and md, lg, a code
+  chip's buttons) are the base's `.ui-icon` rules. The icon is
+  `aria-hidden` and the label stays the name; an icon-only button carries
+  `aria-label`. The helpers that draw an icon into a button are
+  [app-shell-kit-helpers.md](app-shell-kit-helpers.md)'s; a button in
+  `index.html` names its set icon with `data-icon`. The icons inline in
+  `index.html` (Restart, Pause, Swap clicks, the message cards' badges and
+  the fatal card's Reload) are svg outside the set.
+- **The confirm box and the notes.** Every confirmation is a `ui-confirm`
+  — the danger fill, an optional heading, its text, then a
+  `ui-actions--row` of the danger action beside Cancel: the pause card's,
+  Settings' Reset all data, and the Records replay delete as a
+  `ui-confirm--row` filling a table row's one cell. A refusal, a hint or a
+  notice is a `ui-note--warn`, a refused value or a failure a
+  `ui-note--err`, each led by an icon of the set named by its `data-icon`
+  (the info icon for a notice, the warning icon for a refusal or a
+  failure) in the note's ink; a script writes its text with `setNote`
+  ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)), which also turns
+  the board code field's line between a plain line and a note. An
+  accepted code's line is `ui-text--success`.
+- **The surfaces.** The stat tile `ui-stat--tile` is plain by default
+  (white, its border, no drop) with `ui-stat--warm` the cream tile on its
+  edge; `data-new-best` rings it inside in the head colour, and its note
+  may carry an inline Watch `ui-link`. `ui-panel--muted` is a sunk panel
+  with no border and no drop. The table rules each full row, sets row
+  labels bold and their values in the monospace face, and on a phone
+  stacks a details table's labels (a table with no `thead`) over their values. The pager's buttons are
+  lighter than the kit's buttons, the current page an ink fill. The code chip has
+  one shape for every caller, built by `createCodeChip`
+  ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)): no inline label,
+  its *Board code* label a `ui-section-label` outside it, running the full
+  width on a phone. Their metrics live in the base and the theme stylesheets.
+- **The slider's fill.** The theme draws a slider's track filled from its
+  start to the thumb by `--slider-fill`, which the kit's fill updater
+  (`bindSliderFill`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md))
+  sets on the input; the kit's slider binder and the Settings and pause
+  controls' binder both install it.
+- **The screen frame.** Every non-game screen is a `ui-frame` on a
+  `ui-backdrop`, sized to its content and never larger than the window: a
+  head (Back with its back key hint, the title centred, an optional
+  action), a body that scrolls vertically while head and foot stay in
+  view, and a foot — a status line, or a bottom bar of the selection's
+  summary beside the screen's actions; the `window-chrome` slot is hidden
+  unless a theme draws it. The head and foot, their titles and the small
+  buttons follow the window-size steps — desktop, compact for the smaller
+  desktop windows, touch for a phone upright or sideways — whose values the
+  theme stylesheet holds; the title stays on one line. A screen's bar of
+  actions (the board choices, Daily, results) is the white action foot
+  `ui-frame__foot--action`, a bottom bar on a phone (the results' in flow
+  at the card's end); the Classic 2D game
+  window keeps the head-coloured foot. A `ui-scene-panel` is a framed region a mode's
+  own renderer draws into: a Classic 2D board view, the 3D scene through
+  the renderer's target rectangle while the panel is `--live`
+  ([app-shell-3d.md](app-shell-3d.md) § Scene panel), or a card with an
+  entry's badge.
+- **The message card.** A `ui-card` is a column, its badge, title, line and
+  actions an even gap apart; the title and line directly in it take the
+  message card's type, the line in ink. The cards over the game sit on one
+  scrim, the theme's backdrop colour unblurred, over 2D and 3D alike.
+- **Screens** composed in the kit — the main menu, both board choices,
+  Daily, the placeholder, Records, Settings, the Classic 2D game window,
+  the 3D game overlay, the board status cards, the pause card with its
+  confirmation, the 3D ready card, the context-lost card, the Learn 3D end
+  card, the results screen, the replay viewer, the toast, the fatal card,
+  the no-JavaScript notice and the 404 page — are
+  each described, element by element and by window size, at the end of the
+  head comment of `css/components.css`; the gallery shows the results
+  layout. Their markup, the ids the shell wires and the pointer sizes are
+  [app-shell-markup.md](app-shell-markup.md).
+
+## DOMAIN DEPENDENCIES
+
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the shared layout's components, the screen frame, the scene panel and
+  every screen composed in them.
+- [../domain/features/screen-components.md](../domain/features/screen-components.md)
+  — the kit-built screens.
+
+## CROSS-REFERENCES
+
+- [app-shell-kit.md](app-shell-kit.md) — the catalogue these components are
+  entries of, and the gallery that shows them.
+- [app-shell-kit-helpers.md](app-shell-kit-helpers.md) — the icon set,
+  `setNote`, the code chip and the slider's fill updater.
+- [app-shell-markup.md](app-shell-markup.md) — the screens' markup;
+  [app-shell-stylesheet.md](app-shell-stylesheet.md) — their placement.
+- [app-shell-3d.md](app-shell-3d.md) § Scene panel — the 3D scene in a
+  panel.
+- [testing.md](testing.md) — `tests/components.test.mjs` (kit, screens,
+  contrast).
+
+## WHEN TO READ THE SOURCE
+
+- A screen's composition by window size: the end of the head comment of
+  `css/components.css`.
+- A component's metrics by window step: the base and the theme stylesheets.

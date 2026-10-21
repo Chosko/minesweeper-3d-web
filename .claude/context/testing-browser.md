@@ -50,7 +50,7 @@ server returns in place of a file.
   `shell-mode-3d`).
 - **A card is measured once it has settled.** A card pops in and a
   closing layer or confirm box stays displayed while it fades out
-  ([app-shell-markup.md](app-shell-markup.md)), so a check of a card's size
+  ([app-shell-stylesheet.md](app-shell-stylesheet.md)), so a check of a card's size
   waits until its `getAnimations()` have finished, and a check that a layer
   has gone waits for its `display: none`.
 - **A browser test that needs a game state plays a fixed board** — fixed

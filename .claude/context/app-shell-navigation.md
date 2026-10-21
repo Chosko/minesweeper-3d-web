@@ -87,7 +87,7 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   [app-shell-pause.md](app-shell-pause.md). Each Back Esc triggers carries
   its back key hint inside it (`ui-key-hint data-action="back"`, none on
   touch); the 3D results card's hint:
-  [app-shell-results.md](app-shell-results.md) § Look at the board.
+  [app-shell-results-view.md](app-shell-results-view.md) § Look at the board.
 
 ## DOMAIN DEPENDENCIES
 

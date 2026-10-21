@@ -110,8 +110,8 @@ Records screen (`js/records/screen.js`)
   [records-library-view.md](records-library-view.md) — the Replays tab.
 - [app-shell.md](app-shell.md) — `RECORDS_PAGE`;
   [app-shell-navigation.md](app-shell-navigation.md) — the `records` route,
-  Back; [app-shell-results.md](app-shell-results.md) — the results formats
-  and `NOTES`; [app-shell-themes.md](app-shell-themes.md) — the token reader.
+  Back; [app-shell-results-view.md](app-shell-results-view.md) — the results formats
+  and `NOTES`; [app-shell-theme-runtime.md](app-shell-theme-runtime.md) — the token reader.
 - [testing.md](testing.md) — `tests/records-screen*.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

@@ -43,7 +43,7 @@ as Classic 2D.
   — every closed neighbour (version 1) or only its own batch's surviving
   flags (`revealedUnflag: 'own-batch'`); every unflag drops a cell from its
   batch, a hand flag belongs to none. The membership is kept by `setFlag`
-  ([engine.md](engine.md) § One mutation path).
+  ([engine-rules.md](engine-rules.md) § One mutation path).
 - **Auto-hide.** A revealed, unflagged cell whose flagged-neighbour count
   equals its number hides when it is a zero or every neighbour is revealed
   or flagged; an unflag shows its hidden neighbours again; a loss shows
@@ -68,8 +68,9 @@ as Classic 2D.
 
 ## CROSS-REFERENCES
 
-- [engine.md](engine.md) — the graph interface, the game API and the
-  engine-wide invariants.
+- [engine.md](engine.md) — the graph interface and the rule profiles.
+- [engine-rules.md](engine-rules.md) — the game API and the engine-wide
+  invariants.
 - [mode3d-session.md](mode3d-session.md) — `create3DGame` builds the 3D game (box graph, 3D
   profile, state view); the 3D session drives its actions.
 - [rendering.md](rendering.md), [input-camera.md](input-camera.md) — the 3D renderer and

@@ -95,7 +95,7 @@ stays true while any runs.
   cell from the same module, and the shader's per-cell loss reveal lasts `WAVE_CELL_S`, so the loss wave
   fits the delay. The results screen then shows over the scene, which `js/main.js`'s `shouldRender` draws
   behind a 3D game's results only on demand (`needRender`, a sync, a running effect); the look at the
-  finished board draws as play does ([app-shell-results.md](app-shell-results.md)). `wrongFlags()` hands back a
+  finished board draws as play does ([app-shell-results-view.md](app-shell-results-view.md)). `wrongFlags()` hands back a
   loss's crossed flags, which the 3D replay scene gives back through `setWrongFlags` after `setGame`.
 
 ## Domain dependencies
@@ -110,7 +110,7 @@ stays true while any runs.
 
 - [rendering.md](rendering.md) — the renderer's API, passes, state texture and sky palette.
 - [app-shell-replay.md](app-shell-replay.md) — the replay viewer route and its frame-loop tick;
-  [app-shell-3d-session.md](app-shell-3d-session.md) — the end sequence; [app-shell-3d-play.md](app-shell-3d-play.md) — render on demand.
+  [app-shell-3d-session.md](app-shell-3d-session.md) — the end sequence; [app-shell-3d-camera.md](app-shell-3d-camera.md) — render on demand.
 - [replay-viewers.md](replay-viewers.md) — the 3D viewer whose state view and recorded camera the renderer draws.
 - [audio.md](audio.md) — no direct link; win/loss sounds fire alongside the waves from main.
 - [testing.md](testing.md) — `tests/render-3d-motion.test.mjs` (cell events, motion instances, the

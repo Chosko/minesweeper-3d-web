@@ -16,7 +16,7 @@ board; the skin owns how a tile looks.
 | `js/classic2d/board-choice.js` | The board choice screen: custom info line, validation and Random, the choice its fields describe, the summary and bests lines, `bindBoardChoice` (touches only the elements it is handed). | this file |
 | `js/classic2d/session.js` | The game session and timer: closed board, first click's board (standard, no-guess, pre-generated), generating state, failure offer, pause, end, restart and leave with summaries and replays, the replay recorder. DOM-free. | [classic2d-session.md](classic2d-session.md) |
 | `js/classic2d/mode.js` | The mode behind the shell's contract: one session, view, inputs and sampler per game, overlay feed, sound cues, pause by hiding the board, generation client and pre-generation, end delay. DOM-free. | [classic2d-mode.md](classic2d-mode.md) |
-| `js/classic2d/end-effect.js` | The 3D win and loss waves and the win confetti at board scale, and their Canvas 2D drawing. DOM-free and token-free. | [classic2d-mode.md](classic2d-mode.md) |
+| `js/classic2d/end-effect.js` | The 3D win and loss waves and the win confetti at board scale, and their Canvas 2D drawing. DOM-free and token-free. | [classic2d-end-effect.md](classic2d-end-effect.md) |
 | `js/classic2d/board-view.js` | Fit rule, scale cap and frame, layout on the tile and gap, `cellAt`, per-cell redraw, scrolling and panning with shadows and bars, the touch zoom, hidden while paused, pressed feedback, focus ring, the cell events it plays, `mountBoardView`. DOM-free at import. | [classic2d-board-view.md](classic2d-board-view.md), [classic2d-board-canvas.md](classic2d-board-canvas.md), [classic2d-board-motion.md](classic2d-board-motion.md) |
 | `js/classic2d/motion-layer.js` | The motion layer over the board canvas: animating cells drawn from the tile cache, frames only while a cell animates; `changeEvent`. DOM-free at import. | [classic2d-board-motion.md](classic2d-board-motion.md) |
 | `js/classic2d/pointer-input.js` | Mouse press-and-release state machine from profile markers, `mountPointerInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
@@ -24,7 +24,7 @@ board; the skin owns how a tile looks.
 | `js/classic2d/touch-input.js` | Touch state machine: tap on the lift, 400 ms long-press flag, the Tap choice's Reveal / Flag, chord on a number, one-finger pan, two-finger pan and pinch; `mountTouchInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
 | `js/classic2d/cursor-input.js` | Keyboard and controller cell cursor, auto-repeat, reveal / flag / chord, `mountCursorInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
 | `js/classic2d/tile-skin.js` | Stateless tile painter from the active board module, tile cache with its depth steps, the board art hand-off `BOARD_ART`, `MIN_TILE_SIZE`. DOM-free at import. | [classic2d-tile-skin.md](classic2d-tile-skin.md) |
-| `js/tile-art.js` | The shared tile recipe both boards draw through — named drawing styles (`bevel`, `flat`) at any size and depth, the glyphs, every colour an argument; imports nothing. | [classic2d-tile-skin.md](classic2d-tile-skin.md) |
+| `js/tile-art.js` | The shared tile recipe both boards draw through — named drawing styles (`bevel`, `flat`) at any size and depth, the glyphs, every colour an argument; imports nothing. | [tile-art.md](tile-art.md) |
 | `js/cell-motion.js` | The cell motion player both renderers use — running cell animations and their values per frame; imports nothing. | [classic2d-tile-motion.md](classic2d-tile-motion.md) |
 
 ## PUBLIC API
@@ -125,7 +125,8 @@ board; the skin owns how a tile looks.
   [classic2d-board-canvas.md](classic2d-board-canvas.md),
   [classic2d-board-motion.md](classic2d-board-motion.md),
   [classic2d-input.md](classic2d-input.md),
-  [classic2d-tile-skin.md](classic2d-tile-skin.md),
+  [classic2d-tile-skin.md](classic2d-tile-skin.md), [tile-art.md](tile-art.md),
+  [classic2d-end-effect.md](classic2d-end-effect.md),
   [classic2d-tile-motion.md](classic2d-tile-motion.md).
 - [engine.md](engine.md) — the square grid and `CUSTOM_LIMITS`.
 - [records.md](records.md) — `STANDARD_BOARDS` and the board identity.

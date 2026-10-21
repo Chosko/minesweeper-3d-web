@@ -10,7 +10,7 @@ time-driven extras are [rendering-effects.md](rendering-effects.md).
 
 | File | Responsibility |
 | --- | --- |
-| `js/textures.js` | procedural tile atlas: every tile drawn on a 2D canvas through the shared tile recipe (`js/tile-art.js`, [classic2d-tile-skin.md](classic2d-tile-skin.md)) in the board module's 3D style from its 3D palette, `numbers3d` and number font, packed into one `THREE.DataArrayTexture` (one layer per tile); it holds no colour of its own |
+| `js/textures.js` | procedural tile atlas: every tile drawn on a 2D canvas through the shared tile recipe (`js/tile-art.js`, [tile-art.md](tile-art.md)) in the board module's 3D style from its 3D palette, `numbers3d` and number font, packed into one `THREE.DataArrayTexture` (one layer per tile); it holds no colour of its own |
 | `js/render.js` | `BoardRenderer`'s board module hand-off (`setBoard`) and its pure derivations |
 
 ## Public API
@@ -74,7 +74,8 @@ time-driven extras are [rendering-effects.md](rendering-effects.md).
   descriptions and colours.
 - [app-shell-board-module.md](app-shell-board-module.md) — the board module's shape and checks, and the scene's
   hand-off `js/shell/scene-palette.js`.
-- [classic2d-tile-skin.md](classic2d-tile-skin.md) — the Classic 2D tile skin and the shared tile recipe.
+- [tile-art.md](tile-art.md) — the shared tile recipe;
+  [classic2d-tile-skin.md](classic2d-tile-skin.md) — the Classic 2D tile skin.
 - [testing.md](testing.md) — `tests/render-3d-feedback.test.mjs` (the atlas's layers and *Joyful
   tiles*' sampled atlas, selection and confetti, a theme switch in a 3D game),
   `tests/render-3d-selection.test.mjs` (the selection uniforms and confetti colours from the

@@ -10,7 +10,9 @@ and the hexagon grid is a provider the same profile plays on unchanged;
 the 3D mode plays the 3D profile (the original 3D game's rules) on the box
 graph, read through the 3D state view ([engine-3d.md](engine-3d.md)).
 DOM-free, no three.js, no timer; it never places mines itself. Each module's
-head comment states its full contract; this file is the map.
+head comment states its full contract; this file is the map and covers the
+graph, the grid providers and the rule profiles. The game and its metrics are
+[engine-rules.md](engine-rules.md).
 
 | File | Responsibility |
 | --- | --- |
@@ -19,8 +21,8 @@ head comment states its full contract; this file is the map.
 | `js/engine/hex-grid.js` | hexagon-grid provider: index layout and neighbour order of the 6-neighbour board |
 | `js/engine/box-grid.js` | box graph provider ([engine-3d.md](engine-3d.md)) |
 | `js/engine/profiles.js` | rule-profile table keyed by profile and rules version, each marker's fidelity citation |
-| `js/engine/rules.js` | game state, phases, first-click hand-off, actions, queries, counts, summary, snapshot, action stream |
-| `js/engine/metrics.js` | 3BV, 3BV solved, the effective/wasted click tally |
+| `js/engine/rules.js` | the game ([engine-rules.md](engine-rules.md)) |
+| `js/engine/metrics.js` | 3BV and click counts ([engine-rules.md](engine-rules.md)) |
 | `js/engine/state-view-3d.js` | the 3D state view ([engine-3d.md](engine-3d.md)) |
 
 ## PUBLIC API
@@ -57,66 +59,14 @@ Rule profiles (`profiles.js`)
   `tests/fidelity/minesweeper-online.md` (reference profile) or to the rule
   or deliberate difference it follows (3D profile).
 
-Game (`rules.js`)
-- `createGame({ graph, profile, version?, mineCount, dimensions? })` —
-  awaiting the first click, no mines; `createGameWithMines({ graph, profile,
-  version?, mines, dimensions? })` — playing at once.
-- `PHASE` (`AWAITING_FIRST_CLICK`, `PLAYING`, `WON`, `LOST`); `CELL` (the six
-  visual states the tile skin paints).
-- Getters: `profile`, `rulesVersion`, `graph`, `phase`, `mineCount`,
-  `flagCount`, `minesLeft` (may go negative), `explodedCell`, `state`
-  (`{ mine, number, revealed, flagged, hidden }` `Uint8Array`s, read-only;
-  `hidden` only under `autoHide`).
-- Actions `reveal(c)`, `toggleFlag(c)`, `chord(c)`, `supplyBoard(c, mines)` →
-  `{ changed, ended, boardNeeded }`. `changed` is a view of one shared
-  buffer: copy it before the next action. Per-profile semantics are in
-  `rules.js`'s head comment and the domain documents below.
-- Queries `cellState(c)`, `cellNumber(c)`; `counts()` → `{ bbbv, bbbvSolved,
-  clicks }` at any time (the source for an abandoned game); `summary()` at a
-  win or loss, null before; `actions()` the applied action stream;
-  `snapshot()` / `restore(snapshot)`, which the replay simulator seeks
-  backwards with ([replay-playback.md](replay-playback.md)).
-
-Metrics (`metrics.js`)
-- `bbbvPartition(graph, mine, number)` (the 3BV regions per cell), `createBoardMetrics(graph, mine,
-  number)`, `createClickCounts()`, `CLICK_KINDS`; the counters carry `save()` / `restore()`.
-
 ## INTERNAL PATTERNS
 
-- **First-click hand-off.** The engine never chooses mine positions: the
-  first reveal returns `boardNeeded: c` and changes nothing; the caller gets
-  a board from board generation and hands it back with `supplyBoard`. A
-  rejected board leaves the game untouched. Any other action outside
-  playing changes, records and counts nothing — a flag before the first
-  click included.
 - **Neighbour order is the provider's** and is preserved exactly; flood fill
   and generation follow it. Changing a provider's order (`square-grid.js`,
   `hex-grid.js`) changes flood-fill order and every seeded board on it.
-- **No recursion.** Flood fill is an iterative queue walk over a
-  preallocated `Int32Array(n)`, each cell enqueued once (a 1000 × 1000 zero
-  board opens in one reveal).
-- **No per-cell allocation.** Hot loops fill a neighbour buffer once
-  (`fillNeighbours` through `forEachNeighbour`); `rules.js` keeps two
-  buffers, and a loop over one may call code that fills the other, never its
-  own. `changed` deduplicates with a per-action stamp array (`mark`) into one
-  reused buffer.
-- **One mutation path.** A new mutation goes through `touch`, `record` and
-  `clicks.add`, and a flag change through `setFlag`, which keeps `flagNb`,
-  the hidden neighbours and the batch membership (`owner`: 1 + the owning
-  number's slot among the flagged cell's neighbours, 0 for a hand flag) in
-  step — so `changed`, the action stream, click counts and 3BV solved stay
-  in sync.
-- **Win and loss.** Win is `safeLeft` reaching 0 (flags not required); a
-  loss records the exploded cell and touches every cell whose look changes
-  in the loss view.
-- **Click counting.** Every recorded action is one click, effective or
-  wasted by the profile's `clickCounting`; a flag on a revealed cell is no
-  click under the reference profile and one flag click under the 3D
-  profile, however many cells it changes.
-- **3BV.** Each opening (connected safe zeros) once plus each safe number
-  with no zero neighbour once, from `bbbvPartition` when the mines are placed
-  (Show 3BV paints it); an opening is solved when every zero in it is open.
-- **Determinism.** The same board and action stream give the same game.
+- **Index layout is shared.** A flat grid's geometry places cell c at column
+  `c % width`, row `floor(c / width)`, the providers' layout
+  ([geometry.md](geometry.md)).
 - **Every branch is a marker.** A behaviour the engine branches on is a
   profile marker with a `fidelity` citation. A rule fixed against the
   fidelity file ships as a new rules version; earlier versions stay
@@ -127,19 +77,21 @@ Metrics (`metrics.js`)
 Fidelity to the reference (Minesweeper Online, default options) is the
 overriding rule, checked against a recorded observation, not asserted.
 - [../domain/features/cell-graph-rules-engine.md](../domain/features/cell-graph-rules-engine.md)
-  — graph model, square grid, profiles and versions, first-click hand-off,
-  3BV and click-count definitions, the summary.
+  — graph model, square grid, profiles and versions.
+- [../domain/features/hexagon-grid.md](../domain/features/hexagon-grid.md)
+  — the hexagon grid provider.
 - `tests/fidelity/minesweeper-online.md` — the observed reference behaviour
   every reference marker cites.
-- [../domain/features/board-generation.md](../domain/features/board-generation.md),
-  [../domain/features/game-summary.md](../domain/features/game-summary.md)
-  — supplies the board; consumes the summary and counts.
 - The 3D profile's sources: [engine-3d.md](engine-3d.md) § Domain dependencies.
 
 ## CROSS-REFERENCES
 
+- [engine-rules.md](engine-rules.md) — the game over the graph: actions,
+  phases, first-click hand-off, 3BV, click counts, summary, snapshot.
 - [engine-3d.md](engine-3d.md) — box graph, 3D profile, flag batches,
   auto-hide, the 3D state view.
+- [geometry.md](geometry.md) — the flat grid geometry that places the square
+  and hexagon providers' cells on the page in their index layout.
 - [generation.md](generation.md) — placer, solver, generate loop, worker and
   client, which run over the cell graph.
 - [testing.md](testing.md) — `tests/engine-*.test.mjs` and the fidelity
@@ -149,8 +101,5 @@ overriding rule, checked against a recorded observation, not asserted.
 
 - Changing a rule, adding a profile marker or a rules version, or fixing a
   fidelity failure (`profiles.js`, then `rules.js`).
-- An action's exact effect under a profile: `rules.js`'s head comment.
 - Adding a graph provider or changing a grid provider's index layout or
   neighbour order.
-- Adding an action or mutation path (see One mutation path).
-- Changing how 3BV, 3BV solved or wasted clicks are computed (`metrics.js`).

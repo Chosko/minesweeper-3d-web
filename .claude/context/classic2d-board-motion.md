@@ -88,7 +88,7 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
   to the view; without a module the tiles alone. A full repaint draws the
   same moment. Without an
   effect a won game's closed tiles are drawn as flags (`wonState`). The
-  effect itself is in [classic2d-mode.md](classic2d-mode.md).
+  effect itself is in [classic2d-end-effect.md](classic2d-end-effect.md).
 
 ## DOMAIN DEPENDENCIES
 
@@ -107,7 +107,7 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
   — the tile cache and its depth steps the layer draws from.
 - [classic2d-input.md](classic2d-input.md) — the inputs that drive the
   pressed set and the cursor.
-- [classic2d-mode.md](classic2d-mode.md) — the end effect the view draws.
+- [classic2d-end-effect.md](classic2d-end-effect.md) — the end effect the view draws.
 - [testing.md](testing.md) — `tests/classic2d-view.test.mjs` its
   end-effect drawing; `tests/classic2d-motion.test.mjs` the motion layer
   and its event sources.

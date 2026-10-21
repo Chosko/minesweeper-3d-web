@@ -67,7 +67,7 @@ DOM-free.
   screen change away from `playing`, resuming on return (`sync3D`). The
   timer is Classic 2D's `createTimer`, started when the first reveal is
   applied; a pause during generation counts from the board's arrival.
-- **The overlay's feed.** The 3D overlay ([app-shell-ui.md](app-shell-ui.md)
+- **The overlay's feed.** The 3D overlay ([app-shell-hud.md](app-shell-hud.md)
   § 3D overlay) reads the session every frame from `js/main.js`'s frame
   loop: `ui.updateHud` gets the session's timer (`S.time` from
   `elapsedMs()`), mines left and counted clicks, frozen from `S.endState`

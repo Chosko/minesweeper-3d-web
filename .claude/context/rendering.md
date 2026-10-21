@@ -14,7 +14,7 @@ shake, ground grid — and the replay and end-of-game behaviour are in
 | File | Responsibility |
 | --- | --- |
 | `js/render.js` | `BoardRenderer`: cube geometry, cell/sky/confetti shaders, opaque and transparent instance lists, back-to-front sort, the board module hand-off (`setBoard`), effects and cell motion, the selection, the target rectangle it draws into |
-| `js/readability.js` | the 3D readability aids' pure functions: the aimed-cell readout ([app-shell-3d-play.md](app-shell-3d-play.md)) and, read here, Space's depth dimming — `spaceAlpha(d)` (`SPACE_NEAR_ALPHA` 0.7, `SPACE_FLOOR_ALPHA` 0.1, `SPACE_FALLOFF` 3, interpolated into `VERT`) and `boxDepth(cam, box)`, the camera's lattice distance from the box's nearest face |
+| `js/readability.js` | the 3D readability aids' pure functions: the aimed-cell readout ([app-shell-3d-camera.md](app-shell-3d-camera.md)) and, read here, Space's depth dimming — `spaceAlpha(d)` (`SPACE_NEAR_ALPHA` 0.7, `SPACE_FLOOR_ALPHA` 0.1, `SPACE_FALLOFF` 3, interpolated into `VERT`) and `boxDepth(cam, box)`, the camera's lattice distance from the box's nearest face |
 
 ## Public API
 

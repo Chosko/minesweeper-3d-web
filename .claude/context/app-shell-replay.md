@@ -84,13 +84,14 @@ are listed in [app-shell.md](app-shell.md) § PUBLIC API.
 ## CROSS-REFERENCES
 
 - [replay-viewer-screen.md](replay-viewer-screen.md) — `createReplayViewer`,
-  `createReplayView`, `REPLAY_PAD`; [replay-viewers.md](replay-viewers.md)
+  `REPLAY_PAD`; [replay-viewer-view.md](replay-viewer-view.md) —
+  `createReplayView`; [replay-viewers.md](replay-viewers.md)
   — `createViewer3D`'s scene contract, `mountViewer2D`.
 - [replay-library.md](replay-library.md) — `REPLAYS`.
 - [rendering.md](rendering.md), [rendering-effects.md](rendering-effects.md)
   — `setRegionTint`, `cellScreen`, `wrongFlags`, the seek sync.
 - [input-camera.md](input-camera.md) — `FlyCamera`, `OrbitCamera`,
-  `spawnPose`; [app-shell-3d-play.md](app-shell-3d-play.md) — the Camera
+  `spawnPose`; [app-shell-3d-camera.md](app-shell-3d-camera.md) — the Camera
   setting's mode the free camera follows.
 - [testing.md](testing.md) — `tests/replay-viewer.test.mjs`,
   `tests/replay-viewer-3d.test.mjs`, `tests/results-watch.test.mjs`,

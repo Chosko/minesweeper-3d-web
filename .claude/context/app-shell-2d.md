@@ -69,7 +69,8 @@ themselves are [classic2d.md](classic2d.md).
 - [classic2d-mode.md](classic2d-mode.md) — `createClassic2DMode`, end
   effect; [classic2d-board-view.md](classic2d-board-view.md) — board view;
   [classic2d-input.md](classic2d-input.md) — button swap.
-- [app-shell-pause.md](app-shell-pause.md) — pause, end delay.
+- [app-shell-pause.md](app-shell-pause.md) — pause;
+  [app-shell-end-delay.md](app-shell-end-delay.md) — end delay.
 - [testing.md](testing.md) — Classic 2D session, board view and button swap
   tests.
 

@@ -93,8 +93,8 @@ Export (`js/records/export.js`)
   the Replays tab.
 - [settings-page.md](settings-page.md) — the Data panel's export actions.
 - [app-shell-focus.md](app-shell-focus.md) — the focus walk;
-  [app-shell-kit.md](app-shell-kit.md) — the frame, columns, stat tile and
-  tabs; [app-shell-markup.md](app-shell-markup.md) — the `#records` markup.
+  [app-shell-kit.md](app-shell-kit.md) — the columns and tabs;
+  [app-shell-kit-layout.md](app-shell-kit-layout.md) — the frame and stat tile; [app-shell-markup.md](app-shell-markup.md) — the `#records` markup.
 - [testing.md](testing.md) — `tests/records-screen*.test.mjs`,
   `tests/records-export.test.mjs`, `tests/shell-pad-walk.test.mjs` (the
   controller on Records).

@@ -65,7 +65,7 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   `DAILY_VIEW` fills `#daily` on its router screen (`DAILY_SCREEN`, default
   focus the selected mode's entry, the first playable one on a first show);
   each selection shows `DAILY_PREVIEW` (`bindMenuPreview` over
-  `#daily-preview`, [app-shell-menu.md](app-shell-menu.md)): the Classic 2D
+  `#daily-preview`, [app-shell-menu-preview.md](app-shell-menu-preview.md)): the Classic 2D
   board in its board frame on the screen's body, the panel showing none of
   itself (`#daily-preview[data-shows="daily"]`), and the 3D one
   puts today's closed cube with its marked start cube in the renderer
@@ -91,9 +91,10 @@ is the head comment of `css/components.css` (*Daily*); its ids are
 
 ## CROSS-REFERENCES
 
-- [app-shell-menu.md](app-shell-menu.md) — the main menu, the preview
-  binder the Daily screen reuses, the board choices whose code fields route
-  here.
+- [app-shell-menu.md](app-shell-menu.md) — the main menu, the board
+  choices whose code fields route here;
+  [app-shell-menu-preview.md](app-shell-menu-preview.md) — the preview
+  binder the Daily screen reuses.
 - [records-board-code.md](records-board-code.md) — board codes, the daily
   seed and the daily boards.
 - [records-store.md](records-store.md) — the history the Daily screen

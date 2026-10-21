@@ -88,7 +88,7 @@ returns the unsubscribe.
 - **The Classic 2D end effect** (`js/classic2d/end-effect.js`) reads no
   token: its waves' scale and light are the module's `end2d`, its confetti
   `palette.confetti`, its light clipped to the `style2d` corner radius
-  ([classic2d-mode.md](classic2d-mode.md)).
+  ([classic2d-end-effect.md](classic2d-end-effect.md)).
 - **The 3D scene** (`js/render.js`, `js/textures.js`, `js/tile-art.js`)
   never reads tokens or subscribes to theme changes: its atlas, sky, fog,
   clear colour, selection, marked-cell tint, confetti colours and cell
@@ -105,7 +105,7 @@ returns the unsubscribe.
 
 ## CROSS-REFERENCES
 
-- [app-shell-themes.md](app-shell-themes.md) — the applier that imports
+- [app-shell-theme-runtime.md](app-shell-theme-runtime.md) — the applier that imports
   the module and notifies `bindBoardArt`.
 - [rendering-board-art.md](rendering-board-art.md) — `setBoard` and what the 3D scene draws from
   the module; [classic2d-tile-skin.md](classic2d-tile-skin.md) — `BOARD_ART`

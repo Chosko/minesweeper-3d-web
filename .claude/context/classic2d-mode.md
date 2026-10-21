@@ -1,4 +1,4 @@
-# Classic 2D — mode, game window, sound, end delay and end effect
+# Classic 2D — mode, game window, sound, end delay
 
 ## OVERVIEW
 
@@ -6,7 +6,8 @@
 contract: one session, board view, pointer / cursor inputs and movement
 sampler per game, the game window's feed, the sound cue of every action,
 pause by hiding the board, the generation client and pre-generation, and the
-end delay with its end effect (`js/classic2d/end-effect.js`). DOM-free: the
+end delay, which plays the end effect
+([classic2d-end-effect.md](classic2d-end-effect.md)). DOM-free: the
 shell hands in its flow and its sound sink. The area overview is
 [classic2d.md](classic2d.md).
 
@@ -46,16 +47,6 @@ shell hands in its flow and its sound sink. The area overview is
   as `swap`, never to the cursor input. The module head comment is the
   contract.
 
-`js/classic2d/end-effect.js`
-- `WIN`, `LOSS`, `WAVE_STEP_MS`, `WAVE_SHARE`, `WIN_WAVE`
-  (`{peakMs, widthMs}`), `LOSS_SNAP_MS`, `CONFETTI_COUNT`.
-- `createEndEffect({kind, geometry?, cols?, rows?, origin, duration, random?})`,
-  `reachMs`, `preLossState`, `wonState`, `shownState`,
-  `waveAt(effect, c, state, t, end2d)` → `{scale, flash}` or null,
-  `confettiAt(effect, t, {tile, gap?, width?, height?})`, `done`,
-  `drawWave(ctx, x, y, size, wave, board, paint)`, `drawConfetti`. The
-  module head comment is the contract.
-
 ## INTERNAL PATTERNS
 
 - **Start.** `start` normalises the choice, saves it as the last board
@@ -73,7 +64,7 @@ shell hands in its flow and its sound sink. The area overview is
   when any changed; `flow.figures` the live figures' input (`counts()`,
   flags, mines, `elapsedMs()`) on every count change, else on the timer's
   new second (`tick`).
-- **Game window** (`#c2d`, ids in [app-shell-ui.md](app-shell-ui.md)): head
+- **Game window** (`#c2d`, ids in [app-shell-hud.md](app-shell-hud.md)): head
   (Swap clicks, title, Pause), body (counter strip over the board area, the
   Tap choice on a coarse pointer, the flat live figures column
   with the controls reminder), foot (size, mines, no-guess). The window
@@ -118,18 +109,6 @@ shell hands in its flow and its sound sink. The area overview is
   or end delay) and destroy the view, inputs and sampler; `restart` reopens
   the session's own choice. `hideBoard` pauses the session with the board
   (a no-op before the first click or after the end) and drops held inputs.
-- **End effect.** Each tile is reached at a delay proportional to its
-  distance in tiles from the origin, between cell centres on the board's
-  grid geometry, at most `WAVE_STEP_MS` per tile, the
-  farthest by `WAVE_SHARE` of the delay. A loss's changed tiles keep their
-  pre-loss tile until reached, then snap to their revealed face from the
-  board module's `end2d.loss.scale` with an overshoot (the 3D loss wave's
-  curve, over `LOSS_SNAP_MS`) under its `end2d.loss.flash` of the light; a
-  win's wave bumps each tile to `end2d.win.scale` and mixes it
-  `end2d.win.mix` toward `end2d.light` as it passes (the 3D win wave's
-  timing, `WIN_WAVE`), its closed mines turn to flags, and its confetti in
-  the module's `palette.confetti` bursts from the origin's centre and falls
-  over the geometry's extent. The board view draws it; the module reads no token.
 
 ## DOMAIN DEPENDENCIES
 
@@ -146,19 +125,20 @@ shell hands in its flow and its sound sink. The area overview is
   [classic2d-board-canvas.md](classic2d-board-canvas.md), [classic2d-input.md](classic2d-input.md) — what it mounts.
 - [app-shell.md](app-shell.md) — the mode host;
   [app-shell-2d.md](app-shell-2d.md) — the flow, `main.js` handing in `sfx`
-  and the button swap; [app-shell-pause.md](app-shell-pause.md) — the end
-  delay's skip.
+  and the button swap; [app-shell-end-delay.md](app-shell-end-delay.md) — the
+  end delay's skip.
 - [generation.md](generation.md) — the client and `pregenerate`;
   [replay-samplers.md](replay-samplers.md) — the 2D sampler the mode
   mounts; [audio.md](audio.md) — the `sfx` cues, volume and mute.
+- [classic2d-end-effect.md](classic2d-end-effect.md) — the end effect the
+  end delay plays.
 - [testing.md](testing.md) — `tests/classic2d-mode.test.mjs` the mode, end
   delay, cues, figures feed and window in a browser;
-  `tests/classic2d-end-effect.test.mjs`, `tests/replay-2d.test.mjs` the
-  end effect and the replay on the mode's reports.
+  `tests/replay-2d.test.mjs` the replay on the mode's reports.
 
 ## WHEN TO READ THE SOURCE
 
-- Tuning the end effect (wave speed, wave shape, confetti) or the 2D end delay
-  (`end-effect.js`; `END_DELAY_MS` and the `finished` handler in `mode.js`).
+- Changing the 2D end delay: `END_DELAY_MS` and the `finished` handler in
+  `mode.js`.
 - Changing which cue an action plays (`cue` and `act` in `mode.js`; the 3D
   game's mapping it mirrors is `onAction` in `js/main.js`).
