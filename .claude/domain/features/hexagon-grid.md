@@ -35,10 +35,13 @@ In scope (m2c-flat-grids):
   the column; left and right to the adjacent column at the same row index,
   so the cursor zig-zags along a row.
 - The standard boards, as drawn on the Hexagon board sheet: Beginner 9 × 9
-  with 13 mines, Intermediate 16 × 16 with 50, Expert 30 × 16 with 123.
-  Their densities give the matching Classic 2D board's chance that a safe
-  tile is an opening. They are fixed once records exist: a later change
-  would make earlier games custom-board records.
+  with 13 mines, Intermediate 16 × 16 with 50, Expert 30 × 16 with 100.
+  Beginner's and Intermediate's densities give the matching Classic 2D
+  board's chance that a safe tile is an opening. Expert's is lower: the
+  mine count at which no-guess generation clears within board generation's
+  attempt budget on every seed measured, by the same margin as Classic 2D
+  Expert (`dev/measure-noguess-hex.mjs`). They are fixed once records
+  exist: a later change would make earlier games custom-board records.
 - Custom boards: 1 to 100 a side, as Classic 2D. Mines run from 1 to
   Classic 2D's cap for the same cell count, at most cells − 1, so the first
   click is always safe. A 1 × 1 board is refused on the mines field.
@@ -118,10 +121,3 @@ graph they supply; seeded generation in a Web Worker (see
 - `flat-grid-geometry` — the contract the hexagon geometry implements.
 - `game-summary` — the board identity and board code this feature extends.
 - `classic-2d-square-play` — the custom limits and mine cap reused here.
-
-## Open questions
-
-- No-guess generation on hexagon Expert misses the attempt budget on most
-  seeds, while Beginner and Intermediate meet it
-  (`dev/measure-noguess-hex.mjs`); whether the budget changes for it is
-  `board-generation`'s question.

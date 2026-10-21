@@ -1433,7 +1433,7 @@ Feature: hexagon-grid
 
 Status: [MISSING]
 Target: claude
-Files: js/hexagon/board-setup.js, js/records/board.js, js/records/board-code.js, tests/hexagon-board-setup.test.mjs, tests/records-board.test.mjs, tests/records-board-code.test.mjs
+Files: js/hexagon/board-setup.js, js/records/board.js, js/records/board-code.js, tests/hexagon-board-setup.test.mjs, tests/records-board.test.mjs, tests/records-board-code.test.mjs, tests/generation-noguess.test.mjs, dev/measure-noguess-hex.mjs
 Preconditions: 254
 Feature: hexagon-grid
 

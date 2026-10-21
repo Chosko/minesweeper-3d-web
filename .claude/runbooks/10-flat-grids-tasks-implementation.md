@@ -110,6 +110,7 @@ Depends on: 7
 
 Context:
 - 2026-10-21 (from step 7): no-guess generation on Hexagon Expert (30 × 16, 123 mines) meets the attempt budget on only about 13–17% of seeds (dev/measure-noguess-hex.mjs); Beginner and Intermediate always do. The budget was left unchanged — a board-generation decision is pending.
+- 2026-10-21 (amend): settled — Hexagon Expert is 30 × 16 with 100 mines and the attempt budget is unchanged (hexagon-grid § Scope and non-goals, board-generation § Attempt budget and timing); task 256's body carries it, including the Hexagon Expert no-guess tests in tests/generation-noguess.test.mjs and dev/measure-noguess-hex.mjs, which task 254 left at 123.
 
 ```prompt
 /task-implement 256 --review
@@ -122,6 +123,7 @@ Depends on: 7, 8, 9
 Context:
 - 2026-10-21 (from step 8): the hexagon geometry lowers odd columns by half a row step, (tile + gap) / 2, not "half a tile" as the hexagon-grid feature document says; it hit-tests a press anywhere in the board rectangle to the nearest tile centre (ties to the lower index) — bring the document in line.
 - 2026-10-21 (from step 7): task 254's commit already edited .claude/context/ (engine, generation, testing, INDEX) and hexagon-grid.md, including an open question on the Hexagon Expert no-guess budget — build on those edits rather than redo them.
+- 2026-10-21 (amend): the Hexagon Expert no-guess question is settled and removed from hexagon-grid.md — Expert has 100 mines and the attempt budget is unchanged; record the Expert no-guess timing task 256 re-measures at 100 mines, not task 254's at 123.
 
 ```prompt
 /task-implement 257 --review

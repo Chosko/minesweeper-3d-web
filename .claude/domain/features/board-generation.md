@@ -180,4 +180,8 @@ under Node 22, over a fixed set of 1000 seeds: a board takes a median of 23
 candidates and at worst 433 (about 1 candidate in 36 clears), in a median of
 2 ms and at worst about 40 ms. The attempt budget is 2000 candidates, over
 four times the worst seen; 2000 failing Expert candidates take about 0.2 to
-0.3 s, which bounds a failure's wait.
+0.3 s, which bounds a failure's wait. The same budget serves the hexagon
+standard boards, measured the same way (`dev/measure-noguess-hex.mjs`):
+each clears within it on every seed measured, Hexagon Expert by Expert's
+margin, because its mine count is set to what the budget clears
+(`hexagon-grid` § Scope and non-goals).
