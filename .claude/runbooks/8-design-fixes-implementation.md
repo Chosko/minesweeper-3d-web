@@ -336,7 +336,7 @@ Context:
 /task-implement 239 --review
 ```
 
-## [~] 27. Implement task 240 — Settings screen to the canvas
+## [!] 27. Implement task 240 — Settings screen to the canvas
 
 Depends on: 2, 6, 8
 
@@ -353,6 +353,8 @@ Context:
 ```prompt
 /task-implement 240 --review
 ```
+
+Done: 2026-10-21, failed — task 240 was not implemented: the unpark's cherry-pick of `park/task-240` (616236f, 41 files, branched before tasks 223 and 233) conflicted in 14 files with the base and was rolled back under the unattended policy, leaving the task `[PARKED]` with `Answer: Q1 a` recorded in its handoff (unlanded commit `02c2561` in worktree `.claude/worktrees/runbook-8-step-27`). Needs an attended `/task-implement 240 --review` to merge the parked work.
 
 ## [ ] 28. Implement task 241 — Other surfaces: placeholder, fatal card and toasts
 
