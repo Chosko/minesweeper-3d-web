@@ -10,10 +10,25 @@ them by path instead of restating them.
 - `README.md` § Tests (the run list and the paragraph under it).
 - `.claude/context/testing-browser.md` § PUBLIC API and the "Browser
   environment" bullets.
-- `.claude/context/INDEX.md` — the `testing.md` row's Covers text.
-- `.claude/context/testing.md` — only the `[slow]` flavour-check list in
-  § OVERVIEW's tiers and the `components-pause` clause of the `components-`
-  prefix row, kept in step with the pruned browser tests.
+- `.claude/context/testing-browser.md` § INTERNAL PATTERNS' "What earns a
+  browser test" block — the one home of the authoring rules that keep the
+  browser tier light (cited by `CLAUDE.md` § Tasks implementation's last
+  clause and `testing.md` § WHEN TO READ THE SOURCE).
+- `.claude/context/INDEX.md` — the `testing.md` and `testing-browser.md`
+  rows' Covers text.
+- `.claude/context/testing.md` — the `[slow]` flavour-check list in
+  § OVERVIEW's tiers, the smoke sets' descriptions (the lists themselves
+  are `affected-tests.mjs`'s), and the prefix rows' browser-test clauses
+  (`classic2d-`, `shell-`, `components-`), kept in step with the pruned
+  browser tests.
+- The test-file lists in § CROSS-REFERENCES of `platform.md`,
+  `app-shell-replay.md`, `app-shell-results.md`, `replay-viewer-screen.md`
+  — which file holds an area's browser tests.
+
+## State
+
+Both prune passes are reflected in the docs (second pass: commit 5c5f5a2).
+Fast tier green.
 
 ## Rules
 
