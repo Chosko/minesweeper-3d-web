@@ -446,6 +446,7 @@ function padUsed(p) {
 // The fatal card is index.html's #fatal-card template, the one the page shows when main.js fails to load.
 function showFatal() {
   document.body.append(document.getElementById('fatal-card').content.cloneNode(true));
+  document.querySelector('.fatal .ui-button').focus();
 }
 const THEME = themeApplier();
 // The Classic 2D tile skin and the 3D scene draw from the active board module, handed over once its number font loads.

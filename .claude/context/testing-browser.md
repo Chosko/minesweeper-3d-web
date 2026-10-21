@@ -32,6 +32,11 @@ tests go and how the suite runs is [testing.md](testing.md).
   (`Input.synthesizeTapGesture`, `Input.synthesizeScrollGesture`), so the
   400 ms long-press never sees it (`classic2d-touch`, the 3D look in
   `shell-mode-3d`).
+- **A card is measured once it has settled.** A card pops in and a
+  closing layer or confirm box stays displayed while it fades out
+  ([app-shell-markup.md](app-shell-markup.md)), so a check of a card's size
+  waits until its `getAnimations()` have finished, and a check that a layer
+  has gone waits for its `display: none`.
 - **A browser test that needs a game state plays a fixed board** — fixed
   mines or a fixed seed that reaches it (a loss, not a first-click win),
   pinned by a fast test beside it; a stubbed generation worker answers only

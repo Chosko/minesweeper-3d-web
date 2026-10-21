@@ -60,7 +60,7 @@ Page (`js/settings/page.js`)
   Device change.
 - `bindResetPanel({ open, panel, yes, no, note }, { reset })` → `{ isOpen,
   close, clear }`: the confirmation opens with focus on Cancel; confirming
-  disables both buttons and calls `reset()` once, a failure closing the
+  while it is open (a closed one fading out confirms nothing) disables both buttons and calls `reset()` once, a failure closing the
   confirmation and writing its message in the err note (`setNote`); `close()` → false when
   closed, true and nothing done while the reset runs.
 - `bindSettingControls(elements, store, { onUserChange?, theme?,

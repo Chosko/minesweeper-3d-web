@@ -770,11 +770,14 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
   #daily-modes > .ui-options { gap: var(--space-2); }
 }
 @media (min-width: 1200px) and (max-width: 1439px) { #daily-body { grid-template-columns: 460px auto minmax(0, 1fr); } }
-/* The placeholder (#coming-soon): its window centred on the backdrop at the canvas's size, the body
-   centring its line and Back; on a phone the window is full-bleed. */
-#coming-soon-frame { width: 900px; height: 560px; }
+/* The placeholder (#coming-soon): its window at the canvas's size, 4 px above the backdrop's centre, the
+   body centring the lock badge, the line and Back; on a phone the window is full-bleed and the head's
+   Back reads Back. */
+#coming-soon-frame { width: 900px; height: 560px; margin-top: -8px; }
 #coming-soon-body { display: grid; place-items: center; }
-#coming-soon-panel { align-items: center; gap: 14px; max-width: 460px; text-align: center; }
+#coming-soon-panel { align-items: center; gap: 16px; max-width: 460px; text-align: center; }
+#coming-soon-badge { display: grid; place-items: center; flex: none; width: 120px; height: 120px; }
+#coming-soon-menu [data-label="phone"] { display: none; }
 #coming-soon-heading { margin: 0; font-size: 36px; line-height: 1.1; }
 #coming-soon-text { line-height: 1.4; }
 @media (max-width: 1439px) { #coming-soon-frame { width: 820px; height: 520px; } }
@@ -811,7 +814,9 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
   #daily-code { width: 100%; }
   #daily-frame > .ui-frame__foot { position: absolute; left: 0; right: 0; bottom: 0; }
   #coming-soon { padding: 0; }
-  #coming-soon-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+  #coming-soon-frame { width: 100%; height: 100%; margin-top: 0; border-radius: 0; box-shadow: none; }
+  #coming-soon-menu [data-label="wide"] { display: none; }
+  #coming-soon-menu [data-label="phone"] { display: inline; }
 }
 .help-foot { margin: 6px 0 0; }
 .help-foot .pad-note { display: block; margin: 8px 0 0; }
@@ -867,7 +872,7 @@ body.lockless.drag-look #scene { cursor: grab; }
 body.lockless.drag-look #scene:active { cursor: grabbing; }
 
 .toast {
-  position: fixed; left: 50%; bottom: 64px; z-index: var(--z-toast);
+  position: fixed; left: 50%; bottom: 28px; z-index: var(--z-toast);
   width: max-content; max-width: min(640px, calc(100vw - 32px));
   transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
 }

@@ -814,11 +814,13 @@
      selected mode, the first playable one when the screen first shows.
    Coming soon (index.html #coming-soon): the one placeholder every menu
      entry whose screen has not landed routes to; ui-backdrop holding a
-     ui-frame (Main menu, a secondary button with its back key hint; the
-     entry's name as title) whose body centres the message card's column:
-     a larger ui-card__title "Coming soon", a ui-text line and Back
-     (secondary, with its back key hint). On a phone the frame is
-     full-bleed. Default focus: Back.
+     ui-frame (Main menu, a secondary button led by the arrow-left icon
+     with its back key hint, named "Back to Main menu"; the entry's name
+     as title) whose body centres the message card's column: the lock
+     badge (#coming-soon-badge), a larger ui-card__title "Coming soon", a
+     ui-text line and Back (secondary, led by the arrow-left icon, with
+     its back key hint). On a phone the frame is full-bleed and the head's
+     button reads "Back". Default focus: Back.
    Records (index.html #records): ui-backdrop holding a ui-frame inset on
      it, not full height (Back, a secondary "Main menu" led by the
      arrow-left icon with its back key hint, named "Back to Main menu" and
@@ -1054,11 +1056,13 @@
      select key hint; Back to board choice with the arrow-left icon). No
      time and no records. Default focus: the primary action.
    Toast (index.html #toast): one ui-toast, its text in #toast-text, shown
-     at the bottom centre for its time (js/ui.js toast).
+     at the bottom centre of the page for its time (js/ui.js toast); over
+     the 3D scene, below the crosshair.
    Fatal card (index.html #fatal-card, the template the page shows when the
      game cannot start): a ui-backdrop filling the page, holding a message
      ui-card: its badge, the title, a ui-text line and ui-actions--row of
-     Reload (primary). Default focus: Reload.
+     Reload (primary). Default focus: Reload, focused as the card is
+     appended.
    No-JavaScript notice (index.html <noscript>): the fatal card's
      composition with its title only, in the default theme, whose
      stylesheet the <noscript> links.

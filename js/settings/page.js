@@ -278,7 +278,7 @@ export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
   });
   no.addEventListener('click', () => close());
   yes.addEventListener('click', async () => {
-    if (busy) return;
+    if (busy || !isOpen()) return;
     busy = true;
     yes.disabled = true;
     no.disabled = true;

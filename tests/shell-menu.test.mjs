@@ -425,10 +425,11 @@ test('the 3D board choice holds the presets and custom board, and a Back button'
 test('the placeholder screen is a screen frame on the backdrop: Main menu with its key hint, the mode as title, the line and Back', () => {
   assert.match(SOON, /<section id="coming-soon" class="overlay ui-backdrop hidden" aria-label="Coming soon">/);
   assert.match(SOON, /<section class="ui-frame" id="coming-soon-frame" aria-labelledby="coming-soon-title">\s*<div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"><\/div>/);
-  assert.match(SOON, /<div class="ui-frame__start"><button type="button" id="coming-soon-menu" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>\s*<h2 class="ui-frame__title" id="coming-soon-title">Coming soon<\/h2>\s*<div class="ui-frame__end"><\/div>/,
-    'the head: Main menu, the title the shell sets to the mode, no action');
-  assert.match(SOON, /<h3 class="ui-card__title" id="coming-soon-heading">Coming soon<\/h3>\s*<p id="coming-soon-text" class="ui-text">This part of the game is coming soon\.<\/p>/);
-  assert.match(SOON, /<button type="button" id="coming-soon-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  assert.match(SOON, /<div class="ui-frame__start"><button type="button" id="coming-soon-menu" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>\s*<h2 class="ui-frame__title" id="coming-soon-title">Coming soon<\/h2>\s*<div class="ui-frame__end"><\/div>/,
+    'the head: Main menu after the arrow icon, reading Back on a phone, the title the shell sets to the mode, no action');
+  assert.match(SOON, /<span id="coming-soon-badge" aria-hidden="true"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"\/><path d="M8 11V8a4 4 0 0 1 8 0v3"\/><\/svg><\/span>\s*<h3 class="ui-card__title" id="coming-soon-heading">Coming soon<\/h3>\s*<p id="coming-soon-text" class="ui-text">This part of the game is coming soon\.<\/p>/,
+    'the lock badge above the title and its line');
+  assert.match(SOON, /<button type="button" id="coming-soon-back" class="ui-button ui-button--secondary" data-icon="arrow-left">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
   assert.doesNotMatch(SOON, /ui-card ui-screen|data-esc-hint/, 'no card: the frame, its Back holding its key hint');
   const ui = read('js/ui.js');
   const show = ui.slice(ui.indexOf('showComingSoon(title) {'), ui.indexOf('\n  }\n', ui.indexOf('showComingSoon(title) {')));
@@ -437,8 +438,14 @@ test('the placeholder screen is a screen frame on the backdrop: Main menu with i
   assert.match(ui, /for \(const id of \['coming-soon-back', 'coming-soon-menu', 'settings-back'\]\) \$\(id\)\.addEventListener\('click', \(\) => cb\.onBack\?\.\(\)\);/,
     'both go Back');
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.match(css, /#coming-soon-frame \{[^}]*width: 900px;[^}]*height: 560px;/, 'the frame at the canvas\'s size');
-  assert.match(css, /@media \(max-width: 719px\) \{[^@]*#coming-soon-frame \{[^}]*width: 100%;[^}]*height: 100%;/, 'full-bleed on a phone');
+  assert.match(css, /#coming-soon-frame \{[^}]*width: 900px;[^}]*height: 560px;[^}]*margin-top: -8px;/, 'the frame at the canvas\'s size, 4 px above centre');
+  assert.match(css, /#coming-soon-panel \{[^}]*gap: 16px;/, 'the badge, title, line and Back 16 px apart');
+  assert.match(css, /#coming-soon-badge \{[^}]*width: 120px;[^}]*height: 120px;/, 'the badge 120 px square');
+  assert.match(css, /@media \(max-width: 719px\) \{[^@]*#coming-soon-frame \{[^}]*width: 100%;[^}]*height: 100%;[^}]*margin-top: 0;/, 'full-bleed on a phone');
+  assert.match(css, /@media \(max-width: 719px\) \{[^@]*#coming-soon-menu \[data-label="wide"\][^{]*\{ display: none; \}/, 'the head\'s Back reads Back on a phone');
+  const theme = read('themes/joyful-tiles/theme.css');
+  assert.match(theme, /:root\[data-theme="joyful-tiles"\] #coming-soon-badge \{[^}]*border-radius: 30px;[^}]*background: var\(--color-locked\);[^}]*box-shadow: 0 8px 0 var\(--color-locked-edge\);/,
+    'the badge: radius 30, the locked fill and its drop');
 });
 
 test('the shell routes the new screens, declares their default focus and lets the controller reach them', () => {
@@ -740,6 +747,110 @@ test('in a browser, the menu fits each window: the title\'s size, the entries as
         assert.ok(Math.abs(m.tops[8] + m.heights[8] - (m.preview[2] + m.preview[3])) <= 1, `${label}: the last entry ends with the preview`);
       }
       await context.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+// Open the placeholder from the menu, its window settled.
+async function openPlaceholder(page, base) {
+  await page.goto(`${base}/index.html?still-backdrop`);
+  await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+  await page.evaluate(() => document.getElementById('menu-entry-hexagon').click());
+  await page.waitForFunction(() => globalThis.__ms.state.mode === 'coming-soon');
+}
+
+test('in a browser, the placeholder as J-Other draws it: its window 4 px above centre, the lock badge over the title, both Backs after the arrow, full-bleed on a phone with the head\'s Back reading Back', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    // J-Other-xl, -l, -m, -p: the window's top left.
+    const SIZES = [
+      { width: 1920, height: 1080, top: 256, left: 510 },
+      { width: 1366, height: 768, top: 120, left: 273 },
+      { width: 1024, height: 768, top: 120, left: 132 },
+      { width: 390, height: 844, top: 0, left: 0, phone: true },
+    ];
+    for (const { width, height, top, left, phone } of SIZES) {
+      const label = `${width}×${height}`;
+      const context = await browser.newContext({ viewport: { width, height }, ...(phone ? { hasTouch: true, isMobile: true } : {}) });
+      try {
+        const page = await context.newPage();
+        await openPlaceholder(page, base);
+        await page.waitForFunction(() => document.getElementById('coming-soon-frame').getAnimations().every((a) => a.playState !== 'running'), null, { timeout: patience(2000) });
+        const m = await page.evaluate(() => {
+          const $ = (id) => document.getElementById(id);
+          const rect = (el) => el.getBoundingClientRect();
+          const badge = $('coming-soon-badge');
+          const b = getComputedStyle(badge);
+          const shown = (el) => getComputedStyle(el).display !== 'none';
+          const lead = (id) => $(id).firstElementChild?.matches('svg.ui-icon[data-icon="arrow-left"]') ?? false;
+          const menu = $('coming-soon-menu');
+          return {
+            frame: [Math.round(rect($('coming-soon-frame')).top), Math.round(rect($('coming-soon-frame')).left)],
+            badge: [rect(badge).width, rect(badge).height, b.borderRadius, b.backgroundColor, b.boxShadow],
+            glyph: rect(badge.querySelector('svg')).width,
+            above: rect(badge).bottom <= rect($('coming-soon-heading')).top,
+            gap: getComputedStyle($('coming-soon-panel')).rowGap,
+            lead: [lead('coming-soon-menu'), lead('coming-soon-back')],
+            menu: { wide: shown(menu.querySelector('[data-label="wide"]')), phone: shown(menu.querySelector('[data-label="phone"]')), name: menu.getAttribute('aria-label') },
+          };
+        });
+        assert.deepEqual(m.frame, [top, left], `${label}: the window's top left`);
+        assert.deepEqual(m.badge.slice(0, 4), [120, 120, '30px', 'rgb(236, 229, 216)'], `${label}: the badge 120 px square, radius 30, the locked fill`);
+        assert.match(m.badge[4], /rgb\(216, 205, 185\) 0px 8px 0px/, `${label}: its locked edge's 8 px drop`);
+        assert.equal(m.glyph, 56, `${label}: the 56 px lock`);
+        assert.ok(m.above, `${label}: the badge above Coming soon`);
+        assert.equal(m.gap, '16px', `${label}: 16 px apart`);
+        assert.deepEqual(m.lead, [true, true], `${label}: Main menu and Back each start with the arrow`);
+        assert.deepEqual(m.menu, { wide: !phone, phone: !!phone, name: 'Back to Main menu' }, `${label}: the head's Back reads ${phone ? 'Back' : 'Main menu'}`);
+      } finally {
+        await context.close();
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+test('[slow] in a browser, the placeholder\'s window pops in and its layer fades out over the slow duration, kept on screen until it has; under reduced motion it goes at once', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    for (const reducedMotion of ['no-preference', 'reduce']) {
+      const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, reducedMotion });
+      try {
+        const page = await context.newPage();
+        await openPlaceholder(page, base);
+        const pop = await page.evaluate(() => document.getElementById('coming-soon-frame').getAnimations()
+          .filter((a) => a.animationName === 'joyful-tiles-pop').map((a) => a.effect.getTiming().duration));
+        const leaving = await page.evaluate(() => {
+          const layer = document.getElementById('coming-soon');
+          document.getElementById('coming-soon-back').click();
+          return {
+            hidden: layer.classList.contains('hidden'),
+            display: getComputedStyle(layer).display,
+            fades: layer.getAnimations().filter((a) => a.transitionProperty === 'opacity').map((a) => a.effect.getTiming().duration),
+            clicks: getComputedStyle(layer).pointerEvents,
+          };
+        });
+        assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+        if (reducedMotion === 'reduce') {
+          assert.deepEqual(pop, [], 'no pop under reduced motion');
+          assert.equal(leaving.display, 'none', 'the layer goes at once');
+          continue;
+        }
+        assert.deepEqual(pop, [260], 'the window pops in over --duration-slow');
+        assert.ok(leaving.hidden && leaving.display !== 'none', 'the layer leaving stays shown while it fades');
+        assert.deepEqual(leaving.fades, [260], 'its fade over --duration-slow');
+        assert.equal(leaving.clicks, 'none', 'clicks go through to the menu meanwhile');
+        await page.waitForFunction(() => getComputedStyle(document.getElementById('coming-soon')).display === 'none', null, { timeout: patience(2000) });
+      } finally {
+        await context.close();
+      }
     }
   } finally {
     await browser.close();

@@ -1281,7 +1281,7 @@ Feature: shared-screen-layout
 
 ## 241. Other surfaces: placeholder, fatal card and toasts
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/components.css, css/style.css, themes/joyful-tiles/theme.css, .claude/context/app-shell-ui.md
 Preconditions: 223

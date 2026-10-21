@@ -1156,12 +1156,12 @@ test('each Back that Esc triggers holds its back key hint, and no "Esc: Back" te
   assert.doesNotMatch(read('css/style.css'), /data-esc-hint|\.esc-row/);
   assert.doesNotMatch(THEME_RAW, /data-esc-hint|\.esc-row/);
   assert.match(html, /id="p-menu"[^>]*>Main menu<\/button>/, 'none in the pause card\'s Main menu, where Esc resumes');
-  for (const id of ['coming-soon-menu', 'r-menu', 'settings-back']) {
+  for (const id of ['r-menu', 'settings-back']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the Back holds its key hint (#${id})`);
   }
-  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'records-back']) {
+  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'records-back', 'coming-soon-menu']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`),
-      `the board choices', Daily's and Records' Back holds its key hint, reading Back on a phone (#${id})`);
+      `the board choices', Daily's, Records' and the placeholder's Back holds its key hint, reading Back on a phone (#${id})`);
   }
   assert.match(read('css/style.css'), /#records-back:not\(\[data-to-menu\]\) \[data-label="wide"\]/, 'Records\' Back reads Back unless it returns to the menu');
   for (const id of ['coming-soon-back', 'rp-back', 'replay-message-back', 'ready-back']) {
@@ -2898,7 +2898,13 @@ test('the toast, the fatal card, the no-JavaScript notice and the 404 page are c
   assert.match(FATAL, /^<template id="fatal-card"><div class="fatal ui-backdrop">/);
   messageCard(FATAL, 'fatal-title', 'Cannot start Minesweeper 3D');
   assert.match(FATAL, /<p class="ui-text">The game files failed to load\. Check your connection and reload the page\.<\/p>/);
-  assert.match(FATAL, /<div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--primary" onclick="location\.reload\(\)" autofocus><svg\b[^>]*aria-hidden="true"[\s\S]*?<\/svg>Reload<\/button><\/div>/);
+  assert.match(FATAL, /<div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--primary" onclick="location\.reload\(\)"><svg\b[^>]*aria-hidden="true"[\s\S]*?<\/svg>Reload<\/button><\/div>/);
+  // Reload takes focus when the card appears: autofocus does nothing on a clone appended after load.
+  assert.doesNotMatch(FATAL, /autofocus/);
+  assert.match(INDEX, /<script type="module" src="js\/main\.js" onerror="document\.body\.append\(document\.getElementById\('fatal-card'\)\.content\.cloneNode\(true\)\); document\.querySelector\('\.fatal \.ui-button'\)\.focus\(\)"><\/script>/,
+    'the module failing to load shows the card and focuses Reload');
+  assert.match(read('js/main.js'), /function showFatal\(\) \{\n  document\.body\.append\(document\.getElementById\('fatal-card'\)\.content\.cloneNode\(true\)\);\n  document\.querySelector\('\.fatal \.ui-button'\)\.focus\(\);\n\}/,
+    'so does the default theme failing');
   // The no-JavaScript notice: the theme stylesheet it needs, linked where only a page without JavaScript reads it.
   assert.match(NOSCRIPT, /^<noscript><link rel="stylesheet" href="themes\/joyful-tiles\/theme\.css"><div class="noscript ui-backdrop">/);
   messageCard(NOSCRIPT, 'noscript-title', 'Minesweeper 3D needs JavaScript.');
@@ -2977,7 +2983,27 @@ test('the toast and the message card\'s badge are catalogued, structured in the 
   assert.match(place[1], /z-index: var\(--z-fatal\);/);
   assert.match(place[1], /padding: 12px;/);
   assert.match(STYLE, /:is\(\.fatal, \.noscript, \.not-found\) > \.ui-card \{ width: min\(560px, 100%\); \}/);
-  assert.match(STYLE, /\.toast \{[^}]*width: max-content; max-width: min\(640px, calc\(100vw - 32px\)\);/, 'the toast wraps inside a phone');
+  assert.match(STYLE, /\.toast \{[^}]*width: max-content; max-width: min\(640px, calc\(100vw - 32px\)\);/, 'the toast at most 640 px, wrapping inside a phone');
+  assert.match(STYLE, /\.toast \{\s*position: fixed; left: 50%; bottom: 28px;/, 'centred 28 px above the page\'s bottom, under a window\'s foot');
+});
+
+// Every card animates in and out over --duration-slow (J-Tokens' Motion table), respecting reduced motion.
+const CARD_LAYERS = ':is(#ready, #ctx-lost, #learn-end, #coming-soon)';
+test('every card animates in and out over the slow duration: the cards over the scene, the placeholder\'s window, the fatal card and the confirmations', () => {
+  const T = ':root\\[data-theme="joyful-tiles"\\] ';
+  const esc = (x) => x.replace(/[()[\].#|]/g, (c) => `\\${c}`);
+  assert.match(THEME_CSS, /@keyframes joyful-tiles-pop \{ from \{ opacity: 0; transform: translateY\(8px\) scale\(0\.985\); \} to \{ opacity: 1; transform: none; \} \}/);
+  // In: each card pops in as it shows.
+  assert.match(THEME_CSS, new RegExp(`${T}${esc(CARD_LAYERS.replace(')', ', .fatal)'))} > :is\\(\\.ui-card, \\.ui-frame\\),\\s*${T}\\.ui-confirm \\{ animation: joyful-tiles-pop var\\(--duration-slow\\) var\\(--easing-out\\); \\}`),
+    'the ready, context-lost and Learn 3D end cards, the placeholder\'s window, the fatal card and the confirm boxes pop in');
+  // Out: the layer fades with its card sinking, kept on screen until it has, and lets clicks through meanwhile.
+  assert.match(THEME_CSS, new RegExp(`${T}${esc(CARD_LAYERS.replace(')', ', .ui-confirm)'))} \\{\\s*transition: opacity var\\(--duration-slow\\) var\\(--easing-out\\), display var\\(--duration-slow\\) allow-discrete;\\s*\\}`),
+    'a layer or a confirm box leaving stays shown over the slow duration while it fades');
+  assert.match(THEME_CSS, new RegExp(`${T}${esc(CARD_LAYERS)} > :is\\(\\.ui-card, \\.ui-frame\\) \\{ transition: transform var\\(--duration-slow\\) var\\(--easing-out\\); \\}`));
+  assert.match(THEME_CSS, new RegExp(`${T}${esc(CARD_LAYERS.replace(')', ', .ui-confirm)'))}\\.hidden \\{ opacity: 0; pointer-events: none; \\}`));
+  assert.match(THEME_CSS, new RegExp(`${T}${esc(CARD_LAYERS)}\\.hidden > :is\\(\\.ui-card, \\.ui-frame\\) \\{ transform: translateY\\(8px\\) scale\\(0\\.985\\); \\}`));
+  // Reduced motion: no animation and no transition, the display switch among them.
+  assert.match(STYLE, /@media \(prefers-reduced-motion: reduce\) \{\s*\*, \*::before, \*::after \{ animation: none !important; transition: none !important; \}/);
 });
 
 test('in a browser, the 404 page, the no-JavaScript notice and the fatal card show on the backdrop in Joyful tiles at every window size, with its fonts, no remote file, and the contrast contract met', async (t) => {
@@ -3059,11 +3085,14 @@ test('in a browser, the 404 page, the no-JavaScript notice and the fatal card sh
         await page.route('**/js/main.js', (r) => (blocked ? r.abort() : r.continue()));
         await page.goto(`${base}/index.html`);
         await page.waitForSelector('.fatal .ui-card');
+        // Measured once the card has popped in.
+        await page.waitForFunction(() => document.querySelector('.fatal > .ui-card').getAnimations().every((a) => a.playState !== 'running'), null, { timeout: patience(2000) });
         const got = await look(page, '.fatal > .ui-card');
         assert.ok(got.dots && got.surface === 'rgb(255, 255, 255)', `fatal-${size}: on the backdrop`);
         assert.ok(got.fits, `fatal-${size}: fits`);
         assert.equal(got.width, width);
         assert.equal(await page.textContent('.fatal .ui-button'), 'Reload');
+        assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.fatal .ui-button')), true, `fatal-${size}: Reload is focused`);
         await contrast(page, `fatal-${size}`);
         blocked = false;
         await Promise.all([page.waitForEvent('load'), page.click('.fatal .ui-button')]);
@@ -3943,7 +3972,7 @@ test('the message card: ink text, the canvas\'s type, and an even 14 px gap betw
   // The replay failure card: its title, in a row with the spinner, takes the message card's type.
   assert.match(bodyOf(rules(STYLE), '#replay-message > .ui-row > .ui-card__title'), /margin: 0;\s*font-size: 28px;\s*line-height: 1\.1;/);
   assert.match(INDEX, /<p id="coming-soon-text" class="ui-text">/);
-  assert.match(bodyOf(rules(STYLE), '#coming-soon-panel'), /gap: 14px;/);
+  assert.match(bodyOf(rules(STYLE), '#coming-soon-panel'), /gap: 16px;/, 'the placeholder\'s column 16 px apart, its lock badge leading it');
   // The context-lost card: 480 px, Click to reload with the refresh icon, Main menu with no Esc key hint.
   assert.match(bodyOf(rules(STYLE), '#ctx-lost > .ui-card'), /width: min\(480px, 100%\);/);
   assert.match(INDEX, /<button type="button" id="ctx-lost-btn" class="ui-button ui-button--primary" data-icon="refresh">Click to reload<\/button>/);

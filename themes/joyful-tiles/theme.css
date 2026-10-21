@@ -1024,6 +1024,12 @@
 :root[data-theme="joyful-tiles"] #daily-preview { border-radius: 20px; box-shadow: none; }
 :root[data-theme="joyful-tiles"] #daily-preview .ui-scene-panel__badge { border-radius: 24px; box-shadow: inset 0 4px 0 var(--highlight), 0 8px 0 var(--e); }
 :root[data-theme="joyful-tiles"] #daily-preview .ui-scene-panel__name { color: var(--color-scene-ink); }
+/* the placeholder's lock badge: the locked fill on its edge's drop */
+:root[data-theme="joyful-tiles"] #coming-soon-badge {
+  border-radius: 30px;
+  background: var(--color-locked);
+  box-shadow: 0 8px 0 var(--color-locked-edge);
+}
 
 /* ---------- divider ---------- */
 :root[data-theme="joyful-tiles"] .ui-divider { background: var(--color-line); }
@@ -1273,10 +1279,20 @@
   box-shadow: inset 0 0 0 2px var(--color-border), 0 4px 0 var(--color-edge);
 }
 
-/* the cards over the scene — the 3D ready card, the context-lost card and the Learn 3D end card — pop in;
-   the ready card's controls list sits closer */
+/* every card animates in and out over the slow duration: the cards over the scene (the 3D ready card, the
+   context-lost card, the Learn 3D end card), the placeholder's window, the fatal card and the confirm boxes
+   pop in; leaving, a layer fades with its card sinking, and a confirm box fades, each kept on screen until
+   it has, letting clicks through meanwhile */
 @keyframes joyful-tiles-pop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
-:root[data-theme="joyful-tiles"] :is(#ready, #ctx-lost, #learn-end) > .ui-card { animation: joyful-tiles-pop var(--duration-slow) var(--easing-out); }
+:root[data-theme="joyful-tiles"] :is(#ready, #ctx-lost, #learn-end, #coming-soon, .fatal) > :is(.ui-card, .ui-frame),
+:root[data-theme="joyful-tiles"] .ui-confirm { animation: joyful-tiles-pop var(--duration-slow) var(--easing-out); }
+:root[data-theme="joyful-tiles"] :is(#ready, #ctx-lost, #learn-end, #coming-soon, .ui-confirm) {
+  transition: opacity var(--duration-slow) var(--easing-out), display var(--duration-slow) allow-discrete;
+}
+:root[data-theme="joyful-tiles"] :is(#ready, #ctx-lost, #learn-end, #coming-soon) > :is(.ui-card, .ui-frame) { transition: transform var(--duration-slow) var(--easing-out); }
+:root[data-theme="joyful-tiles"] :is(#ready, #ctx-lost, #learn-end, #coming-soon, .ui-confirm).hidden { opacity: 0; pointer-events: none; }
+:root[data-theme="joyful-tiles"] :is(#ready, #ctx-lost, #learn-end, #coming-soon).hidden > :is(.ui-card, .ui-frame) { transform: translateY(8px) scale(0.985); }
+/* the ready card's controls list sits closer */
 :root[data-theme="joyful-tiles"] :is(.ready-pad, .ready-tip) { color: var(--color-ink-muted); }
 :root[data-theme="joyful-tiles"] :is(.ready-board, .ready-pad b) { color: var(--color-ink); }
 :root[data-theme="joyful-tiles"] #ready-keys :is(.ui-controls__key, .ui-controls__action) { padding-block: 5px; }

@@ -270,7 +270,7 @@ test('the default theme failing to load rejects start-up, for the fatal card', a
   assert.ok(main.slice(main.indexOf('function showFatal')).startsWith(`function showFatal() {\n  ${cloneCard};`), 'showFatal clones the fatal card');
   const html = read('../index.html');
   assert.match(html, /<template id="fatal-card"><div class="fatal ui-backdrop">/, 'one fatal card, in the page');
-  assert.ok(html.includes(`onerror="${cloneCard}"`), 'the module graph failing to load shows the same card');
+  assert.ok(html.includes(`onerror="${cloneCard}; `), 'the module graph failing to load shows the same card');
 });
 
 // ---------- the run-time applier ----------

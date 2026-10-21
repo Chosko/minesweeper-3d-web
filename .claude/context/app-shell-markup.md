@@ -50,8 +50,10 @@ bind.
   - Daily `#daily` (the board choices' markup, `#daily-modes` of
     `#daily-entry-<mode>`, `#daily-preview`, `#daily-code`, `#daily-watch`,
     `#daily-play`; [app-shell-daily.md](app-shell-daily.md));
-  - placeholder `#coming-soon` (`#coming-soon-menu` in the head,
-    `#coming-soon-title`, `#coming-soon-back`); Records `#records` (the view
+  - placeholder `#coming-soon` (`#coming-soon-menu` in the head, reading
+    Back on a phone, `#coming-soon-title`, the lock badge
+    `#coming-soon-badge`, `#coming-soon-back`, both Backs with the
+    arrow-left icon); Records `#records` (the view
     and its ids: [records-screen-view.md](records-screen-view.md); the switch
     `#records-mode` in the frame's head and `#records-mode-touch` the
     phone's bar opening the body, the head's switch and the picker each in
@@ -111,11 +113,22 @@ bind.
   - the messages: the toast `#toast` (a `ui-toast`, its text in
     `#toast-text`); the fatal card, the template `#fatal-card` (`.fatal`, a
     `ui-backdrop` holding a `role="alert"` message `ui-card`: its badge,
-    `#fatal-title`, the line, Reload, which reloads the page); the
+    `#fatal-title`, the line, Reload, which reloads the page and which
+    the code appending the card focuses — the module's `onerror` and
+    `showFatal` in `js/main.js`); the
     no-JavaScript notice, the one `<noscript>` (the default theme's
     stylesheet, then `.noscript`, the same card titled `#noscript-title`),
     styled without JavaScript through the root's static `data-theme`;
     `404.html`'s `.not-found` is the same card ([app-shell-themes.md](app-shell-themes.md)).
+  - card motion, the theme's: the cards over the scene, the placeholder's
+    window, the fatal card and the confirm boxes pop in over
+    `--duration-slow`; the cards' layers and the pause card's and
+    Settings' confirm boxes, given `.hidden`, fade out over it, still
+    displayed and letting clicks through until it ends (`display`
+    transitioned `allow-discrete`), while Records' row confirm box, moved
+    back into its markup as it closes, goes at once; none under reduced
+    motion. How a browser check waits for it:
+    [testing-browser.md](testing-browser.md).
   `#c2d` is the Classic 2D game window (its ids:
   [app-shell-ui.md](app-shell-ui.md) § Classic 2D window): `#c2d-board`
   holds the panel `#c2d-panel` behind the canvas, and the hint strip lies

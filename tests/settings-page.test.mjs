@@ -567,6 +567,9 @@ test('"Reset all data…" opens the confirmation with focus on Cancel; Cancel cl
   assert.equal(els.open.hidden, false);
   assert.equal(focused(), 'set-reset', 'focus returns to Reset all data…');
   assert.equal(runs, 0, 'Cancel changes nothing');
+  els.yes.click(); // the closed confirmation, still on screen while it fades out
+  await Promise.resolve();
+  assert.equal(runs, 0, 'a closed confirmation\'s Yes resets nothing');
 });
 
 test('Back (close) closes the open confirmation first and returns focus; with none open it does nothing', () => {
