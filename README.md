@@ -444,19 +444,17 @@ The tests use Node's built-in test runner (no dependencies): unit tests for the 
 other DOM-free modules, and browser tests (each named "…in a browser…") that drive the game in
 Chromium through Playwright and skip themselves when it is not installed. Browser tests tagged
 `[slow]` in their names — the long controller and focus walks and the animation-timing checks — run
-apart. Four runs, from the repo root:
+apart. From the repo root:
 
 ```sh
-.claude/external/run-fast-tests.sh      # every test except the browser ones — seconds
-.claude/external/run-browser-tests.sh   # only the browser tests, less the [slow] ones
-.claude/external/run-full-tests.sh      # the whole suite less the [slow] tests, with a 3-minute limit per test
-.claude/external/run-slow-tests.sh      # only the [slow] tests
+.claude/external/run-fast-tests.sh                 # every test except the browser ones — seconds
+.claude/external/run-affected-tests.sh [path...]   # the tests covering the changed files, browser ones included
+.claude/external/run-full-tests.sh [path...]       # every fast test, then the affected browser tests
 ```
 
-`.claude/external/run-affected-tests.sh [path...]` runs the tests covering the given changed files
-(or, with none, the files `git` reports changed), found through each test file's imports; a change
-to the page shell (`index.html`, `js/main.js`, `css/`) also runs a smoke set of one browser test file
-per screen, its `[slow]` tests skipped. Set `MS_SHOTS=1` to have the component kit's browser tests
+How browser tests run — the shared Chromium, the browser lock, the affected-tests mapping and the
+all-browser runs kept for a milestone's close — is
+[.claude/context/testing.md](.claude/context/testing.md)'s. Set `MS_SHOTS=1` to have the component kit's browser tests
 save their screenshots to a temporary directory. Timing assertions get slack on a loaded machine: `MS_TIME_SLACK` multiplies their
 budgets and wait timeouts (default 2, at least 1). Playwright is found as a local package or as a
 global install beside the Node binary, on Windows and POSIX layouts alike.

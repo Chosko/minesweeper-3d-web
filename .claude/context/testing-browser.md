@@ -67,11 +67,13 @@ Browser environment:
 - Playwright is installed globally (`/opt/node22/lib/node_modules/playwright`,
   browsers in `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`); resolve it via
   `NODE_PATH` or an absolute import. Do not run `playwright install`.
-- 3D needs WebGL 2 without a GPU: Chromium launches with `--use-gl=angle
-  --use-angle=swiftshader --enable-unsafe-swiftshader` (the helper's
-  `SWIFTSHADER_ARGS`). No-WebGL checks add an init script making
-  `getContext('webgl2')` return null to their own page, so they share the
-  file's flagged browser.
+- 3D needs WebGL 2 without a GPU: the run's one Chromium, which the runner
+  launches and every browser test file shares, runs SwiftShader (the
+  helper's `SWIFTSHADER_ARGS`, part of its launch flags in
+  [testing.md](testing.md) § OVERVIEW); a test file passes no launch flags
+  of its own. No-WebGL checks add an init script making
+  `getContext('webgl2')` return null to their own page, so they share that
+  browser.
 - The menu screens' orbiting 3D backdrop redraws every frame and drops
   SwiftShader to about 10 fps, slowing every `requestAnimationFrame` wait,
   screenshot and `browser.close()`. A browser test that loads `index.html`
