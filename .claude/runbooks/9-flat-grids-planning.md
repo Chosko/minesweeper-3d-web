@@ -55,22 +55,27 @@ Context: none
 
 Done: 2026-10-21, commit `b8b3a62` (1 file, +17/-2). The feature documents had a cycle between flat-grid-modes and flat-grid-records-replays; the plan keeps only records-replays → modes, and the modes document's Dependencies prose still names records-replays.
 
-## [ ] 5. Write the tasks of every m2c-flat-grids feature
+## [x] 5. Write the tasks of every m2c-flat-grids feature
 
 Depends on: 4
 
 Context:
 - 2026-10-21 (from step 2): hex-tri-board-art owns the theme board settings for hexagon and triangle tiles and the Joyful tiles values from the canvas board sheets.
+- 2026-10-21 (from step 3): every step-3 amendment was editorial (wording only, no task went STALE), so no amended feature needs tasks.
+- 2026-10-21 (from step 4): plan order in m2c-flat-grids is flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, flat-grid-modes, flat-grid-records-replays, flat-grid-menu-entries; flat-grid-records-replays depends on flat-grid-modes, not the reverse (the modes document's Dependencies prose still lists records-replays).
 
 ```prompt
 For each feature in .claude/PLAN.md under m2c-flat-grids, in plan order, run `/task-add feature=<slug>`. Then, for each feature step 3 amended whose amendment calls for code (not only a wording change), run `/task-add feature=<slug>` for that amendment. The Joyful tiles hex/tri board art from the Claude Design canvas https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC is either a task of the feature that owns the board module's hex/tri shapes or a /theme-implement run after it — leave that choice to /task-add and the feature document, and note in your report which it is.
 ```
+
+Done: 2026-10-21, commits `0adf0e4`, `96c953e`, `e061837`, `e9db0d5`, `5925c75`, `9fd75ae`, `e45b136` (46 files, +1532/-21). Tasks 248–279; the Joyful tiles hex/tri art is task 263, not a /theme-implement run.
 
 ## [ ] 6. Write the implementation runbook for m2c-flat-grids
 
 Depends on: 5
 
 Context:
+- 2026-10-21 (from step 5): the m2c-flat-grids tasks are 248–279 (flat-grid-geometry 248–253, hexagon-grid 254–257, triangle-grid 258–261, hex-tri-board-art 262–266, flat-grid-modes 267–271, flat-grid-records-replays 272–276, flat-grid-menu-entries 277–279). The Joyful tiles hex/tri art lands in task 263, so the runbook needs no /theme-implement step.
 - 2026-10-21 (from step 4): plan order in m2c-flat-grids is flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, flat-grid-modes, flat-grid-records-replays, flat-grid-menu-entries; flat-grid-records-replays depends on flat-grid-modes, not the reverse (the modes document's Dependencies prose still lists records-replays).
 
 ```prompt
