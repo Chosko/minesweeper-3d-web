@@ -301,10 +301,10 @@ Tasks: 188, 189
 
 ## flat-grid-geometry — Flat grid geometry: Classic 2D's board, inputs, sampler and 2D viewer over a grid geometry
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/flat-grid-geometry.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
-Tasks: none
+Tasks: 248, 249, 250, 251, 252, 253
 
 ---
 

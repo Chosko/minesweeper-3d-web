@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 247
+Last task number: 253
 
 ---
 
@@ -1346,5 +1346,65 @@ Target: claude
 Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-themes.md, .claude/context/settings-page.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/theme-system.md
 Preconditions: 243
 Feature: theme-system
+
+---
+
+## 248. Flat grid geometry contract and the square geometry
+
+Status: [MISSING]
+Target: claude
+Files: js/geometry/index.js, js/geometry/square.js, tests/geometry-square.test.mjs
+Preconditions: none
+Feature: flat-grid-geometry
+
+---
+
+## 249. Classic 2D board view on the grid geometry
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/board-view.js, js/classic2d/motion-layer.js, js/classic2d/mode.js, js/shell/menu-preview.js, js/shell/daily.js, js/replay/viewer-2d.js, js/main.js, tests/classic2d-view.test.mjs
+Preconditions: 248
+Feature: flat-grid-geometry
+
+---
+
+## 250. Tile painter and cache through the geometry's outline
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/tile-skin.js, js/classic2d/board-view.js, tests/tile-art.test.mjs, tests/classic2d-view.test.mjs
+Preconditions: 249
+Feature: flat-grid-geometry
+
+---
+
+## 251. Cursor moves and end effect on the grid geometry
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/cursor-input.js, js/classic2d/end-effect.js, js/classic2d/pointer-input.js, js/classic2d/touch-input.js, js/classic2d/mode.js, tests/classic2d-cursor.test.mjs, tests/classic2d-end-effect.test.mjs
+Preconditions: 249
+Feature: flat-grid-geometry
+
+---
+
+## 252. 2D movement sampler and replay viewer in board units
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/sampler-2d.js, js/replay/viewer-2d.js, js/replay/viewer.js, tests/replay-2d.test.mjs, tests/replay-viewer.test.mjs
+Preconditions: 249
+Feature: flat-grid-geometry
+
+---
+
+## 253. Update documentation for feature `flat-grid-geometry`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/classic2d-board-view.md, .claude/context/classic2d-board-motion.md, .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-input.md, .claude/context/classic2d-mode.md, .claude/context/replay-samplers.md, .claude/context/replay-viewers.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-geometry.md
+Preconditions: 248, 249, 250, 251, 252
+Feature: flat-grid-geometry
 
 ---
