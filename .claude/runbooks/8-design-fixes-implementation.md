@@ -286,7 +286,7 @@ Context:
 
 Done: 2026-10-21, commit `3da5a58` (19 files, +282/-111). Decisions: the crosshair is hidden when no cell is targeted (per `in-game-layout.md`; the idle 0.4-opacity crosshair is gone); the off-screen arrow circles the crosshair about 50 px out; the ready overlay's margin is 12 px; the phone-landscape layout applies to any window under 500 px tall held sideways, touch or not.
 
-## [~] 23. Implement task 236 — Learn 3D play layout and end cards
+## [x] 23. Implement task 236 — Learn 3D play layout and end cards
 
 Depends on: 22
 
@@ -296,6 +296,8 @@ Context:
 ```prompt
 /task-implement 236 --review
 ```
+
+Done: 2026-10-21, commit `3a5553b` (14 files, +155/-43). Decisions: Try again takes the canvas's restart icon (play on a win), against the task body; `UI.setTimed` became `UI.setLearn(on)` and `hud-figures--untimed` is gone; on phones Learn 3D keeps the existing phone layouts, which the canvas does not draw. The loss title stays "That cube was a mine." (the canvas says "That was a mine").
 
 ## [~] 24. Implement task 237 — Results screen to the canvas
 
