@@ -39,7 +39,7 @@ Context:
 /task-implement 250 --review
 ```
 
-## [~] 4. Implement task 251 — Cursor moves and end effect on the grid geometry
+## [x] 4. Implement task 251 — Cursor moves and end effect on the grid geometry
 
 Depends on: 2
 
@@ -49,6 +49,8 @@ Context:
 ```prompt
 /task-implement 251 --review
 ```
+
+Done: 2026-10-21, commit `9573252` (12 files, +299/-71). The pointer and touch inputs held no column or row arithmetic to remove, contrary to the task body; the board view still calls the confetti with no gap, so on a gapped theme the burst sits slightly off the winning tile's centre.
 
 ## [x] 5. Implement task 252 — 2D movement sampler and replay viewer in board units
 
