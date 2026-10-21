@@ -197,12 +197,13 @@ Depends on: 9, 10, 14, 15
 
 Context:
 - 2026-10-20 (from step 9): task 222 removed the `ui-code__label` styling, so the inline "Board code" label inside this screen's chip in `index.html` renders unstyled until this task moves it out as a section label.
+- 2026-10-21 (from step 17): task 230 resized the shared option rule (12px 18px padding, 64px min height, 14px gap), so Daily's mode options already take the new sizes; Daily keeps its own chip markup.
 
 ```prompt
 /task-implement 229 --review
 ```
 
-## [~] 17. Implement task 230 — Board choice screens to the canvas
+## [x] 17. Implement task 230 — Board choice screens to the canvas
 
 Depends on: 6, 8, 9, 10
 
@@ -211,6 +212,8 @@ Context: none
 ```prompt
 /task-implement 230 --review
 ```
+
+Done: 2026-10-21, commit `dfb4809` (16 files, +245/-143). Premise wrong: K11's Last played chip position contradicts the canvas; it follows the canvas (right after the name, a new `ui-option__line` kit part). The option sizes live in the shared option rule, so Daily's mode options take them too; the board-choice switch now sits at the right edge, changing pad-walk order.
 
 ## [~] 18. Implement task 231 — Classic 2D window layout and HUD density
 
