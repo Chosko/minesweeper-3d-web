@@ -243,7 +243,7 @@ Context:
 /task-implement 232 --review
 ```
 
-## [~] 20. Implement task 233 — Controls and bindings lists as one ruled two-column part
+## [x] 20. Implement task 233 — Controls and bindings lists as one ruled two-column part
 
 Depends on: 10
 
@@ -254,11 +254,14 @@ Context:
 /task-implement 233 --review
 ```
 
-## [ ] 21. Implement task 234 — Pause card to the canvas
+Done: 2026-10-21, commit `aef0c93` (27 files, +525/-354). Decisions: the xl fit with 3D bindings shown is built and tested here (`tests/settings-page.test.mjs`), but task 233's body does not carry the clause yet; `js/settings/bindings.js` now holds three lists — full, help (`helpListHtml`, pause card and H panel) and ready card (`readyListHtml`, formerly hard-coded in `index.html`); the list is a new `ui-controls` kit part. Following the canvas drops some working keys from every surface (3D Enter / ' and Home / R, 2D wheel-scroll and H / M).
+
+## [~] 21. Implement task 234 — Pause card to the canvas
 
 Depends on: 8, 20
 
-Context: none
+Context:
+- 2026-10-21 (from step 20): task 233 gives the pause card its own short help list, `helpRows`/`helpListHtml` in `js/settings/bindings.js`, rendered as the new `ui-controls` kit part.
 
 ```prompt
 /task-implement 234 --review
@@ -269,6 +272,7 @@ Context: none
 Depends on: 7, 10, 20
 
 Context:
+- 2026-10-21 (from step 20): task 233 moved the ready card's controls list out of `index.html` into `readyRows`/`readyListHtml` in `js/settings/bindings.js`, rendered as the new `ui-controls` kit part.
 - 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`.
 - 2026-10-20 (from step 10): `js/main.js` already calls `applyIcons(document.body)` (task 221), so the step-7 note's "must call it" is satisfied — do not add a second call.
 
@@ -331,6 +335,7 @@ Context:
   Recommendation: a. The overflow comes only from the list's wording, and that wording is task 233's.
   (The work is on pushed branch `park/task-240`, commit 616236f; its unpark may conflict with task 223 on index.html, css/style.css, css/components.css.)
 - 2026-10-21 unparked with answer: Q1 a
+- 2026-10-21 (from step 20): task 233 landed the short rows and a browser test that the Settings page fits at 1920 × 1080 with the 3D bindings shown; task 233's body does not yet carry that clause, so the /pipeline-revise amendment of both tasks is still to make.
 
 ```prompt
 /task-implement 240 --review
