@@ -56,8 +56,7 @@ Non-goals:
 - The Hexagon mode, its screens and its records wiring — `flat-grid-modes`,
   `flat-grid-records-replays`.
 - Hexagon tile art — `hex-tri-board-art`.
-- A Hexagon daily board — not scheduled. The Daily screen keeps Hexagon as
-  *Coming soon*.
+- The Hexagon daily board and its Daily row — `flat-grid-menu-entries`.
 - Hexagon leaderboards, achievements and the demo's Hexagon locks — deferred
   to `m6-launch`.
 
@@ -89,12 +88,12 @@ graph they supply; seeded generation in a Web Worker (see
 
 - **Graph and geometry** — derived from width and height, never stored.
 - **Board identity** — mode `hexagon`, grid `hex`, width, height, mines,
-  no-guess, plus the daily flag the identity allows (never set for hexagon
-  in this milestone). It indexes records and replays like any 2D identity.
+  no-guess, plus the daily flag on the Hexagon Daily board. It indexes records and replays like any 2D identity.
 - **Board-code token** — a hexagon board is spelled with a leading `H`
   before the 2D token: `HB`, `HI`, `HE`, or `H<w>X<h>M<mines>`, then `N`
-  when no-guess. No current code starts with `H`, so existing codes keep
-  their meaning and the grammar only gains a shape.
+  when no-guess, so the Hexagon daily code reads
+  `HEN-<YYYYMMDD>-<check>`. No current code starts with `H`, so existing
+  codes keep their meaning and the grammar only gains a shape.
 
 ## Interfaces and contracts
 

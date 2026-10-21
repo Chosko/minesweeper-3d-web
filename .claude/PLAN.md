@@ -107,7 +107,7 @@ Features: none
 - steam-achievements: depends on steam-desktop-host, game-summary, 3d-game-records, personal-records, game-shell
 - leaderboards-menu-entry: depends on records-screen, game-shell, leaderboard-screen, steam-desktop-host, shared-screen-layout, theme-system
 - results-steam-rank: depends on results-screen, steam-leaderboards, steam-desktop-host, 3d-results-records-screens, leaderboard-screen, shared-screen-layout, theme-system
-- input-rebinding: depends on settings, classic-2d-square-play, 3d-play-flow, game-shell, screen-components, shared-screen-layout, in-game-layout, theme-system
+- input-rebinding: depends on settings, classic-2d-square-play, flat-grid-modes, 3d-play-flow, game-shell, screen-components, shared-screen-layout, in-game-layout, theme-system
 - theme-system: depends on screen-components, settings, platform-storage
 - themed-board-art-and-motion: depends on theme-system, classic-2d-square-play, 3d-board-graph, 3d-play-flow, replay-playback
 - shared-screen-layout: depends on theme-system, screen-components, game-shell, settings, results-screen, records-screen, replay-playback, 3d-results-records-screens, 3d-play-flow, classic-2d-square-play, personal-records, 3d-game-records
@@ -119,4 +119,4 @@ Features: none
 - hex-tri-board-art: depends on themed-board-art-and-motion, theme-system, flat-grid-geometry, hexagon-grid, triangle-grid, theme-implement-skill
 - flat-grid-modes: depends on classic-2d-square-play, flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, game-shell, shared-screen-layout, in-game-layout, results-screen, game-summary
 - flat-grid-records-replays: depends on game-summary, personal-records, records-screen, 3d-results-records-screens, replay-recording, replay-playback, replay-library, flat-grid-geometry, hexagon-grid, triangle-grid, flat-grid-modes
-- flat-grid-menu-entries: depends on game-shell, shared-screen-layout, flat-grid-modes, flat-grid-geometry, hexagon-grid, triangle-grid
+- flat-grid-menu-entries: depends on game-shell, shared-screen-layout, flat-grid-modes, flat-grid-geometry, hexagon-grid, triangle-grid, flat-grid-records-replays, game-summary, board-generation

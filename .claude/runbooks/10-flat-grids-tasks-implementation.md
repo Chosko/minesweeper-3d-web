@@ -1,7 +1,7 @@
 # Runbook: flat-grids-tasks-implementation
 
 Created: 2026-10-21 · Source: /runbook-create interview (runbook flat-grids-planning step 6) · Model: opus
-Last step number: 32
+Last step number: 33
 
 ## [ ] 1. Implement task 248 — Flat grid geometry contract and the square geometry
 
@@ -311,6 +311,16 @@ Context: none
 
 ```prompt
 /task-implement 278 --review
+```
+
+## [ ] 33. Implement task 280 — Hexagon and Triangle daily boards on the Daily screen
+
+Depends on: 23, 26, 30, 31
+
+Context: none
+
+```prompt
+/task-implement 280 --review
 ```
 
 ## [ ] 32. Implement task 279 — Update documentation for feature `flat-grid-menu-entries`

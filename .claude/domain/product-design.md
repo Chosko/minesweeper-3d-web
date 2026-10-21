@@ -318,9 +318,10 @@ system that plays it.
 
 ### Daily board
 
-One 2D board and one 3D board per day, the same for every player, worked out
-from the date so no server is needed. The Daily screen lists every mode in
-menu order; a mode not built yet shows *Coming soon* and cannot be played.
+One board per day for each playable mode, the same for every player, worked
+out from the date so no server is needed. The Daily screen lists every mode
+in menu order; a mode with no daily board yet shows *Coming soon* and cannot
+be played.
 Each day's board has its own Steam leaderboard, ranked by 3BV/s. Gives
 enthusiasts a reason to return every day.
 

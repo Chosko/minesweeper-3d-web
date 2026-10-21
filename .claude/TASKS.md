@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 279
+Last task number: 280
 
 ---
 
@@ -1659,12 +1659,22 @@ Feature: flat-grid-menu-entries
 
 ---
 
+## 280. Hexagon and Triangle daily boards on the Daily screen
+
+Status: [MISSING]
+Target: claude
+Files: js/records/board-code.js, js/shell/daily.js, js/shell/challenge.js, js/main.js, js/records/screen.js, tests/records-board-code.test.mjs, tests/shell-daily.test.mjs, tests/shell-challenge.test.mjs, tests/records-screen.test.mjs
+Preconditions: 278, 270, 273, 277
+Feature: flat-grid-menu-entries
+
+---
+
 ## 279. Update documentation for feature `flat-grid-menu-entries`
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/app-shell-menu.md, .claude/context/app-shell-daily.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-menu-entries.md
-Preconditions: 277, 278
+Files: .claude/context/app-shell-menu.md, .claude/context/app-shell-daily.md, .claude/context/records-board-code.md, .claude/context/records-screen.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-menu-entries.md
+Preconditions: 277, 278, 280
 Feature: flat-grid-menu-entries
 
 ---

@@ -51,8 +51,7 @@ Non-goals:
 - The Triangle mode, its screens and its records wiring — `flat-grid-modes`,
   `flat-grid-records-replays`.
 - Triangle tile art and the numbers 9–12 — `hex-tri-board-art`.
-- A Triangle daily board — not scheduled. The Daily screen keeps Triangle as
-  *Coming soon*.
+- The Triangle daily board and its Daily row — `flat-grid-menu-entries`.
 - Triangle leaderboards, achievements and the demo's Triangle locks —
   deferred to `m6-launch`.
 
@@ -83,10 +82,11 @@ Built within the recorded technical direction, as `hexagon-grid` is (see
 
 - **Graph and geometry** — derived from width and height, never stored.
 - **Board identity** — mode `triangle`, grid `tri`, width, height, mines,
-  no-guess.
+  no-guess, plus the daily flag on the Triangle Daily board.
 - **Board-code token** — a triangle board is spelled with a leading `T`
   before the 2D token: `TB`, `TI`, `TE`, or `T<w>X<h>M<mines>`, then `N`
-  when no-guess. No current code starts with `T`.
+  when no-guess, so the Triangle daily code reads
+  `TEN-<YYYYMMDD>-<check>`. No current code starts with `T`.
 
 ## Interfaces and contracts
 

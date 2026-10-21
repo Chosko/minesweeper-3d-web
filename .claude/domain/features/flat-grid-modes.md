@@ -53,7 +53,8 @@ In scope (m2c-flat-grids), for each of Hexagon and Triangle:
 - **Inputs**: the mouse with its button swap, the keyboard and controller
   cursor (moves from the grid's geometry), touch with the Tap choice,
   long-press flag, chord on a number, pan and pinch zoom. The bindings are
-  Classic 2D's.
+  Classic 2D's: the three flat modes share one set, the one
+  `input-rebinding` makes rebindable.
 - **Help and hints**: the controls list on the pause card, the H panel and
   the HUD strip follow the active device. The first-use hint strip and the
   one-time scroll hint share Classic 2D's first-use record, because the
@@ -68,8 +69,9 @@ In scope (m2c-flat-grids), for each of Hexagon and Triangle:
 
 Non-goals:
 
-- Daily boards for Hexagon and Triangle — not scheduled. The Daily screen
-  keeps both as *Coming soon*.
+- The Hexagon and Triangle daily boards and their Daily rows —
+  `flat-grid-menu-entries`. A daily starts through the mode's coded start,
+  as a challenge does.
 - Leaderboards, achievements and the demo's Hexagon and Triangle offers and
   locks — deferred to `m6-launch`.
 - Campaign levels on these grids — no milestone's slice gives either mode
@@ -149,6 +151,4 @@ Classic 2D mode and its shell wiring
 
 ## Open questions
 
-- When `input-rebinding` lands, its Classic 2D bindings could apply to all
-  three flat modes or be kept per mode. Its document should settle which
-  before its tasks are written.
+None.

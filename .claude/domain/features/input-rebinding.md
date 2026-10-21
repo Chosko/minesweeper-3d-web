@@ -1,7 +1,8 @@
 # Input rebinding
 
-Rebinding the keys, mouse buttons and controller buttons that play Classic
-2D and 3D, on the Settings page: each mode's actions listed per input
+Rebinding the keys, mouse buttons and controller buttons that play the flat
+modes — Classic 2D, Hexagon and Triangle, which share one set of bindings —
+and 3D, on the Settings page: each catalogue's actions listed per input
 device, a new input captured for any of them, clashes resolved on the spot,
 and every mode and every help surface — the key hints, the in-game
 controls reminder and the bindings list among them — reading the one
@@ -23,19 +24,23 @@ it instead of from fixed keys and buttons.
 
 In scope (m3-on-steam):
 
-- An action catalogue per mode — Classic 2D and 3D — naming every
-  rebindable action and, per input device, its default inputs.
+- Two action catalogues — one for the flat modes, which Classic 2D,
+  Hexagon and Triangle share, and one for 3D — naming every rebindable
+  action and, per input device, its default inputs. A rebinding made in a
+  flat mode applies to all three.
 - Rebinding keyboard keys, mouse buttons and controller buttons for those
   actions, with up to two inputs per action per device.
-- Clash handling inside one mode and one device, reserved inputs that can
-  never be bound, and reset to defaults per mode and device.
+- Clash handling inside one catalogue and one device, reserved inputs that
+  can never be bound, and reset to defaults per catalogue and device.
 - The rebinding controls on the framed Settings page of
   `shared-screen-layout`, in the place of its read-only bindings list,
   operable by mouse, keyboard and controller.
 - Saving the player's bindings in the settings document, so they sync
   through Steam Cloud with the other settings in the desktop build.
-- Classic 2D's pointer and cursor input and the 3D mode's keyboard, mouse
-  and controller input reading their actions through the current bindings.
+- The flat modes' pointer and cursor input — Classic 2D's input layer,
+  which Hexagon and Triangle play on (`flat-grid-modes`) — and the 3D mode's
+  keyboard, mouse and controller input reading their actions through the
+  current bindings.
 - Every help surface showing the current bindings: the key hints of every
   screen in the shared layout, the in-game controls reminder
   (`in-game-layout`), the 3D HUD key strip and first-use hints, and the
@@ -45,7 +50,7 @@ Non-goals:
 
 - Rebinding axes: mouse movement, the mouse wheel (3D spacing), the
   controller's sticks. They keep their fixed roles; the d-pad's cursor
-  moves in Classic 2D are buttons and are rebindable.
+  moves in the flat modes are buttons and are rebindable.
 - Rebinding the shell's inputs and each mode's shortcuts outside its
   catalogue: menu navigation, Back, Pause, restart, play again, help,
   sound, fullscreen and the 3D spacing buttons keep their inputs, which are
@@ -82,16 +87,18 @@ the game shell, settings stored behind the platform layer (see
 [classic2d-input.md](../../context/classic2d-input.md),
 [app-shell.md](../../context/app-shell.md)).
 
-- **Action catalogue.** One declaration per mode of every rebindable
+- **Action catalogue.** One declaration per catalogue of every rebindable
   action — its identifier, its label, whether it fires on press, on release
   or while held, and its default inputs per device (keyboard, mouse,
   controller). The 3D catalogue holds the six move directions, the three
-  held view modes, reveal and flag; Classic 2D's holds reveal, flag, chord
-  and the four cursor moves. It replaces the fixed bindings source every
+  held view modes, reveal and flag; the flat modes' holds reveal, flag,
+  chord and the four cursor moves, and a flat mode resolves its inputs
+  through it whichever grid it plays. It replaces the fixed bindings source every
   help surface reads.
 - **Bindings resolver.** Joins the catalogue's defaults with the player's
   overrides into the current bindings, and answers both directions: which
-  action, if any, an input produces in a mode, and which inputs an action
+  action, if any, an input produces in a mode (through that mode's
+  catalogue), and which inputs an action
   has, for display. It validates overrides and enforces the clash and
   reserved-input rules. It is DOM-free.
 - **Input translation in each mode.** Each mode's input layer asks the
@@ -104,14 +111,14 @@ the game shell, settings stored behind the platform layer (see
   reads them, so a controller and a keyboard still combine as they do now.
 - **Rebinding page.** On the framed Settings page of
   `shared-screen-layout`, the Controls section's bindings list becomes one
-  panel per mode under its section label, with a tab per device, composed
+  panel per catalogue — the flat modes, 3D — under its section label, with a tab per device, composed
   from catalogued kit components only, as
   [shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
   **Kit additions**, requires. Each action is a list row showing its inputs
   as slots, each labelled as a key hint; choosing a slot starts capture, the next input of
   that device fills it, and the shell's Back input cancels. A clash, a
   reserved input or a last binding removed is reported in place. Each
-  panel has Reset to defaults for its mode and device.
+  panel has Reset to defaults for its catalogue and device.
 - **Help and glyphs.** Every help surface — the shared layout's key hints,
   `in-game-layout`'s controls reminder, the 3D HUD key strip and first-use
   hints, and the page — draws its labels from the current bindings and
@@ -122,8 +129,8 @@ the game shell, settings stored behind the platform layer (see
 
 ## Data and state
 
-- **Overrides** — one setting in the settings document, keyed by mode,
-  device and action, holding the input list for every action the player
+- **Overrides** — one setting in the settings document, keyed by
+  catalogue, device and action, holding the input list for every action the player
   changed; actions left at their default are absent, so a later change of
   defaults reaches every player who never touched that action. Saved,
   loaded and synced with the rest of the settings document through
@@ -140,23 +147,24 @@ the game shell, settings stored behind the platform layer (see
 
 - **Resolve** — `actionFor(mode, device, input)` returns the action or
   none; `inputsFor(mode, device, action)` returns its current inputs in
-  slot order.
+  slot order. Both read the mode's catalogue, so Classic 2D, Hexagon and
+  Triangle give the same answers.
 - **Bind** — `bind(mode, device, action, slot, input)` writes through the
   settings store. An input already bound to another action of the same
-  mode and device moves to the action being bound, and that other action
+  catalogue and device moves to the action being bound, and that other action
   takes the replaced input in its place, so no action loses its input
   silently; the page names the swap. Reserved inputs are refused.
 - **Clear and reset** — clearing a slot is refused when it is the action's
   last input on keyboard and mouse together, or on the controller, so each
   mode stays playable on each device; reset restores the catalogue's
-  defaults for one mode and device.
+  defaults for one catalogue and device.
 - **Reserved inputs** — in every mode, Esc and the controller's Start and
   home buttons, and the restart inputs: F2, and Y pressed while Start is
   held (Start pauses first, so it restarts from play and from the pause
   card); on the results screen, R, which plays again with the same board
   choice; per mode, every input that mode's play gives to something
-  outside its catalogue (the controller's B, the shell's Back, in Classic
-  2D; the help, sound and fullscreen shortcuts and the 3D d-pad spacing
+  outside its catalogue (the controller's B, the shell's Back, in the flat
+  modes; the help, sound and fullscreen shortcuts and the 3D d-pad spacing
   buttons); and keys the browser or the system keeps for itself (Tab, the
   Meta keys, function keys used for fullscreen and developer tools). A
   button reserved in one mode may be a default binding in the other — B
@@ -170,8 +178,8 @@ the game shell, settings stored behind the platform layer (see
   fired, as the input layers already drop held state on pause and focus
   loss.
 - **Failure** — overrides that fail validation (an unknown action or input,
-  a clash, a reserved input) are discarded for that mode and device, which
-  fall back to defaults; the rest are kept. Storage failure follows
+  a clash, a reserved input) are discarded for that catalogue and device,
+  which fall back to defaults; the rest are kept. Storage failure follows
   `settings`: the change applies for the session and the player is told
   once that settings will not be kept.
 - **Replays, records and leaderboards** — unaffected: they record and
@@ -184,6 +192,8 @@ the game shell, settings stored behind the platform layer (see
 - `classic-2d-square-play` — the pointer state machine and cell cursor that
   read their actions through the resolver, and the default Classic 2D
   mapping.
+- `flat-grid-modes` — Hexagon and Triangle, which play on Classic 2D's
+  input layer and so read the flat modes' bindings.
 - `3d-play-flow` — the 3D mode on the shared engine whose keyboard, mouse
   and controller input reads its actions through the resolver.
 - `game-shell` — the reserved Back and Pause inputs and shell navigation on

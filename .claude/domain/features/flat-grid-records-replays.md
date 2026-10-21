@@ -33,8 +33,8 @@ In scope (m2c-flat-grids):
 - **The records format step** that adds the two modes' overall counters at
   zero, with every earlier document carried over unchanged.
 - **Boards played by mode**: for each new mode, its standard boards without
-  then with no-guess, then custom boards by last played. No Daily board is
-  listed, since these modes have none.
+  then with no-guess, then custom boards by last played. The mode's Daily
+  board joins this list with its daily board (`flat-grid-menu-entries`).
 - **The Records screen's mode switch**: Classic 2D, Hexagon, Triangle and
   3D, in menu order, as the canvas's Records artboards draw it. Records
   opens on the mode and board last played. The board picker, bests,
@@ -63,7 +63,8 @@ Non-goals:
   for these boards — deferred to `m6-launch`. The tab keeps its *coming
   soon* state for them.
 - Achievements for these modes — deferred to `m6-launch`.
-- Daily boards and their days in a row for these modes — not scheduled.
+- The Hexagon and Triangle daily boards, with their Daily boards in the
+  picker and their days in a row — `flat-grid-menu-entries`.
 - A Surface option on the mode switch — deferred to `m6-launch`, when
   Surface is built. The canvas draws it; the switch lists built modes only.
 - An overall figure across modes — rejected, as in `3d-game-records`.

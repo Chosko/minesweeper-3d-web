@@ -3,19 +3,23 @@
 The main menu's Hexagon and Triangle entries open their own modes instead
 of *Coming soon*. Each entry's preview shows its board, the menu opens on the
 last mode played whichever of the five it is, and that mode's board choice
-opens on its last board. Surface still opens *Coming soon*, and the Daily
-screen keeps Hexagon and Triangle as *Coming soon*.
+opens on its last board. Hexagon and Triangle each get a daily board, played
+from the Daily screen like the Classic 2D and 3D ones. Surface still opens
+*Coming soon*, on the menu and on Daily.
 
 ## Purpose
 
 The game shell's slice of m2c: "the Hexagon and Triangle entries each open
 its own mode instead of *Coming soon*, each keeps its last board choice, and
 Continue counts each as a mode of its own"
-([product-design.md § Main menu and game shell](../product-design.md#main-menu-and-game-shell)).
-The entries, their routes, the placeholder and the last-mode record are
+([product-design.md § Main menu and game shell](../product-design.md#main-menu-and-game-shell)),
+and a daily board for each playable mode
+([§ Daily board](../product-design.md#daily-board)). The entries, their
+routes, the placeholder, the last-mode record and the Daily screen are
 shipped (`game-shell`, `shared-screen-layout`). This feature switches the two
-entries from placeholder to mode and gives them the preview the canvas draws
-for every focused entry.
+entries from placeholder to mode, gives them the preview the canvas draws
+for every focused entry, and adds the two daily boards the canvas's Daily
+artboards draw.
 
 ## Scope and non-goals
 
@@ -37,15 +41,31 @@ In scope (m2c-flat-grids):
   until the Start / Continue entry exists.
 - **Each mode's last board choice** opens its board choice, so Enter then
   Play replays it (the document is `flat-grid-modes`').
-- **The Daily screen** lists Hexagon and Triangle as *Coming soon*, not
-  playable, though both modes are registered.
+- **The Hexagon and Triangle daily boards.** Each mode's daily board is its
+  Expert board with no-guess, worked out from the date like the Classic 2D
+  and 3D ones: the daily seed over the board's token, started on the marked
+  start cell, the same for everyone on that local date. Its daily code is
+  the frozen daily form over the mode's token, as `hexagon-grid` and
+  `triangle-grid` spell it; the canvas's `HX-…` codes stand for that form.
+- **The Daily screen's Hexagon and Triangle rows**, in menu order, playable
+  as the Classic 2D row is: board line, state, days in a row, the code chip
+  with Copy and Copy link, one counted attempt, Play and Watch replay. The
+  selected row's preview is the mode's closed daily board with its marked
+  start cell, drawn by the flat board view. Today's unused boards are
+  pre-generated when the menu shows, through each mode's warm client. Play
+  starts the board through the mode's coded start (`flat-grid-modes`), and
+  today's daily code typed into a board choice or a `#board=` link opens the
+  Daily screen, as for every daily.
+- **Records of a daily game**: its mode's Daily board, listed in that
+  mode's Records picker after the standard boards, with its days in a row,
+  as every mode's Daily board is (`flat-grid-records-replays`).
 
 Non-goals:
 
 - The Start / Continue entry itself — deferred with the campaigns
   (`m4-campaigns`). When it lands, its "last mode played" reads the same
   record, so Hexagon and Triangle need nothing more.
-- Daily boards for Hexagon and Triangle — not scheduled.
+- Leaderboards for these daily boards — not in this milestone.
 - The Surface entry as a mode — deferred to `m6-launch`.
 - The demo's offers and locks on these entries — deferred to `m6-launch`.
 - The menu's layout. The entries' column takes no new entry.
@@ -68,8 +88,13 @@ shipped menu, preview and Daily wiring in place
   every load.
 - **Preview binder** — mounts the flat board view for the grid the preview
   names. One view layer per board kind, kept mounted, as for Classic 2D.
+- **Daily boards** — the daily board list gains a Hexagon and a Triangle
+  entry, each named by its dimensions like the existing ones, so the daily
+  game, its code and its generation request come from the same rule.
 - **Daily list** — one entry per menu mode. A mode with no daily board
-  reads *Coming soon*, whether or not it is registered.
+  reads *Coming soon*, whether or not it is registered. The held daily
+  boards are prepared through each mode's generation client, and the Daily
+  preview mounts the flat board view for the selected row's grid.
 
 ## Data and state
 
@@ -77,6 +102,8 @@ shipped menu, preview and Daily wiring in place
   be either new mode id. A stored value naming an unregistered mode reads
   as none.
 - **Demo boards** — derived from a fixed seed, never stored.
+- **Daily boards** — derived from the date, never stored. A daily game is
+  recorded on its mode's Daily board, its identity carrying the daily flag.
 
 ## Interfaces and contracts
 
@@ -85,7 +112,9 @@ shipped menu, preview and Daily wiring in place
 - **Preview** — gives the board kind with a grid and a game for the two
   entries. A preview that fails to mount shows the panel's card, as for any
   preview.
-- **Daily** — a mode with no daily board is listed and never playable.
+- **Daily** — a mode with no daily board is listed and never playable. A
+  Hexagon or Triangle daily follows the shipped daily rules: one counted
+  attempt per date, a forced marked start, no last choice saved.
 
 ## Dependencies
 
@@ -95,4 +124,9 @@ shipped menu, preview and Daily wiring in place
 - `flat-grid-modes` — the two registered modes and their last board
   choices.
 - `flat-grid-geometry` — the board view the previews draw with.
-- `hexagon-grid`, `triangle-grid` — the demo boards' graphs.
+- `hexagon-grid`, `triangle-grid` — the demo boards' graphs, and the board
+  tokens the daily codes and seeds use.
+- `flat-grid-records-replays` — the per-mode records and Records picker a
+  daily game is recorded in.
+- `game-summary`, `board-generation` — the daily code, seed and marked
+  start cell, and the generation a daily board is made by.

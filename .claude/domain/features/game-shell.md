@@ -97,8 +97,8 @@ Non-goals:
 - The demo's menu entries (*Buy full game*, visible locks) — deferred to
   `m5-core-complete`.
 - The Hexagon and Triangle modes — `flat-grid-modes`, their menu entries
-  `flat-grid-menu-entries` (`m2c-flat-grids`); their daily boards are not
-  scheduled, and their Daily rows stay *Coming soon*. The Surface mode and
+  `flat-grid-menu-entries` (`m2c-flat-grids`), which also adds their daily
+  boards and makes their Daily rows playable. The Surface mode and
   its daily board — deferred to `m6-launch`; until then its entry and Daily
   row say *Coming soon*.
 - The records screen's contents and the results screen — Results and

@@ -155,11 +155,13 @@ Exit criteria:
 - Hexagon and Triangle are playable from their own main-menu entries, on
   Beginner, Intermediate, Expert and Custom boards, with the no-guess switch.
 - Both follow the rules of Minesweeper Online exactly on their grids.
-- Both play with the timer, by mouse, keyboard and controller.
+- Both play with the timer, by mouse, keyboard, controller and touch.
 - A finished game shows its results with time, 3BV, 3BV/s and efficiency,
   and counts toward personal bests, stats history and replays.
 - Each entry keeps its last board choice, and Continue counts each as a mode
   of its own.
+- Each day has a Hexagon and a Triangle daily board, identical for every
+  player and playable from the Daily screen.
 - Hexagonal and triangle tiles are drawn in *Joyful tiles*.
 
 Rationale: the flat modes reuse the shipped rules engine, generator and
@@ -170,19 +172,22 @@ Covers:
 - product-design.md § Hexagon — the mode whole on the web preview and the
   desktop build: Beginner, Intermediate, Expert and Custom boards, the
   no-guess switch, rules matching Minesweeper Online exactly, the timer,
-  mouse, keyboard and controller play, results with time, 3BV, 3BV/s and
-  efficiency, personal bests, stats history and replays. No leaderboards, no
-  achievements, no demo offers or locks, no campaign.
+  mouse, keyboard, controller and touch play, results with time, 3BV, 3BV/s
+  and efficiency, personal bests, stats history and replays. No leaderboards,
+  no achievements, no demo offers or locks, no campaign.
 - product-design.md § Triangle — the mode whole on the web preview and the
   desktop build: Beginner, Intermediate, Expert and Custom boards, the
   no-guess switch, rules matching Minesweeper Online exactly, the timer,
-  mouse, keyboard and controller play, results with time, 3BV, 3BV/s and
-  efficiency, personal bests, stats history and replays. No leaderboards, no
-  achievements, no demo offers or locks, no campaign.
+  mouse, keyboard, controller and touch play, results with time, 3BV, 3BV/s
+  and efficiency, personal bests, stats history and replays. No leaderboards,
+  no achievements, no demo offers or locks, no campaign.
 - product-design.md § Main menu and game shell — the Hexagon and Triangle
   entries each open its own mode instead of *Coming soon*, each keeps its
   last board choice, and Continue counts each as a mode of its own. Surface
   still opens *Coming soon*.
+- product-design.md § Daily board — a Hexagon and a Triangle daily board
+  each day, Expert with no-guess, worked out from the date and played from
+  the Daily screen. No daily leaderboards.
 - product-design.md § Visual design system — hexagonal and triangle tiles in
   *Joyful tiles*, the catalogue's only theme, as drawn on its Claude Design
   canvas (https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC). No Surface
@@ -217,7 +222,8 @@ Covers:
 - product-design.md § Main menu and game shell — the leaderboards in the
   Records screen's Leaderboards tab; the Quit entry working on the desktop
   build only; and, in Settings, rebinding keys, mouse buttons and controller
-  buttons for Classic 2D and 3D. Quit stays locked on the web preview; no
+  buttons for 3D and for the flat modes — Classic 2D, Hexagon and Triangle,
+  which share one set of bindings. Quit stays locked on the web preview; no
   Start/Continue or Campaign entries.
 - product-design.md § Results and records — the Steam global and friends
   rank on the results screen.

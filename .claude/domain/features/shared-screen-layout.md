@@ -183,13 +183,13 @@ In scope (m2b-themes):
   Cube Intro is a real board with a timer and records.
 - **Daily screen** — the board choice composition: the title above a window
   sized to its content; on the left today's date, the intro line and one
-  entry per mode in menu order (`game-shell`), Classic 2D and 3D with their
-  state beside the name — a won row shows a *Won* badge and, apart from it,
+  entry per mode in menu order (`game-shell`), each mode with a daily board
+  with its state beside the name — a won row shows a *Won* badge and, apart from it,
   the time in the game's standard time format, to the thousandth of a
   second, as the results, Records and leaderboard screens show it — and
   their board line, the others *Coming soon*; on the right the selected
-  mode's board preview (the closed Expert board with its marked start
-  cell, the cube for 3D), its status row — the state at the left, the days
+  mode's board preview (its closed daily board with the marked start cell
+  or cube), its status row — the state at the left, the days
   in a row and the longest run at the right — and its code chip, a
   coming-soon mode showing its colour badge; the white action foot with
   the summary, *Watch replay* and *Play*, and the key hints on Back and
