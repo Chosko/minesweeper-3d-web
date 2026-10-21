@@ -338,7 +338,7 @@ Context:
 
 Done: 2026-10-21, commit `321a6f3` (25 files, +564/-306). Decisions: the viewer still fits the whole board, unpinned — 36 px at 1920 × 1080 (the canvas's own layout fits about 36; the criteria's 34 is off); a failed replay keeps task 223's "—" figures, the canvas's Failure state looking like placeholders; the `--color-replay-bbbv-*` tokens are gone. Between about 1200 and 1280 px wide the files still wrap onto their own row at a 2D replay's end and in 3D.
 
-## [~] 27. Implement task 240 — Settings screen to the canvas
+## [x] 27. Implement task 240 — Settings screen to the canvas
 
 Depends on: 2, 6, 8
 
@@ -357,7 +357,7 @@ Context:
 /task-implement 240 --review
 ```
 
-Done: 2026-10-21, failed — task 240 was not implemented: the unpark's cherry-pick of `park/task-240` (616236f, 41 files, branched before tasks 223 and 233) conflicted in 14 files with the base and was rolled back under the unattended policy, leaving the task `[PARKED]` with `Answer: Q1 a` recorded in its handoff (unlanded commit `02c2561` in worktree `.claude/worktrees/runbook-8-step-27`). Needs an attended `/task-implement 240 --review` to merge the parked work.
+Done: 2026-10-21, commit `e17419a` (43 files, +536/-431). Redone from scratch. Premise wrong: the 3D fit was blocked by task 219's 36 px segmented-option minimum, not 233's rows; Settings alone drops it (40 px on a phone), so the Frame criterion holds as written and Q1 a was not used — other screens keep the minimum the canvas does not draw. The Controls action and its modal are gone (decision 14 a); sections are moved between columns by `SETTINGS_LAYOUTS` in `js/settings/page.js`.
 
 ## [x] 28. Implement task 241 — Other surfaces: placeholder, fatal card and toasts
 
@@ -382,7 +382,7 @@ Context:
 /task-implement 242 --review
 ```
 
-## [ ] 30. Implement task 243 — Component gallery coverage and the theme list
+## [~] 30. Implement task 243 — Component gallery coverage and the theme list
 
 Depends on: 5, 6, 7, 8, 9, 10
 
