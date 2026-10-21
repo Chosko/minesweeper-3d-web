@@ -28,7 +28,7 @@ Context:
 
 Done: 2026-10-21, commit `e531af6` (13 files, +325/-124). `boardPoint` (touch-zoom anchor, wheel line) stays in pitches until task 252; the cols/rows forms of `fitTileSize`, `boardLayout` and `cellAtLayout` still work through the square geometry; `js/shell/daily.js` needed no change.
 
-## [ ] 3. Implement task 250 — Tile painter and cache through the geometry's outline
+## [~] 3. Implement task 250 — Tile painter and cache through the geometry's outline
 
 Depends on: 2
 
@@ -38,7 +38,7 @@ Context: none
 /task-implement 250 --review
 ```
 
-## [ ] 4. Implement task 251 — Cursor moves and end effect on the grid geometry
+## [~] 4. Implement task 251 — Cursor moves and end effect on the grid geometry
 
 Depends on: 2
 
@@ -48,7 +48,7 @@ Context: none
 /task-implement 251 --review
 ```
 
-## [ ] 5. Implement task 252 — 2D movement sampler and replay viewer in board units
+## [x] 5. Implement task 252 — 2D movement sampler and replay viewer in board units
 
 Depends on: 2
 
@@ -58,17 +58,20 @@ Context: none
 /task-implement 252 --review
 ```
 
+Done: 2026-10-21, commit `b86a015` (8 files, +265/-62). `boardPoint` is now `boardPoint(view, x, y, steps?)`; board units are still the layout's pitch, since the geometry contract has no board-unit member; the viewer builds its geometry from the replay header's board (`replayGeometry`), and a pointer resting in the gap past the last column or row now counts as on no cell, as live hit-testing does.
+
 ## [ ] 6. Implement task 253 — Update documentation for feature `flat-grid-geometry`
 
 Depends on: 1, 2, 3, 4, 5
 
-Context: none
+Context:
+- 2026-10-21 (from step 5): .claude/context/replay-samplers.md and .claude/context/replay-viewers.md still say "in pitches" and show the old boardPoint signature — boardPoint is now boardPoint(view, x, y, steps?); update both.
 
 ```prompt
 /task-implement 253 --review
 ```
 
-## [ ] 7. Implement task 254 — Hexagon graph provider and the `hex` generation description
+## [~] 7. Implement task 254 — Hexagon graph provider and the `hex` generation description
 
 Depends on: none
 
