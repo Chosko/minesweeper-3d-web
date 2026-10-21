@@ -16,9 +16,11 @@ layout — lands before the Steam work is finished, so the screens Steam adds
 are drawn once, in the look that ships.
 Content follows — campaigns, then the daily board and the demo — up to the
 "core complete" bar, which is the game's first public release candidate
-whether or not it ships through Early Access. Breadth — Hexagon, Triangle, Surface,
-the rest of the campaign levels — closes 1.0, and new ways to play come
-after launch.
+whether or not it ships through Early Access. Hexagon and Triangle join right
+after the shipping look, ahead of Steam, because they reuse the shipped rules
+engine and Classic 2D flow and need no Steam work. Breadth — Surface and the
+rest of the campaign levels — closes 1.0, and new ways to play come after
+launch.
 
 ---
 
@@ -143,6 +145,51 @@ Covers:
 
 ---
 
+## m2c-flat-grids — Hexagon and Triangle join the game
+
+Goal: the player gets two fresh flat boards, Hexagon and Triangle, each a
+full mode of its own with the same exact rules, records and replays as
+Classic 2D, on the web preview and the desktop build alike.
+
+Exit criteria:
+- Hexagon and Triangle are playable from their own main-menu entries, on
+  Beginner, Intermediate, Expert and Custom boards, with the no-guess switch.
+- Both follow the rules of Minesweeper Online exactly on their grids.
+- Both play with the timer, by mouse, keyboard and controller.
+- A finished game shows its results with time, 3BV, 3BV/s and efficiency,
+  and counts toward personal bests, stats history and replays.
+- Each entry keeps its last board choice, and Continue counts each as a mode
+  of its own.
+- Hexagonal and triangle tiles are drawn in *Joyful tiles*.
+
+Rationale: the flat modes reuse the shipped rules engine, generator and
+Classic 2D flow and need no Steam work, so they land before m3-on-steam, and
+m3-on-steam's leaderboards then meet boards the game already plays.
+
+Covers:
+- product-design.md § Hexagon — the mode whole on the web preview and the
+  desktop build: Beginner, Intermediate, Expert and Custom boards, the
+  no-guess switch, rules matching Minesweeper Online exactly, the timer,
+  mouse, keyboard and controller play, results with time, 3BV, 3BV/s and
+  efficiency, personal bests, stats history and replays. No leaderboards, no
+  achievements, no demo offers or locks, no campaign.
+- product-design.md § Triangle — the mode whole on the web preview and the
+  desktop build: Beginner, Intermediate, Expert and Custom boards, the
+  no-guess switch, rules matching Minesweeper Online exactly, the timer,
+  mouse, keyboard and controller play, results with time, 3BV, 3BV/s and
+  efficiency, personal bests, stats history and replays. No leaderboards, no
+  achievements, no demo offers or locks, no campaign.
+- product-design.md § Main menu and game shell — the Hexagon and Triangle
+  entries each open its own mode instead of *Coming soon*, each keeps its
+  last board choice, and Continue counts each as a mode of its own. Surface
+  still opens *Coming soon*.
+- product-design.md § Visual design system — hexagonal and triangle tiles in
+  *Joyful tiles*, the catalogue's only theme, as drawn on its Claude Design
+  canvas (https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC). No Surface
+  styling, no colour-blind-safe number set.
+
+---
+
 ## m3-on-steam — The game runs as a Steam app
 
 Goal: a private Steam build of the game in which free-play boards are ranked
@@ -238,7 +285,7 @@ Covers:
   the *Buy full game* entry, for the content that exists at this milestone;
   3 themes offered, the rest visible and locked in the Settings theme list.
   No theme locks in the full game. The Hexagon, Triangle and Surface locks
-  arrive with that content in m6-launch.
+  arrive in m6-launch.
 - product-design.md § Main menu and game shell — the Daily entry and the
   demo's menu entries.
 
@@ -249,8 +296,7 @@ Covers:
 Goal: the complete game as designed: every launch mode and full campaigns.
 
 Exit criteria:
-- Hexagon and Triangle are playable from their own main-menu entries at
-  every size, with leaderboards for their standard boards.
+- Hexagon and Triangle have leaderboards for their standard boards.
 - Surface is playable on its launch shapes, looks and plays exactly like
   Classic 2D apart from navigating the object, and has leaderboards.
 - The 2D and 3D campaigns each hold at least 50 levels.
@@ -264,25 +310,25 @@ make the paid game clearly larger than the demo without touching what is
 already shipped.
 
 Covers:
-- product-design.md § Hexagon — the mode whole: every size, the no-guess
-  switch and leaderboards for its standard boards. No campaign.
-- product-design.md § Triangle — the mode whole: every size, the no-guess
-  switch and leaderboards for its standard boards. No campaign.
+- product-design.md § Hexagon — leaderboards for its standard boards. No
+  campaign; the mode itself is m2c-flat-grids'.
+- product-design.md § Triangle — leaderboards for its standard boards. No
+  campaign; the mode itself is m2c-flat-grids'.
 - product-design.md § Surface — the simple launch shapes, its no-guess
   switch and its leaderboards. No recognisable models, no campaign.
 - product-design.md § Campaign levels — the remaining levels, up to at least
   50 per campaign.
-- product-design.md § Visual design system — hexagonal and triangle tiles
-  and the Surface mode in every theme of the catalogue, plus the
-  colour-blind-safe number set in every theme.
+- product-design.md § Visual design system — the Surface mode in every
+  theme of the catalogue, hexagonal and triangle tiles in every theme added
+  after *Joyful tiles*, and the colour-blind-safe number set in every theme.
 - product-design.md § Demo edition — Hexagon and Triangle Beginner boards
   offered from their own entries, their Intermediate, Expert and custom
   boards locked, and the Surface locks.
 - product-design.md § Steam features — leaderboards for Hexagon, Triangle
   and Surface, and the full achievement set.
-- product-design.md § Main menu and game shell — the Hexagon, Triangle and
-  Surface entries, each its own mode; Surface is one entry with its shapes
-  chosen inside it.
+- product-design.md § Main menu and game shell — the Surface entry as its
+  own mode, one entry with its shapes chosen inside it. The Hexagon and
+  Triangle entries are m2c-flat-grids'.
 
 ---
 
