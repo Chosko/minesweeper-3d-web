@@ -28,7 +28,8 @@ are [app-shell-navigation.md](app-shell-navigation.md)'s; `focusMove`,
   Classic 2D board choice `[data-size][data-last]`; placeholder its Back;
   Records the chosen board (`#records-picker [aria-checked="true"]`);
   Settings `#set-lookSensitivity`; ready `#ready-btn`; pause Cancel while
-  confirming, else Play again once ended, else Resume; results `#r-again`;
+  confirming, else Resume during a game, else Restart (Play again once
+  ended); results `#r-again`;
   replay `REPLAY_VIEWER.defaultFocus()`; Learn 3D's end card
   `#learn-end-primary`; the Daily screen `DAILY_VIEW.defaultFocus()`;
   ctx-lost its reload button; the status cards `statusFocus`.
@@ -52,7 +53,10 @@ are [app-shell-navigation.md](app-shell-navigation.md)'s; `focusMove`,
   Up / Down treat a board choice's row of custom fields (`form .ui-row`) as
   one control, measured from the whole row and skipping its own controls;
   aim at a table's buttons by their row (`tr`), so a table is entered from
-  above or below wherever its buttons sit; and a move from outside a column
+  above or below wherever its buttons sit; aim at a switch row's switch
+  (`.ui-switchrow`) and a slider (`.ui-slider`) by their whole row, so a
+  switch at its row's end and a slider short of it are above or below each
+  other; and a move from outside a column
   layout (`.ui-column`) enters the columns at their first control (Down) or
   last (Up), while inside one laid out as a column (Records; not Settings'
   columns below its widest windows, whose sections are placed one by one)

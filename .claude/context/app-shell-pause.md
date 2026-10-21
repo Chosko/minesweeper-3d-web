@@ -15,7 +15,8 @@ Both modules are pure; their rules are documented in their head comments.
   (`blur`, `hidden`), `HAND_OFFS` (`finished`, `abandoned`, `inProgress`),
   `CONFIRMATIONS` (`restart`, `menu`: `{action, title, message,
   confirmLabel}`, both asking the same),
-  `RESTART_NOTICE`, `RESTART_SCREENS` (`playing`, `classic-2d`, `paused`).
+  `RESTART_NOTICE`, `NO_GAME_LINE` (the card's status line with no game in
+  progress), `RESTART_SCREENS` (`playing`, `classic-2d`, `paused`).
 - `restartInput(input, {screen, blocked?})` → `'restart'` for `'F2'` or
   `'pad'` (Start + Y) on a `RESTART_SCREENS` screen, `'playAgain'` for
   `'KeyR'` on `results`, else null; null for anything while `blocked`.
@@ -58,15 +59,30 @@ Both modules are pure; their rules are documented in their head comments.
   ([input.md](input.md)). Browsers hand the page at most the releasing
   press's `keyup`, never its `keydown`, while the lock holds.
 - **The card** (`css/components.css` head comment, *Pause card*;
-  `#pause-card`, [app-shell-markup.md](app-shell-markup.md) § Screens):
-  `ui.showPause` shows Resume (with its back key hint) only while the game
-  is on, "Back to start" only for a 3D game in play, and labels
-  `#p-restart` Restart (with its restart key hint) or, once the game ended,
-  Play again. Its Settings panel is muted and bound like the Settings
-  page's controls (`data-setting`: Sound, volume, then the look controls
-  on a 3D game's card only) through `bindSettingControls`. Its Controls
-  panel `#pause-list` (the inset border alone, no edge) holds the controls
-  list `#pause-controls`: the active mode's help rows for the device
+  `#pause-card`, [app-shell-markup.md](app-shell-markup.md) § Screens), at
+  each window step's width in the *J-Pause* artboards, two equal columns
+  from the kit breakpoint: its title block `#pause-head` holds the title,
+  the full board line `#pause-board` (mode, board, size, mines, no-guess:
+  the game window's or the 3D overlay's title joined to the board's size
+  line) and the status line `#pause-sub` in the mono face. Each action
+  leads with its icon (Resume play, Back to start cube, Restart restart,
+  Main menu arrow-left). `ui.showPause` takes `inProgress` from
+  `pauseInfo`'s `gameInProgress()`: a started, unfinished game
+  (`PAUSE.inProgress`), or a first click whose board is being generated or
+  failed (Classic 2D's `status().pending`, the 3D session's state). During
+  a game the status line is the
+  running time and mines left and Resume (with its back key hint) leads;
+  with no game in progress (before the first click, or after the end) the
+  status line is `NO_GAME_LINE`, which the running time never replaces,
+  Restart leads as the primary action and takes the focus, and Resume and
+  "Back to start" are hidden. "Back to start" shows only for a 3D game in
+  play; `#p-restart` reads Restart (with its restart key hint) or, once
+  the game ended, Play again. Its Settings panel is muted and bound like
+  the Settings page's controls (`data-setting`: Sound as a switch row,
+  volume, then the look sensitivity and the invert Y switch row on a 3D
+  game's card only) through `bindSettingControls`. Its Controls panel
+  `#pause-list` (the inset border alone, no edge) holds the controls list
+  `#pause-controls`: the active mode's help rows for the device
   ([app-shell-help.md](app-shell-help.md)).
 - **Confirmation.** Back to menu during a started, unfinished game calls
   `confirm` → `ui.showConfirm` on the pause card (`#pause-confirm`, a

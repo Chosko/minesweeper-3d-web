@@ -15,6 +15,7 @@ import { formatTime } from './results/view.js';
 import { liveFigures, figuresLine } from './shell/live-figures.js';
 import { standardBoard, preset3D, createBoardIdentity, MODE_3D } from './records/board.js';
 import { readoutText } from './readability.js';
+import { NO_GAME_LINE } from './shell/pause.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -39,13 +40,11 @@ export function pauseLine(time, minesLeft, { timed = true } = {}) {
   return timed ? `Time ${formatTime(Math.round(time * 1000))} · ${mines}` : mines;
 }
 const NO_GUESS = ' · no-guess';
-/** A 3D board as the overlay bar, the ready card (with `mines`) and the pause card name it. */
+/** A 3D board's size, with its mines (`mines`) on the ready card and the pause card, and no-guess. */
 export function boardLine3D(s, { mines = false } = {}) {
   const count = mines ? ` · ${s.mines} mine${s.mines === 1 ? '' : 's'}` : '';
   return `${fmtDims(s)}${count}${s.noGuess ? NO_GUESS : ''}`;
 }
-/** A Classic 2D board as the pause card names it. */
-export const boardLine2D = (b) => `${b.width} × ${b.height}${b.noGuess ? NO_GUESS : ''}`;
 /** The Classic 2D window's foot line: the board's size, mines and no-guess, never a cell ("16 × 16 · 40 mines · no-guess"). */
 export const boardFoot2D = (b) => `${b.width} × ${b.height} · ${b.mines} mine${b.mines === 1 ? '' : 's'}${b.noGuess ? NO_GUESS : ''}`;
 /** The Classic 2D window's title: the mode and the board — a standard board's name, a daily, or Custom. */
@@ -124,6 +123,7 @@ export class UI {
     this._learnHint = null; // the Learn 3D prompt the hint strip shows (js/mode3d/learn.js LEARN_HINTS), or null
     this._learnWon = false; // the Learn 3D end card's outcome
     this._timed = true; // the game shown has a timer (Learn 3D has none)
+    this._noGame = false; // the pause card shows no game in progress
 
     // main menu entries: each a route (the shell decides where; a disabled entry opens nothing)
     document.querySelectorAll('#menu [data-entry]').forEach((b) => {
@@ -496,10 +496,10 @@ export class UI {
     if (over > 0) place(b.height - over);
     return stage.style.width !== before[0] || stage.style.height !== before[1];
   }
-  /** The Classic 2D board the window's title and foot line and the pause card name; { width, height, mines, noGuess, identity }. */
+  /** The Classic 2D board the window's title and foot line and the pause card's board line (the two joined) name; { width, height, mines, noGuess, identity }. */
   setBoard2D(board) { this._board2D(board); this._sizeMines(board.mines, this.el.c2dMines); }
   _board2D(board) {
-    this._boardText = boardLine2D(board);
+    this._boardText = `${boardTitle2D(board)} · ${boardFoot2D(board)}`;
     this.el.c2dTitle.textContent = boardTitle2D(board);
     this.el.c2dSize.textContent = boardFoot2D(board);
   }
@@ -676,7 +676,13 @@ export class UI {
   }
   /** The readout's text while it shows, '' while hidden. */
   get readout() { return this._readout; }
-  showPause({ state, time, minesLeft, note = '', mode = this._mode }) {
+  /**
+   * The pause card for the game `state` ('playing' | 'won' | 'lost'): its title, the full board line and
+   * the status line. With no game in progress (`inProgress` false: before the first click, or after the
+   * end) the status line says so, Restart (Play again once ended) leads as the primary action and there
+   * is no Resume.
+   */
+  showPause({ state, time, minesLeft, inProgress = state === 'playing', note = '', mode = this._mode }) {
     this._setMode(mode);
     this._resetConfirm();
     const pn = $('pause-note');
@@ -688,24 +694,27 @@ export class UI {
     this.el.hudSwap.classList.add('hidden'); // on the board only while it plays
     this.el.hudTap.classList.add('hidden');
     const ended = state !== 'playing';
-    // The primary action leads: Resume while playing, Play again once the game ended, which has nothing to resume.
-    const [first, second] = ended ? [this.el.restart, this.el.resume] : [this.el.resume, this.el.restart];
+    const noGame = !inProgress;
+    this._noGame = noGame;
+    // The primary action leads: Resume during a game, Restart (Play again once ended) with no game to resume.
+    const [first, second] = noGame ? [this.el.restart, this.el.resume] : [this.el.resume, this.el.restart];
     first.classList.replace('ui-button--secondary', 'ui-button--primary');
     second.classList.replace('ui-button--primary', 'ui-button--secondary');
     this.el.pauseActions.insertBefore(first, this.el.pauseMenu);
     this.el.pauseActions.insertBefore(this.el.home, this.el.pauseMenu);
     this.el.pauseActions.insertBefore(second, this.el.pauseMenu);
     this.el.pauseTitle.textContent = state === 'won' ? 'You won!' : state === 'lost' ? 'Game over' : 'Paused';
-    this.el.pauseSub.textContent = pauseLine(time, minesLeft, { timed: this._timed });
+    this.el.pauseSub.textContent = noGame ? NO_GAME_LINE : pauseLine(time, minesLeft, { timed: this._timed });
     this.el.pauseBoard.textContent = this._boardText;
     // The look settings only on a 3D game's pause card; volume and Sound in both modes.
     for (const key of ['lookSensitivity', 'invertY']) this.el.pause.querySelector(`[data-setting="${key}"]`).classList.toggle('hidden', mode !== '3d');
-    this.el.resume.classList.toggle('hidden', ended);
-    this.el.home.classList.toggle('hidden', ended || mode !== '3d'); // back to the 3D start view, while the box is in play
+    this.el.resume.classList.toggle('hidden', noGame);
+    this.el.home.classList.toggle('hidden', noGame || mode !== '3d'); // back to the 3D start view, while the box is in play
     this.el.restartLabel.textContent = ended ? 'Play again' : 'Restart';
   }
-  /** The pause card's status line while it shows: the game's running time and mines left. */
+  /** The pause card's status line while it shows: the game's running time and mines left, during a game. */
   updatePause({ time, minesLeft }) {
+    if (this._noGame) return;
     const line = pauseLine(time, minesLeft, { timed: this._timed });
     if (this.el.pauseSub.textContent !== line) this.el.pauseSub.textContent = line;
   }
@@ -758,10 +767,10 @@ export class UI {
   // ---------- HUD ----------
   /**
    * The 3D board the overlay's title ("3D · Cube Intermediate", boardTitle3D) and the pause card
-   * ("6 × 6 × 6 · no-guess") name; `daily` marks a daily's board.
+   * ("3D · Cube Intermediate · 8 × 8 × 8 · 40 mines · no-guess") name; `daily` marks a daily's board.
    */
   setBoard(settings) {
-    this._boardText = settings.learn ? LEARN_TITLE : boardLine3D(settings);
+    this._boardText = settings.learn ? LEARN_TITLE : `${boardTitle3D(settings)} · ${boardLine3D(settings, { mines: true })}`;
     this._setTitle3D(boardTitle3D(settings));
     this._sizeMines(settings.mines);
   }

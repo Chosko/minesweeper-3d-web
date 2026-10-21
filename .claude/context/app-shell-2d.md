@@ -40,7 +40,7 @@ themselves are [classic2d.md](classic2d.md).
   ([replay-samplers.md](replay-samplers.md)) and draws the end effect during the 2D end delay
   (`mode2d.ending`, read through `endDelay()`).
 - **Pause.** The paused screen's `setBoardHidden` hides the 2D board;
-  `pauseInfo` / `gameOver` read `mode2d.status()`.
+  `pauseInfo`, `gameInProgress` and `gameOver` read `mode2d.status()`.
 - **Status card.** `board2d` holds `{generating, failure, progress}` from
   `FLOW_2D`; `showStatus2D` shows `#c2d-status` — the generating card on
   the board only, the offer there and over the pause card — and focuses the

@@ -6,7 +6,7 @@
 // mode to pause (the mode stops its timer and board input), shows the pause card and passes the
 // mode's summary() to the in-progress hand-off. Before the first click or after the game ends, an
 // asked-for pause (key, controller, the overlay's pause button) opens the pause card only, with
-// no timer to stop; an automatic pause (window blur, tab hidden) does nothing then, nor while the
+// no timer to stop and its status line saying no game is in progress (NO_GAME_LINE); an automatic pause (window blur, tab hidden) does nothing then, nor while the
 // board is not in play. While the first click's board is being generated, Back (Esc, the
 // controller's back button) cancels the generation instead of pausing; every pause source still
 // pauses. The board is hidden whenever the pause card shows. Resume always goes through the mode.
@@ -56,6 +56,8 @@ export const CONFIRMATIONS = Object.freeze({
 });
 /** What the shell says once per session, at the first restart that abandons a game. */
 export const RESTART_NOTICE = 'That game counted as a loss. Turn on "Always ask before restarting" in Settings to be asked first.';
+/** The pause card's status line with no game in progress: before the first click or after the end. */
+export const NO_GAME_LINE = 'No game in progress: the board is not started yet.';
 /** The shell screens where F2 and Start + Y restart: play in either mode and the pause card. */
 export const RESTART_SCREENS = Object.freeze(['playing', 'classic-2d', 'paused']);
 

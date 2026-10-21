@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createModeHost } from '../js/shell/mode-host.js';
 import {
-  createPauseController, PAUSE_SOURCES, AUTO_SOURCES, HAND_OFFS, CONFIRMATIONS, RESTART_NOTICE, RESTART_SCREENS, restartInput,
+  createPauseController, PAUSE_SOURCES, AUTO_SOURCES, HAND_OFFS, CONFIRMATIONS, RESTART_NOTICE, RESTART_SCREENS, NO_GAME_LINE, restartInput,
 } from '../js/shell/pause.js';
 import { createTimer } from '../js/classic2d/session.js';
 import { browserSuite } from './helpers/browser.mjs';
@@ -87,6 +87,8 @@ test('the pause sources, the automatic ones, the hand-offs and the confirmations
   for (const [action, c] of Object.entries(CONFIRMATIONS)) {
     assert.deepEqual({ ...c }, { action, title: 'Leave this game?', message: 'This game will count as a loss.', confirmLabel: 'Confirm' }, action);
   }
+  // With no game in progress the card's status line says so, in the canvas's words.
+  assert.equal(NO_GAME_LINE, 'No game in progress: the board is not started yet.');
 });
 
 // ---------------------------------------------------------------- pause rules
@@ -546,27 +548,43 @@ test('the pause card in the shared layout: the card and its settings in one colu
   const html = read('index.html');
   const card = html.slice(html.indexOf('<section id="pause"'), html.indexOf('<noscript>'));
   assert.match(card, /<section id="pause-card" class="ui-card ui-screen ui-screen--wide" aria-labelledby="pause-title">\s*<div class="ui-columns ui-columns--two">/,
-    'a card as wide as the canvas draws it, the Controls column the wider, so a 3D game\'s list fits a 1024 × 768 window');
+    'a wide card of two columns, so a 3D game\'s list fits a 1024 × 768 window');
   const at = (s) => { const i = card.indexOf(s); assert.ok(i > 0, `${s} is on the card`); return i; };
   assert.ok(at('id="pause-title"') < at('id="pause-actions"') && at('id="pause-actions"') < at('id="p-settings-title"')
     && at('id="p-settings-title"') < at('<aside id="pause-list"'), 'the title and actions, then Settings, then the Controls card');
-  assert.match(card, /<p id="pause-board" class="ui-text"><\/p>/, 'the board line in the ink');
+  // The title block: the title, the full board line, the status line.
+  assert.match(card, /<div id="pause-head">\s*<h2 class="ui-card__title" id="pause-title">Paused<\/h2>\s*<p id="pause-board" class="ui-text"><\/p>\s*<p id="pause-sub" class="ui-text">[^<]*<\/p>\s*<\/div>/,
+    'the title, the board line in the ink, then the status line');
   assert.match(card, /<aside id="pause-list" class="ui-panel" aria-labelledby="pause-list-title">\s*<h3 class="ui-card__title" id="pause-list-title">Controls<\/h3>\s*<dl id="pause-controls" class="ui-controls"><\/dl>\s*<\/aside>/,
     'the Controls panel: its title over one binding per row');
-  // The actions with the key hints of the keys that work on the card: Back (Esc) resumes, F2 restarts.
+  // The actions with their icons and the key hints of the keys that work on the card: Back (Esc) resumes, F2 restarts.
   const actions = card.slice(at('id="pause-actions"'), at('id="pause-confirm"'));
-  assert.match(actions, /<button id="p-resume" class="ui-button ui-button--primary" type="button">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
-  assert.match(actions, /<button id="p-home" class="ui-button ui-button--secondary" type="button">Back to start<\/button>/);
-  assert.match(actions, /<button id="p-restart" class="ui-button ui-button--secondary" type="button"><span data-label>Restart<\/span> <span class="ui-key-hint" data-action="restart" aria-hidden="true"><\/span><\/button>/);
-  assert.match(actions, /<button id="p-menu" class="ui-button ui-button--secondary" type="button">Main menu<\/button>/);
-  // Settings: a muted panel under its section label, Sound a switch, then Volume, then the 3D look settings.
+  assert.match(actions, /<button id="p-resume" class="ui-button ui-button--primary" type="button" data-icon="play">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  assert.match(actions, /<button id="p-home" class="ui-button ui-button--secondary" type="button" data-icon="cube">Back to start<\/button>/);
+  assert.match(actions, /<button id="p-restart" class="ui-button ui-button--secondary" type="button" data-icon="restart"><span data-label>Restart<\/span> <span class="ui-key-hint" data-action="restart" aria-hidden="true"><\/span><\/button>/);
+  assert.match(actions, /<button id="p-menu" class="ui-button ui-button--secondary" type="button" data-icon="arrow-left">Main menu<\/button>/);
+  // Settings: a muted panel under its section label, Sound a switch row, then Volume, then the 3D look settings.
   const settings = card.slice(at('role="group" aria-labelledby="p-settings-title"') - 80, at('<aside id="pause-list"'));
   assert.match(settings, /<div class="ui-panel ui-panel--muted ui-actions" role="group" aria-labelledby="p-settings-title">\s*<div class="ui-section-label"><h3 class="ui-section-label__text" id="p-settings-title">Settings<\/h3><\/div>/);
-  assert.match(settings, /<label class="ui-toggle" data-setting="muted"><input type="checkbox" role="switch" id="p-sound" class="ui-toggle__input"><span class="ui-toggle__label">Sound<\/span><\/label>/);
+  const switchRow = (key, id, label) => new RegExp(`<div class="ui-switchrow" data-setting="${key}"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="${id}">${label}</label></span><input type="checkbox" role="switch" id="${id}" class="ui-toggle__input"></div>`);
+  assert.match(settings, switchRow('muted', 'p-sound', 'Sound'), 'Sound: its label on the left, the switch on the right');
+  assert.match(settings, switchRow('invertY', 'p-invert', 'Invert look Y'));
+  assert.doesNotMatch(settings, /ui-toggle"/, 'no bare toggle left');
+  assert.match(settings, /<div class="ui-slider" data-setting="volume"><label class="ui-slider__label" for="p-vol">Volume<\/label>/, 'Volume: its label above the track and the value');
   assert.deepEqual([...settings.matchAll(/data-setting="(\w+)"/g)].map((m) => m[1]), ['muted', 'volume', 'lookSensitivity', 'invertY']);
-  // At the kit's breakpoint the Controls panel takes the second column beside both rows of the first.
+  // At the kit's breakpoint the two columns share the card, the Controls panel in the second beside both rows of the first.
   const kit = read('css/components.css');
-  assert.match(kit, /#pause-card > \.ui-columns--two \{ grid-template-rows: auto 1fr; \}\s*#pause-list \{ grid-column: 2; grid-row: 1 \/ span 2; \}/);
+  assert.match(kit, /#pause-card > \.ui-columns--two \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); grid-template-rows: auto 1fr; \}\s*#pause-list \{ grid-column: 2; grid-row: 1 \/ span 2; \}/);
+});
+
+test('the pause card leads with Restart and offers no Resume when no game is in progress, its status line saying so', () => {
+  const ui = read('js/ui.js');
+  assert.match(ui, /import \{ NO_GAME_LINE \} from '\.\/shell\/pause\.js';/);
+  assert.match(ui, /pauseSub\.textContent = noGame \? NO_GAME_LINE : pauseLine\(/, 'the status line');
+  assert.match(MAIN, /function gameInProgress\(\) \{\s*if \(PAUSE\.inProgress\) return true;/, 'a started, unfinished game, or a first click\'s board being generated or failed');
+  assert.match(MAIN, /function pauseInfo\(note = ''\) \{\s*const inProgress = gameInProgress\(\);/, 'the shell tells the card whether a game is in progress');
+  assert.match(MAIN, /paused: \{ defaultFocus: \(\) => \(ui\.isConfirmOpen\(\) \? '#p-confirm-no' : gameInProgress\(\) \? '#p-resume' : '#p-restart'\)/,
+    'Restart takes the focus with no game in progress');
 });
 
 test('the pause card names its Restart through its label, so the key hint stays', () => {
@@ -634,6 +652,16 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await mode(), 'paused');
     assert.equal(await boardHidden(), true, 'the board is hidden under every pause card');
     assert.deepEqual(await hand(), []);
+    // no game in progress: the status line says so, Restart leads as the primary action, no Resume
+    assert.equal(await ms(() => document.getElementById('pause-title').textContent), 'Paused');
+    assert.equal(await ms(() => document.getElementById('pause-sub').textContent), 'No game in progress: the board is not started yet.');
+    assert.equal(await visible('p-resume'), false, 'nothing to resume');
+    assert.deepEqual(await ms(() => [...document.querySelectorAll('#pause-actions > button:not(.hidden)')].map((b) => b.id)), ['p-restart', 'p-menu'], 'Restart, then Main menu');
+    assert.equal(await ms(() => document.getElementById('p-restart').classList.contains('ui-button--primary')), true, 'Restart is the primary action');
+    assert.equal(await ms(() => document.querySelector('#p-restart [data-label]').textContent), 'Restart');
+    assert.equal(await ms(() => document.activeElement?.id), 'p-restart', 'Restart takes the focus');
+    await frames(3);
+    assert.equal(await ms(() => document.getElementById('pause-sub').textContent), 'No game in progress: the board is not started yet.', 'the running time never replaces it');
     await ms(() => document.getElementById('p-menu').click());
     assert.equal(await mode(), 'menu', 'back to menu before the first click asks nothing');
 
@@ -645,6 +673,8 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await mode(), 'paused');
     assert.equal(await boardHidden(), true, 'the board is hidden while paused');
     assert.deepEqual(await hand(), ['inProgress', 'inProgress']);
+    assert.match(await ms(() => document.getElementById('pause-sub').textContent), /^Time \d+\.\d{3} s · 1 mine left$/, 'a game in progress shows its time and mines left');
+    assert.equal(await visible('p-resume'), true, 'a game in progress resumes');
     const t0 = await ms(() => globalThis.__ms.state.play.elapsedMs());
     await page.waitForFunction((start) => globalThis.__ms.state.play.elapsedMs() >= start + 200
       && globalThis.__ms.state.time * 1000 >= start + 200, t0, { timeout: patience(5000) });
@@ -761,6 +791,7 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await guarded(), false);
     assert.equal(await mode(), 'paused', 'a fixed board has no results screen: it ends on the pause card');
     assert.equal(await boardHidden(), true, 'an ended game is hidden under the card too');
+    assert.equal(await ms(() => document.getElementById('pause-sub').textContent), 'No game in progress: the board is not started yet.', 'an ended game is no game in progress');
     await ms(() => document.getElementById('p-restart').click());
     assert.equal(await visible('pause-confirm'), false, 'no confirmation once the game ended');
     assert.ok(['ready', 'playing'].includes(await mode()));
@@ -857,10 +888,11 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     await page.waitForTimeout(400);
     assert.equal(await shown('c2d-status'), false, 'the card never shows for a cancelled request');
     assert.equal(await mode(), 'classic-2d');
-    // With nothing being generated, Esc pauses as before.
+    // With nothing being generated, Esc pauses as before, onto the card of no game in progress.
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'paused');
-    await page.click('#p-resume');
+    assert.equal(await shown('p-resume'), false, 'before the first click there is nothing to resume');
+    await ms(() => globalThis.__ms.pauser.resume('key'));
     assert.equal(await mode(), 'classic-2d');
 
     // A failure: the offer of three, Retry focused, then Play a standard board after a second failure.

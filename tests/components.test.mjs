@@ -943,7 +943,7 @@ test('every control on the menu and the pause card is named and reachable by key
   const line = (name) => main.match(new RegExp(`'?\\b${name}'?: \\{[^\\n]*defaultFocus: ([^\\n]*)`))[1];
   assert.match(line('paused'), /'#p-resume'/, 'the pause card focuses Resume by default');
   assert.ok(SCREENS.pause.includes('id="p-resume"') && SCREENS.pause.includes('id="p-restart"'));
-  assert.match(SCREENS.pause, /id="p-resume"[^\n]*\n\s*<button id="p-home" class="ui-button ui-button--secondary" type="button">Back to start<\/button>/, 'Back to start follows Resume');
+  assert.match(SCREENS.pause, /id="p-resume"[^\n]*\n\s*<button id="p-home" class="ui-button ui-button--secondary" type="button" data-icon="cube">Back to start<\/button>/, 'Back to start follows Resume');
   assert.doesNotMatch(read('js/ui.js'), /Keep looking around/, 'an ended game offers no look-around resume');
   assert.match(line('menu'), /^\(\) => `#menu-entry-\$\{menuFocusEntry\(\)\}`/, 'the menu focuses its selection by default');
   assert.match(line('board-choice'), /^'[^']*data-preset/, 'the 3D board choice focuses the last played board by default');

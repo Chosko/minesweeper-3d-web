@@ -18,11 +18,12 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   `clampSettings(s)` → `{X,Y,Z,mines}` integers, mines 1..X*Y*Z − 1 (a
   1×1×1 board clamps to 0); `startGame` clamps with it.
 - `fmtDims`, `pauseLine(time, minesLeft)`, `NO_MOUSE_MSG`, `TOUCH_MSG`,
-  `boardLine3D(s, {mines?})` (`"6 × 6 × 6 · 10 mines · no-guess"`),
-  `boardLine2D` (`"30 × 16 · no-guess"`); Classic 2D's `boardTitle2D`
+  `boardLine3D(s, {mines?})` (`"6 × 6 × 6 · 10 mines · no-guess"`);
+  Classic 2D's `boardTitle2D`
   (`"Classic 2D · Expert"`) and foot line `boardFoot2D`; 3D's `boardTitle3D`
   (`"3D · Cube Intermediate"`) and `shortTitle3D` (`"3D"`);
-  `figuresLine` (re-exported).
+  `figuresLine` (re-exported). The pause card's board line joins a mode's
+  title to its size line (`boardFoot2D`, `boardLine3D` with mines).
 - `UI(cb)` — callbacks are named after the control they serve
   (`onMenuEntry`, `onBack`, `onReady*`, `onResume`, `onRestart`,
   `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleTap`,
@@ -50,7 +51,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   - confirmations: `showConfirm({title, message, confirmLabel}, onYes, onNo)`,
     `isConfirmOpen`, `closeConfirm`, `closeResetConfirm` (→ false when none
     is open);
-  - HUD: `setBoard` (the 3D title and the pause card's board line),
+  - HUD: `setBoard` (the 3D title and the pause card's full board line),
     `setTimed(on)` (off on Learn 3D), `updateHud(time, minesLeft,
     clicks?)`, `updateFigures3D(input, {tick, bests})`, `overlayBottom3D()`
     (the overlay's top row's bottom, for the touch zones), `setModes`,

@@ -104,7 +104,7 @@ test('one time format outside the live bar: the results view formats, the pause 
   assert.equal(pauseLine(11.643, 12), 'Time 11.643 s · 12 mines left');
   assert.equal(pauseLine(11643 / 1000, 1), 'Time 11.643 s · 1 mine left', 'seconds back to whole milliseconds');
   assert.equal(pauseLine(0, 0), 'Time 0.000 s · 0 mines left');
-  assert.match(ui, /pauseSub\.textContent = pauseLine\(/, 'the pause card shows that line');
+  assert.match(ui, /pauseSub\.textContent = noGame \? NO_GAME_LINE : pauseLine\(/, 'the pause card shows that line during a game');
 });
 
 // ---------------------------------------------------------------- content

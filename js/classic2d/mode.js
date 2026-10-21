@@ -116,8 +116,8 @@
 // failure carries its `count` of failures in a row. cancelGeneration() cancels the first click's
 // board while it is being generated, its card shown or not, back to the same closed board with
 // nothing reported, and returns whether it did. status() is
-// { state: 'playing' | 'won' | 'lost', time (seconds, the running time), minesLeft } for the pause
-// card.
+// { state: 'playing' | 'won' | 'lost', pending (the first click's board being generated or failed),
+// time (seconds, the running time), minesLeft } for the pause card.
 
 import { createSession, SESSION_STATE } from './session.js';
 import { CELL, PHASE } from '../engine/rules.js';
@@ -444,7 +444,8 @@ export function createClassic2DMode(report, {
       if (!game) return null;
       const s = game.session.state;
       const state = s === SESSION_STATE.WON ? 'won' : s === SESSION_STATE.LOST ? 'lost' : 'playing';
-      return { state, time: game.session.elapsedMs() / 1000, minesLeft: game.session.minesLeft };
+      const pending = s === SESSION_STATE.GENERATING || s === SESSION_STATE.FAILED;
+      return { state, pending, time: game.session.elapsedMs() / 1000, minesLeft: game.session.minesLeft };
     },
     get boardHidden() { return hidden; },
     /** The open board's view, or null: for the shell's debug hook. */

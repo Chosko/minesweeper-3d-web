@@ -739,15 +739,17 @@
     <section id="pause-card" class="ui-card ui-screen ui-screen--wide" aria-labelledby="pause-title">
       <div class="ui-columns ui-columns--two">
         <div class="ui-column">
-          <h2 class="ui-card__title" id="pause-title">Paused</h2>
-          <p id="pause-board" class="ui-text"></p>
-          <p id="pause-sub" class="ui-text">Time 0.00 &middot; 10 mines left</p>
+          <div id="pause-head">
+            <h2 class="ui-card__title" id="pause-title">Paused</h2>
+            <p id="pause-board" class="ui-text"></p>
+            <p id="pause-sub" class="ui-text">Time 0.00 &middot; 10 mines left</p>
+          </div>
           <p id="pause-note" class="ui-text ui-text--warning hidden" role="alert"></p>
           <div id="pause-actions" class="ui-actions">
-            <button id="p-resume" class="ui-button ui-button--primary" type="button">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
-            <button id="p-home" class="ui-button ui-button--secondary" type="button">Back to start</button>
-            <button id="p-restart" class="ui-button ui-button--secondary" type="button"><span data-label>Restart</span> <span class="ui-key-hint" data-action="restart" aria-hidden="true"></span></button>
-            <button id="p-menu" class="ui-button ui-button--secondary" type="button">Main menu</button>
+            <button id="p-resume" class="ui-button ui-button--primary" type="button" data-icon="play">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+            <button id="p-home" class="ui-button ui-button--secondary" type="button" data-icon="cube">Back to start</button>
+            <button id="p-restart" class="ui-button ui-button--secondary" type="button" data-icon="restart"><span data-label>Restart</span> <span class="ui-key-hint" data-action="restart" aria-hidden="true"></span></button>
+            <button id="p-menu" class="ui-button ui-button--secondary" type="button" data-icon="arrow-left">Main menu</button>
           </div>
           <div id="pause-confirm" class="ui-confirm hidden" role="alertdialog" aria-labelledby="pause-confirm-title" aria-describedby="pause-confirm-text">
             <h3 id="pause-confirm-title" class="ui-confirm__title">Leave this game?</h3>
@@ -761,10 +763,10 @@
         <div class="ui-column">
           <div class="ui-panel ui-panel--muted ui-actions" role="group" aria-labelledby="p-settings-title">
             <div class="ui-section-label"><h3 class="ui-section-label__text" id="p-settings-title">Settings</h3></div>
-            <label class="ui-toggle" data-setting="muted"><input type="checkbox" role="switch" id="p-sound" class="ui-toggle__input"><span class="ui-toggle__label">Sound</span></label>
+            <div class="ui-switchrow" data-setting="muted"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="p-sound">Sound</label></span><input type="checkbox" role="switch" id="p-sound" class="ui-toggle__input"></div>
             <div class="ui-slider" data-setting="volume"><label class="ui-slider__label" for="p-vol">Volume</label><output class="ui-slider__value" id="p-vol-val" for="p-vol">70%</output><input type="range" id="p-vol" class="ui-slider__input" min="0" max="100" step="1" value="70" data-format="percent" data-scale="100"></div>
             <div class="ui-slider" data-setting="lookSensitivity"><label class="ui-slider__label" for="p-sens">Look sensitivity</label><output class="ui-slider__value" id="p-sens-val" for="p-sens">1.00&times;</output><input type="range" id="p-sens" class="ui-slider__input" min="0.25" max="3" step="0.05" value="1" data-format="multiplier"></div>
-            <label class="ui-toggle" data-setting="invertY"><input type="checkbox" role="switch" id="p-invert" class="ui-toggle__input"><span class="ui-toggle__label">Invert look Y</span></label>
+            <div class="ui-switchrow" data-setting="invertY"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="p-invert">Invert look Y</label></span><input type="checkbox" role="switch" id="p-invert" class="ui-toggle__input"></div>
           </div>
         </div>
         <aside id="pause-list" class="ui-panel" aria-labelledby="pause-list-title">

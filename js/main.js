@@ -495,7 +495,7 @@ const SHELL = createRouter({
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, LOCK_FALLBACK.readyMessage(d.msg), { rules: FIRST_USE.rules3D && !S.learn, blocked: LOCK_FALLBACK.blocked, learn: FIRST_USE.rules3D && !S.learn && !S.started }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => backGame(source) },
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => backGame(source) },
-    paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
+    paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameInProgress() ? '#p-resume' : '#p-restart'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
     'learn-end': { defaultFocus: '#learn-end-primary', show: (d = {}) => ui.showLearnEnd(!!d.won), hide: () => ui.hideLearnEnd(), back: () => SHELL.go('board-choice') },
     results: { defaultFocus: '#r-again', show: (d) => showResults(d ?? RESULTS.current), hide: () => { lookPending = false; RESULTS_VIEW.hide(); }, back: ({ source }) => resultsBack(source) },
     look: { defaultFocus: null, show: () => showLook(true), hide: () => showLook(false), back: () => endLook() },
@@ -1533,7 +1533,7 @@ function setBoardHidden(on) {
   if (on) renderer?.dropMotion();
   if (MODES.active === 'classic-2d') mode2d.hideBoard(on);
 }
-/** Whether the active game is over (the pause card then leads with Play again). */
+/** Whether the active game is over (Back on the pause card then goes to the menu). */
 function gameOver() {
   if (MODES.active === 'classic-2d') return mode2d.status()?.state !== 'playing';
   return !!S.game && S.game.state !== 'playing';
@@ -1547,11 +1547,21 @@ function stopPlayInput() {
   touch3D.reset(); // held touches are dropped; the toolbar's latched modes stay
   document.body.classList.remove('lockless', 'drag-look');
 }
+/**
+ * Whether the pause card has a game in progress to resume: a started, unfinished game, or a first
+ * click whose board is being generated or failed. With none, the card says so and leads with Restart.
+ */
+function gameInProgress() {
+  if (PAUSE.inProgress) return true;
+  if (MODES.active === 'classic-2d') return !!mode2d.status()?.pending;
+  return ['generating', 'failed'].includes(S.play?.state);
+}
 function pauseInfo(note = '') {
-  if (MODES.active === 'classic-2d') return { ...mode2d.status(), note, mode: MODES.active };
+  const inProgress = gameInProgress();
+  if (MODES.active === 'classic-2d') return { ...mode2d.status(), inProgress, note, mode: MODES.active };
   const g = S.game;
   const e = S.endState;
-  return { state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft, note, mode: '3d' };
+  return { state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft, inProgress, note, mode: '3d' };
 }
 
 function makeDemo() {
@@ -1865,7 +1875,9 @@ function padStep(el, delta) {
  * table's or a menu's controls in DOM order, else the spatial search, else the next or previous
  * control in DOM order. Up and down, the search treats a board choice's row of custom fields as one
  * control, starting from the whole row past its own controls, and aims at a table's buttons by their
- * row, so a table is entered from above or below wherever its buttons sit in the row. In a column
+ * row, so a table is entered from above or below wherever its buttons sit in the row, and at a switch
+ * row's switch or a slider by its whole row, so a switch at its row's end and a slider short of it are
+ * above or below each other. In a column
  * layout (a ui-columns of ui-column), a move from outside into the columns enters them at their first
  * control (Down) or last (Up); inside, Up and Down search only the column `cur` is in while it is laid
  * out as one (Records; not Settings' columns below its widest windows, whose sections are placed one
@@ -1879,9 +1891,10 @@ function navStep(layer, items, cur, dir) {
     spatial: (d) => {
       const row = vertical && cur.closest('form .ui-row');
       const column = vertical && laidOutColumn(cur.closest('.ui-column'));
+      const box = (e) => (vertical && (e.closest('tr') || e.closest('.ui-switchrow') || e.closest('.ui-slider'))) || e;
       const from = (row || cur).getBoundingClientRect();
       const cands = items.filter((e) => e !== cur && !(row && row.contains(e)) && (!column || column.contains(e)));
-      const pick = pickInDirection(from, cands.map((e) => ({ rect: ((vertical && e.closest('tr')) || e).getBoundingClientRect(), item: e })), d);
+      const pick = pickInDirection(from, cands.map((e) => ({ rect: box(e).getBoundingClientRect(), item: e })), d);
       const columns = vertical && !cur.closest('.ui-column') && pick?.closest('.ui-column')?.parentElement;
       if (!columns) return pick;
       const inside = items.filter((e) => columns.contains(e));

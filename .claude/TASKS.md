@@ -1211,7 +1211,7 @@ Feature: shared-screen-layout
 
 ## 234. Pause card to the canvas
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/ui.js, js/shell/pause.js, css/components.css, .claude/context/app-shell-pause.md
 Preconditions: 221, 233

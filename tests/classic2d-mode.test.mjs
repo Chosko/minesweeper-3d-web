@@ -580,14 +580,17 @@ test('a no-guess failure shows its offer; a standard board keeps no-guess off fo
 test('cancelGeneration goes back to the closed board: the request cancelled, nothing reported, a later first click asks afresh', async () => {
   const { host, cl, act, flow, mode, clock, events, board } = setup({ hold: true, choice: { size: 'beginner', noGuess: true } });
   assert.equal(mode.cancelGeneration(), false, 'nothing to cancel on a closed board');
+  assert.equal(mode.status().pending, false, 'a closed board has no board pending');
   const view = board();
   const p = act('reveal', 40);
+  assert.equal(mode.status().pending, true, 'the first click\'s board is pending from the click, its card shown or not');
   clock.advance(1000);
   assert.deepEqual(flow.calls.filter((c) => c[0] === 'generating').at(-1), ['generating', true]);
   assert.equal(mode.cancelGeneration(), true);
   const client = cl.made.at(-1);
   assert.equal(client.cancels, 1, 'cancelled through the generation client');
   assert.equal(await p, null);
+  assert.equal(mode.status().pending, false, 'cancelled: nothing pending');
   assert.equal(mode.cancelGeneration(), false, 'nothing left to cancel');
   assert.deepEqual(flow.calls.filter((c) => c[0] === 'generating').at(-1), ['generating', false], 'the card goes');
   assert.equal(board(), view, 'the same closed board, not a new game');
@@ -1836,13 +1839,13 @@ function measurePauseCard() {
     rows, innerRight,
     fonts: {
       title: size('#pause-title'), status: size('#pause-sub'), button: size('#p-menu'), slider: size('.ui-slider__label'),
-      switch: size('.ui-toggle__label'), heading: size('#p-settings-title'), list: size('#pause-controls dd'),
+      switch: size('.ui-switchrow__label'), heading: size('#p-settings-title'), list: size('#pause-controls dd'),
       keyName: size('#pause-controls dt'), kbd: size('#pause-controls kbd'), statLabel: size('.ui-stat__label'),
     },
   };
 }
 // The pause card's font sizes with a fine pointer, which its two columns leave as they are.
-const PAUSE_FONTS_FINE = Object.freeze({ title: 24, status: 16, button: 17, slider: 16, switch: 16, heading: 13, list: 15, keyName: 15, kbd: null, statLabel: null });
+const PAUSE_FONTS_FINE = Object.freeze({ title: 34, status: 15, button: 17, slider: 16, switch: 16, heading: 13, list: 15, keyName: 15, kbd: null, statLabel: null });
 
 test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
   const env = await suite.open(t);
@@ -1872,7 +1875,7 @@ test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in tw
       assert.deepEqual(m.scrolls, { card: false, overlay: false, document: false }, `${at}: nothing scrolls`);
       assert.ok(m.list.left >= m.settings.right && m.list.left >= m.actions.right && m.list.left >= m.title.right,
         `${at}: the controls list in the second column, beside the title, the actions and the settings`);
-      assert.ok(m.list.right - m.list.left > m.settings.right - m.settings.left, `${at}: the second column the wider`);
+      assert.ok(Math.abs((m.list.right - m.list.left) - (m.settings.right - m.settings.left)) <= 1, `${at}: two equal columns`);
       assert.ok(m.title.bottom <= m.actions.top && m.actions.bottom <= m.settings.top, `${at}: the first column runs title, actions, Settings`);
       assert.ok(m.rows.length > 0, `${at}: the controls list's keys`);
       for (const row of m.rows) {

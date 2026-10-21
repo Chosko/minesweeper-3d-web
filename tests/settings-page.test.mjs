@@ -737,6 +737,17 @@ test('a bound control writes the store at once, and reports the player\'s change
   assert.equal(vol.input.value, '90', 'and stops following the store');
 });
 
+test('a switch row binds like a toggle: its switch shows and writes the store', async () => {
+  const store = await loadedStore({ invertY: true });
+  const input = new FakeEl({ class: 'ui-toggle__input', type: 'checkbox' });
+  const row = new FakeEl({ class: 'ui-switchrow', 'data-setting': 'invertY' }, [input]);
+  bindSettingControls([row], store);
+  assert.equal(input.checked, true);
+  input.checked = false;
+  input.fire('change');
+  assert.equal(store.get('invertY'), false);
+});
+
 test('bindSettingControls refuses a control for an unknown setting', async () => {
   const store = await loadedStore();
   assert.throws(() => bindSettingControls([toggle('nope').root], store), /unknown/);
@@ -951,7 +962,7 @@ test('the Settings choices and the Controls panel\'s tabs take only Left and Rig
 test('the pause card\'s sensitivity, invert Y and volume are bound to the store; the main menu holds no setting', () => {
   const pause = between(INDEX, '<section id="pause"', '<noscript>');
   assert.match(pause, /<div class="ui-slider" data-setting="lookSensitivity">/);
-  assert.match(pause, /<label class="ui-toggle" data-setting="invertY">/);
+  assert.match(pause, /<div class="ui-switchrow" data-setting="invertY">/);
   assert.match(pause, /<div class="ui-slider" data-setting="volume">/);
   assert.doesNotMatch(between(INDEX, '<section id="menu"', '<!-- 3D board choice -->'), /data-setting|menu-sound|menu-vol/, 'sound and volume live on the Settings page');
   assert.match(MAIN, /bindSettingControls\(document\.querySelectorAll\('\[data-setting\]'\), SETTINGS/);
@@ -964,8 +975,8 @@ test('on the pause card Sound comes first, then Volume, and M still toggles it; 
   assert.deepEqual(audio.settings, ['muted', 'volume'], 'the Settings page: Sound, then Volume');
   assert.doesNotMatch(read('js/ui.js'), /menu-sound/);
   const pause = between(INDEX, '<section id="pause"', '<noscript>');
-  assert.match(pause, /<label class="ui-toggle" data-setting="muted"><input type="checkbox" role="switch" id="p-sound" class="ui-toggle__input"><span class="ui-toggle__label">Sound<\/span><\/label>/,
-    'the pause card\'s Sound is the Settings page\'s switch, bound to the store');
+  assert.match(pause, /<div class="ui-switchrow" data-setting="muted"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="p-sound">Sound<\/label><\/span><input type="checkbox" role="switch" id="p-sound" class="ui-toggle__input"><\/div>/,
+    'the pause card\'s Sound is the kit\'s switch row, bound to the store');
   assert.ok(pause.indexOf('id="p-sound"') < pause.indexOf('data-setting="volume"'), 'pause card: Sound, then Volume');
   assert.match(MAIN, /code === 'KeyM'\) toggleSound\(\)/);
 });

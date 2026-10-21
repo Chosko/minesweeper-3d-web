@@ -72,6 +72,14 @@ test('in a browser, the pause card, its confirmation, the board status card and 
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'ready');
     await page.evaluate(() => globalThis.__ms.forcePlay());
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'playing');
+    // A game in progress on the same board, its first click beside a mine so it goes on.
+    await page.evaluate(() => {
+      globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10, minePositions: [1, 50, 80, 100, 120, 140, 160, 180, 200, 215] });
+      globalThis.__ms.forcePlay();
+      globalThis.__ms.aimAt(0);
+      globalThis.__ms.click('left');
+    });
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.started), true, 'the game is in progress');
     await page.click('#hud-pause');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'paused');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'p-resume', 'Resume takes the focus');
@@ -87,10 +95,51 @@ test('in a browser, the pause card, its confirmation, the board status card and 
       if (fits) assert.ok(box.sh <= box.ch, `the pause card fits ${width} × ${height} (${box.sh} > ${box.ch})`);
       assert.ok(box.sw <= box.w, `no horizontal scroll at ${width} × ${height}`);
     }
+    // The card at each artboard's size: its width and padding, two equal columns on a desktop, one on a phone.
+    const layout = () => page.evaluate(() => {
+      const card = document.getElementById('pause-card');
+      const s = getComputedStyle(card);
+      const first = card.querySelector('.ui-column').getBoundingClientRect();
+      const list = document.getElementById('pause-list').getBoundingClientRect();
+      return { width: Math.round(card.getBoundingClientRect().width), padding: s.padding, side: list.left >= first.right, firstW: Math.round(first.width), listW: Math.round(list.width) };
+    });
+    for (const [width, height, cardW] of [[1920, 1080, 920], [1366, 768, 880], [1024, 768, 860]]) {
+      await page.setViewportSize({ width, height });
+      const l = await layout();
+      assert.equal(l.width, cardW, `the card is ${cardW} wide at ${width} × ${height}`);
+      assert.equal(l.padding, '26px 28px', `its padding at ${width} × ${height}`);
+      assert.ok(l.side && Math.abs(l.firstW - l.listW) <= 1, `two equal columns at ${width} × ${height} (${l.firstW}, ${l.listW})`);
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    const phone = await layout();
+    assert.equal(phone.padding, '18px', 'its padding on a phone');
+    assert.equal(phone.side, false, 'one column on a phone');
+    // The title block: the title, the full board line in bold, the status line in the mono face.
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    const head = await page.evaluate(() => ['pause-title', 'pause-board', 'pause-sub'].map((id) => {
+      const s = getComputedStyle(document.getElementById(id));
+      return { size: s.fontSize, weight: s.fontWeight, family: s.fontFamily, top: s.marginTop, text: document.getElementById(id).textContent };
+    }));
+    assert.deepEqual([head[0].size, head[0].weight], ['34px', '800'], 'Paused, 34 px heavy');
+    assert.deepEqual([head[1].size, head[1].weight, head[1].top], ['15px', '700', '6px'], 'the board line, 15 px bold, 6 px under the title');
+    assert.equal(head[1].text, '3D · Cube Intro · 6 × 6 × 6 · 10 mines', 'the full board line: mode, board, size and mines');
+    assert.deepEqual([head[2].size, head[2].top], ['15px', '4px'], 'the status line, 15 px, 4 px under the board line');
+    assert.match(head[2].family, /JetBrains Mono/, 'the status line in the mono face');
+    // Each action leads with its icon: play, cube, restart, arrow left.
+    assert.deepEqual(await page.evaluate(() => ['p-resume', 'p-home', 'p-restart', 'p-menu'].map((id) => document.querySelector(`#${id} > .ui-icon`)?.dataset.icon ?? null)),
+      ['play', 'cube', 'restart', 'arrow-left']);
+    // Sound and Invert look Y as switch rows: the label on the left, the switch at the row's right edge.
+    assert.deepEqual(await page.evaluate(() => ['p-sound', 'p-invert'].map((id) => {
+      const input = document.getElementById(id);
+      const row = input.closest('.ui-switchrow').getBoundingClientRect();
+      const label = document.querySelector(`label[for="${id}"]`).getBoundingClientRect();
+      return label.left < input.getBoundingClientRect().left && Math.abs(row.right - input.getBoundingClientRect().right) <= 1;
+    })), [true, true]);
     await page.setViewportSize({ width: 1100, height: 900 });
     assert.deepEqual(await page.evaluate(() => ['p-resume', 'p-home', 'p-restart', 'p-menu'].map((id) => document.querySelector(`#${id} .ui-key-hint__key`)?.textContent ?? null)),
       ['Esc', null, 'F2', null], 'Resume and Restart show the keys that work on the card');
     await page.click('#p-menu');
+    await page.click('#p-confirm-yes');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Main menu returns to the menu');
 
     // A started game's Main menu asks first: the confirmation in place of the actions, readable.
@@ -155,6 +204,8 @@ test('in a browser, the pause card, its confirmation, the board status card and 
     assert.equal(await page.evaluate(() => document.getElementById('p-resume').offsetParent), null, 'an ended game has nothing to resume');
     assert.equal(await page.evaluate(() => document.querySelector('#p-restart [data-label]').textContent), 'Play again');
     assert.equal(await page.evaluate(() => document.querySelector('#p-restart .ui-key-hint__key')?.textContent), 'F2', 'its key hint stays');
+    assert.equal(await page.evaluate(() => document.getElementById('pause-sub').textContent), 'No game in progress: the board is not started yet.', 'the status line: no game in progress');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'p-restart', 'Play again takes the focus');
     // Back on an ended game's card goes to the main menu, asking nothing.
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Back leaves an ended game for the menu');

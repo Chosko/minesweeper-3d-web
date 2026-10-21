@@ -1159,13 +1159,13 @@ test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two c
       }),
       fonts: {
         title: size('#pause-title'), status: size('#pause-sub'), button: size('#p-menu'), slider: size('.ui-slider__label'),
-        switch: size('.ui-toggle__label'), heading: size('#p-settings-title'), list: size('#pause-controls dd'),
+        switch: size('.ui-switchrow__label'), heading: size('#p-settings-title'), list: size('#pause-controls dd'),
         keyName: size('#pause-controls dt'), kbd: size('#pause-controls kbd'), statLabel: size('.ui-stat__label'),
       },
     };
   };
   // The card's font sizes with a fine pointer, which its two columns leave as they are.
-  const FONTS = { title: 24, status: 16, button: 17, slider: 16, switch: 16, heading: 13, list: 15, keyName: 15, kbd: null, statLabel: null };
+  const FONTS = { title: 34, status: 15, button: 17, slider: 16, switch: 16, heading: 13, list: 15, keyName: 15, kbd: null, statLabel: null };
   const fits = (m, at) => {
     assert.ok(m.columns, `${at}: the card composed with ui-screen--wide and a ui-columns--two`);
     assert.ok(m.card.top >= 0 && m.card.left >= 0 && m.card.right <= 1024 && m.card.bottom <= 768,

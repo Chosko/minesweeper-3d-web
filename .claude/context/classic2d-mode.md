@@ -22,8 +22,8 @@ shell hands in its flow and its sound sink. The area overview is
   `tapMode` / `setTapMode('reveal' | 'flag')` (the Tap choice's value,
   `reveal` at first, kept for the page), `boardGame` (for the debug hook),
   `retry()`, `playStandard()`, `cancelGeneration()` → whether a board being
-  generated was cancelled, `loadChoice()`, `status()` → `{state, time,
-  minesLeft}`, `boardHidden`, `boardView` (for the debug hook); the
+  generated was cancelled, `loadChoice()`, `status()` → `{state, pending (the
+  first click's board being generated or failed), time, minesLeft}`, `boardHidden`, `boardView` (for the debug hook); the
   contract's optional `replay(summary)` is the session's.
 - `flow` is `{openBoardChoice(choice), show(), container(), hud({seconds,
   minesLeft, clicks}), figures?(input, {tick}), board({width, height, mines,

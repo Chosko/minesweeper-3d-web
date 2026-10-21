@@ -267,7 +267,15 @@ test('in a browser, a 3D game starts framed, and Home, R and "Back to start" ret
     assert.ok(close(await cam(), await spawn()), 'R returns to start');
     assert.equal(await ms(() => globalThis.__ms.state.started), false, 'nothing is played');
 
-    // paused: the keys do nothing; the card offers "Back to start" after Resume, which resumes
+    // paused: the keys do nothing; a game in progress's card offers "Back to start" after Resume, which resumes
+    await ms(() => {
+      const m = globalThis.__ms;
+      m.start(6, 6, 6, 10, [1, 50, 80, 100, 120, 140, 160, 180, 200, 215]);
+      m.forcePlay();
+      m.aimAt(0); // beside a mine: the game goes on
+      m.click('left');
+    });
+    assert.equal(await ms(() => globalThis.__ms.state.started), true, 'a game in progress');
     await wander();
     const away = await cam();
     await ms(() => globalThis.__ms.pause());

@@ -414,7 +414,7 @@ export function bindSettingControls(elements, store, { onUserChange = () => {}, 
     const key = el.getAttribute('data-setting');
     entryOf(key);
     if (hasClass(el, 'ui-slider')) return bindSlider(el, key, store, changed);
-    if (hasClass(el, 'ui-toggle')) return bindToggle(el, key, store, changed);
+    if (hasClass(el, 'ui-toggle') || hasClass(el, 'ui-switchrow')) return bindToggle(el, key, store, changed);
     if (hasClass(el, 'ui-segmented') && key === 'theme' && theme) return bindThemeList(el, store, changed, theme, themeSheet);
     if (hasClass(el, 'ui-segmented')) return bindChoice(el, key, store, changed);
     throw new Error(`settings page: no control for "${key}"`);

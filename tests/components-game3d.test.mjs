@@ -201,7 +201,8 @@ for (const [size, device, panelWidth, density] of GAME_3D_SIZES) {
       assert.equal(await ms(() => globalThis.__ms.state.mode), 'paused');
       // Restart in the counter strip starts a fresh game of the same board: a mouse click enters it as the
       // ready card's click does (pointer lock), a tap stays in lockless touch play.
-      if (touch) await page.tap('#p-resume'); else await ms(() => globalThis.__ms.forcePlay());
+      // Before the first click the card has no game to resume: back to play through the pause controller.
+      if (touch) await ms(() => globalThis.__ms.pauser.resume('key')); else await ms(() => globalThis.__ms.forcePlay());
       await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
       await ms(() => { globalThis.__before = globalThis.__ms.state.play; });
       if (touch) await page.tap('#hud-restart'); else await page.click('#hud-restart');

@@ -59,14 +59,15 @@ bind.
     body `#settings-body` from `settingsPageHtml()`,
     [settings-page.md](settings-page.md));
   - pause card `#pause-card` (`ui-screen--wide`, a `ui-columns--two`):
-    a `ui-column` of the title, `#pause-board`, the status lines,
-    `#pause-actions` (primary first; `#p-home` "Back to start" only for a
-    3D game in play) and `#pause-confirm` (`#p-confirm-yes` a
-    `ui-button--danger`, `#p-confirm-no`), then the Settings panel (Sound,
-    volume, the 3D look controls) whose shortcuts carry `data-setting`,
-    then the panel `#pause-list` of `#pause-controls`; at the kit's
-    breakpoint `#pause-list` takes the second column alone, and below it
-    everything is one column in markup order
+    a `ui-column` of the title block `#pause-head` (`#pause-title`,
+    `#pause-board`, `#pause-sub`), `#pause-actions` (primary first, each
+    with its `data-icon`; `#p-home` "Back to start" only for a 3D game in
+    play) and `#pause-confirm` (`#p-confirm-yes` a `ui-button--danger`,
+    `#p-confirm-no`), then the Settings panel (Sound and invert Y as
+    `ui-switchrow`, volume, look sensitivity) whose shortcuts carry
+    `data-setting`, then the panel `#pause-list` of `#pause-controls`; at
+    the kit's breakpoint `#pause-list` takes the second of two equal
+    columns alone, and below it everything is one column in markup order
     ([app-shell-pause.md](app-shell-pause.md));
   - results `#results`: the frame `#results-frame`, its head
     (`#results-trophy`, `#results-title`, `#results-board`, the rank

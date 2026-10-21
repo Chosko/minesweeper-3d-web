@@ -100,7 +100,8 @@ Reset (`js/settings/reset.js`)
   (the last two only on a 3D game's pause card) all carry `data-setting`,
   and one
   `bindSettingControls(document.querySelectorAll('[data-setting]'), …)` in
-  `js/main.js` binds them, so every copy shows the same value. A slider's
+  `js/main.js` binds them (a `ui-switchrow` like a `ui-toggle`), so every
+  copy shows the same value. A slider's
   `data-scale` converts its units to the stored value.
 - **Reset is clear, then reload.** `run()` awaits `waitFor()` (a rejection
   ignored), then clears storage, deletes every blob `blobStore.list()`

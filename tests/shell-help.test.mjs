@@ -13,7 +13,7 @@ import {
   HUD_STRIP, HINT_STRIP, HELP_FOOT, HINT_TEXT, hintText, createActiveDevice,
 } from '../js/settings/bindings.js';
 import { TapToggle, SPACE_TAP_MS } from '../js/input.js';
-import { boardLine3D, boardLine2D } from '../js/ui.js';
+import { boardLine3D } from '../js/ui.js';
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -148,8 +148,6 @@ test('a no-guess board says so on its board line', () => {
   assert.equal(boardLine3D({ X: 6, Y: 6, Z: 6, mines: 10, noGuess: false }), '6 × 6 × 6');
   assert.equal(boardLine3D({ X: 6, Y: 6, Z: 6, mines: 10, noGuess: true }, { mines: true }), '6 × 6 × 6 · 10 mines · no-guess');
   assert.equal(boardLine3D({ X: 2, Y: 2, Z: 1, mines: 1 }, { mines: true }), '2 × 2 × 1 · 1 mine');
-  assert.equal(boardLine2D({ width: 30, height: 16, noGuess: true }), '30 × 16 · no-guess');
-  assert.equal(boardLine2D({ width: 9, height: 9, noGuess: false }), '9 × 9');
 });
 
 // ---------------------------------------------------------------- markup and wiring
@@ -330,7 +328,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     assert.match(await textOf('#pause-controls'), /Move the cursor/);
     assert.doesNotMatch(await textOf('#pause-controls'), /Look around/);
     assert.doesNotMatch(await textOf('#pause-controls'), /Long-press/, 'no touch rows with a mouse and keyboard');
-    assert.equal(await textOf('#pause-board'), '9 × 9');
+    assert.equal(await textOf('#pause-board'), `${await textOf('#c2d-title')} · 9 × 9 · 10 mines`, 'the full board line: mode, board, size and mines');
     assert.equal(await shown('p-sens'), false, 'no look sensitivity in Classic 2D');
     assert.equal(await shown('p-invert'), false, 'no invert Y in Classic 2D');
     assert.ok(await shown('p-vol'), 'volume in both modes');
@@ -341,7 +339,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'beginner', custom: { width: 9, height: 9, mines: 10 }, noGuess: true }));
     assert.equal(await textOf('#c2d-size'), '9 × 9 · 10 mines · no-guess');
     await page.keyboard.press('Escape');
-    assert.equal(await textOf('#pause-board'), '9 × 9 · no-guess');
+    assert.equal(await textOf('#pause-board'), 'Classic 2D · Beginner · 9 × 9 · 10 mines · no-guess');
     await ms(() => globalThis.__ms.pauser.toMenu());
 
     // 3D, no-guess: the ready card, the readout and the pause card; the 3D rows and the look settings.
@@ -352,7 +350,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     assert.match(await textOf('#hud-tools'), /F fullscreen/);
     await ms(() => { globalThis.__ms.forcePlay(); globalThis.__ms.pause(); });
     assert.equal(await mode(), 'paused');
-    assert.equal(await textOf('#pause-board'), '6 × 6 × 6 · no-guess');
+    assert.equal(await textOf('#pause-board'), '3D · Cube Intro · 6 × 6 × 6 · 10 mines · no-guess');
     assert.match(await textOf('#pause-controls'), /Look around/);
     assert.ok(await shown('p-sens'), 'look sensitivity on a 3D game\'s pause card');
     assert.ok(await shown('p-invert'));

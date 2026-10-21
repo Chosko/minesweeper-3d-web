@@ -405,7 +405,7 @@ test('the shell declares a default focus for each screen it shows', () => {
   assert.match(decl['board-choice'], /data-preset/, 'the 3D board choice focuses the last played board');
   assert.equal(decl.ready, '#ready-btn');
   assert.equal(decl.ctxlost, '#ctx-lost-btn');
-  assert.match(SCREEN_TABLE, /paused: \{[^\n]*defaultFocus: \(\) =>[^\n]*'#p-restart'[^\n]*'#p-resume'/, 'pause: Resume, or Play again once ended');
+  assert.match(SCREEN_TABLE, /paused: \{[^\n]*defaultFocus: \(\) =>[^\n]*gameInProgress\(\) \? '#p-resume' : '#p-restart'/, 'pause: Resume during a game, else Restart');
 });
 
 test('Esc and the controller back button always resolve Back through the router', () => {
@@ -478,7 +478,7 @@ test('in a browser, the keyboard walks menu → screen → Back with the default
     await page.evaluate(() => { globalThis.__ms.start(5, 5, 5, 5); globalThis.__ms.forcePlay(); });
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'paused', 'Esc while playing means Pause');
-    assert.equal(await active(), 'p-resume');
+    assert.equal(await active(), 'p-restart', 'before the first click no game is in progress: Restart takes the focus');
     await page.evaluate(() => globalThis.__ms.state.game && document.getElementById('p-menu').click());
     assert.equal(await mode(), 'menu');
     await page.click('#menu-entry-settings');
@@ -573,15 +573,15 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
     await page.evaluate(() => { globalThis.__ms.start(5, 5, 5, 5); globalThis.__ms.forcePlay(); });
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'paused');
-    assert.equal((await focus()).id, 'p-resume');
+    assert.equal((await focus()).id, 'p-restart', 'no game in progress before the first click');
     await walkTo('ArrowDown', 'p-sens');
     const sens = await page.inputValue('#p-sens');
     await page.keyboard.press('ArrowRight');
     assert.equal((await focus()).id, 'p-sens', 'Right stays on the slider');
     assert.notEqual(await page.inputValue('#p-sens'), sens, 'and moves its value');
     await page.keyboard.press('ArrowLeft');
-    await walkTo('ArrowUp', 'p-resume');
-    assert.equal(await mode(), 'paused', 'the arrows never resume');
+    await walkTo('ArrowUp', 'p-restart');
+    assert.equal(await mode(), 'paused', 'the arrows never restart or resume');
     await walkTo('ArrowDown', 'p-menu');
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'menu');
