@@ -1,7 +1,7 @@
 # Runbook: design-fixes-implementation
 
 Created: 2026-10-20 · Source: /runbook-create interview · Model: opus
-Last step number: 34
+Last step number: 35
 
 ## [x] 1. Implement task 214 — Full test runs reliable again: the stale counter test, the random first click, the theme-switch flakes and the slow components file
 
@@ -446,3 +446,17 @@ Context:
 ```
 
 Done: 2026-10-21, commit `0bf3d39` (7 files, +36/-14).
+
+## [ ] 35. Resume the design-fixes follow-ups and resolve them with the owner
+
+Depends on: none
+
+Needs: agent+human
+
+Context: none
+
+```prompt
+/session-resume design-fixes-follow-ups
+
+That handoff (.claude/sessions/2026-10-21-1034-design-fixes-follow-ups.md) holds the nine numbered follow-ups runbook 8's closing report left open, each with its context. After the briefing, continue rather than stop: with the owner present, start at the handoff's "Exact next step" — put follow-up 1's FEATURES.md flip question and follow-up 3's five design questions to the owner in one message — then act on the owner's replies by number with the follow-ups-resolve skill. The step is done when every one of the nine items has been executed, turned into a task or runbook step, or explicitly dropped by the owner.
+```
