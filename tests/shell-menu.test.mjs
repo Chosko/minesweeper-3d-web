@@ -779,6 +779,12 @@ test('in a browser, the menu fits each window: the title\'s size, the entries as
     // One mouse page, a controller connected but not yet used, resized through the desktop artboards.
     const { page, press } = await controllerPage(browser, base);
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
+    // The previews' tiles are read with the board module's gap: until its number font has loaded the
+    // skin has no module, and the board is laid out — steadily — with none.
+    await page.evaluate(async () => {
+      const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+      while (!BOARD_ART.current()) await new Promise((r) => setTimeout(r, 20));
+    });
     for (const size of SIZES.filter((s) => !s.phone)) {
       const { width, height } = size;
       await resize(page, width, height);

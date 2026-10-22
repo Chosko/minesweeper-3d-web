@@ -1189,13 +1189,16 @@ test('in a browser: Settings from the menu, its bindings panel, the theme list w
     assert.equal(await mode(), 'menu');
 
     // The controller operates the page: A opens it and switches a toggle, Left / Right step a slider, B is Back.
-    // The game polls the pad first thing in each animation frame, so a press held through one frame is
-    // seen exactly once, short of the auto-repeat delay.
+    // Held for exactly one poll: the game's frame loop registers its next animation frame before this
+    // callback, so within one frame its poll reads the press and this callback releases it, in the page,
+    // with no round trip in between — the auto-repeat never fires however slow the machine. Two more
+    // frames, so the release is polled before the next press.
     const frames = (count) => ms((n) => new Promise((r) => { const step = () => (--n ? requestAnimationFrame(step) : r()); requestAnimationFrame(step); }), count);
     const tap = async (button) => {
-      await ms((btn) => globalThis.__pad.press(btn, true), button);
-      await frames(1);
-      await ms((btn) => globalThis.__pad.press(btn, false), button);
+      await ms((btn) => new Promise((done) => {
+        globalThis.__pad.press(btn, true);
+        requestAnimationFrame(() => { globalThis.__pad.press(btn, false); done(); });
+      }), button);
       await frames(2);
     };
     const BTN = { A: 0, B: 1, DOWN: 13, RIGHT: 15 };
