@@ -268,7 +268,7 @@ function render(text, glyphs) {
 
 /** A row text in plain words: a key by its name, a controller button by its glyph, no key caps. */
 function words(text, glyphs) {
-  return escape(text.replace(/\[([^\]]+)\]/g, '$1').replace(/\{([a-z]+)\}/g, (m, name) => (Object.hasOwn(glyphs, name) ? glyphs[name] : m)));
+  return escape(plainText(text, glyphs));
 }
 
 /** The controls list's rows (`dl.ui-controls`): each key in plain words, then its action. */
