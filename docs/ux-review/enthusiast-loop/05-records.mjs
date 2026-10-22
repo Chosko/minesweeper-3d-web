@@ -18,7 +18,7 @@ log('opened on board:', await text('#records-board'), '| mode switch:', JSON.str
 log('picker:', JSON.stringify(await ms(() => [...document.querySelectorAll('#records-picker [role="radio"], #records-picker button')].map((b) => `${b.innerText.replace(/\n/g, ' ')}${b.getAttribute('aria-checked') === 'true' ? ' [on]' : ''}`))));
 log('figures:', JSON.stringify(await text('#records-figures')));
 log('overall:', JSON.stringify(await text('#records-overall')));
-log('history title:', JSON.stringify(await text('#records-history-title')), 'chart alt/aria:', await ms(() => { const c = document.getElementById('records-chart'); return { tag: c?.tagName, label: c?.getAttribute('aria-label'), role: c?.getAttribute('role'), text: c?.innerText?.slice(0, 300), w: c?.getBoundingClientRect().width, h: c?.getBoundingClientRect().height }; }));
+log('history tabs:', JSON.stringify(await text('#records-tabs')), 'chart alt/aria:', await ms(() => { const c = document.getElementById('records-chart'); return { tag: c?.tagName, label: c?.getAttribute('aria-label'), role: c?.getAttribute('role'), text: c?.innerText?.slice(0, 300), w: c?.getBoundingClientRect().width, h: c?.getBoundingClientRect().height }; }));
 log('games list:', JSON.stringify(await text('#records-games')));
 log('page label:', JSON.stringify(await text('#records-page')));
 log('replays:', JSON.stringify(await text('#records-replays')));
@@ -37,7 +37,7 @@ await shot(page, '05-records-scrolled-2');
 await ms(() => { const r = document.getElementById('records'); r.scrollTop = 0; window.scrollTo(0, 0); });
 
 // Recent games paging
-const next = await ms(() => { const b = document.getElementById('records-next'); return b && { disabled: b.disabled, text: b.innerText }; });
+const next = await ms(() => { const b = document.querySelector('#records-games-pager [aria-label^="Page 2"]'); return b && { disabled: b.disabled, text: b.innerText }; });
 log('next button', JSON.stringify(next));
 
 // Pick Expert · no-guess in 2D
@@ -63,7 +63,7 @@ await shot(page, '05-records-after-pin');
 log('games rows:', JSON.stringify(await ms(() => [...document.querySelectorAll('#records-games-body tr')].map((tr) => tr.innerText.replace(/\t/g, ' | ')))));
 log('bests Watch buttons:', JSON.stringify(await ms(() => [...document.querySelectorAll('#records-bests button')].map((b) => b.innerText))));
 // next page
-await ms(() => document.getElementById('records-next')?.click());
+await ms(() => document.querySelector('#records-games-pager [aria-label^="Page 2"]')?.click());
 await sleep(200);
 log('after next: page label', JSON.stringify(await text('#records-page')), 'rows', await ms(() => document.querySelectorAll('#records-games-body tr').length));
 await shot(page, '05-records-page2');

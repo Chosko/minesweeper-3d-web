@@ -7,6 +7,11 @@ folder holds the reviewer's `report.md`, the Playwright and Node scripts it
 ran (`*.mjs`) and their measured outputs (`*.txt`, `*.log`, `*.json`).
 `reviewer-brief.md` is the brief every reviewer received.
 
-The screenshots the reports cite (about 470 PNG files, 123 MB) are not kept
-in the repository; the reports describe what each showed. The scripts
-regenerate them against a build served locally.
+The scripts follow the current app's markup, presets and board limits, and
+carry only the walks the app still has; a report that cites a script, or a
+probe, its folder no longer holds describes a walk the app no longer has,
+and that script's measured output stays as the record.
+
+The screenshots the reports cite are not kept in the repository; the
+reports describe what each showed. The scripts regenerate them against a
+build served locally.

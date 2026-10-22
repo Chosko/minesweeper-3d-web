@@ -16,7 +16,7 @@ const set = (i, v) => page.evaluate(([i, v]) => { Object.assign(globalThis.__fak
 const axes = (a) => page.evaluate((a) => { globalThis.__fakePad.axes = a; globalThis.__fakePad.timestamp++; }, a);
 const press = async (b) => { await page.evaluate((i) => new Promise((done) => { const s = (v) => { Object.assign(globalThis.__fakePad.buttons[i], { pressed: v, touched: v, value: v ? 1 : 0 }); globalThis.__fakePad.timestamp++; }; s(true); requestAnimationFrame(() => { s(false); done(); }); }), b); await frames(2); };
 const hold = async (b, ms) => { await set(b, true); await sleep(ms); await set(b, false); await frames(2); };
-const hud = () => page.evaluate(() => ({ t: document.getElementById('hud-time').textContent, m: document.getElementById('hud-mines').textContent, mode: __ms.state.mode, st: __ms.modes.state }));
+const hud = () => page.evaluate(() => ({ t: document.getElementById('c2d-time').textContent, m: document.getElementById('c2d-mines-left').textContent, mode: __ms.state.mode, st: __ms.modes.state }));
 // 2D with pad: menu A → choice → custom fields → beginner
 await press(BTN.A); await sleep(300); log('2D choice', await mode(page), 'focus', await focused(page));
 await press(BTN.DOWN); await press(BTN.DOWN); await press(BTN.DOWN); log('DOWNx3 →', await focused(page));
@@ -25,7 +25,7 @@ await press(BTN.LB); await press(BTN.DOWN); log('DOWN →', await focused(page))
 await press(BTN.DOWN); log('DOWN →', await focused(page));
 await press(BTN.A); log('A → noguess', await page.evaluate(() => document.getElementById('c2d-noguess').checked)); await press(BTN.A);
 await press(BTN.UP); await press(BTN.UP); await press(BTN.UP); await press(BTN.UP); await press(BTN.UP); log('UPx5 →', await focused(page));
-await press(BTN.A); await sleep(800); log('A on beginner →', await hud(), 'focus', await focused(page));
+await press(BTN.A); await page.focus('#c2d-play'); await press(BTN.A); await sleep(800); log('A on beginner, A on Play →', await hud(), 'focus', await focused(page));
 await shot(page, 'g2-01-2d-pad');
 await press(BTN.RIGHT); await press(BTN.DOWN); await press(BTN.A); await sleep(1200); log('after A →', await hud());
 await shot(page, 'g2-02-2d-pad-reveal');

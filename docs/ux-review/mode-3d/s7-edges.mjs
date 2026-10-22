@@ -58,10 +58,10 @@ const guard = await page.evaluate(() => { const e = new Event('beforeunload', { 
 console.log('beforeunload guard during a started game:', JSON.stringify(guard));
 
 // hint persistence: dismiss, then a new game
-await page.click('#hint-h-close').catch((e) => console.log('hint close:', e.message.split('\n')[0]));
+await page.click('#hint-strip-close').catch((e) => console.log('hint close:', e.message.split('\n')[0]));
 await page.evaluate(() => { globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10 }); });
 await forcePlay(page);
-console.log('hint visible after dismiss + new game:', await page.evaluate(() => !document.getElementById('hint-h').classList.contains('hidden')));
+console.log('hint visible after dismiss + new game:', await page.evaluate(() => !document.getElementById('hint-strip').classList.contains('hidden')));
 
 // no-guess on the real board choice UI: toggle on, start Beginner; is the choice remembered? ready card wording
 await page.evaluate(() => globalThis.__ms.pause());
@@ -75,7 +75,7 @@ console.log('board choice last-played:', await page.evaluate(() => [...document.
 await page.click('#bc-noguess');
 await page.click('[data-preset="6,6,6,10"]'); await page.click('#bc-play');
 await frames(page, 3);
-console.log('ready card text with no-guess:', await page.evaluate(() => document.getElementById('ready-board').textContent), 'hud size:', await page.evaluate(() => document.getElementById('hud-size').textContent));
+console.log('ready card text with no-guess:', await page.evaluate(() => document.getElementById('ready-board').textContent), 'hud size:', await page.evaluate(() => document.getElementById('hud-title').getAttribute('title')));
 await shot(page, '86-ready-noguess');
 // ready Back → where?
 await page.click('#ready-back'); await frames(page, 2);

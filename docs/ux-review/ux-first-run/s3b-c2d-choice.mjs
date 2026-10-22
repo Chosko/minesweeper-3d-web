@@ -32,7 +32,7 @@ console.log('after start 100x100 ng mode', await mode(page));
 console.log('innerText body (before click):\n' + await page.evaluate(() => document.body.innerText));
 await shot(page, '13-c2d-100x100-ng-before-click');
 // click the middle cell
-const box = await page.locator('#c2d-board canvas').boundingBox();
+const box = await page.locator('#c2d-board canvas').first().boundingBox();
 console.log('canvas box', box);
 await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 await page.waitForTimeout(600);

@@ -8,7 +8,7 @@ await page.evaluate(() => document.addEventListener('contextmenu', (e) => { if (
 await page.click('#menu-entry-classic-2d'); await sleep(300); await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await sleep(500);
 const box = await page.evaluate(() => { const r = document.querySelector('#c2d-board canvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
 const tile = box.w / 9; const at = (c, r) => [box.x + tile * (c + 0.5), box.y + tile * (r + 0.5)];
-const hud = () => page.evaluate(() => ({ t: document.getElementById('hud-time').textContent, m: document.getElementById('hud-mines').textContent, started: __ms.modes.state.started, mode: __ms.state.mode }));
+const hud = () => page.evaluate(() => ({ t: document.getElementById('c2d-time').textContent, m: document.getElementById('c2d-mines-left').textContent, started: __ms.modes.state.started, mode: __ms.state.mode }));
 log('cursor on board', await page.evaluate(() => getComputedStyle(document.querySelector('#c2d-board canvas')).cursor));
 // press without release: nothing revealed?
 await page.mouse.move(...at(4, 4)); await page.mouse.down(); await sleep(200); log('left pressed (not released)', await hud());
@@ -35,7 +35,7 @@ await page.mouse.click(1200, 400, { button: 'right' }); await sleep(100); log('c
 // wheel on a small board does what? (page scroll?)
 await page.mouse.move(...at(4, 4)); await page.mouse.wheel(0, 300); await sleep(200); log('scrollY after wheel', await page.evaluate(() => scrollY));
 await shot(page, 'm-04-after-mouse');
-await page.click('#hud-pause'); await sleep(300);
+await page.click('#c2d-pause'); await sleep(300);
 log('pause cursor on overlay', await page.evaluate(() => getComputedStyle(document.getElementById('p-resume')).cursor));
 await page.click('#p-menu'); await sleep(200); await page.click('#p-confirm-yes'); await sleep(400);
 // large custom board 100x100 for scrolling with wheel and shift-drag

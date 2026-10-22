@@ -11,7 +11,7 @@ console.log('preselected:', await page.evaluate(() => document.querySelector('#c
 if (!(await page.isChecked('#c2d-noguess'))) await page.click('#c2d-noguess');
 await shot(page, '02-c2d-choice-noguess');
 await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play');
-console.log('hud:', await page.evaluate(() => [document.getElementById('hud-time').textContent, document.getElementById('hud-mines').textContent, document.getElementById('hud-size').textContent]));
+console.log('hud:', await page.evaluate(() => [document.getElementById('c2d-time').textContent, document.getElementById('c2d-mines-left').textContent, document.getElementById('c2d-size').textContent]));
 const seeds = [2024, 55555, 8080];
 for (let i = 0; i < seeds.length; i++) {
   const r = await playNF(page, { seed: seeds[i], fc: 7 * W + 15, noGuess: true, label: `ng${i + 1}`, delayMs: 60 + 15 * i, prefix: '02' });

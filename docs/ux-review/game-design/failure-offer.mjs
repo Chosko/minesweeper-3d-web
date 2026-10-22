@@ -52,7 +52,7 @@ console.log('2D custom info:', await text('#c2d-info'));
 if (!(await page.evaluate(() => document.getElementById('c2d-noguess').checked))) await page.click('#c2d-noguess');
 await page.click('#c2d-play'); await sleep(400);
 console.log('2D mode:', await mode(page));
-const box = await page.locator('#c2d-board canvas').boundingBox();
+const box = await page.locator('#c2d-board canvas').first().boundingBox();
 const t1 = Date.now();
 await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 let tGen2 = null, tFail2 = null;

@@ -36,7 +36,7 @@ if (p) await page.screenshot({ path: '06b-2d-pointer-zoom.png', clip: { x: Math.
 await page.keyboard.press('End');
 await sleep(300);
 await shot(page, '06b-2d-end');
-log('end:', JSON.stringify(await state()), JSON.stringify(await ms(() => ({ end: document.getElementById('replay-end')?.innerText, pos: document.getElementById('rp-position')?.textContent }))));
+log('end:', JSON.stringify(await state()), JSON.stringify(await ms(() => ({ end: document.getElementById('replay-end')?.innerText, pos: document.getElementById('rp-seek')?.getAttribute('aria-valuetext') }))));
 // Controller/keyboard: Back
 await page.keyboard.press('Escape');
 await sleep(200);

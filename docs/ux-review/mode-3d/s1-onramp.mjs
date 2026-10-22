@@ -26,7 +26,7 @@ await shot(page, '05-spawn-view');
 console.log('spawn info:', JSON.stringify(await info(page)));
 console.log('board on screen at spawn:', JSON.stringify(await boardOnScreen(page)));
 console.log('hud text:', await page.evaluate(() => document.getElementById('hud').innerText.replace(/\n+/g, ' | ')));
-console.log('hint-h visible:', await page.evaluate(() => !document.getElementById('hint-h').classList.contains('hidden')));
+console.log('hint strip visible:', await page.evaluate(() => !document.getElementById('hint-strip').classList.contains('hidden')));
 console.log('crosshair class:', await page.evaluate(() => document.getElementById('crosshair').className));
 console.log('selected at spawn:', await page.evaluate(() => globalThis.__ms.selected()));
 

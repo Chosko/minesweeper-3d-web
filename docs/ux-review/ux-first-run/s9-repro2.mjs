@@ -1,6 +1,6 @@
 import { launch, shot, mode } from './lib.mjs';
 const { browser, page } = await launch();
-const hud = () => page.evaluate(() => document.querySelector('.ui-overlay-bar')?.innerText.replace(/\n/g,' '));
+const hud = () => page.evaluate(() => document.getElementById('c2d-counters')?.innerText.replace(/\n/g,' '));
 for (let i = 0; i < 4; i++) {
   await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
   await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await page.waitForTimeout(800);

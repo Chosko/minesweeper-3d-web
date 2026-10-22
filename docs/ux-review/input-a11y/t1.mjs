@@ -23,7 +23,7 @@ async function run(devName, tag, landscape) {
   await page.tap('#c2d-choice [data-size="beginner"]'); await page.tap('#c2d-play'); await sleep(600); log('tap Beginner →', await mode());
   await shot('03-c2d-board');
   log('board', await page.evaluate(() => { const c = document.querySelector('#c2d-board canvas'); const r = c.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y), tile: Math.round(r.width / 9) }; }));
-  const hud = () => page.evaluate(() => ({ t: document.getElementById('hud-time').textContent, m: document.getElementById('hud-mines').textContent, st: __ms.modes.state }));
+  const hud = () => page.evaluate(() => ({ t: document.getElementById(document.getElementById('c2d-time').offsetParent ? 'c2d-time' : 'hud-time').textContent, m: document.getElementById(document.getElementById('c2d-mines-left').offsetParent ? 'c2d-mines-left' : 'hud-mines').textContent, st: __ms.modes.state }));
   // tap a cell
   const box = await page.evaluate(() => { const r = document.querySelector('#c2d-board canvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   const tile = box.w / 9;
@@ -37,7 +37,7 @@ async function run(devName, tag, landscape) {
   // two-finger tap?
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + tile * 8.5, y: box.y + tile * 0.5 }, { x: box.x + tile * 8.5, y: box.y + tile * 0.5 + 30 }] }); await sleep(80); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(300); log('two-finger tap', await hud());
   // pause tap
-  await page.tap('#hud-pause'); await sleep(400); log('tap Pause →', await mode());
+  await page.tap('#c2d-pause'); await sleep(400); log('tap Pause →', await mode());
   log('pause overflow', await overflow(), 'small', JSON.stringify(await small()));
   await shot('06-pause');
   await page.tap('#p-menu'); await sleep(300); if (await page.evaluate(() => !document.getElementById('pause-confirm').classList.contains('hidden'))) await page.tap('#p-confirm-yes'); await sleep(500); log('→', await mode());
@@ -52,7 +52,7 @@ async function run(devName, tag, landscape) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(400);
   log('after swipe: board rect', await page.evaluate(() => { const r = document.querySelector('#c2d-board canvas').getBoundingClientRect(); return { x: Math.round(r.x), w: Math.round(r.width) }; }), await hud());
   await shot('08-expert-swiped');
-  await page.tap('#hud-pause'); await sleep(300); await page.tap('#p-menu'); await sleep(300); const confirm = await page.evaluate(() => !document.getElementById('pause-confirm').classList.contains('hidden')); if (confirm) await page.tap('#p-confirm-yes'); await sleep(500); log('→', await mode());
+  await page.tap('#c2d-pause'); await sleep(300); await page.tap('#p-menu'); await sleep(300); const confirm = await page.evaluate(() => !document.getElementById('pause-confirm').classList.contains('hidden')); if (confirm) await page.tap('#p-confirm-yes'); await sleep(500); log('→', await mode());
   // 3D
   await page.tap('#menu-entry-3d'); await sleep(400); log('tap 3D →', await mode()); log('3d choice overflow', await overflow(), 'small', JSON.stringify(await small()));
   await shot('09-3d-choice');
@@ -83,8 +83,6 @@ async function run(devName, tag, landscape) {
   await page.tap('#menu-entry-settings'); await sleep(500); log('settings', await mode(), 'overflow', await overflow(), 'small', JSON.stringify(await small()));
   await shot('13-settings');
   await page.tap('#settings-back'); await sleep(300);
-  await page.tap('#menu-help'); await sleep(400); log('controls modal', await page.evaluate(() => !document.getElementById('controls-modal').classList.contains('hidden')), 'overflow', await overflow());
-  await shot('14-controls-modal');
   log('errors', errors);
   await ctx.close();
 }

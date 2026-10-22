@@ -31,12 +31,12 @@ for (const [code, name] of [['ShiftLeft', 'shift'], ['Space', 'space'], ['Contro
 for (const s of [2, 4, 10]) {
   await page.evaluate((s) => globalThis.__ms.wheel((s - globalThis.__ms.state.spacing) / 0.04), s);
   await frames(page, 2);
-  console.log('spacing', (await info(page)).spacing, 'onScreen', JSON.stringify(await boardOnScreen(page)), 'chip', await page.evaluate(() => document.getElementById('chip-spacing').className + ' ' + document.getElementById('chip-spacing').textContent));
+  console.log('spacing', (await info(page)).spacing, 'onScreen', JSON.stringify(await boardOnScreen(page)), 'strip', await page.evaluate(() => (document.getElementById('hud-tools').innerText.match(/spacing \S+/) || [''])[0]));
   await shot(page, `43-spacing-${s}`);
 }
-// spacing chip fades? wait
+// the strip's spacing after a wait
 await sleep(2500); await frames(page, 2);
-console.log('spacing chip after 2.5 s:', await page.evaluate(() => document.getElementById('chip-spacing').className));
+console.log('strip spacing after 2.5 s:', await page.evaluate(() => (document.getElementById('hud-tools').innerText.match(/spacing \S+/) || [''])[0]));
 // back to 1.1 and look from inside between cubes at spacing 2
 await page.evaluate(() => globalThis.__ms.wheel((2 - globalThis.__ms.state.spacing) / 0.04));
 // stand in the gap between columns i=2 and i=3 (x = 0 at even dims... centres at (i-2.5)*8 → i=2: -4, i=3: 4; gap centre x=0) in front of the board, looking in

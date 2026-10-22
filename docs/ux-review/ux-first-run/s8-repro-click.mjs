@@ -5,7 +5,7 @@ for (let i = 0; i < 4; i++) {
   await page.waitForTimeout(300);
   await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
   await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await page.waitForTimeout(800);
-  const box = await page.locator('#c2d-board canvas').boundingBox();
+  const box = await page.locator('#c2d-board canvas').first().boundingBox();
   const cell = box.height / 9; const x0 = box.x + (box.width - 9 * cell) / 2;
   const col = 2 + i, row = 1 + i;
   const cx = x0 + (col + 0.5) * cell, cy = box.y + (row + 0.5) * cell;

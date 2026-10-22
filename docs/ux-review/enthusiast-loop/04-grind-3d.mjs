@@ -113,11 +113,11 @@ async function finish(label) {
 // ---- Standard Cube Expert
 if (await page.isChecked('#bc-noguess')) await page.click('#bc-noguess');
 await setSeed(page, 777);
-await page.click('#board-choice [data-preset="12,12,8,130"]'); await page.click('#bc-play');
+await page.click('#board-choice [data-preset="10,10,10,100"]'); await page.click('#bc-play');
 await sleep(500);
 await enter();
 await shot(page, '04-expert-closed');
-log('hud:', await ms(() => [document.getElementById('hud-time').textContent, document.getElementById('hud-mines').textContent, document.getElementById('hud-size').textContent]));
+log('hud:', await ms(() => [document.getElementById('hud-time').textContent, document.getElementById('hud-mines').textContent, document.getElementById('hud-title').getAttribute('title')]));
 await firstClick('e1');
 const summary3d = () => ms(() => { const s = globalThis.__ms.modes.summary?.(); return s && { bbbv: s.bbbv, solved: s.bbbvSolved, clicks: s.clicks }; });
 log('summary after first click:', JSON.stringify(await summary3d()));
@@ -167,7 +167,7 @@ await page.click('#menu-entry-3d');
 if (!(await page.isChecked('#bc-noguess'))) await page.click('#bc-noguess');
 await shot(page, '04-3d-choice-noguess');
 await setSeed(page, 4242);
-await page.click('#board-choice [data-preset="12,12,8,130"]'); await page.click('#bc-play');
+await page.click('#board-choice [data-preset="10,10,10,100"]'); await page.click('#bc-play');
 await sleep(500);
 await enter();
 await firstClick('ng1');

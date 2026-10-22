@@ -2,7 +2,7 @@ import { launch, shot, mode, sleep } from './lib.mjs';
 
 const { browser, page } = await launch();
 const text = (sel) => page.evaluate((s) => document.querySelector(s)?.innerText?.replace(/\n+/g, ' | ') ?? null, sel);
-const hud = () => page.evaluate(() => [document.getElementById('hud-time').textContent, document.getElementById('hud-mines').textContent]);
+const hud = () => page.evaluate(() => [document.getElementById('c2d-time').textContent, document.getElementById('c2d-mines-left').textContent]);
 const started = () => page.evaluate(() => globalThis.__ms.modes.state);
 
 await page.click('#menu-entry-classic-2d'); await sleep(300);
@@ -14,7 +14,7 @@ async function startBoard(size, noguess) {
   const checked = await page.evaluate(() => document.getElementById('c2d-noguess').checked);
   if (checked !== noguess) await page.click('#c2d-noguess');
   await page.click(`#c2d-choice [data-size="${size}"]`); await page.click('#c2d-play'); await sleep(500);
-  const box = await page.locator('#c2d-board canvas').boundingBox();
+  const box = await page.locator('#c2d-board canvas').first().boundingBox();
   return box;
 }
 function cellXY(box, w, h, col, row) { const t = box.width / w; return [box.x + t * (col + 0.5), box.y + (box.height / h) * (row + 0.5)]; }
@@ -65,7 +65,7 @@ for (const [size, w, h] of [['beginner', 9, 9], ['intermediate', 16, 16], ['expe
   await page.click('#p-confirm-yes'); await sleep(400);
   console.log('after restart mode:', await mode(page), 'state', await started(), 'HUD', await hud());
   // Reveal cells left to right along the top row until something explodes, to reach a loss screen.
-  const box2 = await page.locator('#c2d-board canvas').boundingBox();
+  const box2 = await page.locator('#c2d-board canvas').first().boundingBox();
   let lost = false;
   for (let r = 0; r < 9 && !lost; r++) for (let c = 0; c < 9 && !lost; c++) {
     const [px, py] = cellXY(box2, 9, 9, c, r);

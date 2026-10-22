@@ -13,23 +13,19 @@ for (let i = 0; i < 4; i++) {
   if (!(await page.evaluate(() => document.getElementById('pause-confirm').classList.contains('hidden')))) await page.click('#p-confirm-yes');
   await page.waitForTimeout(300);
 }
-// C: 2D Expert at viewports + dark
+// C: 2D Expert at viewports
 await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(200);
 await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play'); await page.waitForTimeout(600);
 for (const vp of [{width:1920,height:1080},{width:1024,height:768},{width:1280,height:800}]) { await page.setViewportSize(vp); await page.waitForTimeout(600); await shot(page, `81-c2d-expert-${vp.width}`); }
-await page.evaluate(() => globalThis.__ms.settings.set ? globalThis.__ms.settings.set('theme', 'dark') : null).catch(e => console.log('settings.set err', e.message));
-console.log('settings api', await page.evaluate(() => Object.keys(globalThis.__ms.settings)));
-await page.waitForTimeout(400);
-console.log('theme now', await page.evaluate(() => document.documentElement.dataset.theme));
-await shot(page, '82-c2d-expert-dark');
+await shot(page, '82-c2d-expert');
 await page.keyboard.press('Escape'); await page.waitForTimeout(300);
-await shot(page, '82-c2d-paused-dark');
+await shot(page, '82-c2d-paused');
 await page.click('#p-menu'); await page.waitForTimeout(300);
-await shot(page, '82-c2d-paused-dark-confirm');
+await shot(page, '82-c2d-paused-confirm');
 if (!(await page.evaluate(() => document.getElementById('pause-confirm').classList.contains('hidden')))) await page.click('#p-confirm-yes');
 await page.waitForTimeout(300);
 await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
-await shot(page, '83-c2d-choice-dark');
+await shot(page, '83-c2d-choice');
 await page.keyboard.press('Escape'); await page.waitForTimeout(200);
 await page.click('#menu-entry-3d'); await page.waitForTimeout(300);
 await shot(page, '83-3d-choice-dark');

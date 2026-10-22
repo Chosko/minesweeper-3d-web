@@ -49,6 +49,4 @@ await page.focus('#menu-entry-records'); await page.keyboard.press('Enter'); awa
 console.log('records focus', await active());
 for (const k of ['ArrowRight','ArrowDown','Tab','Tab']) { await page.keyboard.press(k); console.log(k, '->', await active()); }
 await page.keyboard.press('Escape'); await page.waitForTimeout(200); console.log('Esc from records ->', await mode(page));
-// volume slider from menu keyboard
-await page.focus('#menu-vol'); await page.keyboard.press('ArrowLeft'); console.log('vol after ArrowLeft', await page.evaluate(() => document.getElementById('menu-vol').value));
 await browser.close();

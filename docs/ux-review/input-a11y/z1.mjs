@@ -10,7 +10,7 @@ const browser = await chromium.launch({ args: ARGS });
   await page.click('#menu-entry-classic-2d'); await sleep(300); log('c2d choice small fonts', JSON.stringify(await fonts()));
   await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await sleep(500); log('2D board small fonts', JSON.stringify(await fonts()));
   await page.screenshot({ path: `${DIR}/z-02-2d-1024.png`, timeout: 90000 });
-  await page.click('#hud-pause'); await sleep(300); log('pause small fonts', JSON.stringify(await fonts()));
+  await page.click('#c2d-pause'); await sleep(300); log('pause small fonts', JSON.stringify(await fonts()));
   await page.close();
 }
 // 200% zoom: 640x400 CSS px at dpr 2 (same as 1280x800 window zoomed 200%)
@@ -31,7 +31,7 @@ const browser = await chromium.launch({ args: ARGS });
   await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play'); await sleep(600);
   log('zoom200 expert board', await page.evaluate(() => { const r = document.querySelector('#c2d-board canvas').getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), tile: Math.round(r.width / 30) }; }));
   await page.screenshot({ path: `${DIR}/z-07-expert-zoom200.png`, timeout: 90000 });
-  await page.click('#hud-pause'); await sleep(300); log('zoom200 pause', JSON.stringify(await overflow()));
+  await page.click('#c2d-pause'); await sleep(300); log('zoom200 pause', JSON.stringify(await overflow()));
   await page.screenshot({ path: `${DIR}/z-08-pause-zoom200.png`, timeout: 90000 });
   await page.click('#p-menu'); await sleep(200); await page.click('#p-confirm-yes').catch(()=>{}); await sleep(300);
   await page.click('#menu-entry-records'); await sleep(400); log('zoom200 records', JSON.stringify(await overflow()));
@@ -54,19 +54,5 @@ const browser = await chromium.launch({ args: ARGS });
   await page.screenshot({ path: `${DIR}/z-13-2d-forced-colors.png`, timeout: 90000 });
   log('reduced motion matches', await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), 'forced', await page.evaluate(() => matchMedia('(forced-colors: active)').matches));
   await ctx.close();
-}
-// dark theme contrast samples: menu + 2D board + pause in dark
-{
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  await page.addInitScript(() => { try { localStorage.setItem('ms3d.settings', JSON.stringify({ theme: 'dark' })); } catch {} });
-  await page.goto(URL); await page.waitForFunction(() => globalThis.__ms !== undefined); await sleep(400);
-  log('theme', await page.evaluate(() => document.documentElement.getAttribute('data-theme')));
-  if ((await page.evaluate(() => document.documentElement.getAttribute('data-theme'))) !== 'dark') { await page.evaluate(() => __ms.settings.set('theme', 'dark')); await sleep(300); }
-  await page.click('#menu-entry-classic-2d'); await sleep(300); await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await sleep(500);
-  await page.mouse.click(640, 440); await sleep(800);
-  await page.screenshot({ path: `${DIR}/z-14-2d-dark.png`, timeout: 90000 });
-  await page.click('#hud-pause'); await sleep(300);
-  await page.screenshot({ path: `${DIR}/z-15-pause-dark.png`, timeout: 90000 });
-  await page.close();
 }
 await browser.close();

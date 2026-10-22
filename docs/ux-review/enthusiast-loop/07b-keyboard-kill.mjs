@@ -22,7 +22,7 @@ const centres = await centres2D(page, 9, 9);
 const g3 = mines2D({ width: 9, height: 9, mines: 10, firstClick: 0, noGuess: false, seed: 104 });
 const a3 = analyse({ width: 9, height: 9, mines: g3.mines });
 const sum = () => page.evaluate(() => { const s = globalThis.__ms.modes.summary?.(); return s && { solved: s.bbbvSolved, r: s.clicks.reveal, f: s.clicks.flag, c: s.clicks.chord }; });
-const hud = () => page.evaluate(() => document.getElementById('hud-mines').textContent);
+const hud = () => page.evaluate(() => document.getElementById('c2d-mines-left').textContent);
 log('E. focus before keys:', await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName));
 await page.keyboard.press('Space');
 await page.waitForFunction(() => globalThis.__ms.modes.state.started, null, { timeout: 5000 }).catch(() => log('E. Space did not start the game'));

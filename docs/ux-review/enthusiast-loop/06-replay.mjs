@@ -6,7 +6,7 @@ const page = await openPage(context);
 const log = (...a) => console.log(...a);
 const ms = (fn, arg) => page.evaluate(fn, arg);
 const state = () => ms(() => { const s = globalThis.__ms.replayViewer.state; return { status: s.status, time: Math.round(s.time), duration: s.duration, playing: s.playing, speed: s.speed, ended: s.ended, figures: s.figures, end: s.end, message: s.message }; });
-const overlay = () => ms(() => ({ clock: document.getElementById('rp-clock').textContent, mines: document.getElementById('rp-mines').textContent, bbbv: document.getElementById('rp-bbbv').textContent, rate: document.getElementById('rp-rate').textContent, pos: document.getElementById('rp-position')?.textContent, end: document.getElementById('replay-end')?.innerText, speed: document.getElementById('rp-speed')?.innerText.replace(/\n/g, ' ') }));
+const overlay = () => ms(() => ({ clock: document.getElementById('rp-clock').textContent, mines: document.getElementById('rp-mines').textContent, bbbv: document.getElementById('rp-bbbv').textContent, rate: document.getElementById('rp-rate').textContent, pos: document.getElementById('rp-seek')?.getAttribute('aria-valuetext'), end: document.getElementById('replay-end')?.innerText, speed: document.getElementById('rp-speed')?.innerText.replace(/\n/g, ' ') }));
 
 await page.click('#menu-entry-records');
 await ms(() => { const b = [...document.querySelectorAll('#records-picker button, #records-picker [role="radio"]')].find((x) => /^Expert\b/.test(x.innerText.trim()) && !/no-guess/i.test(x.innerText)); b?.click(); });

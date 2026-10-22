@@ -14,7 +14,7 @@ console.log('c2d-noguess attrs', await page.evaluate(() => { const e = document.
 // 2D: large custom (100x100) board fits? and mines counter cap
 await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', '100'); await page.fill('#c2d-height', '100'); await page.fill('#c2d-mines', '2480');
 await page.click('#c2d-play'); await page.waitForTimeout(800);
-console.log('100x100 canvas', await page.evaluate(() => { const c = document.querySelector('#c2d-board canvas'); const p = c.parentElement; return { cw: c.width, ch: c.height, scrollW: p.scrollWidth, scrollH: p.scrollHeight, clientW: p.clientWidth, overflow: getComputedStyle(p).overflow, hudMines: document.getElementById('hud-mines').textContent, scrollbar: p.offsetWidth - p.clientWidth }; }));
+console.log('100x100 canvas', await page.evaluate(() => { const c = document.querySelector('#c2d-board canvas'); const p = c.parentElement; return { cw: c.width, ch: c.height, scrollW: p.scrollWidth, scrollH: p.scrollHeight, clientW: p.clientWidth, overflow: getComputedStyle(p).overflow, hudMines: document.getElementById('c2d-mines-left').textContent, scrollbar: p.offsetWidth - p.clientWidth }; }));
 await page.mouse.move(640, 440); await page.mouse.wheel(0, 600); await page.waitForTimeout(400);
 await shot(page, '17-c2d-100x100-scrolled');
 await browser.close();

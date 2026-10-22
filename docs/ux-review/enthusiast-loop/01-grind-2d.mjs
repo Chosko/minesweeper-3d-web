@@ -103,7 +103,7 @@ if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
 await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play');
 log('mode after Expert:', await mode(page));
 await shot(page, '01-expert-closed');
-log('hud:', await page.evaluate(() => [document.getElementById('hud-time').textContent, document.getElementById('hud-mines').textContent, document.getElementById('hud-size').textContent]));
+log('hud:', await page.evaluate(() => [document.getElementById('c2d-time').textContent, document.getElementById('c2d-mines-left').textContent, document.getElementById('c2d-size').textContent]));
 
 await playNF({ seed: 12345, fc: 7 * W + 15, noGuess: false, label: 'std1' });
 await playAgainByEnter('std1→2');

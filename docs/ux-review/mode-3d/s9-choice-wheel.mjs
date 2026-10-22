@@ -11,17 +11,17 @@ await page.click('[data-preset="6,6,6,10"]'); await page.click('#bc-play'); awai
 await page.click('#ready-btn'); await sleep(400);
 await page.evaluate(() => { const m = globalThis.__ms; m.aimAt(m.selected()); m.click('left'); });
 await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 30000 });
-// real wheel under lock: spacing chip
+// real wheel under lock: the strip's spacing
 const sp0 = (await info(page)).spacing;
 await page.mouse.wheel(0, -100); await frames(page, 2);
 const sp1 = (await info(page)).spacing;
-console.log('wheel up one notch: spacing', sp0, '→', sp1, 'chip:', await page.evaluate(() => document.getElementById('chip-spacing').className + ' / ' + document.getElementById('chip-spacing').textContent));
+console.log('wheel up one notch: spacing', sp0, '→', sp1, 'strip:', await page.evaluate(() => (document.getElementById('hud-tools').innerText.match(/spacing \S+/) || [''])[0]));
 for (let i = 0; i < 25; i++) await page.mouse.wheel(0, -100);
 await frames(page, 2);
-console.log('after 26 notches: spacing', (await info(page)).spacing, 'chip:', await page.evaluate(() => document.getElementById('chip-spacing').className + ' / ' + document.getElementById('chip-spacing').textContent));
+console.log('after 26 notches: spacing', (await info(page)).spacing, 'strip:', await page.evaluate(() => (document.getElementById('hud-tools').innerText.match(/spacing \S+/) || [''])[0]));
 await shot(page, '91-wheel-26-notches');
 await sleep(2000); await frames(page, 2);
-console.log('chip after 2 s idle:', await page.evaluate(() => document.getElementById('chip-spacing').className));
+console.log('strip after 2 s idle:', await page.evaluate(() => (document.getElementById('hud-tools').innerText.match(/spacing \S+/) || [''])[0]));
 // Shift + wheel under lock?
 await page.keyboard.down('Shift'); await page.mouse.wheel(0, -100); await page.keyboard.up('Shift'); await frames(page, 2);
 console.log('shift+wheel spacing:', (await info(page)).spacing);
@@ -38,8 +38,4 @@ await shot(page, '93-board-choice-returning-ui');
 // keyboard: arrows on the menu
 await page.keyboard.press('ArrowDown'); await frames(page, 1);
 console.log('after ArrowDown focus:', await active());
-// controls modal from the main menu? (menu-help)
-await page.click('#board-choice-back'); await frames(page, 2);
-await page.click('#menu-help'); await frames(page, 2);
-await shot(page, '94-controls-modal');
 await browser.close();

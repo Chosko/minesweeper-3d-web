@@ -105,7 +105,7 @@ await page.mouse.click(centres[40].x, centres[40].y);
 await page.waitForFunction(() => globalThis.__ms.modes.state.started);
 await sleep(1000);
 await page.keyboard.press('Escape');
-log('D. paused:', await mode(page), 'hud:', await page.evaluate(() => document.getElementById('hud-time').textContent));
+log('D. paused:', await mode(page), 'hud:', await page.evaluate(() => document.getElementById('c2d-time').textContent));
 await sleep(3000);
 await page.click('#p-resume');
 await sleep(200);
@@ -147,7 +147,7 @@ if (mineNb !== undefined) {
   for (let i = 0; i < Math.abs(dx); i++) await page.keyboard.press(dx > 0 ? 'ArrowRight' : 'ArrowLeft');
   for (let i = 0; i < Math.abs(dy); i++) await page.keyboard.press(dy > 0 ? 'ArrowDown' : 'ArrowUp');
   await page.keyboard.press('KeyF'); await sleep(80);
-  log('E. F on a closed mine → counter', await page.evaluate(() => document.getElementById('hud-mines').textContent), JSON.stringify(await sum()));
+  log('E. F on a closed mine → counter', await page.evaluate(() => document.getElementById('c2d-mines-left').textContent), JSON.stringify(await sum()));
   // back to target and D (chord): target's number vs flags
   for (let i = 0; i < Math.abs(dx); i++) await page.keyboard.press(dx > 0 ? 'ArrowLeft' : 'ArrowRight');
   for (let i = 0; i < Math.abs(dy); i++) await page.keyboard.press(dy > 0 ? 'ArrowUp' : 'ArrowDown');

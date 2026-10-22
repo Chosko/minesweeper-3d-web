@@ -5,13 +5,13 @@ await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-p
 console.log('mode', await mode(page));
 console.log('body text:\n' + await page.evaluate(() => document.body.innerText));
 await shot(page, '20-c2d-beginner-fresh');
-const box = await page.locator('#c2d-board canvas').boundingBox();
+const box = await page.locator('#c2d-board canvas').first().boundingBox();
 console.log('box', box);
 const cell = box.width / 9;
 const at = (c, r) => [box.x + (c + 0.5) * cell, box.y + (r + 0.5) * cell];
 // first click centre
 await page.mouse.click(...at(4, 4)); await page.waitForTimeout(1200);
-console.log('after first click: started', await page.evaluate(() => globalThis.__ms.modes.state?.started), 'hud', await page.evaluate(() => document.querySelector('.ui-overlay-bar')?.innerText.replace(/\n/g,' ')));
+console.log('after first click: started', await page.evaluate(() => globalThis.__ms.modes.state?.started), 'hud', await page.evaluate(() => document.getElementById('c2d-counters')?.innerText.replace(/\n/g,' ')));
 await shot(page, '21-c2d-beginner-after-first-click');
 // right click to flag somewhere, then pause
 await page.mouse.click(...at(0, 0), { button: 'right' }); await page.waitForTimeout(200);

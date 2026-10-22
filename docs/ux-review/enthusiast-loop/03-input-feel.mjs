@@ -13,7 +13,7 @@ const centres = await centres2D(page, W, H);
 const gen = mines2D({ width: W, height: H, mines: M, firstClick: fc, noGuess: false, seed });
 const a = analyse({ width: W, height: H, mines: gen.mines });
 const sum = () => page.evaluate(() => { const s = globalThis.__ms.modes.summary?.(); return s && { solved: s.bbbvSolved, r: s.clicks.reveal, f: s.clicks.flag, c: s.clicks.chord }; });
-const hud = () => page.evaluate(() => ({ time: document.getElementById('hud-time').textContent, mines: document.getElementById('hud-mines').textContent }));
+const hud = () => page.evaluate(() => ({ time: document.getElementById('c2d-time').textContent, mines: document.getElementById('c2d-mines-left').textContent }));
 const clip = (c, r = 2) => ({ x: centres[c].x - (r + 0.5) * 41, y: centres[c].y - (r + 0.5) * 41, width: (2 * r + 1) * 41, height: (2 * r + 1) * 41 });
 const tile = centres[1].x - centres[0].x;
 console.log('tile px', tile);

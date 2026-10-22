@@ -58,7 +58,7 @@ await shot(page, 'g-06-playing-pad');
 // X help panel
 await press(BTN.X); await sleep(300); log('help visible', await page.evaluate(() => !document.getElementById('help').classList.contains('hidden')));
 await shot(page, 'g-07-help-xbox');
-log('help pad text', await page.evaluate(() => document.getElementById('help-pad').innerText.replace(/\n+/g,' | ')));
+log('help pad text', await page.evaluate(() => document.querySelector('#help .ui-controls').innerText.replace(/\n+/g,' | ')));
 await press(BTN.X);
 // right stick look
 const cam0 = await page.evaluate(() => JSON.stringify(__ms.info().cam));
@@ -84,7 +84,7 @@ await hold(BTN.LT, 200); await sleep(300); log('after LT: mines hud', await page
 await set(BTN.LB, true); await frames(3); log('LB held chips', await page.evaluate(() => [...document.querySelectorAll('#mode-chips .chip')].filter(c => getComputedStyle(c).opacity !== '0' && c.classList.contains('on')).map(c => c.textContent)));
 await shot(page, 'g-09-lb-held'); await set(BTN.LB, false);
 // D-pad spacing
-await press(BTN.UP); await frames(2); log('spacing chip', await page.evaluate(() => document.getElementById('chip-spacing').textContent));
+await press(BTN.UP); await frames(2); log('spacing chip', await page.evaluate(() => (document.getElementById('hud-tools').innerText.match(/spacing \S+/) || [''])[0]));
 // Start pause
 await press(BTN.START); await sleep(400); log('START →', await mode(page), 'focus', await focused(page));
 await shot(page, 'g-10-pause-pad');
@@ -104,7 +104,7 @@ log('reconnected', await page.evaluate(() => __ms.pads.connected), 'mode', await
 await shot(page, 'g-12-reconnected');
 await press(BTN.A); await sleep(600); log('A → ', await mode(page));
 if (await mode(page) !== 'playing') { await press(BTN.START); await sleep(600); log('START →', await mode(page)); }
-await press(BTN.X); await sleep(300); log('help pad text PS', await page.evaluate(() => document.getElementById('help-pad').innerText.replace(/\n+/g,' | ')));
+await press(BTN.X); await sleep(300); log('help pad text PS', await page.evaluate(() => document.querySelector('#help .ui-controls').innerText.replace(/\n+/g,' | ')));
 await shot(page, 'g-13-help-ps');
 await press(BTN.X);
 // rumble: check vibrationActuator usage

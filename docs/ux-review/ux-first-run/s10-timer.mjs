@@ -8,7 +8,7 @@ const t1 = Date.now();
 console.log('click took', t1 - t0, 'ms');
 for (let i = 0; i < 6; i++) {
   await page.waitForTimeout(1000);
-  const r = await page.evaluate(() => ({ hud: document.getElementById('hud-time').textContent, now: Date.now(), pnow: performance.now(), hidden: document.hidden, vis: document.visibilityState }));
+  const r = await page.evaluate(() => ({ hud: document.getElementById('c2d-time').textContent, now: Date.now(), pnow: performance.now(), hidden: document.hidden, vis: document.visibilityState }));
   console.log(`wall +${((Date.now() - t1)/1000).toFixed(2)}s hud=${r.hud} hidden=${r.hidden}`);
 }
 await page.keyboard.press('Escape'); await page.waitForTimeout(200);

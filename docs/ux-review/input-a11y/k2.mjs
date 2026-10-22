@@ -3,7 +3,7 @@ const browser = await launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const errors = []; page.on('pageerror', e => errors.push(e.message));
 await page.goto(URL); await ready(page);
-const info = () => page.evaluate(() => ({ mode: __ms.state.mode, hud: { t: document.getElementById('hud-time').textContent, m: document.getElementById('hud-mines').textContent }, modeState: __ms.modes.state }));
+const info = () => page.evaluate(() => ({ mode: __ms.state.mode, hud: { t: document.getElementById('c2d-time').textContent, m: document.getElementById('c2d-mines-left').textContent }, modeState: __ms.modes.state }));
 // Keyboard: menu → Classic 2D → Beginner
 await page.keyboard.press('Enter'); await sleep(200); await page.keyboard.press('Enter'); await sleep(600);
 log('in 2D', await info(), 'focus', await focused(page));
@@ -51,10 +51,10 @@ log('TAB ORDER results:\n ' + ro.join('\n '));
 await page.focus('#r-watch'); await page.keyboard.press('Enter'); await sleep(1200);
 log('replay mode', await mode(page), 'focus', await focused(page));
 await shot(page, 'k-07-replay');
-await page.keyboard.press('Space'); await sleep(1500); log('replay playing? pos', await page.evaluate(() => ({ pos: document.getElementById('rp-position').textContent, play: document.getElementById('rp-play').textContent, end: document.getElementById('replay-end').textContent })));
+await page.keyboard.press('Space'); await sleep(1500); log('replay playing? pos', await page.evaluate(() => ({ pos: document.getElementById('rp-seek').getAttribute('aria-valuetext'), play: document.getElementById('rp-play').textContent, end: document.getElementById('replay-end').textContent })));
 await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await sleep(200);
 await page.keyboard.press('='); await sleep(100);
-log('replay after keys', await page.evaluate(() => ({ pos: document.getElementById('rp-position').textContent, speed: document.querySelector('#rp-speed [aria-checked="true"]').textContent })));
+log('replay after keys', await page.evaluate(() => ({ pos: document.getElementById('rp-seek').getAttribute('aria-valuetext'), speed: document.querySelector('#rp-speed [aria-checked="true"]').textContent })));
 await page.keyboard.press('End'); await sleep(500);
 await shot(page, 'k-08-replay-end');
 log('replay end text', await page.evaluate(() => document.getElementById('replay-end').textContent));
@@ -83,13 +83,5 @@ log('TAB ORDER settings:\n ' + so.join('\n '));
 log('settings body text', await page.evaluate(() => document.getElementById('settings-body').innerText));
 await page.keyboard.press('Escape'); await sleep(400);
 log('after Esc from settings', await mode(page), 'focus', await focused(page));
-// Controls modal on menu
-await page.focus('#menu-help'); await page.keyboard.press('Enter'); await sleep(400);
-log('controls modal open?', await page.evaluate(() => !document.getElementById('controls-modal').classList.contains('hidden')), 'focus', await focused(page));
-await shot(page, 'k-11-controls-modal');
-const co = []; for (let i = 0; i < 4; i++) { await page.keyboard.press('Tab'); co.push(await focused(page)); }
-log('TAB in modal:\n ' + co.join('\n '));
-await page.keyboard.press('Escape'); await sleep(300);
-log('modal closed?', await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), 'focus', await focused(page));
 log('errors', errors);
 await browser.close();

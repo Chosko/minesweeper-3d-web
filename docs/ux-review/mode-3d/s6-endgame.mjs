@@ -92,29 +92,26 @@ await page.setViewportSize({ width: 1280, height: 800 });
 await shot(page, '67-results-win');
 console.log('results win text:', await page.evaluate(() => document.getElementById('results').innerText.replace(/\n+/g, ' | ')));
 
-// ---- dark theme
-await page.evaluate(() => globalThis.__ms.settings.set('theme', 'dark'));
 await frames(page, 2);
-await shot(page, '68-results-win-dark');
+await shot(page, '68-results-win');
 await page.click('#r-again'); await sleep(400);
-if (await page.evaluate(() => globalThis.__ms.state.mode) !== 'playing') { await shot(page, '69-ready-dark'); await forcePlay(page); }
+if (await page.evaluate(() => globalThis.__ms.state.mode) !== 'playing') { await shot(page, '69-ready'); await forcePlay(page); }
 await page.evaluate((c) => { globalThis.__ms.aimAt(c); globalThis.__ms.click('left'); }, idx(0, 0, 0));
 await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 30000 });
 await page.evaluate(() => { globalThis.__ms.look(Math.PI, 0.2); globalThis.__ms.key('ShiftLeft', true); globalThis.__ms.key('Space', true); });
 await page.keyboard.press('KeyH');
 await frames(page, 3);
-await shot(page, '70-ingame-dark-hud-help-chips');
+await shot(page, '70-ingame-hud-help-chips');
 await page.evaluate(() => { globalThis.__ms.key('ShiftLeft', false); globalThis.__ms.key('Space', false); });
 await page.keyboard.press('KeyH');
 await page.evaluate(() => globalThis.__ms.pause());
 await frames(page, 3);
-await shot(page, '71-pause-dark');
+await shot(page, '71-pause');
 await page.click('#p-restart');
 await frames(page, 3);
 await shot(page, '72-restart-confirm');
 console.log('confirm text:', await page.evaluate(() => document.getElementById('pause-confirm')?.innerText.replace(/\n+/g, ' | ')));
 await page.click('#p-confirm-no');
-await page.evaluate(() => globalThis.__ms.settings.set('theme', 'light'));
 
 // ---- viewports
 for (const vp of [{ width: 1024, height: 768 }, { width: 1920, height: 1080 }]) {

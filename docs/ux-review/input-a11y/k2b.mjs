@@ -41,11 +41,11 @@ log('TAB replay:\n ' + (await tabs(10)).join('\n '));
 await page.focus('#rp-play');
 await page.keyboard.press('Home');
 await page.keyboard.press('Space'); await sleep(2500);
-log('replay state', await page.evaluate(() => ({ pos: document.getElementById('rp-position').textContent, play: document.getElementById('rp-play').textContent, end: document.getElementById('replay-end').textContent, clock: document.getElementById('rp-clock').textContent })));
+log('replay state', await page.evaluate(() => ({ pos: document.getElementById('rp-seek').getAttribute('aria-valuetext'), play: document.getElementById('rp-play').textContent, end: document.getElementById('replay-end').textContent, clock: document.getElementById('rp-clock').textContent })));
 await page.keyboard.press('='); await page.keyboard.press('=');
 log('speed', await page.evaluate(() => document.querySelector('#rp-speed [aria-checked="true"]').textContent));
 await page.keyboard.press('Home'); await sleep(100); await page.keyboard.press('ArrowRight'); await sleep(200);
-log('after Home, →', await page.evaluate(() => ({ pos: document.getElementById('rp-position').textContent, end: document.getElementById('replay-end').textContent })));
+log('after Home, →', await page.evaluate(() => ({ pos: document.getElementById('rp-seek').getAttribute('aria-valuetext'), end: document.getElementById('replay-end').textContent })));
 await shot(page, 'k-17-replay-end');
 await page.keyboard.press('Escape'); await sleep(500);
 log('after Esc from replay', await mode(page), 'focus', await focused(page));
@@ -71,21 +71,8 @@ log('settings', await mode(page), 'focus', await focused(page));
 await shot(page, 'k-19-settings');
 log('TAB settings:\n ' + (await tabs(14)).join('\n '));
 log('settings html snippet', await page.evaluate(() => document.getElementById('settings-body').innerHTML.slice(-600)));
-// Theme toggle by keyboard: focus Dark radio and press Enter
-await page.focus('#set-theme [data-value="dark"]'); await page.keyboard.press('Enter'); await sleep(400);
-log('theme', await page.evaluate(() => document.documentElement.dataset.theme || getComputedStyle(document.body).backgroundColor));
-await shot(page, 'k-20-settings-dark');
 await page.keyboard.press('Escape'); await sleep(400);
 log('after Esc from settings', await mode(page), 'focus', await focused(page));
-await shot(page, 'k-21-menu-dark');
-// Controls modal on menu
-await page.focus('#menu-help'); await page.keyboard.press('Enter'); await sleep(400);
-log('controls modal open?', await page.evaluate(() => !document.getElementById('controls-modal').classList.contains('hidden')), 'focus', await focused(page));
-await shot(page, 'k-22-controls-modal-dark');
-log('TAB in modal:\n ' + (await tabs(5)).join('\n '));
-log('modal text', await page.evaluate(() => document.getElementById('controls-body').innerText.replace(/\n+/g,' | ')));
-await page.keyboard.press('Escape'); await sleep(300);
-log('modal closed?', await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), 'focus', await focused(page));
 // Loss on beginner: 2D → beginner → exhaustive reveal
 await page.focus('#menu-entry-classic-2d'); await page.keyboard.press('Enter'); await sleep(300);
 await page.focus('#c2d-choice [data-size="beginner"]'); await page.keyboard.press('Enter'); await sleep(600);
@@ -99,7 +86,7 @@ outer: for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
 }
 await sleep(1500);
 log('loss: ended', ended, 'after', presses, 'mode', await mode(page), 'focus', await focused(page), 'title', await page.evaluate(() => document.getElementById('results-title').textContent));
-await shot(page, 'k-23-results-loss-dark');
+await shot(page, 'k-23-results-loss');
 log('results text', await page.evaluate(() => document.querySelector('#results .ui-card').innerText.replace(/\n+/g,' | ')));
 log('errors', errors);
 await browser.close();

@@ -4,7 +4,7 @@ await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
 await page.evaluate(() => document.getElementById('c2d-noguess').click());
 await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', '100'); await page.fill('#c2d-height', '100'); await page.fill('#c2d-mines', '2480');
 await page.click('#c2d-play'); await page.waitForTimeout(800);
-const box = await page.locator('#c2d-board canvas').boundingBox();
+const box = await page.locator('#c2d-board canvas').first().boundingBox();
 await page.mouse.click(box.x + 200, box.y + 200);
 // click more cells while generating: do they do anything?
 await page.waitForTimeout(300);
@@ -30,6 +30,6 @@ console.log('std button id', stdBtn);
 if (await mode(page) === 'paused') { await page.click('#p-resume'); await page.waitForTimeout(300); }
 await page.evaluate(() => [...document.querySelectorAll('button')].find(b => b.offsetParent && /standard/.test(b.textContent))?.click());
 await page.waitForTimeout(1500);
-console.log('after standard: mode', await mode(page), 'started', await page.evaluate(() => globalThis.__ms.modes.state?.started), 'hud', await page.evaluate(() => document.querySelector('.ui-overlay-bar')?.innerText.replace(/\n/g,' ')));
+console.log('after standard: mode', await mode(page), 'started', await page.evaluate(() => globalThis.__ms.modes.state?.started), 'hud', await page.evaluate(() => document.getElementById('c2d-counters')?.innerText.replace(/\n/g,' ')));
 await shot(page, '16-c2d-after-standard');
 await browser.close();

@@ -38,7 +38,7 @@ log('help visible', await page.evaluate(() => !document.getElementById('help').c
 await shot(page, 'k3-07-help');
 log('help text', await page.evaluate(() => document.getElementById('help').innerText.replace(/\n+/g,' | ')));
 await page.keyboard.press('h'); await sleep(100);
-await page.keyboard.press('m'); await sleep(200); log('sound hud', await page.evaluate(() => document.getElementById('hud-sound').textContent), 'toast', await page.evaluate(() => document.getElementById('toast').textContent));
+await page.keyboard.press('m'); await sleep(200); log('sound hud', await page.evaluate(() => (document.getElementById('hud-tools').innerText.match(/sound \S+/) || [''])[0]), 'toast', await page.evaluate(() => document.getElementById('toast').textContent));
 await page.keyboard.press('m');
 // F fullscreen: observe
 await page.keyboard.press('f'); await sleep(400); log('fullscreen el', await page.evaluate(() => !!document.fullscreenElement), 'toast', await page.evaluate(() => document.getElementById('toast').textContent));

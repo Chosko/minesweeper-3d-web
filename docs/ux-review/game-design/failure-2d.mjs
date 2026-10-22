@@ -14,7 +14,7 @@ for (const [w, h] of [[9, 9], [5, 5], [4, 4], [3, 3], [8, 8]]) {
   if (!(await page.evaluate(() => document.getElementById('c2d-noguess').checked))) await page.click('#c2d-noguess');
   await page.click('#c2d-play'); await sleep(400);
   if ((await mode(page)) !== 'classic-2d') { console.log('  did not start:', await text('#c2d-info')); continue; }
-  const box = await page.locator('#c2d-board canvas').boundingBox();
+  const box = await page.locator('#c2d-board canvas').first().boundingBox();
   const t1 = Date.now();
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   let tGen2 = null, tFail2 = null, startedMs = null;

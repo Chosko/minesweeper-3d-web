@@ -106,14 +106,14 @@ console.log('Records 2D:', await text('#records'));
 await shot(page, '54-records-2d-empty');
 await page.keyboard.press('Escape'); await sleep(300);
 
-// 2D win: custom 2 x 2 with 0 mines, if allowed; else 3 x 3 with 1 mine.
+// 2D win: custom 2 x 1 with 1 mine — the first click wins.
 await page.click('#menu-entry-classic-2d'); await sleep(300);
-await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', '2'); await page.fill('#c2d-height', '2'); await page.fill('#c2d-mines', '0'); await sleep(100);
-console.log('2D 2x2/0 info:', await text('#c2d-info'));
+await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', '2'); await page.fill('#c2d-height', '1'); await page.fill('#c2d-mines', '1'); await sleep(100);
+console.log('2D 2x1/1 info:', await text('#c2d-info'));
 await page.click('#c2d-play'); await sleep(400);
 console.log('2D mode:', await mode(page));
 if ((await mode(page)) === 'classic-2d') {
-  const box = await page.locator('#c2d-board canvas').boundingBox();
+  const box = await page.locator('#c2d-board canvas').first().boundingBox();
   await page.mouse.click(box.x + box.width / 4, box.y + box.height / 4);
   await waitResults('2D win');
   await shot(page, '55-2d-results-win');
