@@ -89,8 +89,10 @@ In scope (m2b-themes):
     it and full width on phones, the same shape for every caller;
   - the **controls list** — one ruled two-column list (the key in plain
     words on the left, the action on the right) for the pause card, the 3D
-    ready card, the 3D help card and the Settings bindings, fed from the
-    bindings source in the canvas's short wording;
+    ready card, the help card and the Settings bindings, fed from the
+    bindings source in the canvas's short wording; the pause card and the
+    help card show one help list, which also names the keys that work in
+    play and that the canvas's lists leave out;
   - the **frame size steps** — the frame's head and foot, the buttons and
     the type follow the desktop step, a **compact** step for the smaller
     desktop windows and a **touch** step for the phone sizes;
