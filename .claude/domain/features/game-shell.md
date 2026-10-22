@@ -203,8 +203,9 @@ it generalises.
   outcome abandoned.
 - **Pause rules** — pause applies only to a started, unfinished game; before
   the first click or after the game ends, the pause key opens the pause card
-  without a game to pause, offering Restart (Play again once the game
-  ended) and Main menu. Back on that card resumes the board before the
+  without a game to pause, its status line saying which
+  (`shared-screen-layout.md` § Cards), offering Restart (Play again once
+  the game ended) and Main menu. Back on that card resumes the board before the
   first click, and goes to the main menu only once the game has ended.
   While the first click's board is being
   generated, Esc and the controller's back button cancel the generation,
