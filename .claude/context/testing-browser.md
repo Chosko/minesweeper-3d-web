@@ -5,8 +5,8 @@
 How the Playwright tests (those named "in a browser") are written: what
 earns a test a place in the browser tier, the shared helper every browser
 test file goes through, the local server, the browser environment they run in, the 3D backdrop kept out
-of their way, inputs a round trip cannot stretch, fixed boards for a game
-state, and `window.__ms`. Conventions every test follows, and the
+of their way, inputs a round trip cannot stretch, a board measured after
+the board art hand-off, fixed boards for a game state, and `window.__ms`. Conventions every test follows, and the
 tripwires, are [testing-conventions.md](testing-conventions.md); where
 tests go and how the suite runs is [testing.md](testing.md).
 
@@ -80,11 +80,17 @@ How a browser test is built:
   across a test-to-page round trip, which on a loaded machine passes any
   threshold: a faked controller's tap is pressed and released in the page
   within one animation frame (the shell's frame loop polls first), so menu
-  auto-repeat never fires (`shell-pad-walk`, `shell-menu`); a touch tap or
+  auto-repeat never fires (`shell-pad-walk`, `shell-menu`, `settings-page`); a touch tap or
   one-finger drag is a gesture the browser synthesizes
   (`Input.synthesizeTapGesture`, `Input.synthesizeScrollGesture`), so the
   400 ms long-press never sees it (`classic2d-touch`, the 3D look in
   `shell-mode-3d`).
+- **A Classic 2D board is measured once the board art hand-off has
+  happened** (`BOARD_ART.current()`,
+  [classic2d-tile-skin.md](classic2d-tile-skin.md)): until the theme's
+  number font loads the skin has no board module, and the board is laid out,
+  steadily, with no gap (`classic2d-mode`, `classic2d-view`, the menu
+  previews in `shell-menu`).
 - **A card is measured once it has settled.** A card pops in and a
   closing layer or confirm box stays displayed while it fades out
   ([app-shell-stylesheet.md](app-shell-stylesheet.md)), so a check of a card's size
