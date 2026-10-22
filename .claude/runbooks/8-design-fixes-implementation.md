@@ -447,7 +447,7 @@ Context:
 
 Done: 2026-10-21, commit `0bf3d39` (7 files, +36/-14).
 
-## [ ] 35. Resume the design-fixes follow-ups and resolve them with the owner
+## [x] 35. Resume the design-fixes follow-ups and resolve them with the owner
 
 Depends on: none
 
@@ -460,3 +460,5 @@ Context: none
 
 That handoff (.claude/sessions/2026-10-21-1034-design-fixes-follow-ups.md) holds the nine numbered follow-ups runbook 8's closing report left open, each with its context. After the briefing, continue rather than stop: with the owner present, start at the handoff's "Exact next step" — put follow-up 1's FEATURES.md flip question and follow-up 3's five design questions to the owner in one message — then act on the owner's replies by number with the follow-ups-resolve skill. The step is done when every one of the nine items has been executed, turned into a task or runbook step, or explicitly dropped by the owner.
 ```
+
+Done: 2026-10-22, commits `5f7f4c2`, `f52b30f`, `dc289d8`, `3d867ca`, `50dec6a`, `6d1300b`, `ebb7a30`. All nine follow-ups resolved: three features flipped `[DONE]`; the five design calls taken (own line for an ended game, 280 px kept as the content fits, "That was a mine!", "tap", the missing keys in the help panels); the pause rules doc matched to the game; the `plainText` duplicate, the UX-review scripts and two of three flaky tests fixed by `/quick-implement`; segmented-option height and the hint strip close button dropped by the owner. The remote `park/task-240` branch is the owner's to delete.

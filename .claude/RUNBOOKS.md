@@ -36,11 +36,11 @@ Steps: 81/81
 
 ## 8. design-fixes-implementation — Implement the design-fix tasks 214–247: test reliability, kit, board module, screens, copy, gallery, then each feature's documentation
 
-Status: [PENDING]
+Status: [DONE]
 File: .claude/runbooks/8-design-fixes-implementation.md
 Created: 2026-10-20
 Source: /runbook-create interview
-Steps: 34/35
+Steps: 35/35
 
 ---
 
