@@ -28,7 +28,7 @@
 //   controller each input whole in one key box before its action, with no separator; on touch the
 //   gestures as words, " · " between items.
 // helpFootHtml(mode, device, glyphs?) → the H panel's foot line in plain words: the key that hides
-//   the panel; on touch, 3D's release rule, and empty for Classic 2D.
+//   the panel and 3D's release rule; on touch, the release rule alone, and empty for Classic 2D.
 // hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`),
 //   or a Learn 3D prompt's (`learnStart`, `learnShift`, `learnCtrl`, `learnFlag`, `learnChord`, `learnRest`),
 //   for the keyboard, the controller or touch.
@@ -101,10 +101,12 @@ const HELP_3D = Object.freeze({
     ['Left click', 'Reveal'],
     ['Right click', 'Flag / unflag'],
     ['Left + Right', 'Chord'],
+    ['[Enter] / [\']', 'Reveal / flag'],
     'wheel',
     ['Hold [Shift]', 'Neighbours only'],
     ['Hold [Space]', 'Aim through numbers'],
     ['Hold [Ctrl]', 'Show hidden'],
+    ['[Home] / [R]', 'Back to the start view'],
     ['[Esc]', 'Pause'],
   ],
 });
@@ -202,10 +204,12 @@ export const HELP_BINDINGS = Object.freeze({
       ['Left / middle button', 'Reveal'],
       ['Right button', 'Flag / unflag'],
       ['Left + Right', 'Chord'],
+      ['Wheel · [Shift] + wheel', 'Scroll a large board · sideways'],
       ['Arrow keys', 'Move the cursor'],
       ['[Space] / [Enter]', 'Reveal under the cursor'],
       ['[F]', 'Flag under the cursor'],
       ['[D]', 'Chord under the cursor'],
+      ['[H] · [M]', 'Help · Sound'],
       ['[Esc]', 'Pause'],
       ['[F2]', 'Restart'],
     ]),
@@ -323,12 +327,12 @@ export const HINT_STRIP = table({
   },
 });
 
-/** The H panel's foot line: the key that hides it; on touch, 3D's release rule, and nothing in Classic 2D. */
+/** The H panel's foot line: the key that hides it, and 3D's release rule (on touch, the release rule alone; nothing in Classic 2D). */
 export const HELP_FOOT = Object.freeze({
   'classic-2d': Object.freeze({ keyboard: '[H] hides this panel.', controller: '[H] hides this panel.', touch: '' }),
   '3d': Object.freeze({
-    keyboard: '[H] hides this panel.',
-    controller: '{x} hides this panel.',
+    keyboard: '[H] hides this panel. Actions fire on release.',
+    controller: '{x} hides this panel. Actions fire on release.',
     touch: 'Actions fire when your finger lifts.',
   }),
 });

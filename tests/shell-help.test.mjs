@@ -76,10 +76,25 @@ test('the HUD strip lists only the keys the mode binds, and the controller\'s bu
 });
 
 test('the H panel\'s foot line names the key that hides it, in plain words', () => {
-  assert.equal(helpFootHtml('3d', 'keyboard'), 'H hides this panel.');
-  assert.equal(helpFootHtml('3d', 'controller', GLYPHS.xbox), 'X hides this panel.');
+  assert.equal(helpFootHtml('3d', 'keyboard'), 'H hides this panel. Actions fire on release.');
+  assert.equal(helpFootHtml('3d', 'controller', GLYPHS.xbox), 'X hides this panel. Actions fire on release.');
   assert.equal(helpFootHtml('classic-2d', 'keyboard'), 'H hides this panel.');
-  assert.doesNotMatch(helpFootHtml('classic-2d', 'controller', GLYPHS.xbox), /released|<kbd/);
+  assert.doesNotMatch(helpFootHtml('classic-2d', 'controller', GLYPHS.xbox), /release|<kbd/);
+});
+
+test('the help list names the keys no other screen shows: Enter, \', Home and R in 3D, H, M and the wheel in Classic 2D', () => {
+  const lines = (list) => list.map((r) => r.join(' ')).join('\n');
+  for (const camera of ['fly', 'orbit']) {
+    const help3d = lines(helpRows('3d', 'keyboard', camera));
+    assert.match(help3d, /^\[Enter\] \/ \['\] Reveal \/ flag$/m, `${camera}: Enter and ' act`);
+    assert.match(help3d, /^\[Home\] \/ \[R\] Back to the start view$/m, `${camera}: Home and R return to the start view`);
+  }
+  const help2d = lines(helpRows('classic-2d', 'keyboard'));
+  assert.match(help2d, /^\[H\] · \[M\] Help · Sound$/m);
+  assert.match(help2d, /^Wheel · \[Shift\] \+ wheel Scroll a large board · sideways$/m);
+  // Only the help list: the full rows are unchanged.
+  assert.doesNotMatch(lines(bindingRows('3d', 'keyboard')), /Enter|Home|start view/);
+  assert.doesNotMatch(lines(bindingRows('classic-2d', 'keyboard')), /\[H\]|\[M\]|Wheel/);
 });
 
 // ---------------------------------------------------------------- the active device
@@ -230,7 +245,7 @@ test('on a mouse and keyboard and with a controller the three surfaces read as b
   assert.equal(plain(hintStripHtml('classic-2d', 'keyboard')), 'Arrows move Space reveal F flag D chord');
   assert.equal(plain(hintStripHtml('3d', 'controller', GLYPHS.xbox)), 'RT reveal LT flag Hold RB aim through Hold LB neighbours');
   assert.equal(text(helpFootHtml('classic-2d', 'keyboard')), 'H hides this panel.');
-  assert.equal(text(helpFootHtml('3d', 'controller', GLYPHS.xbox)), 'X hides this panel.');
+  assert.equal(text(helpFootHtml('3d', 'controller', GLYPHS.xbox)), 'X hides this panel. Actions fire on release.');
 });
 
 test('the HUD strip is generated and shows in Classic 2D; the hint strip shows there too', () => {
@@ -346,7 +361,7 @@ test('in a browser: the Settings bindings panel\'s Mode choice, H, M and the HUD
     assert.ok(await shown('p-invert'));
     await page.keyboard.press('KeyH');
     assert.match(await textOf('#help .ui-controls'), /Look around/);
-    assert.equal(await textOf('#help-foot'), 'H hides this panel.');
+    assert.equal(await textOf('#help-foot'), 'H hides this panel. Actions fire on release.');
     await page.keyboard.press('KeyH');
     await ms(() => globalThis.__ms.pauser.toMenu());
     assert.deepEqual(errors, []);

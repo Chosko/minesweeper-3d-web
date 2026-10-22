@@ -194,6 +194,7 @@ for (const [size, device, panelWidth, density] of GAME_3D_SIZES) {
         const help = await ms(() => document.getElementById('help').getBoundingClientRect().toJSON());
         assert.ok(help.right <= g.panel.x - 16 && help.right >= g.panel.x - 32, `${size}: the help panel beside the figures panel (${help.right}, ${g.panel.x})`);
         assert.ok(Math.abs((help.y + help.bottom) / 2 - vh / 2) < 2, `${size}: the help panel centred vertically`);
+        assert.ok(await ms(() => { const h = document.getElementById('help'); return h.scrollHeight <= h.clientHeight; }), `${size}: every help row and the foot line show unclipped`);
         await page.keyboard.press('KeyH');
       }
       // Pause pauses the game.

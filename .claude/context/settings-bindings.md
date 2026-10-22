@@ -19,9 +19,10 @@ every function.
   (`fly`, `orbit`) and `BINDINGS_3D[camera][device]` — the 3D rows per
   Camera setting. Both modes list F2 and `{start} + {y}` as Restart; 3D's
   keyboard rows list the arrow keys (look, or rotate in Orbit).
-- `HELP_BINDINGS` — the help list where the canvas draws it shorter than
-  the full one: Classic 2D's keyboard (J-Pause-xl) and touch (J-Pause-p)
-  rows, and 3D's keyboard rows per camera (the H panel); `READY_BINDINGS
+- `HELP_BINDINGS` — the help list where it differs from the full one:
+  Classic 2D's keyboard (J-Pause-xl, plus the wheel and H · M) and touch
+  (J-Pause-p) rows, and 3D's keyboard rows per camera (the H panel's, plus
+  Enter / ' and Home / R, which no other list shows); `READY_BINDINGS
   [camera][keyboard | touch]` — the 3D ready card's rows.
 - `bindingRows(mode, device, camera = 'fly')` (the full rows, 3D's for that
   camera; throws on an unknown mode, device or camera),
@@ -44,8 +45,9 @@ every function.
   chord gesture — a tap on a number in Classic 2D, the two-finger tap in 3D —
   as words between " · ").
 - `HELP_FOOT`, `helpFootHtml(mode, device, glyphs?)` — the H panel's foot
-  line in plain words, naming the key that hides the panel (on touch, 3D's
-  release rule, the finger's lift; Classic 2D's touch foot is empty).
+  line in plain words, naming the key that hides the panel and, in 3D, that
+  actions fire on release (on touch the release rule alone, the finger's
+  lift; Classic 2D's touch foot is empty).
 - `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint` and the Learn 3D
   prompts `learnStart`, `learnShift`, `learnCtrl`, `learnFlag`,
   `learnChord`, `learnRest`, each for the keyboard, the controller and

@@ -3088,6 +3088,7 @@ for (const [size, device, place] of WINDOW_SIZES) {
         await page.keyboard.press('KeyH');
         await page.waitForFunction(() => !document.getElementById('help').classList.contains('hidden'));
         await check(`${size} help panel`);
+        assert.ok(await ms(() => { const h = document.getElementById('help'); return h.scrollHeight <= h.clientHeight; }), `${size}: every help row and the foot line show unclipped`);
         await page.keyboard.press('KeyH');
       }
       assert.deepEqual(errors, [], `${size}: no page errors`);

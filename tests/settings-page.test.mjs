@@ -158,14 +158,16 @@ test('the Settings bindings are the canvas\'s short rows: Classic 2D\'s and 3D\'
   }
 });
 
-test('the help list is the canvas\'s: the pause card\'s nine Classic 2D rows and the H panel\'s eleven 3D rows; the other pairs show their full rows', () => {
+test('the help list is the canvas\'s with the keys no other screen shows: the pause card\'s Classic 2D rows and the H panel\'s 3D rows; the other pairs show their full rows', () => {
   assert.deepEqual(shown(helpRows('classic-2d', 'keyboard')), [
-    'Left / middle button — Reveal', 'Right button — Flag / unflag', 'Left + Right — Chord', 'Arrow keys — Move the cursor',
-    'Space / Enter — Reveal under the cursor', 'F — Flag under the cursor', 'D — Chord under the cursor', 'Esc — Pause', 'F2 — Restart',
+    'Left / middle button — Reveal', 'Right button — Flag / unflag', 'Left + Right — Chord', 'Wheel · Shift + wheel — Scroll a large board · sideways',
+    'Arrow keys — Move the cursor', 'Space / Enter — Reveal under the cursor', 'F — Flag under the cursor', 'D — Chord under the cursor',
+    'H · M — Help · Sound', 'Esc — Pause', 'F2 — Restart',
   ]);
   assert.deepEqual(shown(helpRows('3d', 'keyboard')), [
     'Mouse — Look around', 'W A S D — Fly', 'Q / E — Down / up', 'Left click — Reveal', 'Right click — Flag / unflag', 'Left + Right — Chord',
-    'Wheel — Spacing', 'Hold Shift — Neighbours only', 'Hold Space — Aim through numbers', 'Hold Ctrl — Show hidden', 'Esc — Pause',
+    'Enter / \' — Reveal / flag', 'Wheel — Spacing', 'Hold Shift — Neighbours only', 'Hold Space — Aim through numbers', 'Hold Ctrl — Show hidden',
+    'Home / R — Back to the start view', 'Esc — Pause',
   ]);
   assert.equal(helpRows('3d', 'keyboard'), HELP_BINDINGS['3d'].fly.keyboard);
   assert.deepEqual(shown(helpRows('3d', 'keyboard', 'orbit')).slice(0, 2), ['Mouse — Rotate', 'W / S — In / out'], 'Orbit\'s help rows rotate and dolly');
