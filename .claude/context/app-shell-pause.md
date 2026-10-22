@@ -16,8 +16,8 @@ head comment. Both modes' end delay and its skip are
   (`blur`, `hidden`), `HAND_OFFS` (`finished`, `abandoned`, `inProgress`),
   `CONFIRMATIONS` (`restart`, `menu`: `{action, title, message,
   confirmLabel}`, both asking the same),
-  `RESTART_NOTICE`, `NO_GAME_LINE` (the card's status line with no game in
-  progress), `RESTART_SCREENS` (`playing`, `classic-2d`, `paused`).
+  `RESTART_NOTICE`, `NO_GAME_LINE` (the card's status line before the first
+  click), `ENDED_LINE` (its status line once the game is won or lost), `RESTART_SCREENS` (`playing`, `classic-2d`, `paused`).
 - `restartInput(input, {screen, blocked?})` → `'restart'` for `'F2'` or
   `'pad'` (Start + Y) on a `RESTART_SCREENS` screen, `'playAgain'` for
   `'KeyR'` on `results`, else null; null for anything while `blocked`.
@@ -64,8 +64,9 @@ head comment. Both modes' end delay and its skip are
   failed (Classic 2D's `status().pending`, the 3D session's state). During
   a game the status line is the
   running time and mines left and Resume (with its back key hint) leads;
-  with no game in progress (before the first click, or after the end) the
-  status line is `NO_GAME_LINE`, which the running time never replaces,
+  with no game in progress the status line is `NO_GAME_LINE` before the
+  first click and `ENDED_LINE` after the end, which the running time never
+  replaces,
   Restart leads as the primary action and takes the focus, and Resume and
   "Back to start" are hidden. "Back to start" shows only for a 3D game in
   play; `#p-restart` reads Restart (with its restart key hint) or, once

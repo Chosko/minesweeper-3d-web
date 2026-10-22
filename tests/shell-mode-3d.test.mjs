@@ -634,7 +634,7 @@ test('in a browser with touch on a tablet, the 3D ready card is a start that ask
         escHint: shown(document.querySelector('#ready-back .ui-key-hint')),
       };
     });
-    assert.match(card.rules, /hold the Ctrl button to show them/, 'the rules name the toolbar\'s Ctrl button');
+    assert.match(card.rules, /tap the Ctrl button to show them/, 'the rules name the toolbar\'s Ctrl button');
     assert.doesNotMatch(card.rules, /hold Ctrl/, 'not the Ctrl key');
     assert.equal(card.escHint, false, 'no Esc key hint in the touch card\'s Back');
     assert.ok(card.btn, 'the ready card\'s play button shows');

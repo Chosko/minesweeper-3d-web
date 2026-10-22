@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createModeHost } from '../js/shell/mode-host.js';
 import {
-  createPauseController, PAUSE_SOURCES, AUTO_SOURCES, HAND_OFFS, CONFIRMATIONS, RESTART_NOTICE, RESTART_SCREENS, NO_GAME_LINE, restartInput,
+  createPauseController, PAUSE_SOURCES, AUTO_SOURCES, HAND_OFFS, CONFIRMATIONS, RESTART_NOTICE, RESTART_SCREENS, NO_GAME_LINE, ENDED_LINE, restartInput,
 } from '../js/shell/pause.js';
 import { createTimer } from '../js/classic2d/session.js';
 import { browserSuite } from './helpers/browser.mjs';
@@ -87,8 +87,9 @@ test('the pause sources, the automatic ones, the hand-offs and the confirmations
   for (const [action, c] of Object.entries(CONFIRMATIONS)) {
     assert.deepEqual({ ...c }, { action, title: 'Leave this game?', message: 'This game will count as a loss.', confirmLabel: 'Confirm' }, action);
   }
-  // With no game in progress the card's status line says so, in the canvas's words.
+  // With no game in progress the card's status line says so: before the first click, and after the end.
   assert.equal(NO_GAME_LINE, 'No game in progress: the board is not started yet.');
+  assert.equal(ENDED_LINE, 'No game in progress: the game is over.');
 });
 
 // ---------------------------------------------------------------- pause rules
@@ -579,8 +580,8 @@ test('the pause card in the shared layout: the card and its settings in one colu
 
 test('the pause card leads with Restart and offers no Resume when no game is in progress, its status line saying so', () => {
   const ui = read('js/ui.js');
-  assert.match(ui, /import \{ NO_GAME_LINE \} from '\.\/shell\/pause\.js';/);
-  assert.match(ui, /pauseSub\.textContent = noGame \? NO_GAME_LINE : pauseLine\(/, 'the status line');
+  assert.match(ui, /import \{ NO_GAME_LINE, ENDED_LINE \} from '\.\/shell\/pause\.js';/);
+  assert.match(ui, /pauseSub\.textContent = noGame \? \(ended \? ENDED_LINE : NO_GAME_LINE\) : pauseLine\(/, 'the status line');
   assert.match(MAIN, /function gameInProgress\(\) \{\s*if \(PAUSE\.inProgress\) return true;/, 'a started, unfinished game, or a first click\'s board being generated or failed');
   assert.match(MAIN, /function pauseInfo\(note = ''\) \{\s*const inProgress = gameInProgress\(\);/, 'the shell tells the card whether a game is in progress');
   assert.match(MAIN, /paused: \{ defaultFocus: \(\) => \(ui\.isConfirmOpen\(\) \? '#p-confirm-no' : gameInProgress\(\) \? '#p-resume' : '#p-restart'\)/,
@@ -802,7 +803,7 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await guarded(), false);
     assert.equal(await mode(), 'paused', 'a fixed board has no results screen: it ends on the pause card');
     assert.equal(await boardHidden(), true, 'an ended game is hidden under the card too');
-    assert.equal(await ms(() => document.getElementById('pause-sub').textContent), 'No game in progress: the board is not started yet.', 'an ended game is no game in progress');
+    assert.equal(await ms(() => document.getElementById('pause-sub').textContent), 'No game in progress: the game is over.', 'an ended game has its own line');
     assert.deepEqual(await ms(() => { const [type, e] = globalThis.__events.at(-1); return { type, summary: e.summary }; }),
       { type: 'finished', summary: null }, 'the adapter reports the game finished, with no summary for a fixed board');
     await ms(() => document.getElementById('p-restart').click());

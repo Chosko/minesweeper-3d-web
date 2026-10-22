@@ -336,7 +336,7 @@ test('index.html holds the Learn 3D entry first on the 3D board choice, the read
 test('the Learn 3D end card: a win reads "You cleared the box!" and offers Play Cube Intro, a loss says the box is always the same and offers Try again', () => {
   const ui = code('js/ui.js');
   const show = ui.slice(ui.indexOf('showLearnEnd(won) {'), ui.indexOf('hideLearnEnd()'));
-  assert.match(show, /learnEndTitle\.textContent = won \? 'You cleared the box!' : 'That cube was a mine\.'/);
+  assert.match(show, /learnEndTitle\.textContent = won \? 'You cleared the box!' : 'That was a mine!'/);
   assert.match(show, /learnEndLine\.textContent = won \? 'Ready for a real board\? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records\.' : 'The lesson box is always the same\. Try it again\.'/);
   assert.match(show, /learnEndPrimaryLabel\.textContent = won \? 'Play Cube Intro' : 'Try again'/);
   assert.doesNotMatch(show, /learnEndLine\.classList/, 'the line shows on both');

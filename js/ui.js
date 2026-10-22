@@ -15,7 +15,7 @@ import { formatTime } from './results/view.js';
 import { liveFigures, figuresLine } from './shell/live-figures.js';
 import { standardBoard, preset3D, createBoardIdentity, MODE_3D } from './records/board.js';
 import { readoutText } from './readability.js';
-import { NO_GAME_LINE } from './shell/pause.js';
+import { NO_GAME_LINE, ENDED_LINE } from './shell/pause.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -681,7 +681,7 @@ export class UI {
     this.el.pauseActions.insertBefore(this.el.home, this.el.pauseMenu);
     this.el.pauseActions.insertBefore(second, this.el.pauseMenu);
     this.el.pauseTitle.textContent = state === 'won' ? 'You won!' : state === 'lost' ? 'Game over' : 'Paused';
-    this.el.pauseSub.textContent = noGame ? NO_GAME_LINE : pauseLine(time, minesLeft, { timed: this._timed });
+    this.el.pauseSub.textContent = noGame ? (ended ? ENDED_LINE : NO_GAME_LINE) : pauseLine(time, minesLeft, { timed: this._timed });
     this.el.pauseBoard.textContent = this._boardText;
     // The look settings only on a 3D game's pause card; volume and Sound in both modes.
     for (const key of ['lookSensitivity', 'invertY']) this.el.pause.querySelector(`[data-setting="${key}"]`).classList.toggle('hidden', mode !== '3d');
@@ -698,7 +698,7 @@ export class UI {
   /**
    * The Learn 3D end card over the guided board's stopped scene, under its "Learn 3D" section label: on
    * a win "You cleared the box!", the line offering Cube Intro and Play Cube Intro with the play icon, on
-   * a loss "That cube was a mine.", the line saying the box is always the same and Try again with the
+   * a loss "That was a mine!", the line saying the box is always the same and Try again with the
    * restart icon; Back to board choice on both, and no time.
    */
   showLearnEnd(won) {
@@ -706,7 +706,7 @@ export class UI {
     this._hideMenus();
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
-    this.el.learnEndTitle.textContent = won ? 'You cleared the box!' : 'That cube was a mine.';
+    this.el.learnEndTitle.textContent = won ? 'You cleared the box!' : 'That was a mine!';
     this.el.learnEndLine.textContent = won ? 'Ready for a real board? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records.' : 'The lesson box is always the same. Try it again.';
     this.el.learnEndPrimaryLabel.textContent = won ? 'Play Cube Intro' : 'Try again';
     setButtonIcon(this.el.learnEndPrimary, won ? 'play' : 'restart');

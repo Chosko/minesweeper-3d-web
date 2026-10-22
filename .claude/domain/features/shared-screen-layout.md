@@ -240,8 +240,10 @@ In scope (m2b-themes):
     board, size, mines, no-guess) and a status line; Resume, Restart and
     Main menu with their icons; Sound as a switch row and Volume as a
     filled slider; the controls list; the confirm box for Restart and Main
-    menu. With no game in progress the status line says so, Restart comes
-    first as the primary action and there is no Resume;
+    menu. With no game in progress the status line says so — that the
+    board is not started yet before the first click, that the game is over
+    once it is won or lost — Restart comes first as the primary action and
+    there is no Resume;
   - the **3D ready card** — sized per window step, its board line, a plain
     success line for Learn 3D, the controls list, the icons the canvas
     draws, the pointer-lock refusal as a warn note, and a phone landscape

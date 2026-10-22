@@ -205,7 +205,7 @@ test('in a browser, the pause card, its confirmation and the board status card m
     assert.equal(await page.evaluate(() => document.getElementById('p-resume').offsetParent), null, 'an ended game has nothing to resume');
     assert.equal(await page.evaluate(() => document.querySelector('#p-restart [data-label]').textContent), 'Play again');
     assert.equal(await page.evaluate(() => document.querySelector('#p-restart .ui-key-hint__key')?.textContent), 'F2', 'its key hint stays');
-    assert.equal(await page.evaluate(() => document.getElementById('pause-sub').textContent), 'No game in progress: the board is not started yet.', 'the status line: no game in progress');
+    assert.equal(await page.evaluate(() => document.getElementById('pause-sub').textContent), 'No game in progress: the game is over.', 'the status line: the game is over');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'p-restart', 'Play again takes the focus');
     // Back on an ended game's card goes to the main menu, asking nothing.
     await page.keyboard.press('Escape');

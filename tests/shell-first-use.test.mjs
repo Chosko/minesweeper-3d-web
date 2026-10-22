@@ -357,7 +357,7 @@ test('on a coarse-only device the "How 3D works" block names the toolbar\'s Ctrl
   const touch = ready.match(/<span class="ready-rules-touch">([\s\S]*?)<\/span>\n/);
   assert.ok(keys && touch, 'the hidden-cubes line in a keyboard and a touch form');
   assert.equal(text(keys[1]), 'Empty and solved cubes hide themselves; hold Ctrl to show them.');
-  assert.equal(text(touch[1]), 'Empty and solved cubes hide themselves; hold the Ctrl button to show them.');
+  assert.equal(text(touch[1]), 'Empty and solved cubes hide themselves; tap the Ctrl button to show them.');
   assert.doesNotMatch(keys[1] + touch[1], /<kbd|<b>/, 'Ctrl as plain text, no key cap');
   const css = read('css/style.css');
   assert.match(css, /\.ready-rules-touch, \.ready--touch \.ready-rules-keys \{ display: none; \}/, 'the keyboard line on a mouse, keyboard or controller');
