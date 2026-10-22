@@ -204,8 +204,9 @@ it generalises.
 - **Pause rules** — pause applies only to a started, unfinished game; before
   the first click or after the game ends, the pause key opens the pause card
   without a game to pause, offering Restart (Play again once the game
-  ended) and Main menu, and Back on
-  it goes to the main menu. While the first click's board is being
+  ended) and Main menu. Back on that card resumes the board before the
+  first click, and goes to the main menu only once the game has ended.
+  While the first click's board is being
   generated, Esc and the controller's back button cancel the generation,
   back to the closed board, instead of opening the pause card; the
   overlay's pause button, Start, focus loss and tab hide still pause. While
