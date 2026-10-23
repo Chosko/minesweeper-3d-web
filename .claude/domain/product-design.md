@@ -56,7 +56,8 @@ campaign's level order (and, in the demo, the demo's locks).
   tab of their own, the Steam global and friends leaderboards, with the
   replay attached to each entry.
 - **Settings** — controls, graphics, theme, audio, accessibility.
-- **Quit.**
+- Quit is not a menu entry: in the desktop build it is a button of the
+  game's own title bar, on every screen.
 - Every mode entry is enabled from the start: a mode not built yet opens a
   *Coming soon* page.
 - The menu opens with the last mode played selected; its board choice opens
@@ -174,8 +175,8 @@ Listed in the order a player meets them. The last two are after launch.
 
 Everything around a game: the main menu (Start / Continue, Campaign, the
 Classic 2D, Hexagon, Triangle, Surface and 3D modes, Daily, Records,
-Settings, Quit), pausing and resuming, restarting, returning to
-the menu, and the settings — controls, graphics, the theme, picked from a
+Settings), quitting from the title bar of the game's window, pausing and
+resuming, restarting, returning to the menu, and the settings — controls, graphics, the theme, picked from a
 list of the catalogue's themes, audio and accessibility (colour-blind-safe
 numbers, and after launch a reduced-motion setting, on or off, whose first
 value is taken from the operating system's reduce-motion preference and which
@@ -201,7 +202,13 @@ player whose stored choice is light or dark plays in *Joyful tiles*. The shared 
 *Joyful tiles*, and both are finished: every screen, at every window size
 the game supports, is drawn on the Claude Design canvas, with the theme's
 tokens and every kit component in every state. Later themes add styles, not
-layouts. Buttons, menu entries and board options have one *selected* state,
+layouts. Every screen's window is headed by the game's own title bar: Back
+on the left, the game logo in the centre and, on desktop, Minimise,
+Fullscreen / Windowed and Quit on the right; the screen's name heads the
+window's body. One colour rule holds for every button: a button that
+confirms or goes forward is green, never red; red is only for cancelling and
+for destructive actions; Pause is a plain white button; and an on/off toggle
+shows its on state pressed, never in red. Buttons, menu entries and board options have one *selected* state,
 drawn by the theme rather than as a separate focus ring, and one control
 shows it at a time, chosen by the input method in use: moving the mouse
 selects the control under the pointer, keys and controller buttons move the
@@ -291,7 +298,12 @@ on corners and seams have unusual neighbour counts, and the game makes those
 neighbourhoods readable. Standard rules, a safe first click and a no-guess
 switch, as in the other modes. It looks and feels exactly like the 2D game —
 the same tiles, numbers and interactions — with navigation around the object
-as the only difference. Distinct from the 3D mode and never called "3D". It
+as the only difference. Distinct from the 3D mode and never called "3D". Its
+main menu tile previews the torus. Its board choice is the other modes',
+the collapsible panel of board settings and bests included, with the shape picked above the board list and
+the board sizes, the custom form and the bests following the shape — the
+custom form asks tiles per edge on the cube and the sphere, and tiles around
+and across on the torus — and its game window is Classic 2D's. It
 has free play and leaderboards, and no campaign. Serves enthusiasts looking for a new challenge between flat 2D and full
 3D.
 

@@ -1,7 +1,7 @@
 # Hexagon and Triangle menu entries
 
 The main menu's Hexagon and Triangle entries open their own modes instead
-of *Coming soon*. Each entry's preview shows its board, the menu opens on the
+of *Coming soon*. Each play tile's preview shows its board, the menu opens on the
 last mode played whichever of the five it is, and that mode's board choice
 opens on its last board. Hexagon and Triangle each get a daily board, played
 from the Daily screen like the Classic 2D and 3D ones. Surface still opens
@@ -17,8 +17,8 @@ and a daily board for each playable mode
 ([§ Daily board](../product-design.md#daily-board)). The entries, their
 routes, the placeholder, the last-mode record and the Daily screen are
 shipped (`game-shell`, `shared-screen-layout`). This feature switches the two
-entries from placeholder to mode, gives them the preview the canvas draws
-for every focused entry, and adds the two daily boards the canvas's Daily
+entries from placeholder to mode, gives their play tiles the previews the
+canvas draws, and adds the two daily boards the canvas's Daily
 artboards draw.
 
 ## Scope and non-goals
@@ -29,15 +29,19 @@ In scope (m2c-flat-grids):
   the mode host, as Classic 2D does, because both modes are registered
   (`flat-grid-modes`). Surface, which is not registered, stays on *Coming
   soon*.
-- **Previews.** The focused entry's scene panel shows the mode's
-  Intermediate board in its board frame, drawn by the flat board view over
-  the grid's geometry. Its tag reads "Hexagon · Intermediate" or "Triangle ·
-  Intermediate", and the board is the same on every load, like the Classic
-  2D preview.
+- **Previews.** The Hexagon and Triangle entries are play tiles of the
+  main menu (`shared-screen-layout`), each showing its own preview at once:
+  the centre of the mode's Intermediate board, near playing size, drawn by
+  the flat board view over the grid's geometry on the dark scene
+  background and cropped so that no board edge shows; on a phone, a
+  cropped strip inside the right end of the mode's row. The board is the
+  same on every load, like the Classic 2D preview. No tile shows a Last
+  played chip. Exact sizes and crops are the canvas's:
+  https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC, J-Menu-xl, -l, -m,
+  -p and -states, and J-Components *Main menu buttons*.
 - **The last mode played.** The last-mode record takes `hexagon` and
-  `triangle` like any mode. The Last played chip, the menu's opening
-  selection and Records opening on the last board played and its mode all
-  follow it. This is what "Continue counts each as a mode of its own" means
+  `triangle` like any mode. The menu's opening selection and Records
+  opening on the last board played and its mode follow it. This is what "Continue counts each as a mode of its own" means
   until the Start / Continue entry exists.
 - **Each mode's last board choice** opens its board choice, so Enter then
   Play replays it (the document is `flat-grid-modes`').
@@ -68,7 +72,8 @@ Non-goals:
 - Leaderboards for these daily boards — not in this milestone.
 - The Surface entry as a mode — deferred to `m6-launch`.
 - The demo's offers and locks on these entries — deferred to `m6-launch`.
-- The menu's layout. The entries' column takes no new entry.
+- The menu's layout — `shared-screen-layout`. Its grid of play tiles
+  already holds the Hexagon and Triangle tiles.
 
 ## Architecture
 
@@ -86,8 +91,9 @@ shipped menu, preview and Daily wiring in place
   with the mode's demo board. A seeded demo board per flat mode is built
   the way the Classic 2D one is: Intermediate, partly opened, the same on
   every load.
-- **Preview binder** — mounts the flat board view for the grid the preview
-  names. One view layer per board kind, kept mounted, as for Classic 2D.
+- **Preview binder** — mounts the flat board view for the grid each tile's
+  preview names, cropped to the tile. One view layer per tile, kept
+  mounted, as for Classic 2D.
 - **Daily boards** — the daily board list gains a Hexagon and a Triangle
   entry, each named by its dimensions like the existing ones, so the daily
   game, its code and its generation request come from the same rule.
@@ -119,8 +125,7 @@ shipped menu, preview and Daily wiring in place
 ## Dependencies
 
 - `game-shell` — the menu, mode host, routes, placeholder and last mode.
-- `shared-screen-layout` — the menu's entries, scene panel and the Daily
-  screen.
+- `shared-screen-layout` — the menu's play tiles and the Daily screen.
 - `flat-grid-modes` — the two registered modes and their last board
   choices.
 - `flat-grid-geometry` — the board view the previews draw with.

@@ -28,12 +28,18 @@ In scope (m2c-flat-grids), for each of Hexagon and Triangle:
   host under the ids `hexagon` and `triangle` (the menu entries' ids).
 - **Board setup** from the grid feature's standard sizes and custom limits,
   with the shared no-guess help text and density hint.
-- **The board choice screen** in the Classic 2D board choice's composition:
-  the options (Beginner, Intermediate, Expert with their size, mines and
-  density, Custom with its fields, info line, refusal and Random, and Insert
-  Board Code), the Last played chip, the no-guess switch row, the chosen
-  board's three bests, the bottom bar's summary, Records and Play. The
-  title is the mode's name.
+- **The board choice screen** in the Classic 2D board choice's composition,
+  collapsible panel included (`shared-screen-layout`): by default the Board
+  list and the foot only — the options (Beginner, Intermediate, Expert with
+  their size, mines and density, Custom, and Insert Board Code), with no
+  Last played chip —; the panel with the no-guess switch row, Custom's
+  fields, info line, refusal and Random, the code field, the chosen board's
+  three bests and *All records*; the panel toggle and its stored pin,
+  shared with every mode; the panel opening on its own for Custom and
+  Insert Board Code; the foot with only Play; and the phone drawer. The
+  body heading is the mode's name. Its exact values are the canvas's:
+  https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC, J-Hex and J-Tri board
+  choice at -xl, -l, -m, -p and -states.
 - **The last board choice**, one stored document per mode, normalised and
   falling back as Classic 2D's does.
 - **Board codes and challenge links** for the mode's boards: Insert Board
@@ -46,10 +52,15 @@ In scope (m2c-flat-grids), for each of Hexagon and Triangle:
   the generating card and failure offer, pre-generation for Play again, the
   timer from the first reveal, pause hiding the board, restart and leave
   counted as losses after the first click.
-- **The game window**, Classic 2D's: head (Swap clicks, "<Mode> · <board>",
-  Pause), counter strip with Restart, the board in its board frame, the
-  live figures panel against the board's bests, the foot line, and the
-  narrow and phone layouts.
+- **The game window**, Classic 2D's (`in-game-layout`): the title bar with
+  Pause in Back's place; the counter strip with the icon-only Restart; the
+  board in its board frame; the live figures panel against the board's
+  bests, hidden by default under the stored open-or-closed preference every
+  mode shares; the foot line led by the mode and difficulty, with Swap
+  clicks and the live-figures toggle on its right; and the narrow and
+  phone layouts. Its exact values are the canvas's:
+  https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC, J-HexGame and J-TriGame
+  at -xl, -l, -m, -p, -ls and -states.
 - **Inputs**: the mouse with its button swap, the keyboard and controller
   cursor (moves from the grid's geometry), touch with the Tap choice,
   long-press flag, chord on a number, pan and pinch zoom. The bindings are
@@ -106,8 +117,8 @@ Classic 2D mode and its shell wiring
   each bound by the board choice binder over that mode's configuration and
   routed like Classic 2D's. The shell hands each its bests and its code
   resolver.
-- **Game window** — the one Classic 2D window, titled and footed for the
-  open mode. Only one flat game is open at a time.
+- **Game window** — the one Classic 2D window, its foot line led by the
+  open mode's name. Only one flat game is open at a time.
 - **Code resolution** — the shell's resolver tells a hexagon or triangle
   code apart by its token and routes it to its mode's forced start.
 

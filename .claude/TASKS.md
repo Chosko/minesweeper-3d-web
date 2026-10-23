@@ -6,7 +6,7 @@ Last task number: 280
 
 ## 84. Electron main process: window, game protocol, window state and crash log
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude
 Files: desktop/package.json, desktop/main.js, desktop/protocol.js, desktop/window-state.js, desktop/crash-log.js, desktop/closing.js, tests/desktop-main.test.mjs
 Preconditions: none
@@ -16,7 +16,7 @@ Feature: steam-desktop-host
 
 ## 85. Steamworks capability adapter, unavailable implementation and the page bridge
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude
 Files: desktop/adapter/interface.js, desktop/adapter/unavailable.js, desktop/preload.js, desktop/bridge.js, desktop/main.js, desktop/closing.js, tests/desktop-bridge.test.mjs
 Preconditions: 84
@@ -46,7 +46,7 @@ Feature: steam-desktop-host
 
 ## 88. Steamworks binding spike
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude+human
 Files: desktop/spike/, desktop/package.json, .claude/domain/features/steam-desktop-host.md, .claude/domain/features/steam-leaderboards.md
 Preconditions: 85, 87
@@ -236,7 +236,7 @@ Feature: leaderboard-screen
 
 ## 107. Leaderboards tab in Records and Quit in the main menu
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude
 Files: js/records/screen.js, js/shell/menu.js, index.html, js/shell/router.js, tests/shell-menu.test.mjs, tests/records-screen.test.mjs
 Preconditions: 86, 104, 105, 165, 170
@@ -1551,7 +1551,7 @@ Feature: flat-grid-modes
 
 ## 268. Hexagon and Triangle modes with their board choice screens
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude
 Files: js/main.js, js/shell/router.js, index.html, css/style.css, js/classic2d/board-choice.js, js/flat-modes.js, tests/shell-router.test.mjs, tests/components-menu-screens.test.mjs, tests/shell-daily.test.mjs
 Preconditions: 255, 256, 259, 260, 267
@@ -1561,7 +1561,7 @@ Feature: flat-grid-modes
 
 ## 269. Play in Hexagon and Triangle
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude
 Files: js/main.js, js/classic2d/mode.js, js/classic2d/session.js, js/ui.js, js/shell/live-figures.js, js/shell/first-use.js, js/results/, tests/flat-modes-play.test.mjs, tests/results.test.mjs
 Preconditions: 264, 268
@@ -1641,7 +1641,7 @@ Feature: flat-grid-records-replays
 
 ## 277. Menu previews for Hexagon and Triangle
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude
 Files: js/shell/menu-preview.js, js/shell/menu.js, js/main.js, tests/shell-menu.test.mjs, tests/components-menu-screens.test.mjs
 Preconditions: 264, 268
@@ -1651,7 +1651,7 @@ Feature: flat-grid-menu-entries
 
 ## 278. Menu routes, last mode played and Daily for Hexagon and Triangle
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude
 Files: js/shell/menu.js, js/shell/returning.js, js/shell/daily.js, js/main.js, tests/shell-menu.test.mjs, tests/shell-returning.test.mjs, tests/shell-daily.test.mjs
 Preconditions: 268

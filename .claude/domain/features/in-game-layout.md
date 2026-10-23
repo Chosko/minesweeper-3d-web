@@ -1,9 +1,9 @@
 # In-game layout
 
 The redesigned screen around a board in play, designed with *Joyful tiles*:
-the framed game window with its title and Pause, the counter strip with the
-mines-left and time readouts and Restart, the board, a side panel of live
-figures — 3BV progress, pace against the personal best, 3BV/s, clicks with
+the framed game window with its title bar and Pause, the counter strip with
+the mines-left and time readouts and Restart, the board, a side panel of live
+figures, hidden until the player opens it — 3BV progress, pace against the personal best, 3BV/s, clicks with
 efficiency, flags — with the controls reminder, and a foot line naming the
 board.
 
@@ -22,16 +22,28 @@ overlay to it, so the two modes share one in-game layout.
 In scope (m2b-themes):
 
 - **Classic 2D game window** — inside the screen frame
-  (`shared-screen-layout`): the head with the mode and board title and
-  Pause with its key hint; the counter strip with mines left, Restart and
-  the timer; the board in its themed frame; the side panel; the foot line
-  (board size, mine count and no-guess). The window hugs its content and
-  centres on the page; the board starts just under the counter strip,
-  left-aligned at the strip's width; the figures column is flat, with no
-  surface of its own, after a divider. On a phone the board sits directly
-  under the counter strip with the Tap choice under it; held sideways, the
-  board takes the left edge and a right column holds the mines, the time,
-  Restart and the Tap choice.
+  (`shared-screen-layout`), showing while playing only the board and the
+  two counters. Its head is the title bar with Pause in Back's place, no
+  mode or difficulty in it, and the body has no heading. Under the head,
+  the counter strip with mines left, Restart and the timer; the board in
+  its themed frame; the live figures panel when open; the foot line, led
+  by the mode and difficulty, then the board line (board size, mine count
+  and no-guess), with Swap clicks and the **live-figures toggle** on its
+  right. The window hugs its content and centres on the page; the board
+  starts just under the counter strip, left-aligned at the strip's width.
+  On a phone, portrait and landscape alike, the head holds Pause and the
+  logo, the mode and difficulty lead the foot line, and there is no
+  live-figures toggle; the board sits directly under the counter strip
+  with the Tap choice under it; held sideways, the board takes the left
+  edge and a right column holds the mines, the time, Restart and the Tap
+  choice.
+- **The live figures panel** — hidden by default: the window then shrinks
+  to the board and stays centred. The live-figures toggle (accessible name
+  *Live figures*) opens it beside the board, where it was, as a flat
+  column with no surface of its own after a divider, and is drawn sunk
+  while it is open. Whether it is open is a stored preference, as the
+  board choice panel's pin is (`shared-screen-layout`): it holds across
+  sessions and across every mode until the player changes it.
 - **Counter readouts** — new kit components: the counter readout
   `ui-counter` (its `digits` and an optional `icon` as parts), so a theme
   can draw it as plain figures, LED digits on black or anything between,
@@ -45,7 +57,9 @@ In scope (m2b-themes):
   buttons follow the frame's size steps (`shared-screen-layout`), in the
   Classic 2D window and the 3D overlay alike.
 - **Restart in the strip** — the shared restart of `game-shell`, with its
-  confirmation rule unchanged.
+  confirmation rule unchanged: an icon-only button between the two
+  counters, its accessible name and tooltip *Restart*, with no text and no
+  F2 label; the F2 shortcut itself is unchanged.
 - **Live figures** — derived each time the game's counts change, never on
   a timer tick except where the elapsed time is part of the figure:
   - *3BV* — 3BV solved over the board's 3BV, with a progress bar;
@@ -70,24 +84,22 @@ In scope (m2b-themes):
   two-option segmented choice (*Tap: Reveal*, *Tap: Flag*) under the
   board; touch input reads its value.
 - **3D game** — the 3D overlay keeps the full-window scene and takes the
-  same parts, over the scene on their own themed surfaces: the flags
-  counter, Restart and the timer at the top centre; on the right, the
-  figures panel headed by a bar with the title and Pause, the live figures
-  below, the panel — and the help panel beside it — centred vertically. The
-  title drops the difficulty when the full name does not fit on one line
-  ("3D" for "3D · Cube Intermediate"), keeping the full name as its
-  tooltip. On a phone in landscape the title is a pill at the top left, the
-  counters and Restart at the top centre and Pause an icon button at the
-  top right; in portrait the title and Pause bar sits on top with the
-  counters below; both keep the full name, and the touch hint strip wraps
-  onto a second line rather than overflowing. The aimed-cell readout
+  same parts, over the scene on their own themed surfaces, with no title
+  anywhere — no mode or difficulty label: Pause floats at the top left and
+  the live-figures toggle at the top right; the flags counter, Restart and
+  the timer stay at the top centre; the live figures panel is hidden by
+  default and appears on the right when opened, under the same stored
+  preference as Classic 2D's, the help panel beside it, both centred
+  vertically. On a phone, in landscape and in Learn 3D only the floating
+  Pause remains of these, with the counters and Restart at the top centre;
+  the touch hint strip wraps onto a second line rather than overflowing. The aimed-cell readout
   carries outline cube and flag icons in the text colour; the crosshair
   draws its arms only while a cell is targeted, with no ring; the
   off-screen arrow sits by the crosshair; the HUD key strip's labels are in
   ink; the touch stick is drawn at rest and follows the thumb while used.
-- **Learn 3D** — its own play layout: a head with the title and Pause, a
+- **Learn 3D** — its own play layout: the floating Pause, a
   strip with mines and Restart only — no timer, so the pause card shows
-  mines left alone —, no figures panel, the head over the strip in a
+  mines left alone —, no figures panel, Pause over the strip in a
   column at the top left above a phone and the phone layouts kept on a
   phone, and the lesson's prompt in its own strip with the step count and
   no close button. Its end cards carry a
@@ -108,6 +120,8 @@ Non-goals:
   help solve the board.
 - Hexagon and Triangle game screens — `flat-grid-modes` (`m2c-flat-grids`);
   the Surface game screen — deferred to `m6-launch`.
+- The 3D game moving inside the window with the title bar — still in review
+  on the canvas.
 
 ## Architecture
 
@@ -118,13 +132,13 @@ described in [app-shell-ui.md](../../context/app-shell-ui.md) and the Classic 2D
 board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
 
 - **Game window composition.** The Classic 2D layer becomes the framed
-  window: head, counter strip, board area, side panel, foot. The board area
+  window: title bar, counter strip, board area, side panel, foot. The board area
   keeps the board view's fit rule, minimum tile size and scrolling; the
   window's chrome reduces the space the fit rule works in, measured with
   the window at its largest, and the board area takes the board's extent
-  there, so the window hugs the board and follows its size; the side
-  panel moves under the board, its figures in a row, below 1024 px wide,
-  and is hidden on a phone — narrower than 720 px, or held sideways at
+  there, so the window hugs the board and follows its size, the side
+  panel widening it only while open; the open panel moves under the
+  board, its figures in a row, below 1024 px wide, and is hidden on a phone — narrower than 720 px, or held sideways at
   500 px high or less
   ([shared-screen-layout.md](./shared-screen-layout.md) § Interfaces and
   contracts, **Window sizes**).
@@ -143,23 +157,31 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
 - **Bests read once.** The board's best time and best 3BV/s are read from
   the records store when the game starts and held for the game; a best set
   by this game shows on the results screen, not mid-game.
-- **3D overlay.** The 3D game's counters and figures panel with its title
-  bar sit over the scene with their own themed surfaces so they stay
-  readable over any sky; the crosshair and its readout, the off-screen
+- **3D overlay.** The 3D game's counters, floating Pause, live-figures
+  toggle and figures panel sit over the scene with their own themed
+  surfaces so they stay readable over any sky; the crosshair and its readout, the off-screen
   arrow, the view chips, the HUD key strip, the first-use hints, the toast
   and the touch controls take the places the 3D game's artboards draw — a
-  hint stands above a view chip shown with it. Whether the title fits is measured
-  against the panel's width, so the shortening follows the window.
+  hint stands above a view chip shown with it.
 - **Design source.** Every in-game screen is drawn on the canvas — the
   Classic 2D window, the 3D game and the replay viewer at every supported
   window size with their states — and is built from those artboards, as
   [shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
-  **Design status per screen**, says.
+  **Design status per screen**, says. The in-game windows' title bar,
+  footer, live-figures toggle, collapsed live figures panel and icon-only
+  Restart take their exact sizes, colours and positions from the canvas
+  https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC: J-Game2D, J-Game3D
+  and J-Ready, each at -xl, -l, -m, -p, -ls and -states, where each states
+  board's second frame shows the panel open.
 
 ## Data and state
 
-- No persisted state. The figures are derived per change from the live
-  game's counts and the bests read at game start; the replay viewer derives
+- **Live figures panel open or closed** — one stored view preference,
+  shared by every mode and kept across sessions, saved through the
+  platform layer beside the board choice panel's pin
+  (`shared-screen-layout` § Data and state); closed when nothing is
+  stored.
+- The figures are derived per change from the live game's counts and the bests read at game start; the replay viewer derives
   them from the replay's frame and the bests as they stand.
 - The engine already exposes 3BV, 3BV solved and the click counts at any
   time; nothing new is computed by the engine.
@@ -171,7 +193,8 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
   no best 3BV/s line rather than zeros.
 - **Overlay** — the existing hooks the shell and tests use (the time,
   mines and clicks readouts, Pause, the board-size label) keep their ids,
-  or move with their owners in the same change.
+  or move with their owners in the same change. The live-figures toggle
+  exposes its pressed state, and Restart keeps its accessible name.
 - **Readability** — every readout meets the contrast contract against the
   surface it sits on, over the Classic 2D window and over any 3D sky, in
   every theme.

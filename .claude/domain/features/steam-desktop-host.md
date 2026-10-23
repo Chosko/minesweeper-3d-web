@@ -26,6 +26,11 @@ In scope (m3-on-steam):
 
 - The Electron main process: one game window, its lifecycle, single-instance
   lock, window state, quitting with saves flushed, and a local crash log.
+- The desktop window's behaviour: a frameless, transparent window drawn
+  entirely by the game in its title bar's style, windowed by default,
+  dragged by its title bar, sized by its content and never by the player,
+  and its Fullscreen / Windowed and Minimise actions, which the title bar's
+  buttons call.
 - Serving the packaged game files to the window so ES modules and the
   generation worker load as they do on the web.
 - The Steamworks capability adapter: the one interface the main process
@@ -48,8 +53,8 @@ Non-goals:
 - Leaderboard logic and the leaderboard screen — `steam-leaderboards`,
   `leaderboard-screen`.
 - Achievement definitions and unlocking — `steam-achievements`.
-- The Quit entry in the main menu — `leaderboards-menu-entry`; this
-  feature answers its quit request.
+- The title bar and its buttons — `shared-screen-layout`; what Quit does —
+  `leaderboards-menu-entry`, whose quit request this feature answers.
 - Mac and Linux builds and Steam Deck — not now, per
   [product-roadmap.md § Not now](../product-roadmap.md#not-now).
 - The demo build and its separate app — deferred to `m5-core-complete`.
@@ -67,10 +72,25 @@ rules engine imports Electron or the binding.
 - **Main process.** Starts the Steam adapter, creates the game window and
   routes bridge requests to the adapter or to the file services. Holds a
   single-instance lock, so a second launch focuses the running window.
-  Remembers the window's size, position and fullscreen state in a small
-  local file of its own, outside the cloud-synced save directory. Writes
+  Remembers the window's position and fullscreen state in a small local
+  file of its own, outside the cloud-synced save directory. Writes
   uncaught errors from both processes to a local crash log, never uploaded,
   as the direction's observability rule allows.
+- **The desktop window.** The game window has no system title bar or
+  frame and is transparent, so the game draws the whole window, rounded
+  corners included, in its title bar's style; the page marks its title
+  bar as the drag region, and the window is dragged by it like any other
+  window. The player cannot resize it: the page reports its window's
+  content size over the bridge whenever it changes — the board choice
+  window grows when its panel opens — and the host resizes the window to
+  it. It is windowed by default. Fullscreen renders the game full-screen on
+  its backdrop, still drawn as a window, as the canvas shows it, neither
+  draggable nor resizable; the title bar's button then shows the Windowed
+  icon, and pressing it returns to the floating window as it was, the
+  button showing the Fullscreen icon again. Minimise minimises the game to
+  the taskbar. Exact sizes and looks come from the canvas
+  https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC, J-Components *Window
+  title bar* and J-C2D-xl.
 - **Game file serving.** The window loads the packaged game from a custom
   application protocol rather than plain file URLs, because ES modules and
   workers do not load from file URLs. The page runs with context isolation
@@ -130,8 +150,9 @@ rules engine imports Electron or the binding.
 
 ## Data and state
 
-- **Window state** — size, position, fullscreen; a small file in the user
-  data directory, outside the save directory, so it stays per machine.
+- **Window state** — position and fullscreen, the size following the
+  content; a small file in the user data directory, outside the save
+  directory, so it stays per machine. Windowed when nothing is stored.
 - **Crash log** — a rotating local text file in the user data directory,
   outside the save directory.
 - **Steam state** — whether the adapter is the Steam or the unavailable
@@ -147,12 +168,15 @@ rules engine imports Electron or the binding.
 - **Bridge requests** — a fixed list: Steam state; achievements (set,
   store, read); leaderboards (find, upload, download, attach); shared files
   (write and share, download); storage and blob-store file operations for
-  `steam-cloud-saves`; the quit hand-shake; and quit, which runs the same
-  sequence as closing the window. Every request resolves with a result or
-  rejects with a typed error — `unavailable`, `offline`, `not-found`,
-  `invalid`, `failed` — and never throws into the page.
+  `steam-cloud-saves`; the quit hand-shake; quit, which runs the same
+  sequence as closing the window; and the window actions — minimise,
+  toggle fullscreen, and the content size the window takes. Every request
+  resolves with a result or rejects with a typed error — `unavailable`,
+  `offline`, `not-found`, `invalid`, `failed` — and never throws into the
+  page.
 - **Bridge events** — Steam state changed (logged on or off), overlay
-  activated, flush requested before quit.
+  activated, flush requested before quit, fullscreen entered or left — so
+  the title bar's button shows the right icon.
 - **Capability flags** — read by `steam-cloud-saves`, `steam-leaderboards`,
   `leaderboard-screen`, `steam-achievements` and `leaderboards-menu-entry`
   to choose behaviour; no caller tests for Electron or the bridge directly.
@@ -172,6 +196,9 @@ rules engine imports Electron or the binding.
   selection, which this feature extends with the Steam choice.
 - `game-shell` — the automatic pause the overlay signal reuses, and the
   page-side flush the quit hand-shake calls.
+- `shared-screen-layout` — the title bar whose drag region and Minimise and
+  Fullscreen / Windowed buttons drive the window, and the content size the
+  page reports.
 - Electron — the desktop wrapper the direction requires; its Chromium keeps
   WebGL identical across machines and hosts the overlay.
 - A Steamworks Node binding, chosen by the spike — the only way the main
@@ -188,7 +215,8 @@ rules engine imports Electron or the binding.
   adapter and therefore every leaderboard task, but none of the page-side
   design. The spike records the chosen binding in this document, in place
   of this question.
-- Whether the Steam overlay renders reliably over the Electron window on
-  the chosen binding, and which window and GPU settings it needs. Checked
+- Whether the Steam overlay renders reliably over the frameless,
+  transparent Electron window on the chosen binding, and which window and
+  GPU settings it needs. Checked
   by the spike; blocks the achievement exit criterion's "shows in Steam's
   overlay".
