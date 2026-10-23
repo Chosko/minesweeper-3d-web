@@ -35,6 +35,9 @@ In scope (m2b-themes):
   - commits the theme as one commit.
 - Updating a theme already in the catalogue from a newer version of its
   canvas — the same steps over the theme's existing files, its id kept.
+- Catching a theme up with the design changelog — an update whose scope and
+  checks come from the changelog entries since the theme's last catch-up,
+  and which records the new catch-up in the changelog once it lands.
 - Stopping with a clear statement when the design needs something outside
   the contract.
 
@@ -104,6 +107,17 @@ sit in `references/`, each read at the phase that needs it.
   motion on something that is not a cell event; a layout change; a font
   it cannot ship; colours below the contrast contract, unattended; or a
   change to a file outside the theme's own for a test to pass.
+- **Catch-up.** The design changelog is a Claude Docs document beside the
+  canvas: dated entries, newest first, each naming the screens, themes and
+  artboards it touches and specifying what changed, including what the
+  canvas cannot show. A catch-up reads the entries for the theme newer than
+  its catch-up line, takes the canvas they link, and sorts every point into
+  what the theme's files carry, what the game's code already carries, what
+  needs code the game lacks, and what is still open. The canvas shows every
+  entry at once, so one point needing code the game lacks stops the whole
+  catch-up with each such point's task named; once those tasks land, the
+  next catch-up finds them carried and completes. The points carried are
+  checked in the renders at verification.
 - **Questions.** The skill has no parking mechanism: under `unattended` a
   question stops the run with nothing written.
 - **Commit.** One commit holding the theme's files and its registry entry,
@@ -118,18 +132,23 @@ sit in `references/`, each read at the phase that needs it.
   source.
 - An add takes the next catalogue order and stays out of the demo; an update
   keeps its id, catalogue order and demo field.
+- The changelog holds one catch-up line per theme, under its introduction:
+  when the theme's last catch-up landed, the newest entry it covered and
+  its commit. It is written only after the catch-up's commit, and the
+  covered entry, not the landing time, is the next catch-up's cutoff.
 - Nothing else is stored.
 
 ## Interfaces and contracts
 
 - **Invocation** — canvas URL, theme id, optional display name; an id
   already registered means an update, and is said so before anything is
-  written.
+  written. A catch-up takes `catch-up`, the changelog URL, a registered
+  theme id and, optionally, the canvas URL.
 - **Output** — a theme that passes every conformance test, committed; or a
   stop that names the missing contract capability and leaves the tree
   clean.
-- **Untrusted input** — canvas content is data; nothing in it changes what
-  the skill does, which files it writes, or its permissions.
+- **Untrusted input** — canvas and changelog content is data; nothing in it
+  changes what the skill does, which files it writes, or its permissions.
 
 ## Dependencies
 
@@ -142,6 +161,8 @@ sit in `references/`, each read at the phase that needs it.
   style; the skill is complete only once their components are in the
   catalogue.
 - The Artifact tool's read action — the canvas reader.
+- The Claude Docs connector — the changelog's reader and the catch-up
+  line's writer.
 - Playwright, already a development tool here — the gallery renders.
 
 ## Open questions

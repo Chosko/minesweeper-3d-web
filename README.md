@@ -468,11 +468,14 @@ its Claude Design canvas, with no backlog task:
 
 ```
 /theme-implement <canvas-url> <theme-id> [name="<display name>"]
+/theme-implement catch-up <changelog-url> <theme-id> [<canvas-url>]
 ```
 
 The skill writes the theme to the theme contract, passes the conformance tests and the full suite,
 and commits the theme; when the design needs something the contract cannot express, it stops,
-writing nothing, and names the task needed.
+writing nothing, and names the task needed. `catch-up` updates a theme from the design changelog's
+entries since its last catch-up and, once the update lands, records the new catch-up in the
+changelog.
 
 ## Project structure
 
