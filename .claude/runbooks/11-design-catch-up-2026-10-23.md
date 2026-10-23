@@ -2,7 +2,7 @@
 
 Created: 2026-10-23 · Source: /design-catch-up (design changelog entries 2026-10-23 13:13 to 18:08) · Model: opus
 Last step number: 9
-Sequencing: runs before runbook 4's steps for tasks 86 and 107 and runbook 10's steps for tasks 268, 269, 277 and 278, which wait on tasks 282, 283, 284 and 286.
+Parallelism: 4
 
 ## [ ] 1. Implement task 281 — Button colour rule: go and stop buttons
 
@@ -36,7 +36,7 @@ Context: none
 
 ## [ ] 4. Implement task 284 — Collapsible board choice panel, Classic 2D and 3D
 
-Depends on: 2
+Depends on: 2, 3
 
 Context: none
 
