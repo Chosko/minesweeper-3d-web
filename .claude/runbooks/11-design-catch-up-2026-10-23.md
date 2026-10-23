@@ -4,7 +4,7 @@ Created: 2026-10-23 · Source: /design-catch-up (design changelog entries 2026-1
 Last step number: 9
 Parallelism: 4
 
-## [ ] 1. Implement task 281 — Button colour rule: go and stop buttons
+## [x] 1. Implement task 281 — Button colour rule: go and stop buttons
 
 Depends on: none
 
@@ -14,11 +14,14 @@ Context: none
 /task-implement 281 --review
 ```
 
-## [ ] 2. Implement task 282 — Window title bar and game logo on every screen
+Done: 2026-10-23, commit `b8f936f` (27 files, +397/-144). Decision: controller glyphs kept through a new `confirm` key-hint action in `js/settings/bindings.js`; `createButton` now takes `go` or `stop` and refuses a plain `primary`.
+
+## [~] 2. Implement task 282 — Window title bar and game logo on every screen
 
 Depends on: 1
 
-Context: none
+Context:
+- 2026-10-23 (from step 1): the red stop button exists in the kit and gallery only; its one canvas use, the title bar's Quit, is this task's to wire.
 
 ```prompt
 /task-implement 282 --review
