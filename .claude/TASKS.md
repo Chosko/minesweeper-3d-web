@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 280
+Last task number: 285
 
 ---
 
@@ -1676,5 +1676,55 @@ Target: claude
 Files: .claude/context/app-shell-menu.md, .claude/context/app-shell-daily.md, .claude/context/records-board-code.md, .claude/context/records-screen.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-menu-entries.md
 Preconditions: 277, 278, 280
 Feature: flat-grid-menu-entries
+
+---
+
+## 281. Button colour rule: go and stop buttons
+
+Status: [MISSING]
+Target: claude
+Files: css/components.css, themes/joyful-tiles/theme.css, css/tokens.css, js/ui/kit-catalogue.js, js/ui/components.js, index.html, js/shell/pause.js, js/results/view.js, js/classic2d/board-choice.js, js/mode3d/board-choice.js, js/shell/daily.js, js/mode3d/learn.js, js/shell/lock-fallback.js, js/main.js, dev/components.html, tests/components.test.mjs, tests/theme-conformance.test.mjs, tests/components-pause.test.mjs, tests/components-ready.test.mjs
+Preconditions: none
+Feature: shared-screen-layout
+
+---
+
+## 282. Window title bar and game logo on every screen
+
+Status: [MISSING]
+Target: claude
+Files: index.html, css/components.css, css/style.css, themes/joyful-tiles/theme.css, js/ui/kit-catalogue.js, js/ui/components.js, js/ui.js, js/shell/router.js, js/shell/navigation.js, js/main.js, js/records/screen.js, dev/components.html, tests/components.test.mjs, tests/components-menu-screens.test.mjs, tests/theme-conformance.test.mjs, tests/shell-router.test.mjs, tests/shell-menu.test.mjs, tests/records-screen.test.mjs
+Preconditions: 281
+Feature: shared-screen-layout
+
+---
+
+## 283. Main menu redesign: play tiles with their own previews
+
+Status: [MISSING]
+Target: claude
+Files: index.html, css/components.css, css/style.css, themes/joyful-tiles/theme.css, css/tokens.css, js/shell/menu.js, js/shell/menu-preview.js, js/shell/returning.js, js/main.js, js/ui/kit-catalogue.js, js/ui/components.js, dev/components.html, tests/shell-menu.test.mjs, tests/components-menu-screens.test.mjs, tests/theme-conformance.test.mjs, tests/shell-pad-walk.test.mjs
+Preconditions: 282
+Feature: shared-screen-layout
+
+---
+
+## 284. Collapsible board choice panel, Classic 2D and 3D
+
+Status: [MISSING]
+Target: claude
+Files: index.html, css/components.css, css/style.css, themes/joyful-tiles/theme.css, js/classic2d/board-choice.js, js/mode3d/board-choice.js, js/shell/returning.js, js/main.js, js/ui/kit-catalogue.js, js/ui/components.js, dev/components.html, tests/mode3d-board-choice.test.mjs, tests/components-menu-screens.test.mjs, tests/shell-challenge.test.mjs, tests/shell-returning.test.mjs, tests/theme-conformance.test.mjs
+Preconditions: 282
+Feature: shared-screen-layout
+
+---
+
+## 285. Update documentation for feature `shared-screen-layout`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-kit-layout.md, .claude/context/app-shell-menu.md, .claude/context/app-shell-menu-preview.md, .claude/context/app-shell-focus.md, .claude/context/app-shell-pause.md, .claude/context/app-shell-results-view.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/platform.md, .claude/context/records-screen-view.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/shared-screen-layout.md
+Preconditions: 281, 282, 283, 284
+Feature: shared-screen-layout
 
 ---
