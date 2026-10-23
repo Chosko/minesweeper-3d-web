@@ -474,6 +474,23 @@ The skill writes the theme to the theme contract, passes the conformance tests a
 and commits the theme; when the design needs something the contract cannot express, it stops,
 writing nothing, and names the task needed.
 
+## Design changes made in Claude Design
+
+A design change previewed directly on the Claude Design canvas is logged as an entry in the design
+changelog, a Claude Docs document; entries are never edited once logged, and a correction is a newer
+entry. The project's `design-catch-up` Claude skill brings the repository up to date with the
+entries it has not caught up with: it amends the domain layer, plans the work as tasks, plan
+placements and an implementation runbook through the pipeline's own commands, behind one gate, and
+records what it caught up in [.claude/DESIGN-LEDGER.md](.claude/DESIGN-LEDGER.md), which also names
+the changelog:
+
+```
+/design-catch-up [<changelog-url>] [since="<YYYY-MM-DD HH:MM>"] [--quick]
+```
+
+`--quick` implements small entries at once, one `/quick-implement` commit each; the next run without
+it documents them.
+
 ## Project structure
 
 ```
