@@ -148,6 +148,16 @@ export const KIT_CATALOGUE = Object.freeze([
     base: 'ui-button',
     parts: [selectable('button', '.ui-button--danger')],
   }),
+  // The button colour rule's primary variants, worn beside ui-button--primary: go, the green button
+  // that confirms or goes forward; stop, the red one of the title bar's Quit.
+  component('ui-button--go', {
+    base: 'ui-button',
+    parts: [selectable('button', '.ui-button--go')],
+  }),
+  component('ui-button--stop', {
+    base: 'ui-button',
+    parts: [selectable('button', '.ui-button--stop')],
+  }),
   // A row or chip action; with aria-pressed a latched toggle, `chosen` while latched on.
   component('ui-button--quiet', {
     base: 'ui-button',
@@ -164,7 +174,7 @@ export const KIT_CATALOGUE = Object.freeze([
       part('head', '.ui-frame__head'),
       part('back', '.ui-frame__start .ui-button', { optional: true, as: 'ui-button--secondary' }),
       part('title', '.ui-frame__title'),
-      part('action', '.ui-frame__end .ui-button', { optional: true, as: 'ui-button--primary' }),
+      part('action', '.ui-frame__end .ui-button', { optional: true, as: 'ui-button--secondary' }),
       part('body', '.ui-frame__body'),
       part('foot', '.ui-frame__foot', { optional: true }),
       part('status', '.ui-frame__status', { optional: true }),
@@ -288,7 +298,7 @@ export const KIT_CATALOGUE = Object.freeze([
     parts: [
       part('head', '.ui-figures__head', { optional: true }),
       part('title', '.ui-figures__title', { optional: true }),
-      part('action', '.ui-figures__action', { optional: true, as: 'ui-button--primary' }),
+      part('action', '.ui-figures__action', { optional: true, as: 'ui-button--secondary' }),
       part('body', '.ui-figures__body'),
       part('foot', '.ui-figures__foot', { optional: true }),
       part('live', '.ui-figures__live'),

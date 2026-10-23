@@ -387,7 +387,7 @@ test('index.html holds the Daily screen in the board choice composition: wordmar
   assert.match(DAILY_HTML, /id="daily-copy-link" class="ui-button ui-button--quiet ui-button--sm" data-copy="link" data-icon="link">Copy link<\/button>/);
   assert.match(DAILY_HTML, /<footer class="ui-frame__foot ui-frame__foot--action">\s*<p class="ui-frame__summary" id="daily-summary" data-summary><\/p>/);
   assert.match(DAILY_HTML, /id="daily-watch" class="ui-button ui-button--secondary hidden" data-watch data-icon="film">Watch replay<\/button>/);
-  assert.match(DAILY_HTML, /id="daily-play" class="ui-button ui-button--primary ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
+  assert.match(DAILY_HTML, /id="daily-play" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="confirm" aria-hidden="true"><\/span><\/button>/);
   assert.doesNotMatch(DAILY_HTML, /ui-card/, 'no card');
   const classes = [...DAILY_HTML.matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/));
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden' || c === 'overlay', `kit class only: ${c}`);
@@ -486,7 +486,7 @@ test('in a browser, the Daily screen matches its artboards at each size: key hin
       assert.equal(got.play.icon, 24, `${label}: Play's 24 px play triangle`);
       assert.deepEqual(got.copy, [14, 14], `${label}: Copy and Copy link's 14 px icons`);
       assert.equal(got.watch, 'film', `${label}: Watch replay's icon`);
-      if (!phone) assert.deepEqual([got.back.hint, got.play.hint], ['Esc', 'Enter'], `${label}: "← Main menu [Esc]" and "▷ Play [Enter]"`);
+      if (!phone) assert.deepEqual([got.back.hint, got.play.hint], ['Esc', ''], `${label}: "← Main menu [Esc]" and "▷ Play" with no Enter label`);
       assert.equal(got.status.justify, 'space-between', `${label}: the status row spreads its two ends`);
       assert.ok(Math.abs(got.status.streakRight - got.status.statusRight) <= 1, `${label}: the days in a row at the right`);
       assert.match(got.streak.family, /JetBrains Mono/, `${label}: the days in a row in the mono face`);

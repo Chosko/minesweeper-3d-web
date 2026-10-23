@@ -1240,7 +1240,7 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
 
   // The bottom bar: the summary, Records and Play with its Enter hint.
   const foot = between(CHOICE, '<footer class="ui-frame__foot ui-frame__foot--action">', '</footer>');
-  assert.match(foot, /<p class="ui-frame__summary" id="c2d-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="c2d-records" class="ui-button ui-button--secondary" data-records data-icon="chart">Records<\/button>\s*<button type="button" id="c2d-play" class="ui-button ui-button--primary ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/,
+  assert.match(foot, /<p class="ui-frame__summary" id="c2d-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="c2d-records" class="ui-button ui-button--secondary" data-records data-icon="chart">Records<\/button>\s*<button type="button" id="c2d-play" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="confirm" aria-hidden="true"><\/span><\/button>/,
     'Records with its chart icon, Play with its play icon');
   for (const [, cls] of CHOICE.matchAll(/class="([^"]+)"/g)) {
     for (const c of cls.split(/\s+/)) assert.ok(c.startsWith('ui-') || ['overlay', 'hidden'].includes(c), `kit class: ${c}`);
@@ -1273,7 +1273,7 @@ test('the shell stylesheet lays the board choice out: the wordmark pinned at the
 test('index.html holds the Classic 2D board layer with its generating and failure card', () => {
   assert.match(LAYER, /^<section id="c2d" class="ui-backdrop hidden"/);
   assert.match(LAYER, /<div id="c2d-board"><div id="c2d-panel" class="ui-board-frame hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the board\'s frame, behind the canvas');
-  assert.match(LAYER, /id="c2d-retry" class="ui-button ui-button--primary"/);
+  assert.match(LAYER, /id="c2d-retry" class="ui-button ui-button--primary ui-button--go"/);
   assert.match(LAYER, /id="c2d-standard" class="ui-button ui-button--secondary">Play a standard board/);
   assert.match(LAYER, /id="c2d-offer-menu" class="ui-button ui-button--secondary">Main menu/, 'the offer has a way out');
   assert.match(LAYER, /<span id="c2d-spinner" class="ui-spinner" aria-hidden="true"><\/span>/, 'the generating card has a spinner');

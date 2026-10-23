@@ -32,8 +32,9 @@
 // hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`),
 //   or a Learn 3D prompt's (`learnStart`, `learnShift`, `learnCtrl`, `learnFlag`, `learnChord`, `learnRest`),
 //   for the keyboard, the controller or touch.
-// keyHintKeys(action, device, glyphs?) → the keys of a key hint (`move`, `select`, `back`) on that
-//   device, each { text, pad }; none on touch. The kit's showKeyHints (js/ui/components.js) draws them.
+// keyHintKeys(action, device, glyphs?) → the keys of a key hint (`move`, `select`, `confirm`, `back`,
+//   `restart`) on that device, each { text, pad }; none on touch, and a confirm button's (`confirm`)
+//   only the controller's A, never Enter. The kit's showKeyHints (js/ui/components.js) draws them.
 // createActiveDevice({ onChange }) → the active device: the controller while the last input came
 //   from a connected controller, otherwise the keyboard and mouse.
 
@@ -407,6 +408,7 @@ export function reminderKeys(mode, device, glyphs = GLYPHS.generic) {
 export const KEY_HINTS = Object.freeze({
   move: Object.freeze({ keyboard: Object.freeze(['[↑]', '[↓]']), controller: Object.freeze(['D-pad']), touch: Object.freeze([]) }),
   select: Object.freeze({ keyboard: Object.freeze(['[Enter]']), controller: Object.freeze(['{a}']), touch: Object.freeze([]) }),
+  confirm: Object.freeze({ keyboard: Object.freeze([]), controller: Object.freeze(['{a}']), touch: Object.freeze([]) }),
   back: Object.freeze({ keyboard: Object.freeze(['[Esc]']), controller: Object.freeze(['{b}']), touch: Object.freeze([]) }),
   restart: Object.freeze({ keyboard: Object.freeze(['[F2]']), controller: Object.freeze(['{start}', '{y}']), touch: Object.freeze([]) }),
 });

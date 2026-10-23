@@ -87,7 +87,7 @@
         <p class="ui-frame__summary" id="c2d-summary" data-summary></p>
         <div class="ui-actions ui-actions--row">
           <button type="button" id="c2d-records" class="ui-button ui-button--secondary" data-records data-icon="chart">Records</button>
-          <button type="button" id="c2d-play" class="ui-button ui-button--primary ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"></span></button>
+          <button type="button" id="c2d-play" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="confirm" aria-hidden="true"></span></button>
         </div>
       </footer>
     </section>
@@ -101,7 +101,7 @@
       <header class="ui-frame__head">
         <div class="ui-frame__start"><button type="button" id="hud-swap" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false" data-no-focus title="Swap left and right click on closed cells"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button></div>
         <h2 class="ui-frame__title" id="c2d-title">Classic 2D</h2>
-        <div class="ui-frame__end"><button type="button" id="c2d-pause" class="ui-button ui-button--primary ui-button--sm" aria-label="Pause game"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pause <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
+        <div class="ui-frame__end"><button type="button" id="c2d-pause" class="ui-button ui-button--secondary ui-button--sm" aria-label="Pause game"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pause <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
       </header>
       <div class="ui-frame__body" id="c2d-body">
         <div id="c2d-main">
@@ -144,7 +144,7 @@
       <button type="button" id="c2d-wait-standard" class="ui-button ui-button--secondary">Play a standard board</button>
     </div>
     <div id="c2d-offer" class="ui-actions ui-actions--row hidden">
-      <button type="button" id="c2d-retry" class="ui-button ui-button--primary" data-icon="refresh">Retry</button>
+      <button type="button" id="c2d-retry" class="ui-button ui-button--primary ui-button--go" data-icon="refresh">Retry</button>
       <button type="button" id="c2d-standard" class="ui-button ui-button--secondary">Play a standard board</button>
       <button type="button" id="c2d-offer-menu" class="ui-button ui-button--secondary">Main menu</button>
     </div>
@@ -165,7 +165,7 @@
       <button type="button" id="m3d-wait-standard" class="ui-button ui-button--secondary">Play a standard board</button>
     </div>
     <div id="m3d-offer" class="ui-actions ui-actions--row hidden">
-      <button type="button" id="m3d-retry" class="ui-button ui-button--primary" data-icon="refresh">Retry</button>
+      <button type="button" id="m3d-retry" class="ui-button ui-button--primary ui-button--go" data-icon="refresh">Retry</button>
       <button type="button" id="m3d-standard" class="ui-button ui-button--secondary">Play a standard board</button>
       <button type="button" id="m3d-offer-menu" class="ui-button ui-button--secondary">Main menu</button>
     </div>
@@ -183,7 +183,7 @@
       <section class="ui-figures hud-figures" id="hud-figures" aria-labelledby="hud-title">
         <header class="ui-figures__head">
           <h2 class="ui-figures__title" id="hud-title">3D</h2>
-          <button type="button" id="hud-pause" class="ui-button ui-button--primary ui-button--sm ui-figures__action" aria-label="Pause game"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pause <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+          <button type="button" id="hud-pause" class="ui-button ui-button--secondary ui-button--sm ui-figures__action" aria-label="Pause game"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pause <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
         </header>
         <div class="ui-figures__body">
           <div class="ui-figure ui-figure--progress" role="group" aria-labelledby="hud-fig-bbbv" data-figure="bbbv"><span class="ui-figure__label" id="hud-fig-bbbv">3BV</span><span class="ui-figure__value">0 / &mdash;</span><span class="ui-figure__bar" role="progressbar" aria-labelledby="hud-fig-bbbv" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="ui-figure__fill" style="width: 0%"></span></span></div>
@@ -328,7 +328,7 @@
         <p class="ui-frame__summary" id="bc-summary" data-summary></p>
         <div class="ui-actions ui-actions--row">
           <button type="button" id="bc-records" class="ui-button ui-button--secondary" data-records data-icon="chart">Records</button>
-          <button type="button" id="bc-play" class="ui-button ui-button--primary ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"></span></button>
+          <button type="button" id="bc-play" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="confirm" aria-hidden="true"></span></button>
         </div>
       </footer>
     </section>
@@ -364,9 +364,9 @@
           <span id="ready-board" class="ready-board">9 &times; 9 &times; 1 &middot; 10 mines</span>
         </div>
         <p id="ready-msg" class="ui-note ui-note--warn ready-msg hidden" data-icon="info"><span class="ui-note__text"></span></p>
-        <button id="ready-btn" class="ui-button ui-button--primary ui-button--lg ready-play" type="button" data-icon="mouse"><span class="ready-title" id="ready-title">Click to play</span></button>
+        <button id="ready-btn" class="ui-button ui-button--primary ui-button--go ui-button--lg ready-play" type="button" data-icon="mouse"><span class="ready-title" id="ready-title">Click to play</span></button>
         <div id="ready-blocked" class="ready-blocked hidden" role="group" aria-label="Play without mouse capture">
-          <button type="button" id="ready-drag" class="ui-button ui-button--primary" data-icon="hand">Play with drag-to-look</button>
+          <button type="button" id="ready-drag" class="ui-button ui-button--primary ui-button--go" data-icon="hand">Play with drag-to-look</button>
           <p class="ui-text ui-text--muted ready-pad-note">Or connect a controller and press A.</p>
         </div>
         <div id="ready-learn" class="ready-learn hidden" role="group" aria-label="Learn 3D">
@@ -397,7 +397,7 @@
       <h2 class="ui-card__title" id="ctx-lost-title">Graphics context lost</h2>
       <p class="ui-text" id="ctx-lost-text">The browser stopped the 3D view. Reloading restores it.</p>
       <div class="ui-actions ui-actions--row">
-        <button type="button" id="ctx-lost-btn" class="ui-button ui-button--primary" data-icon="refresh">Click to reload</button>
+        <button type="button" id="ctx-lost-btn" class="ui-button ui-button--primary ui-button--go" data-icon="refresh">Click to reload</button>
         <button type="button" id="ctx-lost-menu" class="ui-button ui-button--secondary">Main menu</button>
       </div>
     </section>
@@ -573,7 +573,7 @@
           <div class="ui-row replay-tools">
             <div class="ui-row replay-transport">
               <button type="button" id="rp-prev" class="ui-button ui-button--secondary" aria-label="Previous action" data-icon="skip-back"></button>
-              <button type="button" id="rp-play" class="ui-button ui-button--primary" data-icon="play"><span id="rp-play-label">Play</span> <span class="ui-key-hint replay-key-hint" aria-hidden="true"><kbd class="ui-key-hint__key">Space</kbd></span></button>
+              <button type="button" id="rp-play" class="ui-button ui-button--primary ui-button--go" data-icon="play"><span id="rp-play-label">Play</span> <span class="ui-key-hint replay-key-hint" aria-hidden="true"><kbd class="ui-key-hint__key">Space</kbd></span></button>
               <button type="button" id="rp-next" class="ui-button ui-button--secondary" aria-label="Next action" data-icon="skip-forward"></button>
             </div>
             <div id="rp-speed" class="ui-segmented" role="radiogroup" aria-label="Speed">
@@ -651,7 +651,7 @@
           <button type="button" id="r-watch" class="ui-button ui-button--secondary hidden" data-icon="film">Watch replay</button>
           <button type="button" id="r-watch-best" class="ui-button ui-button--secondary hidden" data-icon="trophy">Watch best</button>
           <button type="button" id="r-records" class="ui-button ui-button--secondary" data-icon="chart">Records</button>
-          <button type="button" id="r-again" class="ui-button ui-button--primary ui-button--lg" data-icon="play">Play again <span class="ui-key-hint" data-action="select" aria-hidden="true"></span></button>
+          <button type="button" id="r-again" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-icon="play">Play again <span class="ui-key-hint" data-action="confirm" aria-hidden="true"></span></button>
         </div>
         <p id="results-look-note" class="ui-text ui-text--warning hidden" role="status"></p>
       </footer>
@@ -695,7 +695,7 @@
         <p class="ui-frame__summary" id="daily-summary" data-summary></p>
         <div class="ui-actions ui-actions--row">
           <button type="button" id="daily-watch" class="ui-button ui-button--secondary hidden" data-watch data-icon="film">Watch replay</button>
-          <button type="button" id="daily-play" class="ui-button ui-button--primary ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"></span></button>
+          <button type="button" id="daily-play" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="confirm" aria-hidden="true"></span></button>
         </div>
       </footer>
     </section>
@@ -713,7 +713,7 @@
       <h2 class="ui-card__title" id="learn-end-title">You cleared the box!</h2>
       <p class="ui-text" id="learn-end-line">Ready for a real board? Cube Intro is a 6 &times; 6 &times; 6 box with 10 mines, a timer and records.</p>
       <div class="ui-actions ui-actions--row">
-        <button type="button" id="learn-end-primary" class="ui-button ui-button--primary ui-button--lg" data-icon="play"><span id="learn-end-primary-label">Play Cube Intro</span> <span class="ui-key-hint" data-action="select" aria-hidden="true"></span></button>
+        <button type="button" id="learn-end-primary" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-icon="play"><span id="learn-end-primary-label">Play Cube Intro</span> <span class="ui-key-hint" data-action="confirm" aria-hidden="true"></span></button>
         <button type="button" id="learn-end-back" class="ui-button ui-button--secondary" data-icon="arrow-left">Back to board choice</button>
       </div>
     </section>
@@ -730,7 +730,7 @@
           </div>
           <p id="pause-note" class="ui-text ui-text--warning hidden" role="alert"></p>
           <div id="pause-actions" class="ui-actions">
-            <button id="p-resume" class="ui-button ui-button--primary" type="button" data-icon="play">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+            <button id="p-resume" class="ui-button ui-button--primary ui-button--go" type="button" data-icon="play">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
             <button id="p-home" class="ui-button ui-button--secondary" type="button" data-icon="cube">Back to start</button>
             <button id="p-restart" class="ui-button ui-button--secondary" type="button" data-icon="restart"><span data-label>Restart</span> <span class="ui-key-hint" data-action="restart" aria-hidden="true"></span></button>
             <button id="p-menu" class="ui-button ui-button--secondary" type="button" data-icon="arrow-left">Main menu</button>
@@ -763,7 +763,7 @@
 
   <noscript><link rel="stylesheet" href="themes/joyful-tiles/theme.css"><div class="noscript ui-backdrop"><section class="ui-card" role="alert" aria-labelledby="noscript-title"><span class="ui-card__icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg></span><h2 class="ui-card__title" id="noscript-title">Minesweeper 3D needs JavaScript.</h2></section></div></noscript>
   <script type="module">import { bindSelectOnHover } from './js/ui/components.js'; bindSelectOnHover(document);</script>
-  <template id="fatal-card"><div class="fatal ui-backdrop"><section class="ui-card" role="alert" aria-labelledby="fatal-title"><span class="ui-card__icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg></span><h2 class="ui-card__title" id="fatal-title">Cannot start Minesweeper 3D</h2><p class="ui-text">The game files failed to load. Check your connection and reload the page.</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--primary" onclick="location.reload()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Reload</button></div></section></div></template>
+  <template id="fatal-card"><div class="fatal ui-backdrop"><section class="ui-card" role="alert" aria-labelledby="fatal-title"><span class="ui-card__icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg></span><h2 class="ui-card__title" id="fatal-title">Cannot start Minesweeper 3D</h2><p class="ui-text">The game files failed to load. Check your connection and reload the page.</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--primary ui-button--go" onclick="location.reload()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Reload</button></div></section></div></template>
   <script type="module" src="js/main.js" onerror="document.body.append(document.getElementById('fatal-card').content.cloneNode(true)); document.querySelector('.fatal .ui-button').focus()"></script>
 </body>
 </html>

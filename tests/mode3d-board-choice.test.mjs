@@ -460,7 +460,7 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
 
   // The bottom bar: the summary, Records and Play with its Enter hint.
   const foot = between(BOARD, '<footer class="ui-frame__foot ui-frame__foot--action">', '</footer>');
-  assert.match(foot, /<p class="ui-frame__summary" id="bc-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="bc-records" class="ui-button ui-button--secondary" data-records data-icon="chart">Records<\/button>\s*<button type="button" id="bc-play" class="ui-button ui-button--primary ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/,
+  assert.match(foot, /<p class="ui-frame__summary" id="bc-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="bc-records" class="ui-button ui-button--secondary" data-records data-icon="chart">Records<\/button>\s*<button type="button" id="bc-play" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="confirm" aria-hidden="true"><\/span><\/button>/,
     'Records with its chart icon, Play with its play icon');
   for (const [, cls] of BOARD.matchAll(/class="([^"]+)"/g)) {
     for (const c of cls.split(/\s+/)) assert.ok(c.startsWith('ui-') || ['overlay', 'hidden'].includes(c), `kit class: ${c}`);

@@ -132,9 +132,9 @@
 // the controls #replay-controls — the seek bar #rp-seek over the timeline, its played part following
 // its value (bindSliderFill), with its pause marks #rp-pauses and its action ticks #rp-ticks; #rp-prev,
 // #rp-play (its label #rp-play-label and its leading icon: Play, Pause, or Play again at the end, with
-// the play, pause or restart icon), #rp-next, the speed choice #rp-speed, the toggles #rp-show-bbbv,
-// #rp-sound and #rp-camera (3D only), the end line #replay-end (the outcome as a chip,
-// #replay-end-outcome, and the time, #replay-end-time), #rp-download, #rp-open; the key line #rp-keys
+// the play, pause or restart icon; the green go button, the white secondary one while it shows
+// Pause), #rp-next, the speed choice #rp-speed, the toggles #rp-show-bbbv, #rp-sound and #rp-camera
+// (3D only), the end line #replay-end (the outcome as a chip, #replay-end-outcome, and the time, #replay-end-time), #rp-download, #rp-open; the key line #rp-keys
 // (REPLAY_KEY_LINE as key hints, each controller button a .replay-key__pad the page shows only while a
 // pad is connected) and the pauses' text alternative #rp-pauses-text. While a replay loads or has
 // failed the controls stay in place, every one that needs a replay disabled (Sound and Open replay file
@@ -843,6 +843,10 @@ export function createReplayView({
       }
       set('play', el.playLabel, state.playing ? 'Pause' : state.ended ? 'Play again' : 'Play');
       playIcon(state.playing ? 'pause' : state.ended ? 'restart' : 'play');
+      // Play and Play again are the green go button, Pause the white secondary one.
+      el.play.classList.toggle('ui-button--primary', !state.playing);
+      el.play.classList.toggle('ui-button--go', !state.playing);
+      el.play.classList.toggle('ui-button--secondary', state.playing);
       if (!seeking && Number(el.seek.value) !== Math.round(state.time)) el.seek.value = String(Math.round(state.time));
       const at = Math.max(0, state.time);
       el.seek.setAttribute('aria-valuetext', `${formatTime(at)} of ${formatTime(state.duration)}`);

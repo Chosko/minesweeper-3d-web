@@ -75,7 +75,7 @@ test('the ready card holds the drag-to-look offer and the controller line outsid
   const card = READY.slice(READY.indexOf('<button id="ready-btn"'), READY.indexOf('</button>', READY.indexOf('<button id="ready-btn"')));
   assert.doesNotMatch(card, /ready-drag|ready-blocked/, 'the offer is not inside the click-to-play button');
   assert.match(READY, /<div id="ready-blocked" class="[^"]*\bhidden\b[^"]*"/, 'hidden until the lock is blocked');
-  assert.match(READY, /<button type="button" id="ready-drag" class="ui-button ui-button--primary" data-icon="hand">Play with drag-to-look<\/button>/, 'a medium primary with the hand icon');
+  assert.match(READY, /<button type="button" id="ready-drag" class="ui-button ui-button--primary ui-button--go" data-icon="hand">Play with drag-to-look<\/button>/, 'a medium green primary with the hand icon');
   const offer = READY.slice(READY.indexOf('id="ready-blocked"'), READY.indexOf('</div>', READY.indexOf('id="ready-blocked"')));
   assert.match(offer, /<p class="ui-text ui-text--muted ready-pad-note">Or connect a controller and press A\.<\/p>/, 'a plain muted line names the controller and its A button as text');
   assert.doesNotMatch(offer, /<kbd/, 'no pad key cap');

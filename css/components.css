@@ -53,10 +53,25 @@
    move the selection); controller navigation reaches every option.
    Each Back that Esc triggers carries its back ui-key-hint inside it.
 
-   ui-button--primary — the screen's main action
-     Element: <button type="button" class="ui-button ui-button--primary">
+   ui-button--primary — the screen's main action, always in one of its two
+   colours (the button colour rule):
+   ui-button--go — the green button that confirms or goes forward: Play
+   (every board choice and Daily), Play again, Resume, Restart when it
+   leads the pause card, Retry, Try again, Reload and Click to reload,
+   Click / Tap to play, Play Cube Intro, Play with drag-to-look, the
+   replay viewer's Play and the 404 page's link. A large one is slimmer
+   than the large primary button.
+     Element: <button type="button" class="ui-button ui-button--primary
+                ui-button--go">
+   ui-button--stop — the red button, only for the title bar's Quit; the
+   destructive confirmations take ui-button--danger.
+     Element: <button type="button" class="ui-button ui-button--primary
+                ui-button--stop" aria-label="Quit">
      Role:    button (native)
-     Name:    its text
+     Name:    its text, or aria-label when it shows only its icon
+   Both rest in a stronger pastel of their colour and take their full
+   colour when selected or pressed. Pause is always a ui-button--secondary,
+   the replay viewer's #rp-play included while it shows Pause.
 
    ui-button--secondary — every other action
      Element: <button type="button" class="ui-button ui-button--secondary">
@@ -77,8 +92,9 @@
 
    A latched toggle (Swap clicks, the 3D touch view modes, Show 3BV, Free
    camera) is a ui-button--quiet ui-button--sm carrying aria-pressed: quiet
-   while "false", drawn as the primary button while "true" (its chosen
-   state).
+   while "false", the pressed look while "true" (its chosen state), never
+   a colour; the replay's Sound, a ui-button--secondary carrying
+   aria-pressed, shows the pressed look the same way.
      Element: <button type="button" class="ui-button ui-button--quiet
                 ui-button--sm" aria-pressed="false">
 
@@ -87,8 +103,10 @@
    class; without either a button takes the kit's middle size, md.
 
    A button's key hint sits inside it after its text, out of its name:
-     <span class="ui-key-hint" data-action="select" aria-hidden="true">
-       <kbd class="ui-key-hint__key">Enter</kbd></span>
+     <span class="ui-key-hint" data-action="back" aria-hidden="true">
+       <kbd class="ui-key-hint__key">Esc</kbd></span>
+   A confirm button carries no Enter label: its hint is
+   data-action="confirm", the controller's A alone, hidden on the keyboard.
 
    ui-icon — the icon set: the canvas's stroke icons, one source
    (ICONS in js/ui/components.js): arrow-left, play, pause, restart,
@@ -105,8 +123,8 @@
    a code chip's buttons. The label stays the button's name; an
    icon-only button (the Records replays' delete) carries aria-label.
    In markup a button names its icon, applyIcons(root) draws it:
-     <button type="button" class="ui-button ui-button--primary"
-       data-icon="play">Play</button>
+     <button type="button" class="ui-button ui-button--primary
+       ui-button--go" data-icon="play">Play</button>
    A script builds one with createButton(doc, {label, icon, variant,
    size, iconOnly}) or sets one with setButtonIcon(button, name).
 
@@ -443,7 +461,7 @@
      Element: <section class="ui-figures" aria-label="Live figures">
                 [<header class="ui-figures__head">
                   <h2 class="ui-figures__title" id="T" title="3D · Cube Intermediate">3D</h2>
-                  <button type="button" class="ui-button ui-button--primary ui-button--sm
+                  <button type="button" class="ui-button ui-button--secondary ui-button--sm
                           ui-figures__action">Pause</button>
                 </header>]
                 <div class="ui-figures__body">
@@ -833,7 +851,7 @@
      mono face — and the "Board code" ui-section-label over the ui-code
      chip of today's code (quiet Copy and Copy link with their icons). The
      foot: the summary, Watch replay (secondary, its film icon, shown for a
-     kept replay) and Play (primary, large, its play icon and select key
+     kept replay) and Play (go, large, its play icon and confirm key
      hint; disabled once the day's attempt is used and on a mode that
      cannot be played). On the smaller desktop windows the columns and the
      option rows are denser. On a phone: one full-bleed column, no
@@ -979,7 +997,7 @@
      refused code, its field marked is-invalid. The
      foot is a bottom bar: a ui-frame__summary of the chosen board, and
      ui-actions--row of Records (secondary, its chart icon) and Play
-     (primary, large, its play icon and select key hint), disabled on a
+     (go, large, its play icon and confirm key hint), disabled on a
      refused custom board and on an empty or refused code. On the smaller
      desktop windows the option rows, Play and the tiles are denser. On a
      phone: one full-bleed column, no wordmark, no bests and no summary, a
@@ -989,7 +1007,7 @@
    Classic 2D game window (index.html #c2d): ui-backdrop holding a
      ui-frame that hugs its content, centred above the HUD strip; its head
      Swap clicks (a latched toggle, a fine pointer only), the title (the
-     mode and the board) and Pause (small primary, with its back key hint).
+     mode and the board) and Pause (small secondary, with its back key hint).
      Its body: the board column — a ui-counter-strip (mines left, Restart
      with its restart key hint, the timer) over the board area, sized to
      the board and left-aligned under the strip, where the board sits in
@@ -1007,7 +1025,7 @@
    3D game overlay (index.html #hud-overlay over the full-window scene): a
      ui-counter-strip (mines left, Restart with its restart key hint, the
      timer) at the top centre, and on the right, centred vertically, the
-     ui-figures panel headed by the title and Pause (small primary, with its
+     ui-figures panel headed by the title and Pause (small secondary, with its
      back key hint) — the live figures and the controls reminder under it,
      the H help panel beside it. Each part carries its own surface over the
      sky. The title is the mode and the board, the full name its tooltip and
@@ -1028,7 +1046,7 @@
      ui-spinner beside the title and its ui-text--muted progress line
      ("candidate 14 · 6 s", in the mono face), then ui-actions--row
      (Cancel, Play a standard board); after a failed no-guess board the
-     title, a ui-text line and ui-actions--row (Retry primary with the
+     title, a ui-text line and ui-actions--row (Retry go with the
      refresh icon, Play a standard board, Main menu — or Back alone, with
      the arrow icon, for a board that is never replaced). It sits above
      the pause card. Over the 3D box it lays a scrim over the scene, the
@@ -1039,7 +1057,7 @@
      of, in order, a ui-column (the title block #pause-head — the title, the
      full board line in bold (mode, board, size, mines, no-guess), the
      status line in the mono face —, the warning note and ui-actions, each
-     button with its leading icon: Resume (play) primary during a game, with
+     button with its leading icon: Resume (play) go during a game, with
      its back key hint, Back to start (cube) on a 3D game in play, Restart
      (restart) with its restart key hint, Main menu (arrow-left)), a
      ui-column of the Settings ui-panel--muted under its ui-section-label
@@ -1049,7 +1067,7 @@
      ui-panel (#pause-list: a ui-card__title over the ui-controls help list
      of the active mode for the active device). With no game in progress
      (before the first click, or after the end) the status line says so,
-     Restart (Play again once ended) is primary and first, and there is no
+     Restart (Play again once ended) is go and first, and there is no
      Resume. At 1024 px and wider the two columns are equal, the Controls
      panel alone in the second and the Settings panel in the first, under
      the actions, so the card fits a 1024 × 768 window unscrolled; below
@@ -1063,8 +1081,8 @@
      its back key hint) and the board line; the refusal's ui-note--warn
      (info icon), hidden while there is none; Click to play (mouse icon;
      Tap to play with the hand icon on a coarse-only device) as the
-     ui-button--lg primary; once the browser blocks the lock, the
-     drag-to-look primary (hand icon) and its plain controller line; a
+     ui-button--lg go; once the browser blocks the lock, the
+     drag-to-look go (hand icon) and its plain controller line; a
      ui-panel--muted "How 3D works" under its ui-section-label and the
      Learn 3D line on the success fill with its ui-button--sm (cube
      icon), both until 3D is learned; the ui-controls list of the ready
@@ -1075,15 +1093,15 @@
      other. Default focus: Click to play.
    Context lost (index.html #ctx-lost): a message ui-card at the canvas's width,
      ui-screen on the scrim, its title, a ui-text line and ui-actions--row
-     (Click to reload primary, with the refresh icon; Main menu). Default
+     (Click to reload go, with the refresh icon; Main menu). Default
      focus: Click to reload.
    Learn 3D end card (index.html #learn-end): ui-card ui-screen over the
      guided board's stopped scene, holding the "Learn 3D"
      ui-section-label, the outcome title, a ui-text line (the win's offer
      of Cube Intro; on a loss, that the box is always the same) and
      ui-actions--row (Play Cube Intro with the play icon on a win or Try
-     again with the restart icon on a loss, ui-button--lg primary with its
-     select key hint; Back to board choice with the arrow-left icon). No
+     again with the restart icon on a loss, ui-button--lg go with its
+     confirm key hint; Back to board choice with the arrow-left icon). No
      time and no records. Default focus: the primary action.
    Toast (index.html #toast): one ui-toast, its text in #toast-text, shown
      at the bottom centre of the page for its time (js/ui.js toast); over
@@ -1091,13 +1109,13 @@
    Fatal card (index.html #fatal-card, the template the page shows when the
      game cannot start): a ui-backdrop filling the page, holding a message
      ui-card: its badge, the title, a ui-text line and ui-actions--row of
-     Reload (primary). Default focus: Reload, focused as the card is
+     Reload (go). Default focus: Reload, focused as the card is
      appended.
    No-JavaScript notice (index.html <noscript>): the fatal card's
      composition with its title only, in the default theme, whose
      stylesheet the <noscript> links.
    404 page (404.html): the fatal card's composition, its title then
-     ui-actions--row of Go to Minesweeper 3D (a ui-button--primary link to
+     ui-actions--row of Go to Minesweeper 3D (a ui-button--go link to
      the game); the base and default theme stylesheets, no script.
    Results screen (index.html #results, filled by js/results/view.js; the
      gallery's #g-results shows it with placeholder content): one ui-frame
@@ -1120,8 +1138,8 @@
      ui-code chip on the right; a ui-text--warning note. Its foot, the
      action bar, each action with its icon: Main menu (secondary, its back
      key hint) on the left; Watch replay, Watch best, Records (secondary,
-     ui-button--sm while Watch best shows) and Play again (primary, large,
-     its select key hint) on the right; a ui-text--warning note under them.
+     ui-button--sm while Watch best shows) and Play again (go, large,
+     its confirm key hint) on the right; a ui-text--warning note under them.
      Over a 3D game the Main menu shows no key hint (results--look,
      css/style.css). On a phone the card sits at the window's top and the
      page scrolls: the tiles go two by two, each detail's label over its
@@ -1155,7 +1173,8 @@
      hatched in --color-replay-pause on it and a .replay-tick per action
      (--color-replay-reveal, -flag, -chord) above it; a ui-row of Previous
      and Next (skip icons, named by aria-label) around Play / Pause / Play
-     again (primary, its play, pause or restart icon and its Space key hint),
+     again (go while it shows Play or Play again, secondary while it shows
+     Pause; its play, pause or restart icon and its Space key hint),
      the speed as a ui-segmented choice (0.25×, 0.5×, 1×, 2×, 4×), the
      latched toggles Show 3BV (grid) and Free camera (camera, in 3D) and
      Sound (speaker, a small secondary toggle), the end line once the replay
@@ -1201,6 +1220,8 @@
 .ui-button:disabled { cursor: not-allowed; }
 .ui-button--sm { min-height: 38px; padding: 7px 13px; font-size: 15px; }
 .ui-button--lg { min-height: 62px; padding: 15px 28px; font-size: var(--font-size-xl); }
+/* the large confirm button (go) is slimmer than the large primary */
+.ui-button--lg.ui-button--go { min-height: 52px; padding: 10px 28px; }
 
 /* ---------- icon set: the leading-icon slot ---------- */
 .ui-icon { display: block; flex: none; width: 18px; height: 18px; }

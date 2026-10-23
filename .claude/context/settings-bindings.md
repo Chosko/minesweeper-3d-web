@@ -54,8 +54,9 @@ every function.
   touch — touch naming the 3D toolbar's buttons and the gestures, the chord
   the two-finger tap), `hintText(name, device, glyphs?)` — a one-time hint
   or prompt as plain text.
-- `KEY_HINTS` (`move`, `select`, `back`, `restart`, each per device, none
-  on touch), `keyHintKeys(action, device, glyphs?)` → `[{text, pad}]`: the
+- `KEY_HINTS` (`move`, `select`, `confirm` — a confirm button's, the
+  controller's A alone —, `back`, `restart`, each per device, none on
+  touch), `keyHintKeys(action, device, glyphs?)` → `[{text, pad}]`: the
   keys or buttons a screen's `ui-key-hint` shows beside an action
   (`showKeyHints`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md)).
 - `createActiveDevice({ onChange })` → `current` (`'keyboard'` |

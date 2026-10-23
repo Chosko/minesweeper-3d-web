@@ -673,10 +673,12 @@ export class UI {
     const ended = state !== 'playing';
     const noGame = !inProgress;
     this._noGame = noGame;
-    // The primary action leads: Resume during a game, Restart (Play again once ended) with no game to resume.
+    // The green primary action leads: Resume during a game, Restart (Play again once ended) with no game to resume.
     const [first, second] = noGame ? [this.el.restart, this.el.resume] : [this.el.resume, this.el.restart];
-    first.classList.replace('ui-button--secondary', 'ui-button--primary');
-    second.classList.replace('ui-button--primary', 'ui-button--secondary');
+    first.classList.remove('ui-button--secondary');
+    first.classList.add('ui-button--primary', 'ui-button--go');
+    second.classList.remove('ui-button--primary', 'ui-button--go');
+    second.classList.add('ui-button--secondary');
     this.el.pauseActions.insertBefore(first, this.el.pauseMenu);
     this.el.pauseActions.insertBefore(this.el.home, this.el.pauseMenu);
     this.el.pauseActions.insertBefore(second, this.el.pauseMenu);

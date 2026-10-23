@@ -870,7 +870,7 @@ test('the viewer screen is kit markup: a screen frame holding the overlay, the b
   for (const c of classes) assert.match(c, /^(ui-figures?(__[a-z]+)?(--[a-z]+)?|hidden)$/, `${c}: catalogued components only`);
   assert.match(html, /id="replay-message" class="ui-card hidden"[\s\S]*?<span id="replay-message-spinner" class="ui-spinner" aria-hidden="true"><\/span>/, 'opening shows the spinner');
   assert.match(html, /id="replay-message-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/, 'the failure card\'s Back with its key hint');
-  assert.match(html, /id="rp-play" class="ui-button ui-button--primary" data-icon="play"><span id="rp-play-label">Play<\/span> <span class="ui-key-hint replay-key-hint" aria-hidden="true"><kbd class="ui-key-hint__key">Space<\/kbd><\/span><\/button>/,
+  assert.match(html, /id="rp-play" class="ui-button ui-button--primary ui-button--go" data-icon="play"><span id="rp-play-label">Play<\/span> <span class="ui-key-hint replay-key-hint" aria-hidden="true"><kbd class="ui-key-hint__key">Space<\/kbd><\/span><\/button>/,
     'Play carries its icon and its key, out of its name');
   assert.match(html, /<span id="replay-end" class="replay-end hidden" role="status"><span id="replay-end-outcome" class="ui-chip"><\/span> <span id="replay-end-time" class="replay-end__time"><\/span><\/span>/, 'the end line: the outcome as a chip, then the time');
   assert.match(html, /<div id="rp-keys" class="ui-key-hints replay-keys"><\/div>/, 'the key line is a row of key hints');
@@ -948,6 +948,8 @@ test('[slow] in a browser, a recorded 2D replay plays from its fixture through t
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
     assert.equal(await page.evaluate(() => document.querySelector('#rp-play > .ui-icon').getAttribute('data-icon')), 'pause', 'Pause with its icon while playing');
+    assert.deepEqual(await page.evaluate(() => ['ui-button--secondary', 'ui-button--primary', 'ui-button--go'].map((c) => document.getElementById('rp-play').classList.contains(c))),
+      [true, false, false], 'Pause is the white secondary button');
     // Past 1 s of replay time, playing or already at its end: at 4× the playing window is about 2.5 s,
     // which one stalled frame on a loaded machine can step past. The recorded pointer stays when it stops.
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.time > 1000, null, { timeout: patience(3000) });
@@ -957,6 +959,8 @@ test('[slow] in a browser, a recorded 2D replay plays from its fixture through t
     assert.equal(await page.evaluate(() => document.getElementById('replay-end-outcome').className), 'ui-chip ui-chip--won', 'the outcome as its chip');
     assert.equal(await text('rp-play-label'), 'Play again', 'at the end Play plays it again');
     assert.equal(await page.evaluate(() => document.querySelector('#rp-play > .ui-icon').getAttribute('data-icon')), 'restart', 'with the restart icon');
+    assert.deepEqual(await page.evaluate(() => ['ui-button--secondary', 'ui-button--primary', 'ui-button--go'].map((c) => document.getElementById('rp-play').classList.contains(c))),
+      [false, true, true], 'Play again is the green go button');
     assert.ok(await page.evaluate(() => { const e = document.getElementById('replay-end').getBoundingClientRect(), s = document.getElementById('rp-sound').getBoundingClientRect(); return e.left >= s.right && Math.abs(e.top + e.height / 2 - (s.top + s.height / 2)) < 10; }),
       'the end line in the tools row after Sound');
     assert.equal(await text('rp-clock'), '09.971');

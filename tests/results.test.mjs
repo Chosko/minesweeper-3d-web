@@ -746,9 +746,9 @@ test('the results screen is the kit composition: one framed column — header ba
     ['r-watch', 'ui-button--secondary hidden', 'film', 'Watch replay'],
     ['r-watch-best', 'ui-button--secondary hidden', 'trophy', 'Watch best'],
     ['r-records', 'ui-button--secondary', 'chart', 'Records'],
-    ['r-again', 'ui-button--primary ui-button--lg', 'play', 'Play again'],
+    ['r-again', 'ui-button--primary ui-button--go ui-button--lg', 'play', 'Play again'],
   ]);
-  assert.match(RESULTS_HTML, /id="r-again" class="ui-button ui-button--primary ui-button--lg" data-icon="play">Play again <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/, 'Play again shows its Enter hint');
+  assert.match(RESULTS_HTML, /id="r-again" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-icon="play">Play again <span class="ui-key-hint" data-action="confirm" aria-hidden="true"><\/span><\/button>/, 'Play again shows its controller glyph, no Enter label');
   assert.match(RESULTS_HTML, /<p id="results-look-note" class="ui-text ui-text--warning hidden" role="status"><\/p>/);
 });
 
@@ -1051,7 +1051,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     assert.equal(shown.board2d, true, 'the finished board stays visible behind the screen');
     assert.equal(shown.focus, 'r-again', 'Play again has default focus');
     assert.equal(shown.games, 1, 'the game was recorded');
-    assert.deepEqual(shown.hints, ['r-menu:Esc', 'r-again:Enter'], 'Main menu shows Esc and Play again Enter');
+    assert.deepEqual(shown.hints, ['r-menu:Esc'], 'Main menu shows Esc; Play again, a confirm button, no Enter label');
     assert.ok(Math.max(...shown.bar) - Math.min(...shown.bar) <= 2, `the action bar is one row (${shown.bar})`);
     assert.equal(shown.menuLeft, true, 'Main menu on the left');
     assert.equal(shown.hscroll, false, 'no horizontal scroll');

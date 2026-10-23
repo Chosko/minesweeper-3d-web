@@ -55,6 +55,8 @@ const COMPONENTS = {
   // the shared layout's components
   'ui-button--danger': { interactive: true, selectable: true, control: '.ui-button.ui-button--danger' },
   'ui-button--quiet': { interactive: true, selectable: true, control: '.ui-button.ui-button--quiet' },
+  'ui-button--go': { interactive: true, selectable: true, control: '.ui-button.ui-button--primary.ui-button--go' },
+  'ui-button--stop': { interactive: true, selectable: true, control: '.ui-button.ui-button--primary.ui-button--stop' },
   'ui-backdrop': { interactive: false },
   'ui-frame': { interactive: false },
   'ui-mode-entry': { interactive: true, selectable: true, control: '.ui-mode-entry' },
@@ -556,7 +558,7 @@ test('the 3D game overlay is built from catalogued components: the counter strip
   assert.ok(hp.includes(title) && hasClasses(title, '.ui-figures__title') && /^h[2-6]$/.test(title.tag), 'the head\'s title');
   const pause = byIdHud('hud-pause');
   assert.ok(hp.includes(pause) && title.index < pause.index, 'Pause after the title in the head');
-  assert.ok(hasClasses(pause, '.ui-button.ui-button--primary.ui-button--sm.ui-figures__action') && pause.tag === 'button' && pause.attrs.type === 'button');
+  assert.ok(hasClasses(pause, '.ui-button.ui-button--secondary.ui-button--sm.ui-figures__action') && pause.tag === 'button' && pause.attrs.type === 'button');
   assert.match(pause.attrs['aria-label'] ?? '', /pause/i, 'Pause is named');
   const pauseHint = within(inside(HUD, HUD_TAGS, pause), '.ui-key-hint')[0];
   assert.ok(pauseHint && pauseHint.attrs['data-action'] === 'back' && pauseHint.attrs['aria-hidden'] === 'true', 'Pause carries its key hint');
@@ -597,7 +599,7 @@ test('the Classic 2D game window is built from catalogued components: head with 
   const end = within(parts, '.ui-frame__end')[0];
   const pause = byId2D('c2d-pause');
   assert.ok(inside(WINDOW_2D, WINDOW_2D_TAGS, end).includes(pause), 'Pause at the head\'s end');
-  assert.ok(hasClasses(pause, '.ui-button.ui-button--primary.ui-button--sm') && pause.tag === 'button' && pause.attrs.type === 'button');
+  assert.ok(hasClasses(pause, '.ui-button.ui-button--secondary.ui-button--sm') && pause.tag === 'button' && pause.attrs.type === 'button');
   assert.match(pause.attrs['aria-label'] ?? '', /pause/i, 'Pause is named');
   const pauseHint = within(inside(WINDOW_2D, WINDOW_2D_TAGS, pause), '.ui-key-hint')[0];
   assert.ok(pauseHint && pauseHint.attrs['data-action'] === 'back' && pauseHint.attrs['aria-hidden'] === 'true', 'Pause carries its key hint');
@@ -1617,7 +1619,7 @@ test('touch play: the toolbar and the stick show only in touch play, the toolbar
   const body = (needle) => top.filter(([sel]) => sel.includes(needle)).map(([, b]) => b).join(';');
   assert.match(body('#touch-3d'), /display:\s*none/, 'hidden unless in touch play');
   assert.match(style, /body\.touch-play #touch-3d\s*\{[^}]*display:\s*block/, 'shown in touch play');
-  assert.match(themeRulesFor('.ui-button--quiet[aria-pressed="true"]').map(([, b]) => b).join(';'), /background:\s*var\(--color-accent-fill\)/, 'the pressed state is visible');
+  assert.match(themeRulesFor('.ui-button--quiet[aria-pressed="true"]').map(([, b]) => b).join(';'), /box-shadow:\s*inset 0 3px 0 var\(--shade-press\)/, 'the pressed state is visible');
   assert.match(style, /body\.touch-play #scene\s*\{[^}]*touch-action:\s*none/, 'no browser scroll or zoom on the scene in touch play');
   assert.match(style, /body\.touch-play #scene\s*\{[^}]*user-select:\s*none/, 'no text selection');
   assert.match(style, /body\.touch-play #scene\s*\{[^}]*-webkit-touch-callout:\s*none/, 'no long-press menu');
@@ -1744,11 +1746,18 @@ test('the quiet button: a white surface ringed by the border, no drop edge; sele
   }
 });
 
-test('a latched toggle is a quiet small button off and a primary one on: Swap clicks, the touch view modes, Show 3BV and Free camera', () => {
-  const on = buttonTheme('.ui-button--quiet[aria-pressed="true"]');
-  assert.match(on, /background:\s*var\(--color-accent-fill\)/, 'coral when on');
-  assert.match(on, /color:\s*var\(--color-accent-on\)/, 'ink text');
-  assert.match(on, /0 var\(--edge-sm\) 0 var\(--color-accent-edge\)/, 'its accent edge');
+test('a latched toggle is a quiet small button off and shows the pressed look on: Swap clicks, the touch view modes, Show 3BV and Free camera', () => {
+  for (const sel of ['.ui-button--quiet[aria-pressed="true"]', '.ui-button--quiet[aria-pressed="true"]:focus']) {
+    const on = buttonTheme(sel);
+    assert.match(on, /transform:\s*translateY\(2px\)/, `${sel}: sunk in place`);
+    assert.match(on, /background:\s*var\(--color-surface-sunk\)/, `${sel}: the sunk surface`);
+    assert.match(on, /box-shadow:\s*inset 0 3px 0 var\(--shade-press\), inset 0 0 0 2px var\(--color-edge\)/, `${sel}: its top edge showing inside`);
+  }
+  const lit = THEME_RULES.filter(([sel]) => /\[aria-pressed="true"\]/.test(sel) && /ui-button--(quiet|secondary)/.test(sel)).map(([, b]) => b).join(';');
+  assert.doesNotMatch(lit, /--color-(accent|danger|blue)/, 'never red, nor any fill, when on');
+  const sound = buttonTheme('.ui-button--secondary[aria-pressed="true"]');
+  assert.match(sound, /transform:\s*translateY\(calc\(var\(--edge-sm\) \+ 2px\)\)/, 'a latched secondary button (the replay\'s Sound) pressed when on');
+  assert.match(sound, /box-shadow:\s*inset 0 4px 0 var\(--shade-press\), inset 0 0 0 1px var\(--shade-soft\)/);
   const idx = tags(INDEX);
   const toggle = (pred, label) => {
     const found = idx.filter(pred);
@@ -1777,6 +1786,88 @@ test('the danger button: the danger fill, white text, a dark-red drop edge; Dele
   const yes = html.find((t) => t.attrs.id === 'records-replays-yes');
   assert.ok(yes && hasClasses(yes, '.ui-button.ui-button--danger') && !hasClasses(yes, '.ui-button--primary'), 'Delete replay is a danger button');
   assert.match(read('js/settings/page.js'), /class="ui-button ui-button--danger" id="set-reset-yes"/, 'Reset all data is a danger button');
+});
+
+test('the go and stop buttons: primary variants resting in a stronger pastel on its edge, their full colour when selected or pressed', () => {
+  for (const [name, rest, restEdge, full, ink] of [
+    ['ui-button--go', '--color-green-rest', '--color-green-rest-edge', '--color-green', '--color-green-on'],
+    ['ui-button--stop', '--color-accent-rest', '--color-accent-rest-edge', '--color-accent-fill', '--color-accent-on'],
+  ]) {
+    const c = KIT_CATALOGUE.find((x) => x.name === name);
+    assert.ok(c, `the catalogue declares ${name}`);
+    assert.equal(c.base, 'ui-button');
+    assert.deepEqual(Object.keys(c.parts[0].states), ['default', 'selected', 'pressed', 'disabled'], `${name}: the button's states`);
+    for (const t of [rest, restEdge, full, ink]) assert.ok(TOKENS.has(t), `${t} is declared`);
+    const atRest = buttonTheme(`.${name}`);
+    assert.match(atRest, new RegExp(`background:\\s*var\\(${rest}\\)`), `${name} rests in the stronger pastel`);
+    assert.match(atRest, /color:\s*var\(--color-ink\)/, `${name}: ink on the pastel`);
+    assert.match(atRest, new RegExp(`0 var\\(--edge-sm\\) 0 var\\(${restEdge}\\)`), `${name}: the pastel's edge`);
+    for (const state of [`.${name}:focus`, `.${name}[data-force~="focus"]`, `.${name}:active:not(:disabled)`, `.${name}[data-force~="active"]`]) {
+      const look = buttonTheme(state);
+      assert.match(look, new RegExp(`background:\\s*var\\(${full}\\)`), `${state}: its full colour`);
+      assert.match(look, new RegExp(`color:\\s*var\\(${ink}\\)`), `${state}: its ink`);
+    }
+    assert.match(buttonTheme(`.${name}:disabled`), /background:\s*var\(--color-locked\)/, `${name} disabled is locked`);
+  }
+  assert.match(buttonTheme('.ui-button--lg.ui-button--go'), /0 7px 0 var\(--color-green-rest-edge\)/, 'the large go button keeps the large edge');
+  assert.match(buttonBase('.ui-button--lg.ui-button--go'), /min-height:\s*52px;\s*padding:\s*10px 28px/, 'the large confirm button is slimmer than the large primary');
+  for (const size of ['', '.ui-button--sm', '.ui-button--lg']) {
+    assert.ok(TAGS.some((t) => hasClasses(t, `.ui-button.ui-button--primary.ui-button--go${size}`) && !t.attrs['data-force']), `the gallery shows a go button ${size || 'md'}`);
+  }
+  assert.ok(TAGS.some((t) => hasClasses(t, '.ui-button.ui-button--primary.ui-button--stop') && t.attrs['aria-label'] === 'Quit'), 'the gallery shows the title bar\'s Quit, an icon-only stop button');
+});
+
+// The button colour rule on every screen: the buttons that confirm or go forward, by id.
+const GO_BUTTONS = ['c2d-play', 'bc-play', 'daily-play', 'r-again', 'p-resume', 'c2d-retry', 'm3d-retry', 'ready-btn', 'ready-drag',
+  'ctx-lost-btn', 'learn-end-primary', 'rp-play'];
+
+test('the button colour rule: every button that confirms or goes forward is green, red only for the destructive confirmations, Pause the white secondary', () => {
+  const html = tags(INDEX);
+  for (const id of GO_BUTTONS) {
+    const b = html.find((t) => t.attrs.id === id);
+    assert.ok(b, `#${id} exists`);
+    assert.ok(hasClasses(b, '.ui-button.ui-button--primary.ui-button--go'), `#${id} is a go button`);
+  }
+  const fatal = INDEX.slice(INDEX.indexOf('<template id="fatal-card">'));
+  assert.match(fatal, /<button type="button" class="ui-button ui-button--primary ui-button--go" onclick="location\.reload\(\)">/, 'the fatal card\'s Reload is a go button');
+  for (const [where, list] of [['index.html', html], ['the gallery', TAGS]]) {
+    for (const t of list.filter((x) => hasClasses(x, '.ui-button--primary'))) {
+      assert.ok(hasClasses(t, '.ui-button--go') || hasClasses(t, '.ui-button--stop'), `${where} #${t.attrs.id}: a primary button is go or stop`);
+    }
+  }
+  assert.deepEqual(html.filter((x) => hasClasses(x, '.ui-button--danger')).map((t) => t.attrs.id), ['records-replays-yes', 'p-confirm-yes'],
+    'red only for the destructive confirmations: deleting a replay, leaving or restarting the game (and Settings\' Reset all data)');
+  for (const id of ['c2d-pause', 'hud-pause']) {
+    const b = html.find((t) => t.attrs.id === id);
+    assert.ok(hasClasses(b, '.ui-button.ui-button--secondary') && !hasClasses(b, '.ui-button--primary'), `#${id}: Pause is the white secondary button`);
+  }
+  const ui = read('js/ui.js');
+  const pause = ui.slice(ui.indexOf('  showPause('), ui.indexOf('  updatePause('));
+  assert.match(pause, /classList\.add\('ui-button--primary', 'ui-button--go'\)/, 'the pause card\'s leading action, Resume or Restart, is green');
+  assert.match(pause, /classList\.remove\('ui-button--primary', 'ui-button--go'\)/, 'the other one secondary');
+  const viewer = read('js/replay/viewer.js');
+  assert.match(viewer, /el\.play\.classList\.toggle\('ui-button--primary', !state\.playing\)/, 'the replay viewer\'s Play green');
+  assert.match(viewer, /el\.play\.classList\.toggle\('ui-button--go', !state\.playing\)/);
+  assert.match(viewer, /el\.play\.classList\.toggle\('ui-button--secondary', state\.playing\)/, 'its Pause the white secondary button');
+});
+
+test('no confirm button carries an Enter key label; Esc on Resume, Space on the replay controls and the controller glyphs stay', () => {
+  const html = tags(INDEX);
+  for (const [src, list] of [[INDEX, html], [GALLERY, TAGS]]) {
+    for (const t of list.filter((x) => x.tag === 'button')) {
+      const inner = src.slice(t.end, src.indexOf('</button>', t.end));
+      assert.doesNotMatch(inner, /data-action="select"/, `#${t.attrs.id}: no Enter label`);
+      assert.doesNotMatch(inner, />Enter</, `#${t.attrs.id}: no Enter label`);
+    }
+  }
+  for (const id of ['c2d-play', 'bc-play', 'daily-play', 'r-again', 'learn-end-primary']) {
+    const b = html.find((t) => t.attrs.id === id);
+    assert.match(INDEX.slice(b.end, INDEX.indexOf('</button>', b.end)), /<span class="ui-key-hint" data-action="confirm" aria-hidden="true"><\/span>/, `#${id}: its controller glyph`);
+  }
+  const resume = html.find((t) => t.attrs.id === 'p-resume');
+  assert.match(INDEX.slice(resume.end, INDEX.indexOf('</button>', resume.end)), /data-action="back"/, 'Esc on Resume');
+  const play = html.find((t) => t.attrs.id === 'rp-play');
+  assert.match(INDEX.slice(play.end, INDEX.indexOf('</button>', play.end)), /<kbd class="ui-key-hint__key">Space<\/kbd>/, 'Space on the replay\'s Play');
 });
 
 const SHOTS = process.env.MS_SHOTS === '1';
@@ -1914,10 +2005,11 @@ test('createIcon builds an icon in the SVG namespace, hidden from assistive tech
 
 test('a button takes a leading icon before its label and keeps the label as its name; an icon-only button is named by aria-label', () => {
   const doc = stubDocument();
-  const play = createButton(doc, { label: 'Play', icon: 'play', variant: 'primary', size: 'lg' });
+  const play = createButton(doc, { label: 'Play', icon: 'play', variant: 'go', size: 'lg' });
   assert.equal(play.localName, 'button');
   assert.equal(play.type, 'button');
-  assert.equal(play.className, 'ui-button ui-button--primary ui-button--lg');
+  assert.equal(play.className, 'ui-button ui-button--primary ui-button--go ui-button--lg', 'the primary button in its green');
+  assert.throws(() => createButton(doc, { label: 'Play', variant: 'primary' }), /unknown variant/, 'a primary button always takes go or stop');
   assert.equal(play.children[0].attrs['data-icon'], 'play', 'the icon leads');
   assert.equal(play.children[0].attrs['aria-hidden'], 'true');
   assert.equal(play.textContent, 'Play', 'the label is the name');
@@ -2274,7 +2366,7 @@ test('section label, key hints, stat tile badge, chips, list rows, scene panel, 
   const hints = within(LAYOUT_TAGS, '.ui-key-hint');
   assert.ok(hints.some((h) => !hasClasses(h, '.ui-key-hint--pad')) && hints.some((h) => hasClasses(h, '.ui-key-hint.ui-key-hint--pad')), 'keyboard and controller hints');
   for (const h of hints) {
-    assert.ok(['move', 'select', 'back'].includes(h.attrs['data-action']), 'a hint names the action whose keys it shows');
+    assert.ok(['move', 'select', 'confirm', 'back'].includes(h.attrs['data-action']), 'a hint names the action whose keys it shows');
     const keys = within(inside(LAYOUT, LAYOUT_TAGS, h), '.ui-key-hint__key');
     assert.ok(keys.length >= 1 && keys.every((k) => k.tag === 'kbd'), 'its keys are kbd');
   }
@@ -2365,8 +2457,10 @@ test('the theme draws the mode entry taller when selected, the chosen board opti
   assert.match(THEME_RULES.filter(([sel]) => sel === '.ui-frame__head').map(([, b]) => b).join(';'), /background:\s*var\(--color-head\)/, 'the yellow head');
 });
 
-test('keyHintKeys: the keys of move, select, back and restart for each device, the controller\'s in its glyphs, none on touch', () => {
-  assert.deepEqual(Object.keys(KEY_HINTS), ['move', 'select', 'back', 'restart']);
+test('keyHintKeys: the keys of move, select, confirm, back and restart for each device, the controller\'s in its glyphs, none on touch', () => {
+  assert.deepEqual(Object.keys(KEY_HINTS), ['move', 'select', 'confirm', 'back', 'restart']);
+  assert.deepEqual(keyHintKeys('confirm', 'keyboard'), [], 'a confirm button carries no Enter label');
+  assert.deepEqual(keyHintKeys('confirm', 'controller', GLYPHS.xbox), [{ text: GLYPHS.xbox.a, pad: true }], 'its controller glyph stays');
   assert.deepEqual(keyHintKeys('restart', 'keyboard'), [{ text: 'F2', pad: false }]);
   assert.deepEqual(keyHintKeys('restart', 'controller', GLYPHS.xbox), [{ text: GLYPHS.xbox.start, pad: true }, { text: GLYPHS.xbox.y, pad: true }], 'Start + Y');
   assert.deepEqual(keyHintKeys('move', 'keyboard'), [{ text: '↑', pad: false }, { text: '↓', pad: false }]);
@@ -2546,7 +2640,7 @@ test('the toast, the fatal card, the no-JavaScript notice and the 404 page are c
   assert.match(FATAL, /^<template id="fatal-card"><div class="fatal ui-backdrop">/);
   messageCard(FATAL, 'fatal-title', 'Cannot start Minesweeper 3D');
   assert.match(FATAL, /<p class="ui-text">The game files failed to load\. Check your connection and reload the page\.<\/p>/);
-  assert.match(FATAL, /<div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--primary" onclick="location\.reload\(\)"><svg\b[^>]*aria-hidden="true"[\s\S]*?<\/svg>Reload<\/button><\/div>/);
+  assert.match(FATAL, /<div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--primary ui-button--go" onclick="location\.reload\(\)"><svg\b[^>]*aria-hidden="true"[\s\S]*?<\/svg>Reload<\/button><\/div>/);
   // Reload takes focus when the card appears: autofocus does nothing on a clone appended after load.
   assert.doesNotMatch(FATAL, /autofocus/);
   assert.match(INDEX, /<script type="module" src="js\/main\.js" onerror="document\.body\.append\(document\.getElementById\('fatal-card'\)\.content\.cloneNode\(true\)\); document\.querySelector\('\.fatal \.ui-button'\)\.focus\(\)"><\/script>/,
@@ -2561,7 +2655,7 @@ test('the toast, the fatal card, the no-JavaScript notice and the 404 page are c
   // The 404 page: the same card, its one action a link home.
   assert.match(NOT_FOUND, /<main class="not-found ui-backdrop">/);
   messageCard(NOT_FOUND, 'not-found-title', 'Page not found.');
-  assert.match(NOT_FOUND, /<div class="ui-actions ui-actions--row"><a class="ui-button ui-button--primary" href="\/">Go to Minesweeper 3D<\/a><\/div>/);
+  assert.match(NOT_FOUND, /<div class="ui-actions ui-actions--row"><a class="ui-button ui-button--primary ui-button--go" href="\/">Go to Minesweeper 3D<\/a><\/div>/);
   // Nothing but kit classes and each surface's placement class.
   const allowed = new Set(['toast', 'fatal', 'noscript', 'not-found']);
   for (const [name, html] of [['toast', section(INDEX, '<div id="toast"', '</div>')], ['fatal', FATAL], ['noscript', NOSCRIPT], ['404', NOT_FOUND]]) {
@@ -2777,7 +2871,7 @@ test('the counter readout, the counter strip, the live figure and the figures pa
   assert.deepEqual(kit('ui-figures').parts.map((p) => [p.name, p.optional]), [
     ['head', true], ['title', true], ['action', true], ['body', false], ['foot', true], ['live', false],
   ], 'the panel\'s optional head bar (title and an action), its body, its controls-reminder foot and its live part');
-  assert.equal(kitPart('ui-figures', 'action').as, 'ui-button--primary', 'the head bar\'s action is a primary button');
+  assert.equal(kitPart('ui-figures', 'action').as, 'ui-button--secondary', 'the head bar\'s action, Pause, is a secondary button');
   for (const name of ['ui-counter', 'ui-counter-strip', 'ui-figure', 'ui-figures']) {
     assert.equal(kit(name).kind, 'component');
     assert.ok(kit(name).parts.every((p) => !p.interactive), `${name} has no interactive part of its own`);
@@ -2834,7 +2928,7 @@ test('in-game markup: counters named and never live, the strip holding Restart b
       assert.equal(panel.attrs['aria-labelledby'], title.attrs.id, 'a panel with a head is named by its title');
       assert.ok(title.attrs.title, 'the title keeps the full name as its tooltip');
       const action = within(inside(IN_GAME, IN_GAME_TAGS, head), '.ui-figures__action')[0];
-      assert.ok(action && hasClasses(action, '.ui-button.ui-button--primary') && action.tag === 'button' && action.attrs.type === 'button', 'the head\'s action is a primary button');
+      assert.ok(action && hasClasses(action, '.ui-button.ui-button--secondary') && action.tag === 'button' && action.attrs.type === 'button', 'the head\'s action, Pause, is a secondary button');
     } else {
       assert.equal(panel.attrs['aria-label'], 'Live figures', 'a panel without a head is named');
     }
@@ -3513,7 +3607,7 @@ test('the message card: ink text, the canvas\'s type, and an even 14 px gap betw
   assert.match(bodyOf(rules(STYLE), '#coming-soon-panel'), /gap: 16px;/, 'the placeholder\'s column 16 px apart, its lock badge leading it');
   // The context-lost card: 480 px, Click to reload with the refresh icon, Main menu with no Esc key hint.
   assert.match(bodyOf(rules(STYLE), '#ctx-lost > .ui-card'), /width: min\(480px, 100%\);/);
-  assert.match(INDEX, /<button type="button" id="ctx-lost-btn" class="ui-button ui-button--primary" data-icon="refresh">Click to reload<\/button>/);
+  assert.match(INDEX, /<button type="button" id="ctx-lost-btn" class="ui-button ui-button--primary ui-button--go" data-icon="refresh">Click to reload<\/button>/);
   assert.match(INDEX, /<button type="button" id="ctx-lost-menu" class="ui-button ui-button--secondary">Main menu<\/button>/);
 });
 
@@ -3538,7 +3632,7 @@ test('the board status cards: centred on the board column, the canvas\'s spinner
   assert.match(bodyOf(THEME_RULES, ':is(#c2d-progress, #m3d-progress)'), /font-family: var\(--font-family-mono\);/, 'the progress line in the mono face');
   for (const p of ['c2d', 'm3d']) {
     assert.match(INDEX, new RegExp(`<p id="${p}-status-text" class="ui-text hidden"></p>`), `#${p}-status-text in ink`);
-    assert.match(INDEX, new RegExp(`<button type="button" id="${p}-retry" class="ui-button ui-button--primary" data-icon="refresh">Retry</button>`), `#${p}-retry carries the refresh icon`);
+    assert.match(INDEX, new RegExp(`<button type="button" id="${p}-retry" class="ui-button ui-button--primary ui-button--go" data-icon="refresh">Retry</button>`), `#${p}-retry carries the refresh icon`);
   }
   const ui = read('js/ui.js');
   assert.match(ui, /setButtonIcon\(menu, fixed \? 'arrow-left' : null\)/, 'a fixed board\'s Back carries the arrow icon, Main menu none');
@@ -3555,6 +3649,8 @@ test('the board status cards: centred on the board column, the canvas\'s spinner
 const CANVAS_PARTS = Object.freeze({
   'quiet-button': 'ui-button--quiet',
   'swap-clicks': 'ui-button--quiet',
+  'confirm-go': 'ui-button--go',
+  'title-bar-quit': 'ui-button--stop',
   'tap-toggle': 'ui-segmented',
   'hint-strip': 'hud-panel',
   'view-chip': 'chip',

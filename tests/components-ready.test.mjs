@@ -37,7 +37,7 @@ const READY = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<
 
 test('the ready card\'s markup: the canvas\'s icons, the plain Learn line, the phone-landscape title and the rules with Ctrl as text', () => {
   assert.match(READY, /<button type="button" id="ready-back" class="ui-button ui-button--secondary ui-button--sm" data-icon="arrow-left">/, 'Back leads with the arrow');
-  assert.match(READY, /<button id="ready-btn" class="ui-button ui-button--primary ui-button--lg ready-play" type="button" data-icon="mouse">/, 'Click to play leads with the mouse');
+  assert.match(READY, /<button id="ready-btn" class="ui-button ui-button--primary ui-button--go ui-button--lg ready-play" type="button" data-icon="mouse">/, 'Click to play leads with the mouse');
   assert.match(READY, /<button type="button" id="ready-learn-btn" class="ui-button ui-button--secondary ui-button--sm" data-icon="cube">Learn 3D<\/button>/, 'Learn 3D leads with the cube');
   assert.match(READY, /<div id="ready-learn" class="ready-learn hidden" role="group" aria-label="Learn 3D">/, 'the Learn line is a plain line, not a banner');
   assert.match(READY, /<h2 class="ui-card__title ready-heading" id="ready-heading" aria-hidden="true">Click to play<\/h2>/, 'the title phone landscape shows above the board line');

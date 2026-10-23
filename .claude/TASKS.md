@@ -1681,7 +1681,7 @@ Feature: flat-grid-menu-entries
 
 ## 281. Button colour rule: go and stop buttons
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/components.css, themes/joyful-tiles/theme.css, css/tokens.css, js/ui/kit-catalogue.js, js/ui/components.js, index.html, js/shell/pause.js, js/results/view.js, js/classic2d/board-choice.js, js/mode3d/board-choice.js, js/shell/daily.js, js/mode3d/learn.js, js/shell/lock-fallback.js, js/main.js, dev/components.html, tests/components.test.mjs, tests/theme-conformance.test.mjs, tests/components-pause.test.mjs, tests/components-ready.test.mjs
 Preconditions: none

@@ -309,6 +309,33 @@ function checkContrast(theme) {
   return [...new Map(out.map((p) => [p.subject, p])).values()];
 }
 
+// The go and stop buttons' ink on their rest and selected colours, as the theme's own rules for the
+// two states draw them (the last rule naming the selector and the property wins), at least 4.5:1.
+const FILL_STATES = Object.freeze({
+  'ui-button--go': Object.freeze({ rest: '.ui-button--go', selected: '.ui-button--go:focus' }),
+  'ui-button--stop': Object.freeze({ rest: '.ui-button--stop', selected: '.ui-button--stop:focus' }),
+});
+function checkFillContrast(theme) {
+  const tokens = declaredTokens(theme);
+  const resolve = (v, seen = new Set()) => {
+    const ref = v?.match(/^var\(\s*(--[\w-]+)\s*\)$/);
+    if (!ref) return v === undefined ? null : parseColor(v);
+    return seen.has(ref[1]) ? null : resolve(tokens.get(ref[1]), seen.add(ref[1]));
+  };
+  const drawn = (sel, prop) => theme.scoped.filter((r) => r.inner.includes(sel)).flatMap((r) => r.decls.filter((d) => d.prop === prop)).at(-1)?.value;
+  const out = [];
+  for (const [name, states] of Object.entries(FILL_STATES)) {
+    for (const [state, sel] of Object.entries(states)) {
+      const bg = resolve(drawn(sel, 'background') ?? drawn(sel, 'background-color'));
+      const fg = resolve(drawn(sel, 'color'));
+      if (!bg || !fg) { out.push(problem('contrast', `${name} ${state} has no declared ink and fill`)); continue; }
+      const ground = over(bg, [255, 255, 255]);
+      if (contrast(over(fg, ground), ground) < 4.5) out.push(problem('contrast', `${name} ${state}`));
+    }
+  }
+  return out;
+}
+
 const CHECKS = [
   ['every file the registry names exists', checkFiles],
   ['every @font-face source is one of the theme\'s own font files', checkFonts],
@@ -319,6 +346,7 @@ const CHECKS = [
   ['every part and state of every catalogued component has a rule, and every interactive part shows focus', checkParts],
   ['every decoration slot the theme fills is a catalogued slot', checkSlots],
   ['body text meets 4.5:1 and large text and glyphs 3:1 on every surface token', checkContrast],
+  ['the go and stop buttons\' ink meets 4.5:1 on their rest and selected colours', checkFillContrast],
 ];
 
 const conformance = (entry) => {
@@ -354,7 +382,7 @@ const opt = (name, part) => byName(name).parts.find((p) => p.name === part);
 
 test('the catalogue declares the shared layout\'s components, their parts, states and slots, so every theme is held to them', () => {
   for (const name of ['ui-backdrop', 'ui-frame', 'ui-mode-entry', 'ui-option', 'ui-section-label', 'ui-key-hint', 'ui-chip', 'ui-list-row',
-    'ui-scene-panel', 'ui-button--danger', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-toast']) {
+    'ui-scene-panel', 'ui-button--danger', 'ui-button--go', 'ui-button--stop', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-toast']) {
     assert.equal(byName(name)?.kind, 'component', `${name} is catalogued`);
   }
   for (const name of ['ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list']) assert.equal(byName(name)?.kind, 'composition', `${name} is catalogued`);
@@ -385,6 +413,19 @@ test('the slot check passes the frame\'s window chrome and flags any other name'
   const sheet = (sel) => ({ sheet: parseCss(`${sel} { display: block; }`) });
   assert.deepEqual(checkSlots(sheet(':root[data-theme="x"] .ui-frame__chrome[data-slot="window-chrome"]')), []);
   assert.deepEqual(checkSlots(sheet(':root[data-theme="x"] [data-slot="title-bar"]')), [{ check: 'slot', subject: 'title-bar' }]);
+});
+
+test('the fill contrast check passes readable go and stop buttons and flags a faint ink', () => {
+  const scope = ':root[data-theme="x"]';
+  const themeOf = (goInk) => {
+    const sheet = parseCss(`${scope} { --ink: #16204a; --pale: #8fdca4; --faint: #7fbf90; }
+      ${scope} .ui-button--go, ${scope} .ui-button--stop { background: var(--pale); color: var(--ink); }
+      ${scope} .ui-button--go:focus { background: #5fd07e; color: ${goInk}; }
+      ${scope} .ui-button--stop:focus { background: #ff6b6b; color: #16204a; }`);
+    return { scope, sheet, scoped: sheet.rules.map((r) => ({ ...r, inner: r.selectors.filter((s) => s.startsWith(scope)).map((s) => s.slice(scope.length).trim()) })) };
+  };
+  assert.deepEqual(checkFillContrast(themeOf('var(--ink)')), []);
+  assert.deepEqual(checkFillContrast(themeOf('var(--faint)')), [{ check: 'contrast', subject: 'ui-button--go selected' }]);
 });
 
 // ---------- the required token set ----------

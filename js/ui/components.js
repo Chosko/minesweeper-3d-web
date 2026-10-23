@@ -560,15 +560,17 @@ export function setNote(el, text, { tone, icon } = {}) {
 }
 
 /**
- * A kit button: createButton(doc, { label, icon?, variant ('primary' | 'secondary' (default) |
- * 'quiet' | 'danger'), size ('sm' | 'lg'; none is md), iconOnly? }). The icon leads the label; an
- * icon-only button shows no text and is named by aria-label.
+ * A kit button: createButton(doc, { label, icon?, variant ('go' | 'stop' — the primary button in
+ * its green or red — | 'secondary' (default) | 'quiet' | 'danger'), size ('sm' | 'lg'; none is md),
+ * iconOnly? }). The icon leads the label; an icon-only button shows no text and is named by aria-label.
  */
 export function createButton(doc, { label, icon: name = null, variant = 'secondary', size = null, iconOnly = false }) {
   if (iconOnly && !label) throw new Error('an icon-only button needs a label for its name');
   const b = doc.createElement('button');
   b.type = 'button';
-  b.className = `ui-button ui-button--${variant}${size ? ` ui-button--${size}` : ''}`;
+  if (!['go', 'stop', 'secondary', 'quiet', 'danger'].includes(variant)) throw new Error(`a button: unknown variant "${variant}"`);
+  const colour = variant === 'go' || variant === 'stop' ? `ui-button--primary ui-button--${variant}` : `ui-button--${variant}`;
+  b.className = `ui-button ${colour}${size ? ` ui-button--${size}` : ''}`;
   if (iconOnly) b.setAttribute('aria-label', label);
   else b.append(label);
   if (name) setButtonIcon(b, name);

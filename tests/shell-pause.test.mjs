@@ -560,7 +560,7 @@ test('the pause card in the shared layout: the card and its settings in one colu
     'the Controls panel: its title over one binding per row');
   // The actions with their icons and the key hints of the keys that work on the card: Back (Esc) resumes, F2 restarts.
   const actions = card.slice(at('id="pause-actions"'), at('id="pause-confirm"'));
-  assert.match(actions, /<button id="p-resume" class="ui-button ui-button--primary" type="button" data-icon="play">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  assert.match(actions, /<button id="p-resume" class="ui-button ui-button--primary ui-button--go" type="button" data-icon="play">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
   assert.match(actions, /<button id="p-home" class="ui-button ui-button--secondary" type="button" data-icon="cube">Back to start<\/button>/);
   assert.match(actions, /<button id="p-restart" class="ui-button ui-button--secondary" type="button" data-icon="restart"><span data-label>Restart<\/span> <span class="ui-key-hint" data-action="restart" aria-hidden="true"><\/span><\/button>/);
   assert.match(actions, /<button id="p-menu" class="ui-button ui-button--secondary" type="button" data-icon="arrow-left">Main menu<\/button>/);
@@ -662,7 +662,7 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await ms(() => document.getElementById('pause-sub').textContent), 'No game in progress: the board is not started yet.');
     assert.equal(await visible('p-resume'), false, 'nothing to resume');
     assert.deepEqual(await ms(() => [...document.querySelectorAll('#pause-actions > button:not(.hidden)')].map((b) => b.id)), ['p-restart', 'p-menu'], 'Restart, then Main menu');
-    assert.equal(await ms(() => document.getElementById('p-restart').classList.contains('ui-button--primary')), true, 'Restart is the primary action');
+    assert.equal(await ms(() => ['ui-button--primary', 'ui-button--go'].every((c) => document.getElementById('p-restart').classList.contains(c))), true, 'Restart is the green primary action');
     assert.equal(await ms(() => document.querySelector('#p-restart [data-label]').textContent), 'Restart');
     assert.equal(await ms(() => document.activeElement?.id), 'p-restart', 'Restart takes the focus');
     await frames(3);

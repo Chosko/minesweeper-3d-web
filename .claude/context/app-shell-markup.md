@@ -63,7 +63,7 @@ bind.
     [settings-page.md](settings-page.md));
   - pause card `#pause-card` (`ui-screen--wide`, a `ui-columns--two`):
     a `ui-column` of the title block `#pause-head` (`#pause-title`,
-    `#pause-board`, `#pause-sub`), `#pause-actions` (primary first, each
+    `#pause-board`, `#pause-sub`), `#pause-actions` (the green primary first, each
     with its `data-icon`; `#p-home` "Back to start" only for a 3D game in
     play) and `#pause-confirm` (`#p-confirm-yes` a `ui-button--danger`,
     `#p-confirm-no`), then the Settings panel (Sound and invert Y as
@@ -109,7 +109,7 @@ bind.
     `#ctx-lost` (`#ctx-lost-btn` with the refresh icon, `#ctx-lost-menu`); the Learn 3D end card
     `#learn-end` (`#learn-end-title`, `#learn-end-line`,
     `#learn-end-primary` around `#learn-end-primary-label`, its icon and its
-    select key hint, `#learn-end-back` with the arrow-left icon);
+    confirm key hint, `#learn-end-back` with the arrow-left icon);
   - the messages: the toast `#toast` (a `ui-toast`, its text in
     `#toast-text`); the fatal card, the template `#fatal-card` (`.fatal`, a
     `ui-backdrop` holding a `role="alert"` message `ui-card`: its badge,

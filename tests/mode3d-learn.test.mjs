@@ -328,7 +328,7 @@ test('index.html holds the Learn 3D entry first on the 3D board choice, the read
   // As J-Ready-states draws it: the "Learn 3D" section label over the outcome, the line, then the large primary
   // action with its select key hint beside Back to board choice.
   assert.match(card, /<div class="ui-section-label"><span class="ui-section-label__text">Learn 3D<\/span><\/div>\s*<h2 class="ui-card__title" id="learn-end-title">/);
-  assert.match(card, /<button type="button" id="learn-end-primary" class="ui-button ui-button--primary ui-button--lg" data-icon="play"><span id="learn-end-primary-label">Play Cube Intro<\/span> <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
+  assert.match(card, /<button type="button" id="learn-end-primary" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-icon="play"><span id="learn-end-primary-label">Play Cube Intro<\/span> <span class="ui-key-hint" data-action="confirm" aria-hidden="true"><\/span><\/button>/);
   assert.match(card, /<button type="button" id="learn-end-back" class="ui-button ui-button--secondary" data-icon="arrow-left">Back to board choice<\/button>/, 'Back at the default size, with the arrow-left icon');
   assert.match(card, /<p class="ui-text" id="learn-end-line">/, 'the body text in ink');
 });
