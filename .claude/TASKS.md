@@ -1,14 +1,14 @@
 # Tasks
 
-Last task number: 285
+Last task number: 288
 
 ---
 
 ## 84. Electron main process: window, game protocol, window state and crash log
 
-Status: [STALE]
+Status: [MISSING]
 Target: claude
-Files: desktop/package.json, desktop/main.js, desktop/protocol.js, desktop/window-state.js, desktop/crash-log.js, desktop/closing.js, tests/desktop-main.test.mjs
+Files: desktop/package.json, desktop/main.js, desktop/protocol.js, desktop/window.js, desktop/window-state.js, desktop/crash-log.js, desktop/closing.js, tests/desktop-main.test.mjs
 Preconditions: none
 Feature: steam-desktop-host
 
@@ -16,7 +16,7 @@ Feature: steam-desktop-host
 
 ## 85. Steamworks capability adapter, unavailable implementation and the page bridge
 
-Status: [STALE]
+Status: [MISSING]
 Target: claude
 Files: desktop/adapter/interface.js, desktop/adapter/unavailable.js, desktop/preload.js, desktop/bridge.js, desktop/main.js, desktop/closing.js, tests/desktop-bridge.test.mjs
 Preconditions: 84
@@ -28,8 +28,8 @@ Feature: steam-desktop-host
 
 Status: [MISSING]
 Target: claude
-Files: js/platform/index.js, js/platform/capabilities.js, js/platform/bridge-client.js, js/shell/pause.js, js/main.js, desktop/closing.js, tests/platform-selection.test.mjs
-Preconditions: 85
+Files: js/platform/index.js, js/platform/capabilities.js, js/platform/bridge-client.js, js/platform/window-actions.js, js/shell/pause.js, js/main.js, desktop/closing.js, tests/platform-selection.test.mjs
+Preconditions: 85, 282
 Feature: steam-desktop-host
 
 ---
@@ -46,7 +46,7 @@ Feature: steam-desktop-host
 
 ## 88. Steamworks binding spike
 
-Status: [STALE]
+Status: [MISSING]
 Target: claude+human
 Files: desktop/spike/, desktop/package.json, .claude/domain/features/steam-desktop-host.md, .claude/domain/features/steam-leaderboards.md
 Preconditions: 85, 87
@@ -234,12 +234,12 @@ Feature: leaderboard-screen
 
 ---
 
-## 107. Leaderboards tab in Records and Quit in the main menu
+## 107. Leaderboards tab in Records and Quit in the title bar
 
-Status: [STALE]
+Status: [MISSING]
 Target: claude
-Files: js/records/screen.js, js/shell/menu.js, index.html, js/shell/router.js, tests/shell-menu.test.mjs, tests/records-screen.test.mjs
-Preconditions: 86, 104, 105, 165, 170
+Files: js/records/screen.js, js/platform/window-actions.js, js/shell/pause.js, index.html, js/shell/router.js, js/main.js, tests/shell-pause.test.mjs, tests/records-screen.test.mjs
+Preconditions: 86, 104, 105, 165, 170, 282
 Feature: leaderboards-menu-entry
 
 ---
@@ -248,7 +248,7 @@ Feature: leaderboards-menu-entry
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/records-screen-view.md, .claude/context/app-shell-menu.md, .claude/context/testing.md, README.md
+Files: .claude/context/records-screen-view.md, .claude/context/app-shell-pause.md, .claude/context/testing.md, README.md
 Preconditions: 107
 Feature: leaderboards-menu-entry
 
@@ -1551,20 +1551,20 @@ Feature: flat-grid-modes
 
 ## 268. Hexagon and Triangle modes with their board choice screens
 
-Status: [STALE]
+Status: [MISSING]
 Target: claude
 Files: js/main.js, js/shell/router.js, index.html, css/style.css, js/classic2d/board-choice.js, js/flat-modes.js, tests/shell-router.test.mjs, tests/components-menu-screens.test.mjs, tests/shell-daily.test.mjs
-Preconditions: 255, 256, 259, 260, 267
+Preconditions: 255, 256, 259, 260, 267, 284
 Feature: flat-grid-modes
 
 ---
 
 ## 269. Play in Hexagon and Triangle
 
-Status: [STALE]
+Status: [MISSING]
 Target: claude
 Files: js/main.js, js/classic2d/mode.js, js/classic2d/session.js, js/ui.js, js/shell/live-figures.js, js/shell/first-use.js, js/results/, tests/flat-modes-play.test.mjs, tests/results.test.mjs
-Preconditions: 264, 268
+Preconditions: 264, 268, 286
 Feature: flat-grid-modes
 
 ---
@@ -1641,20 +1641,20 @@ Feature: flat-grid-records-replays
 
 ## 277. Menu previews for Hexagon and Triangle
 
-Status: [STALE]
+Status: [MISSING]
 Target: claude
 Files: js/shell/menu-preview.js, js/shell/menu.js, js/main.js, tests/shell-menu.test.mjs, tests/components-menu-screens.test.mjs
-Preconditions: 264, 268
+Preconditions: 264, 268, 283
 Feature: flat-grid-menu-entries
 
 ---
 
 ## 278. Menu routes, last mode played and Daily for Hexagon and Triangle
 
-Status: [STALE]
+Status: [MISSING]
 Target: claude
 Files: js/shell/menu.js, js/shell/returning.js, js/shell/daily.js, js/main.js, tests/shell-menu.test.mjs, tests/shell-returning.test.mjs, tests/shell-daily.test.mjs
-Preconditions: 268
+Preconditions: 268, 283
 Feature: flat-grid-menu-entries
 
 ---
@@ -1726,5 +1726,35 @@ Target: claude
 Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-kit-layout.md, .claude/context/app-shell-menu.md, .claude/context/app-shell-menu-preview.md, .claude/context/app-shell-focus.md, .claude/context/app-shell-pause.md, .claude/context/app-shell-results-view.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/platform.md, .claude/context/records-screen-view.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/shared-screen-layout.md
 Preconditions: 281, 282, 283, 284
 Feature: shared-screen-layout
+
+---
+
+## 286. Classic 2D game window: title bar with Pause, mode in the footer, collapsed live figures
+
+Status: [MISSING]
+Target: claude
+Files: index.html, css/style.css, css/components.css, themes/joyful-tiles/theme.css, js/classic2d/mode.js, js/ui.js, js/ui/components.js, js/main.js, js/shell/live-figures.js, tests/classic2d-mode.test.mjs, tests/components.test.mjs, tests/live-figures.test.mjs
+Preconditions: 281, 282, 284
+Feature: in-game-layout
+
+---
+
+## 287. 3D game overlay without a title: floating Pause and live-figures toggle
+
+Status: [MISSING]
+Target: claude
+Files: index.html, css/style.css, css/components.css, themes/joyful-tiles/theme.css, js/ui.js, js/shell/mode-3d.js, js/mode3d/session.js, js/mode3d/learn.js, js/touch-3d.js, js/main.js, tests/shell-mode-3d.test.mjs, tests/components-game3d.test.mjs, tests/components-ready.test.mjs, tests/components.test.mjs
+Preconditions: 286
+Feature: in-game-layout
+
+---
+
+## 288. Update documentation for feature `in-game-layout`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/classic2d-mode.md, .claude/context/app-shell-2d.md, .claude/context/app-shell-hud.md, .claude/context/app-shell-ui.md, .claude/context/app-shell-3d.md, .claude/context/mode3d-learn.md, .claude/context/platform.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/in-game-layout.md
+Preconditions: 286, 287
+Feature: in-game-layout
 
 ---

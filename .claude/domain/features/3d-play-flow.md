@@ -25,11 +25,12 @@ In scope (m2-3d-joins):
 
 - Board choice: Learn 3D first, then the 3D presets
   (`shared-screen-layout` § Scope and non-goals, **3D presets**), named as
-  results and Records name them, each showing its name, size line, mine
-  density and the Last played mark, then Custom with the Random fill, then
+  results and Records name them, each showing its name, size line and mine
+  density, with no Last played mark — the last board played is selected
+  when the board choice opens —, then Custom with the Random fill, then
   *Insert Board Code*, and the no-guess switch, which says it keeps
-  separate records. The selected board's bests show beside
-  the options (`shared-screen-layout` § Scope and non-goals, *Board choice
+  separate records. The selected board's bests show in the board choice's
+  panel beside the options (`shared-screen-layout` § Scope and non-goals, *Board choice
   screens*). Cube Beginner's mine count is measured by
   `dev/measure-first-box-3d.mjs`: no-guess boards with the first click on
   the marked start cell, so that its first click opens about 60 % of the
@@ -95,9 +96,10 @@ behaviour.
 
 - **3D board choice.** The 3D menu's presets, custom fields, Random fill
   and no-guess switches. Each preset shows its name, size line, mine
-  density (mines ÷ cells as a whole percent, one decimal below 10 %) and the
-  Last played mark, as Classic 2D's board options do, and nothing from the
-  records. The selected board's bests show beside the options, composed as
+  density (mines ÷ cells as a whole percent, one decimal below 10 %), as
+  Classic 2D's board options do, with no Last played mark and nothing from
+  the records. The selected board's bests show in the board choice's panel
+  beside the options, composed as
   Classic 2D's (`shared-screen-layout` § Scope and non-goals, *Board
   choice screens*): they follow the no-guess switch that governs the
   selected board, since a board and its no-guess twin are separate records.

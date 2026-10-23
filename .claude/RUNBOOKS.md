@@ -1,6 +1,6 @@
 # Runbooks
 
-Last runbook number: 10
+Last runbook number: 11
 
 ---
 
@@ -21,5 +21,15 @@ File: .claude/runbooks/10-flat-grids-tasks-implementation.md
 Created: 2026-10-21
 Source: /runbook-create interview (runbook flat-grids-planning step 6)
 Steps: 7/33
+
+---
+
+## 11. design-catch-up-2026-10-23 — Implement the m2b-themes tasks of the 2026-10-23 design changelog catch-up
+
+Status: [PENDING]
+File: .claude/runbooks/11-design-catch-up-2026-10-23.md
+Created: 2026-10-23
+Source: /design-catch-up (design changelog entries 2026-10-23 13:13 to 18:08)
+Steps: 0/9
 
 ---

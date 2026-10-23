@@ -57,7 +57,8 @@ Done: 2026-10-11, commit `4132d08` (4 files, +85/-53).
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-23 (amend): task 84 was re-planned for the frameless, transparent desktop window: windowed by default, dragged by the game's title bar, sized by the page's content, with Fullscreen / Windowed and Minimise; it no longer remembers the window size. Exact looks: canvas https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC, J-Components *Window title bar*, J-C2D-xl.
 
 ```prompt
 /task-implement 84 --review
@@ -67,7 +68,8 @@ Context: none
 
 Depends on: 1
 
-Context: none
+Context:
+- 2026-10-23 (amend): task 85 was re-planned: the bridge gains the window actions (minimise, toggle fullscreen, set content size) and a fullscreen event.
 
 ```prompt
 /task-implement 85 --review --rounds 2
@@ -77,7 +79,8 @@ Context: none
 
 Depends on: 2
 
-Context: none
+Context:
+- 2026-10-23 (amend): task 86 was re-planned to drive the desktop window from the page (title bar drag region, Minimise, Fullscreen / Windowed, content size) and now waits on task 282, the m2b-themes title bar, which this runbook does not run.
 
 ```prompt
 /task-implement 86 --review --rounds 2
@@ -101,7 +104,8 @@ Depends on: 2, 4
 
 Needs: agent+human
 
-Context: none
+Context:
+- 2026-10-23 (amend): task 88 was re-planned: the overlay check now covers the frameless, transparent window, windowed and fullscreen.
 
 ```prompt
 /task-implement 88 --review
@@ -309,6 +313,7 @@ Depends on: 3, 21, 22
 
 Context:
 - Leaderboards is the Records screen's fourth tab, not a main-menu entry: it shows the rankings part of task 104 for the board Records shows, in place, inside Records; Quit is the main menu's final entry. Task 107 waits on tasks 165 and 170 (themes-tasks-implementation steps 53 and 59).
+- 2026-10-23 (amend): task 107 was re-planned: Quit is the title bar's button on every desktop window, not a main menu entry — it asks the leave-game confirmation only while a game is in progress and does nothing on the web; the task is now titled "Leaderboards tab in Records and Quit in the title bar" and waits on task 282 (m2b-themes title bar), which this runbook does not run.
 
 ```prompt
 /task-implement 107 --review

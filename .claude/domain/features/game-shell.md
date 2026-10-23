@@ -22,13 +22,15 @@ mode's front-end.
 In scope (m1-classic-2d):
 
 - The main menu's entries: the modes Classic 2D, Hexagon, Triangle,
-  Surface and 3D, then Daily, Records and Settings, then Quit, in the order
+  Surface and 3D, then Daily, Records and Settings, in the order
   and arrangement `shared-screen-layout` § Scope and non-goals, *Main
   menu*, gives them. Classic 2D opens its board choice; 3D opens the 3D
   board choice; Hexagon, Triangle and Surface each open the *Coming soon*
   page (the placeholder screen, Back returning to the menu) until their
   mode is built; Daily opens the Daily screen; Records opens the records
-  screen; Settings opens the Settings page; Quit is `leaderboards-menu-entry`'s.
+  screen; Settings opens the Settings page. Quit is no menu entry: it is a
+  button of the title bar on every desktop window (`shared-screen-layout`),
+  and what it does is `leaderboards-menu-entry`'s.
   In a browser without
   WebGL 2 the 3D entry is disabled, its line *Needs WebGL 2 — not available
   in this browser* under its label, no route
@@ -122,18 +124,18 @@ it generalises.
   resolves Back. Every screen change goes through it; no screen shows
   another directly.
 - **Main menu.** The entry list composed from `screen-components`, each entry
-  a route. The menu's scene panel previews the focused mode live, drawn by
-  that mode's renderer (`shared-screen-layout`). WebGL 2 is not a requirement of the shell: whether the
-  3D renderer could be created is the one availability flag every 3D-only
-  path reads. Without it the menu screens show a static background built
-  from the theme's tokens in place of the 3D preview, the 3D entry is
-  disabled with its reason, its "Last played" mark still showing and the
-  menu's default focus falling to the first enabled entry, and no
-  full-page "Cannot start" card shows — that card stays only for game files
-  that fail to load. The menu opens with the last mode played selected,
-  its entry carrying the Last played mark, and that mode's board choice
-  opens on its last board selected, so Enter and then *Play* replay it; with
-  no mode played yet, the first entry is selected.
+  a route; each mode's play tile shows its own preview
+  (`shared-screen-layout`). WebGL 2 is not a requirement of the shell:
+  whether the 3D renderer could be created is the one availability flag
+  every 3D-only path reads. Without it the screens that would show the 3D
+  scene show a static background built from the theme's tokens in its
+  place, the 3D tile is disabled with its reason and a locked preview, the
+  menu's default focus falls to the first enabled entry, and no full-page
+  "Cannot start" card shows — that card stays only for game files that
+  fail to load. The menu opens with the last mode played selected, with no
+  Last played mark, and that mode's board choice opens on its last board
+  selected, so Enter and then *Play* replay it; with no mode played yet,
+  the first entry is selected.
 - **Mode host.** A registry of mode front-ends behind one contract (see
   Interfaces). The shell knows modes only through it. Classic 2D implements
   it directly; the 3D mode implements it through an adapter that wraps the

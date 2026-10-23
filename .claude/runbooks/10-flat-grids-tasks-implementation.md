@@ -234,7 +234,8 @@ Context: none
 
 Depends on: 8, 9, 12, 13, 20
 
-Context: none
+Context:
+- 2026-10-23 (amend): task 268 was re-planned for the collapsible board choice panel (no Last played chip, Play-only foot, stored pin shared by every mode) and now waits on task 284, the m2b-themes Classic 2D panel, which this runbook does not run.
 
 ```prompt
 /task-implement 268 --review
@@ -244,7 +245,8 @@ Context: none
 
 Depends on: 17, 21
 
-Context: none
+Context:
+- 2026-10-23 (amend): task 269 was re-planned for the new in-game window (Pause in the title bar, mode in the footer, live figures hidden by default, icon-only Restart) and now waits on task 286, the m2b-themes Classic 2D window, which this runbook does not run.
 
 ```prompt
 /task-implement 269 --review
@@ -324,7 +326,8 @@ Context: none
 
 Depends on: 17, 21
 
-Context: none
+Context:
+- 2026-10-23 (amend): task 277 was re-planned: the Hexagon and Triangle play tiles show their own cropped centre-of-board previews, with no tag and no Last played chip; it now waits on task 283, the m2b-themes main menu, which this runbook does not run.
 
 ```prompt
 /task-implement 277 --review
@@ -334,7 +337,8 @@ Context: none
 
 Depends on: 21
 
-Context: none
+Context:
+- 2026-10-23 (amend): task 278 was re-planned: no Last played chip — only the menu's opening selection follows the last mode; it now waits on task 283 (m2b-themes main menu), which this runbook does not run.
 
 ```prompt
 /task-implement 278 --review
