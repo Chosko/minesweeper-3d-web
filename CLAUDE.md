@@ -1,6 +1,8 @@
 # Minesweeper 3D
 
 Interaction policy: unattended
+Parallel policy: 4
+Pipeline dashboard policy: on
 
 ## Navigation
 
