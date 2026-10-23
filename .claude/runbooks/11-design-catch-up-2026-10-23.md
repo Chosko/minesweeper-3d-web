@@ -16,7 +16,7 @@ Context: none
 
 Done: 2026-10-23, commit `b8f936f` (27 files, +397/-144). Decision: controller glyphs kept through a new `confirm` key-hint action in `js/settings/bindings.js`; `createButton` now takes `go` or `stop` and refuses a plain `primary`.
 
-## [~] 2. Implement task 282 — Window title bar and game logo on every screen
+## [x] 2. Implement task 282 — Window title bar and game logo on every screen
 
 Depends on: 1
 
@@ -27,11 +27,14 @@ Context:
 /task-implement 282 --review
 ```
 
-## [ ] 3. Implement task 283 — Main menu redesign: play tiles with their own previews
+Done: 2026-10-23, commit `c56346c` (26 files, +979/-395). Premise wrong: the platform layer had no capability flags; `capabilities` with `desktopHost: false` was added to `js/platform/index.js`.
+
+## [~] 3. Implement task 283 — Main menu redesign: play tiles with their own previews
 
 Depends on: 2
 
-Context: none
+Context:
+- 2026-10-23 (from step 2): the main menu now sits in a frame filling the page's height, named by the logo with no heading; the play-tile redesign is left to this task.
 
 ```prompt
 /task-implement 283 --review
@@ -51,7 +54,8 @@ Context: none
 
 Depends on: 1, 2, 4
 
-Context: none
+Context:
+- 2026-10-23 (from step 2): two stopgaps for this task to remove — the in-game title bar still holds Swap clicks and Pause, so at 1366 and 1024 wide the game window takes the bar's width (board kept at the start), and the window's body heading is visually hidden.
 
 ```prompt
 /task-implement 286 --review
@@ -71,7 +75,8 @@ Context: none
 
 Depends on: 1, 2, 3, 4
 
-Context: none
+Context:
+- 2026-10-23 (from step 2): several `.claude/context` files still describe the old large game title (`ui-wordmark`) and the old head layout.
 
 ```prompt
 /task-implement 285 --review
