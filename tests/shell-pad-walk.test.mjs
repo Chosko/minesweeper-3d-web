@@ -43,11 +43,11 @@ async function open(browser, base) {
     }), button);
     await frames(2);
   };
-  /** The focused control's name: its id, else its data-value / data-size / data-preset. */
+  /** The focused control's name: its id, else its data-value / data-size / data-preset / data-window. */
   const focused = () => ms(() => {
     const e = document.activeElement;
     if (!e || e === document.body) return null;
-    return e.id || e.dataset.value || e.dataset.size || e.dataset.preset || e.textContent.trim();
+    return e.id || e.dataset.value || e.dataset.size || e.dataset.preset || e.dataset.window || e.textContent.trim();
   });
   /** Press each direction in turn, returning where focus is after each press. */
   const walk = async (dirs) => {
@@ -58,7 +58,7 @@ async function open(browser, base) {
   return { page, errors, ms, frames, hold, tap, focused, walk };
 }
 
-test('[slow] in a browser, the D-pad walks every control of the 2D board choice and the 3D board choice alike', async (t) => {
+test('[slow] in a browser, the D-pad walks every control of the 2D board choice and the 3D board choice alike, the title bar\'s window buttons among them', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -74,6 +74,9 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
       ['intermediate', 'expert', 'custom', 'c2d-code-option', 'c2d-noguess', 'c2d-records', 'c2d-play', 'c2d-play'], 'no wrap past Play');
     assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up', 'up', 'up']),
       ['c2d-noguess', 'c2d-code-option', 'custom', 'expert', 'intermediate', 'beginner', 'c2d-choice-back', 'c2d-choice-back'], 'no wrap past Back');
+    // The title bar is a row: Right from Back walks Minimise, Fullscreen and Quit, and stops there; Left retraces it.
+    assert.deepEqual(await walk(['right', 'right', 'right', 'right', 'left', 'left', 'left', 'left']),
+      ['minimise', 'fullscreen', 'quit', 'quit', 'fullscreen', 'minimise', 'c2d-choice-back', 'c2d-choice-back'], 'the window buttons on the title bar\'s row');
     // A on Custom chooses it: its form joins the walk, Left / Right walk its row.
     await ms(() => document.querySelector('#c2d-choice [data-size="custom"]').focus());
     await tap(BTN.A);
@@ -85,7 +88,7 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
     assert.deepEqual(await walk(['down', 'down', 'down']), ['c2d-random', 'c2d-records', 'c2d-play']);
     // Every focusable control on the screen is reached by the D-pad alone.
     const all = await ms(() => [...document.querySelectorAll('#c2d-choice button:not(:disabled), #c2d-choice input')]
-      .filter((e) => e.getClientRects().length > 0).map((e) => e.id || e.dataset.size));
+      .filter((e) => e.getClientRects().length > 0).map((e) => e.id || e.dataset.size || e.dataset.window));
     const reached = new Set();
     const queue = ['beginner'];
     while (queue.length) {
@@ -93,7 +96,7 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
       if (reached.has(at)) continue;
       reached.add(at);
       for (const d of ['up', 'down', 'left', 'right']) {
-        await ms((i) => (document.getElementById(i) ?? document.querySelector(`#c2d-choice [data-size="${i}"]`)).focus(), at);
+        await ms((i) => (document.getElementById(i) ?? document.querySelector(`#c2d-choice :is([data-size="${i}"], [data-window="${i}"])`)).focus(), at);
         const [to] = await walk([d]);
         if (to && !reached.has(to)) queue.push(to);
       }
@@ -131,7 +134,7 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
     assert.deepEqual(await walk(['down', 'down', 'down']), ['c-random', 'bc-records', 'bc-play']);
     // Every focusable control on the screen is reached by the D-pad alone.
     const all3d = await ms(() => [...document.querySelectorAll('#board-choice button:not(:disabled), #board-choice input:not(:disabled)')]
-      .filter((e) => e.getClientRects().length > 0).map((e) => e.id || e.dataset.preset));
+      .filter((e) => e.getClientRects().length > 0).map((e) => e.id || e.dataset.preset || e.dataset.window));
     const reached3d = new Set();
     const queue3d = ['bc-learn'];
     while (queue3d.length) {
@@ -139,7 +142,7 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
       if (reached3d.has(at)) continue;
       reached3d.add(at);
       for (const d of ['up', 'down', 'left', 'right']) {
-        await ms((i) => (document.getElementById(i) ?? document.querySelector(`#board-choice [data-preset="${i}"]`)).focus(), at);
+        await ms((i) => (document.getElementById(i) ?? document.querySelector(`#board-choice :is([data-preset="${i}"], [data-window="${i}"])`)).focus(), at);
         const [to] = await walk([d]);
         if (to && !reached3d.has(to)) queue3d.push(to);
       }

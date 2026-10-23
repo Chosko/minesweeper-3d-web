@@ -960,19 +960,16 @@ test('index.html holds the Settings page in a screen frame on the backdrop, its 
   assert.match(read('js/ui.js'), /settingsPageHtml\(\)/);
 });
 
-test('Settings\' Back is the frame head\'s Main menu with its arrow and key hint, "Back" on a phone, in view while the body scrolls', () => {
+test('Settings\' Back is the title bar\'s arrow, named for where it goes, and its heading names the page, both in view while the body scrolls', () => {
   const page = between(INDEX, '<!-- Settings -->', '<!-- Records -->');
-  assert.match(page, /<div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
-    'one Back, at the start of the head, named for where it goes');
-  assert.ok(page.indexOf('id="settings-back"') < page.indexOf('id="settings-body"'), 'the head comes before the body');
+  assert.match(page, /<div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"><\/button><\/div>/,
+    'one Back, at the start of the title bar, its arrow alone, named for where it goes');
+  assert.match(page, /<div class="ui-frame__heading">\s*<h2 class="ui-frame__title" id="settings-title">Settings<\/h2>/, 'the page\'s name its heading');
+  assert.ok(page.indexOf('id="settings-back"') < page.indexOf('id="settings-title"') && page.indexOf('id="settings-title"') < page.indexOf('id="settings-body"'), 'the title bar, the heading, then the body');
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.doesNotMatch(css, /#settings-actions|#settings \{[^}]*scroll-padding/, 'no sticky row of its own: the frame keeps its head in view');
   for (const t of THEMES) assert.doesNotMatch(read(t.stylesheet), /#settings-actions/, `${t.id} adds no row either`);
-  assert.match(css, /#settings-back \[data-label="phone"\] \{ display: none; \}/, '"Main menu" on the wider windows');
-  const phone = css.slice(css.indexOf('@media (max-width: 719px) {', css.indexOf('#settings-frame')));
-  const block = phone.slice(0, phone.indexOf('\n}'));
-  assert.match(block, /#settings-back \[data-label="wide"\] \{ display: none; \}\s*#settings-back \[data-label="phone"\] \{ display: inline; \}/, '"Back" on a phone');
-  assert.match(read('js/ui.js'), /for \(const id of \[[^\]]*'settings'[^\]]*\]\) showKeyHints\(/, 'its key hint follows the active device');
+  assert.doesNotMatch(css, /#settings-back \[data-label/, 'one Back at every size');
 });
 
 test('the Settings frame takes each window step\'s canvas size and inset, its body\'s padding and gaps the step\'s', () => {
@@ -1403,16 +1400,19 @@ test('in a browser, the Settings page takes the canvas\'s frame and independent 
       assert.deepEqual(l.wide, [], `${width} × ${height}: nothing scrolls sideways`);
       assert.equal(l.scrolls, 'auto', `${width} × ${height}: the frame's body scrolls vertically`);
     }
-    // The largest window: everything fits without the body scrolling, the 3D bindings shown on each device.
+    // The largest window: the page never scrolls; under the heading the body fits every bindings list but the
+    // longest, 3D on the keyboard, which it scrolls to.
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.click('#set-bind-mode [data-value="3d"]');
-    for (const device of ['keyboard', 'controller', 'touch']) {
-      await page.click(`#set-bind-device [data-value="${device}"]`);
-      const fit = await page.evaluate(() => {
-        const body = document.getElementById('settings-body');
-        return { body: body.scrollHeight - body.clientHeight, page: document.documentElement.scrollHeight - document.documentElement.clientHeight };
-      });
-      assert.deepEqual(fit, { body: 0, page: 0 }, `1920 × 1080, 3D on ${device}: nothing scrolls`);
+    for (const mode of ['classic-2d', '3d']) {
+      await page.click(`#set-bind-mode [data-value="${mode}"]`);
+      for (const device of ['keyboard', 'controller', 'touch']) {
+        await page.click(`#set-bind-device [data-value="${device}"]`);
+        const fit = await page.evaluate(() => {
+          const body = document.getElementById('settings-body');
+          return { body: body.scrollHeight - body.clientHeight > 0, page: document.documentElement.scrollHeight - document.documentElement.clientHeight };
+        });
+        assert.deepEqual(fit, { body: mode === '3d' && device === 'keyboard', page: 0 }, `1920 × 1080, ${mode} on ${device}: ${mode === '3d' && device === 'keyboard' ? 'only the body scrolls' : 'nothing scrolls'}`);
+      }
     }
     // The rows, the theme cards and the Data panel as the canvas draws them.
     const parts = await page.evaluate(() => {
@@ -1471,10 +1471,9 @@ test('in a browser, the Settings page takes the canvas\'s frame and independent 
       const back = document.getElementById('settings-back');
       const csv = document.getElementById('set-export-csv').getBoundingClientRect();
       const json = document.getElementById('set-export-json').getBoundingClientRect();
-      const shown = [...back.querySelectorAll('[data-label]')].filter((e) => e.getClientRects().length > 0).map((e) => e.textContent);
-      return { back: shown.join(''), label: back.getAttribute('aria-label'), stacked: Math.abs(csv.left - json.left) <= 1 && json.top >= csv.bottom };
+      return { back: back.innerText.trim(), label: back.getAttribute('aria-label'), stacked: Math.abs(csv.left - json.left) <= 1 && json.top >= csv.bottom };
     });
-    assert.deepEqual(phone, { back: 'Back', label: 'Back to Main menu', stacked: true }, 'the phone\'s Back, and the exports one under the other');
+    assert.deepEqual(phone, { back: '', label: 'Back to Main menu', stacked: true }, 'the phone\'s Back its arrow alone, and the exports one under the other');
     assert.deepEqual((await layout()).wide, [], 'nothing overflows the screen');
     assert.deepEqual(errors, []);
   } finally {

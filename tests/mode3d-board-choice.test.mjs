@@ -378,17 +378,15 @@ const between = (src, start, end) => src.slice(src.indexOf(start), src.indexOf(e
 const unescape = (t) => t.replace(/&times;/g, '×').replace(/&middot;/g, '·').replace(/&ndash;/g, '–');
 const C2D = between(INDEX, '<section id="c2d-choice"', '<!-- Classic 2D board -->');
 
-test('index.html builds the 3D board choice from kit components, as the Classic 2D one: the title over a window, the options beside what the chosen one needs, a bottom bar', () => {
-  assert.match(BOARD, /^<section id="board-choice" class="overlay ui-backdrop hidden" aria-label="3D board choice">/);
-  assert.match(BOARD, /<h1 class="ui-wordmark" id="board-choice-wordmark" aria-label="Minesweeper 3D">/, 'the game\'s title, as on the menu');
-  assert.match(BOARD, /<section class="ui-frame" id="board-choice-frame" aria-labelledby="board-choice-title">/);
-  assert.match(BOARD, /<div class="ui-frame__start"><button type="button" id="board-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
-    'Back led by its arrow, named Back to Main menu, reading Main menu on a desktop and Back on a phone');
-  assert.match(BOARD, /<h2 class="ui-frame__title" id="board-choice-title">3D<\/h2>/);
+test('index.html builds the 3D board choice from kit components, as the Classic 2D one: a window under its title bar, the mode its heading, the options beside what the chosen one needs, a bottom bar', () => {
+  assert.match(BOARD, /^<section id="board-choice" class="overlay ui-backdrop hidden" aria-label="3D board choice">\s*<section class="ui-frame" id="board-choice-frame" aria-labelledby="board-choice-title">/, 'the window alone on the backdrop: no game title above it');
+  assert.match(BOARD, /<div class="ui-frame__start"><button type="button" id="board-choice-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"><\/button><\/div>\s*<h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"><\/h1>/,
+    'the title bar: Back its arrow alone, named Back to Main menu, then the logo');
+  assert.match(BOARD, /<div class="ui-frame__heading">\s*<h2 class="ui-frame__title" id="board-choice-title">3D<\/h2>\s*<div class="ui-frame__action"><\/div>/);
   // The Classic 2D composition: the same parts in the same order.
   const parts = (html, prefix) => [...html.matchAll(/class="(ui-[\w-]+(?: ui-[\w-]+)*)" id="([\w-]+)"/g)]
-    .map((m) => [m[1], m[2].replace(prefix, '')]).filter(([, id]) => /^(choice-(wordmark|frame|body|options|detail))$/.test(id));
-  assert.deepEqual(parts(BOARD, /^board-/), parts(C2D, /^c2d-/), 'the wordmark, the window, its body and its two columns, as Classic 2D\'s');
+    .map((m) => [m[1], m[2].replace(prefix, '')]).filter(([, id]) => /^(choice-(frame|title|body|options|detail))$/.test(id));
+  assert.deepEqual(parts(BOARD, /^board-/), parts(C2D, /^c2d-/), 'the window, its heading, its body and its two columns, as Classic 2D\'s');
 
   // Left: Board; Learn 3D, the four presets and Custom in one group with no group label; a divider; Insert Board Code.
   const left = between(BOARD, '<div class="ui-column" id="board-choice-options">', '<div class="ui-divider ui-divider--vertical"');
@@ -456,7 +454,7 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
   assert.match(panel, /^<div id="bc-code-panel" class="hidden" role="group" aria-labelledby="bc-code-title" data-code-panel>/);
   assert.match(panel, /<input id="bc-code" data-code-field class="ui-field__input" type="text"/);
   assert.ok(panel.includes(`<p id="bc-code-info" class="ui-text ui-text--muted" data-code-info>${CODE_PROMPT}</p>`));
-  assert.doesNotMatch(BOARD, /bc-code-play|Play this board|data-esc-hint/, 'the code is played with Play; Back carries its key hint');
+  assert.doesNotMatch(BOARD, /bc-code-play|Play this board|data-esc-hint/, 'the code is played with Play; no text Esc hint');
 
   // The bottom bar: the summary, Records and Play with its Enter hint.
   const foot = between(BOARD, '<footer class="ui-frame__foot ui-frame__foot--action">', '</footer>');
@@ -467,13 +465,11 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
   }
 });
 
-test('the shell stylesheet lays both board choices out alike: the wordmark pinned at the top, the window centred under it, the 3D one placed as the Classic 2D one, one column on a phone', () => {
+test('the shell stylesheet lays both board choices out alike: the window centred on the page, the 3D one placed as the Classic 2D one, one column on a phone', () => {
   // The rules themselves are pinned by tests/classic2d-mode.test.mjs; here, that both screens share them.
   const css = read('css/style.css');
   assert.match(css, /\n#c2d-choice, #board-choice, #daily \{ flex-direction: column; justify-content: flex-start;/);
-  assert.match(css, /\n#c2d-choice-top, #board-choice-top, #daily-top \{ position: absolute; top: 44px;/);
-  assert.match(css, /\n#c2d-choice::before, #board-choice::before, #daily::before \{ content: ""; flex: 1 1 0; min-height: 176px; \}/, 'the 3D window centres as the Classic 2D one');
-  assert.match(css, /\n#c2d-choice::after, #board-choice::after, #daily::after \{ content: ""; flex: 1 1 0;/);
+  assert.match(css, /\n#c2d-choice::before, #board-choice::before, #daily::before,\n#c2d-choice::after, #board-choice::after, #daily::after \{ content: ""; flex: 1 1 0; min-height: 40px; \}/, 'the 3D window centres as the Classic 2D one');
   assert.match(css, /\n#c2d-choice-frame, #board-choice-frame, #daily-frame \{ flex: 0 1 auto; width: 1120px; \}/);
   assert.match(css, /#custom > \.ui-row \{ display: grid; grid-template-columns: repeat\(4, minmax\(0, 1fr\)\); gap: 10px; \}/, 'the four fields fill one row');
   assert.doesNotMatch(css, /\n#board-choice-top \{|\n#board-choice::before \{/, 'no placement of its own');
@@ -778,7 +774,7 @@ test('in a browser, the 3D board choice: a click chooses, Play or Enter plays; L
     assert.equal(await text('bc-bests-title'), 'Cube Beginner · no-guess · your bests');
     assert.deepEqual(await tiles(), [['Time', '—', 'no best yet'], ['3BV/s', '—', 'no best yet'], ['Efficiency', '—', 'no best yet']]);
     assert.deepEqual(await panels(), only('bc-settings', 'bc-preset-settings', 'bc-bests'));
-    assert.equal(await ms(() => document.querySelector('#board-choice-back .ui-key-hint__key')?.textContent), 'Esc', 'Back carries its key hint');
+    assert.deepEqual(await ms(() => { const b = document.getElementById('board-choice-back'); return [b.innerText.trim(), b.getAttribute('aria-label'), b.getAttribute('title')]; }), ['', 'Back to Main menu', 'Back'], 'Back is the title bar\'s arrow alone, named, with its tooltip');
 
     // Learn 3D: only how 3D works and the note that it keeps no records.
     await page.click('#bc-learn');
@@ -874,7 +870,7 @@ test('in a browser, the 3D board choice at every supported window size: its wind
           const body = document.getElementById('board-choice-body');
           return {
             scroll: document.documentElement.scrollWidth, layer: document.getElementById('board-choice').scrollWidth,
-            frame: r('board-choice-frame'), title: r('board-choice-wordmark'), body: [body.scrollHeight, body.clientHeight, body.scrollWidth, body.clientWidth],
+            frame: r('board-choice-frame'), body: [body.scrollHeight, body.clientHeight, body.scrollWidth, body.clientWidth],
             bests: getComputedStyle(document.getElementById('bc-bests')).display, summary: getComputedStyle(document.getElementById('bc-summary')).display,
             play: r('bc-play'),
           };
@@ -883,13 +879,10 @@ test('in a browser, the 3D board choice at every supported window size: its wind
         assert.equal(Math.round(m.frame.width), frame, `${at}: the window's width`);
         assert.ok(m.frame.bottom <= height + 0.5 && m.play.bottom <= height, `${at} ${option}: the window and Play in the page`);
         if (width > 719) {
-          const band = width >= 1440 ? 176 : width >= 1200 ? 106 : 96;
+          const margin = width >= 1440 ? 40 : 24;
           const centred = Math.abs((m.frame.top + m.frame.bottom) / 2 - height / 2) <= 1;
-          assert.ok(m.frame.top >= m.title.bottom, `${at} ${option}: the window under the title`);
-          assert.ok(m.frame.top >= band - 0.5 && (centred || m.frame.top - band <= 0.5), `${at} ${option}: centred, or held at the band under the wordmark`);
-          if ([1920, 1366, 1024].includes(width)) assert.ok(Math.abs(m.frame.top - band) <= 0.5, `${at} ${option}: the canvas's window, its top at ${band}`);
+          assert.ok(m.frame.top >= margin - 0.5 && (centred || m.frame.top - margin <= 0.5), `${at} ${option}: centred, or held at the canvas's margin`);
         } else {
-          assert.equal(m.title.height, 0, 'no title on a phone');
           assert.equal(m.bests, 'none', 'no bests on a phone');
           assert.equal(m.summary, 'none');
           assert.ok(Math.abs(m.play.bottom - height) <= 24, 'Play pinned at the bottom');

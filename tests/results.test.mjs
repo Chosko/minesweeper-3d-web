@@ -1172,8 +1172,8 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     await page.click('#r-records');
     assert.equal(await mode(), 'records', 'the records screen');
     assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), 'Beginner · Bests', 'on this board');
-    assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('records-back'); return [b.hasAttribute('data-to-menu'), b.getAttribute('aria-label'), b.innerText.split('\n')[0].trim()]; }),
-      [false, 'Back', 'Back'], 'Records\' Back returns to the results, so it reads Back');
+    assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('records-back'); return [b.hasAttribute('data-to-menu'), b.getAttribute('aria-label')]; }),
+      [false, 'Back'], 'Records\' Back returns to the results, so it is named Back');
     assert.equal(await page.evaluate(() => document.querySelector('#rec-games .ui-stat__value').textContent), '1');
     // From the Records screen's library view: Watch on the kept replay, on the best and on the recent
     // game opens the viewer by id; Back returns to Records on the same board.

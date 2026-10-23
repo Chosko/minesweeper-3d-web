@@ -1,7 +1,8 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
 // value display and fill, the segmented choice's and the tabs' selection, the one selected control
 // under a moving mouse, the key hints, the figures panel's live part, the pager, the icon set with
-// the button's and the note's leading icon, the note's text, and the code chip. The logic is plain
+// the button's and the note's leading icon, the note's text, the game logo, the title bar's window
+// buttons, and the code chip. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
 
@@ -468,6 +469,9 @@ export const ICONS = Object.freeze({
   hand: icon(2.3, p('M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a6 6 0 0 1-4.6-2.2L3 16a1.6 1.6 0 0 1 2.4-2.1L8 16')),
   check: icon(3, p('M5 12l5 5 9-10')),
   close: icon(2.6, p('M6 6l12 12M18 6L6 18')),
+  minimise: icon(2.4, p('M6 17h12')),
+  fullscreen: icon(2.4, p('M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5')),
+  windowed: icon(2.4, p('M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5')),
   info: icon(2.3, ['circle', { cx: '12', cy: '12', r: '9' }], p('M12 11v6M12 7.5v.5')),
   warning: icon(2.3, p('M12 3l10 18H2z'), p('M12 10v5M12 18v.5')),
 });
@@ -575,6 +579,62 @@ export function createButton(doc, { label, icon: name = null, variant = 'seconda
   else b.append(label);
   if (name) setButtonIcon(b, name);
   return b;
+}
+
+// ---------------------------------------------------------------- the game logo
+
+/** The game logo's words, drawn letter by letter: each letter takes its game colour from the theme. */
+export const LOGO_WORDS = Object.freeze(['MINESWEEPER', '3D']);
+
+/**
+ * Draws the game logo into `logo` (a .ui-logo heading, named by its aria-label): one
+ * .ui-logo__word per word of LOGO_WORDS, hidden from assistive technology, each holding one
+ * .ui-logo__letter per letter. A logo already drawn is left as it is. Returns the logo.
+ */
+export function drawLogo(logo) {
+  if (logo.querySelector(':scope > .ui-logo__word')) return logo;
+  const doc = logo.ownerDocument;
+  for (const text of LOGO_WORDS) {
+    const word = doc.createElement('span');
+    word.className = 'ui-logo__word';
+    word.setAttribute('aria-hidden', 'true');
+    for (const ch of text) {
+      const letter = doc.createElement('span');
+      letter.className = 'ui-logo__letter';
+      letter.textContent = ch;
+      word.append(letter);
+    }
+    logo.append(word);
+  }
+  return logo;
+}
+
+/** Draws every `.ui-logo` under `root`. */
+export function applyLogos(root) {
+  for (const logo of root.querySelectorAll('.ui-logo')) drawLogo(logo);
+}
+
+// ---------------------------------------------------------------- the title bar's window buttons
+
+/** The title bar's window buttons, by their data-window name, in their order at the head's end. */
+export const WINDOW_BUTTONS = Object.freeze(['minimise', 'fullscreen', 'quit']);
+
+/**
+ * The title bar's window buttons (`[data-window]` under `root`): a press calls the desktop host's
+ * action of that name — actions.minimise, actions.fullscreen, actions.quit — when the platform
+ * layer's capability flags report the desktop host (capabilities.desktopHost), and with no host does
+ * nothing: no action, no message, no confirmation, no lock. One delegated listener on `root`.
+ * Returns the unbind.
+ */
+export function bindWindowButtons(root, { capabilities = {}, actions = {} } = {}) {
+  const onClick = (e) => {
+    const button = e.target?.closest?.('[data-window]');
+    if (!button || !capabilities.desktopHost) return;
+    const action = actions[button.getAttribute('data-window')];
+    if (typeof action === 'function') action(button);
+  };
+  root.addEventListener('click', onClick);
+  return () => root.removeEventListener('click', onClick);
 }
 
 // ---------------------------------------------------------------- the code chip

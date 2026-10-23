@@ -229,6 +229,25 @@ test('a focus move takes the spatial search\'s candidate when it finds one', () 
   assert.deepEqual(asked, ['down', 'left'], 'the spatial search is asked in the pressed direction');
 });
 
+test('inside a row (a window\'s title bar) Right / Left step along it in DOM order and stop at its ends; Down / Up stay spatial, and Up with nothing above enters it at its start', () => {
+  // the title bar: back, minimise, fullscreen, quit; the body's options below
+  const items = ['back', 'minimise', 'fullscreen', 'quit', 'opt1', 'opt2'];
+  const bar = new Set(['back', 'minimise', 'fullscreen', 'quit']);
+  const rowOf = (el) => (bar.has(el) ? 'head' : null);
+  const at = (map) => (dir) => map[dir] ?? null;
+  assert.equal(focusMove(items, 'back', 'right', { spatial: at({ right: 'opt1' }), rowOf }), 'minimise', 'Back to Minimise, whatever lies nearer below');
+  assert.equal(focusMove(items, 'minimise', 'right', { spatial: at({ right: 'opt2' }), rowOf }), 'fullscreen');
+  assert.equal(focusMove(items, 'fullscreen', 'right', { spatial: at({}), rowOf }), 'quit');
+  assert.equal(focusMove(items, 'quit', 'right', { spatial: at({ right: 'opt1' }), rowOf }), null, 'no move past the row\'s end');
+  assert.equal(focusMove(items, 'quit', 'left', { spatial: at({ left: 'opt2' }), rowOf }), 'fullscreen', 'Left retraces it');
+  assert.equal(focusMove(items, 'back', 'left', { spatial: at({ left: 'opt1' }), rowOf }), null, 'nor before its start');
+  assert.equal(focusMove(items, 'minimise', 'down', { spatial: at({ down: 'opt2' }), rowOf }), 'opt2', 'Down leaves the row spatially');
+  assert.equal(focusMove(items, 'opt1', 'right', { spatial: at({ right: 'opt2' }), rowOf }), 'opt2', 'outside the row the spatial pick wins');
+  assert.equal(focusMove(items, 'opt1', 'up', { spatial: at({}), rowOf }), 'back', 'Up with nothing above enters the row at its start, Back, not its last item');
+  assert.equal(focusMove(items, 'opt1', 'up', { spatial: at({ up: 'quit' }), rowOf }), 'quit', 'a spatial pick in the row stands');
+  assert.match(readFileSync(new URL('../js/main.js', import.meta.url), 'utf8'), /rowOf: \(el\) => el\.closest\('\.ui-frame__head'\),/, 'the shell\'s walk takes the title bar as a row');
+});
+
 test('inside a group (a table, a menu) Down / Up step through it in DOM order; Left / Right stay spatial', () => {
   // picker above two tables: t1 holds w1, w2; t2 holds p1 (Watch), q1 (Pin), p2, q2; Back below
   const items = ['picker', 'w1', 'w2', 'older', 'toggle', 'p1', 'q1', 'p2', 'q2', 'back'];
@@ -623,10 +642,12 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
     // choice at one of its options, in the placed columns (1280 px) and the laid-out ones (1920 px).
     const keyOf = () => page.evaluate(() => {
       const el = document.activeElement;
+      if (el.dataset.window) return `window|${el.dataset.window}`;
       return el.id || `${el.closest('[role="radiogroup"]').id}|${el.dataset.value}`;
     });
     const focusKey = (key) => page.evaluate((k) => {
       const [group, value] = k.split('|');
+      if (group === 'window') { document.querySelector(`#settings [data-window="${value}"]`).focus(); return; }
       (value === undefined ? document.getElementById(group) : document.querySelector(`#${group} [data-value="${value}"]`)).focus();
     }, key);
     for (const size of [{ width: 1280, height: 800 }, { width: 1920, height: 1080 }]) {
@@ -646,7 +667,7 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
       }
       const targets = await page.evaluate(() => [...document.querySelectorAll('#settings button, #settings input')]
         .filter((e) => !e.disabled && e.getBoundingClientRect().width > 0)
-        .map((e) => e.closest('[role="radiogroup"]')?.id ?? e.id));
+        .map((e) => (e.dataset.window ? 'window' : e.closest('[role="radiogroup"]')?.id ?? e.id)));
       const reached = new Set([...seen].map((k) => k.split('|')[0]));
       assert.deepEqual([...new Set(targets)].filter((id) => !reached.has(id)), [], `${size.width} px: the arrows reach every control`);
       for (const id of ['set-reset', 'set-bind-device', 'settings-back']) assert.ok(reached.has(id), `${size.width} px: #${id} reached`);

@@ -832,8 +832,9 @@ test('the viewer screen is kit markup: a screen frame holding the overlay, the b
     assert.match(html, new RegExp(`id="${id}"`), `#${id}`);
   }
   assert.match(html, /<section id="replay" class="ui-backdrop hidden" aria-label="Replay">\s*<section class="ui-frame" id="replay-frame" aria-labelledby="replay-title">/, 'a screen frame on the backdrop');
-  assert.match(html, /<header class="ui-frame__head">\s*<div class="ui-frame__start"><button type="button" id="rp-back" class="ui-button ui-button--secondary ui-button--sm" data-icon="arrow-left">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>\s*<h2 class="ui-frame__title" id="replay-title">Replay<\/h2>/,
-    'its head: Back with its arrow and its key hint, then the title');
+  assert.match(html, /<header class="ui-frame__head">\s*<div class="ui-frame__start"><button type="button" id="rp-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-icon="arrow-left" aria-label="Back" title="Back"><\/button><\/div>\s*<h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"><\/h1>/,
+    'its title bar: Back its arrow alone, named Back, then the logo');
+  assert.match(html, /<\/header>\s*<div class="ui-frame__heading">\s*<h2 class="ui-frame__title" id="replay-title">Replay<\/h2>/, 'the title its heading, over the body');
   assert.match(html, /<div class="ui-frame__body" id="replay-body">\s*<div class="ui-counter-strip replay-bar"[\s\S]*<div id="replay-main">\s*<div id="replay-stage">\s*<div id="replay-board"><\/div>\s*<section id="replay-message"[\s\S]*<section class="ui-figures" id="rp-figures"[\s\S]*<div id="replay-controls"/,
     'its body: the strip, the board area with the message over it and the figures panel beside it, then the controls');
   // The strip (J-Replay-xl): the clock, the mines left after a flag, 3BV and 3BV/s inline, no labels; the code chip after them.
@@ -934,7 +935,7 @@ test('[slow] in a browser, a recorded 2D replay plays from its fixture through t
     assert.equal(await page.evaluate(() => document.querySelectorAll('#rp-pauses .replay-pause').length), 0, 'no pauses, no marks');
     assert.equal(await text('rp-pauses-text'), '');
     assert.equal(await text('replay-title'), 'Replay · Classic 2D · Beginner');
-    assert.equal(await page.evaluate(() => document.querySelector('#rp-back .ui-key-hint__key')?.textContent), 'Esc', 'the frame\'s Back carries its key hint');
+    assert.deepEqual(await page.evaluate(() => [document.getElementById('rp-back').innerText.trim(), document.getElementById('rp-back').getAttribute('aria-label')]), ['', 'Back'], 'the title bar\'s Back, its arrow alone, named Back');
     assert.ok(await page.evaluate(() => document.querySelectorAll('#rp-keys .ui-key-hint').length) > 0, 'a 2D replay shows the key line too');
     assert.equal(await page.evaluate(() => document.getElementById('rp-keys').checkVisibility()), true);
     const placed = await page.evaluate(() => {
@@ -1107,10 +1108,11 @@ test('in a browser, the viewer is the canvas\'s at every supported window size w
     });
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
     // [width, height, the frame's rectangle (J-Replay-xl, -l, -m; null full-bleed), the code chip shows, the key line shows,
-    // the figures panel shows, the Intermediate board's tile (J-Replay-xl, -l, -m, -p; null the board area's to set), the files' place]
+    // the figures panel shows, the Intermediate board's tile it fits at under the heading (null the board area's to set),
+    // the files' place]
     for (const [width, height, rect, code, keys, figures, tile, files] of [
-      [1920, 1080, [140, 66, 1640, 940], true, true, true, 34, 'end'], [1366, 768, [32, 24, 1302, 712], true, true, true, 24, 'end'],
-      [1024, 768, [20, 16, 984, 728], false, true, false, 24, 'row'], [390, 844, null, false, false, false, 19, 'phone'], [844, 390, null, false, false, false, null, 'sideways']]) {
+      [1920, 1080, [140, 66, 1640, 940], true, true, true, 33, 'end'], [1366, 768, [32, 24, 1302, 712], true, true, true, 21, 'end'],
+      [1024, 768, [20, 16, 984, 728], false, true, false, 19, 'row'], [390, 844, null, false, false, false, 19, 'phone'], [844, 390, null, false, false, false, null, 'sideways']]) {
       await page.setViewportSize({ width, height });
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const got = await page.evaluate(() => {

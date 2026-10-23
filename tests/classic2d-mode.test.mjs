@@ -1175,14 +1175,12 @@ const between = (src, start, end) => src.slice(src.indexOf(start), src.indexOf(e
 const CHOICE = between(INDEX, '<section id="c2d-choice"', '<!-- Classic 2D board -->');
 const LAYER = between(INDEX, '<section id="c2d"', '<!-- In-game HUD -->');
 
-test('index.html builds the Classic 2D board choice from kit components: the title over a window, the options beside what the chosen one needs, a bottom bar', () => {
+test('index.html builds the Classic 2D board choice from kit components: a window under its title bar, the mode its heading, the options beside what the chosen one needs, a bottom bar', () => {
   assert.ok(CHOICE.length > 500, 'index.html has the Classic 2D board choice');
-  assert.match(CHOICE, /^<section id="c2d-choice" class="overlay ui-backdrop hidden" aria-label="Classic 2D board choice">/);
-  assert.match(CHOICE, /<h1 class="ui-wordmark" id="c2d-choice-wordmark" aria-label="Minesweeper 3D">/, 'the game\'s title, as on the menu');
-  assert.match(CHOICE, /<section class="ui-frame" id="c2d-choice-frame" aria-labelledby="c2d-choice-title">/);
-  assert.match(CHOICE, /<div class="ui-frame__start"><button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
-    'Back led by its arrow, named Back to Main menu, reading Main menu on a desktop and Back on a phone');
-  assert.match(CHOICE, /<h2 class="ui-frame__title" id="c2d-choice-title">Classic 2D<\/h2>/);
+  assert.match(CHOICE, /^<section id="c2d-choice" class="overlay ui-backdrop hidden" aria-label="Classic 2D board choice">\s*<section class="ui-frame" id="c2d-choice-frame" aria-labelledby="c2d-choice-title">/, 'the window alone on the backdrop: no game title above it');
+  assert.match(CHOICE, /<div class="ui-frame__start"><button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"><\/button><\/div>\s*<h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"><\/h1>/,
+    'the title bar: Back its arrow alone, named Back to Main menu, then the logo');
+  assert.match(CHOICE, /<div class="ui-frame__heading">\s*<h2 class="ui-frame__title" id="c2d-choice-title">Classic 2D<\/h2>\s*<div class="ui-frame__action"><\/div>\s*<\/div>/, 'the mode its heading, the panel toggle\'s slot at its right');
 
   // Left: Board, the presets and Custom, a divider, Insert Board Code with no icon.
   const left = between(CHOICE, '<div class="ui-column" id="c2d-choice-options">', '<div class="ui-divider ui-divider--vertical"');
@@ -1247,21 +1245,20 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   }
 });
 
-test('the shell stylesheet lays the board choice out: the wordmark pinned at the top, the window centred under it unless the page is too short, denser rows on the smaller desktops only, one column on a phone', () => {
+test('the shell stylesheet lays the board choice out: the window centred on the page, never nearer its edges than the canvas\'s margin, denser rows on the smaller desktops only, one column on a phone', () => {
   // The rules are the 3D board choice's too (tests/mode3d-board-choice.test.mjs).
   const css = read('css/style.css');
-  assert.match(css, /\n#c2d-choice-top, #board-choice-top, #daily-top \{ position: absolute; top: 44px;/, 'the wordmark pinned at the top');
-  assert.match(css, /\n#c2d-choice::before, #board-choice::before, #daily::before \{ content: ""; flex: 1 1 0; min-height: 176px; \}/, 'the space above the window grows with the page, never shorter than the wordmark\'s band');
-  assert.match(css, /\n#c2d-choice::after, #board-choice::after, #daily::after \{ content: ""; flex: 1 1 0; min-height: 14px; \}/, 'as much as the space below it');
+  assert.doesNotMatch(css, /#(c2d-choice|board-choice|daily)-top|wordmark/, 'no game title above the window');
+  assert.match(css, /\n#c2d-choice::before, #board-choice::before, #daily::before,\n#c2d-choice::after, #board-choice::after, #daily::after \{ content: ""; flex: 1 1 0; min-height: 40px; \}/, 'the space above the window as much as below it, 40 px at the least');
   assert.match(css, /\n#c2d-choice-frame, #board-choice-frame, #daily-frame \{ flex: 0 1 auto; width: 1120px; \}/);
-  assert.match(css, /@media \(max-width: 1439px\) \{\n  #c2d-choice-top, #board-choice-top, #daily-top \{ top: 26px; \}\n  #c2d-choice-wordmark, #board-choice-wordmark, #daily-wordmark \{ font-size: 58px; \}\n  #c2d-choice::before, #board-choice::before, #daily::before \{ min-height: 106px; \}\n  #c2d-choice-frame, #board-choice-frame, #daily-frame \{ width: 1080px; \}\n  #c2d-play, #bc-play \{ min-height: 54px; padding: 12px 22px; font-size: 21px; \}/,
-    'compact: the wordmark, the band above the window, the window and Play');
-  assert.match(css, /@media \(max-width: 1199px\) \{\n  #c2d-choice-top, #board-choice-top, #daily-top \{ top: 24px; \}\n  #c2d-choice-wordmark, #board-choice-wordmark, #daily-wordmark \{ font-size: 50px; \}\n  #c2d-choice::before, #board-choice::before, #daily::before \{ min-height: 96px; \}\n  #c2d-choice-frame, #board-choice-frame, #daily-frame \{ width: 984px; \}/);
+  assert.match(css, /@media \(max-width: 1439px\) \{\n  #c2d-choice-frame, #board-choice-frame, #daily-frame \{ width: 1080px; \}\n  #c2d-choice::before, #board-choice::before, #daily::before,\n  #c2d-choice::after, #board-choice::after, #daily::after \{ min-height: 24px; \}\n  #c2d-play, #bc-play \{ min-height: 54px; padding: 12px 22px; font-size: 21px; \}/,
+    'compact: the window, its 24 px margin and Play');
+  assert.match(css, /@media \(max-width: 1199px\) \{\n  #c2d-choice-frame, #board-choice-frame, #daily-frame \{ width: 984px; \}/);
   const dense = css.match(/@media \(min-width: 720px\) and \(max-width: 1439px\) \{\n([\s\S]*?)\n\}/)?.[1] ?? '';
   assert.match(dense, /#c2d-choice \.ui-option, #board-choice \.ui-option, #daily \.ui-option \{ min-height: 46px; padding: 6px 14px; \}/, 'the denser rows, never on a phone');
   assert.doesNotMatch(css, /@media \(max-width: 1439px\) \{[^}]*\.ui-option[^}]*min-height: 46px/, 'no dense rule reaching a phone');
   const phone = css.match(/@media \(max-width: 719px\) \{\n  #c2d-choice, #board-choice \{ padding: 0; \}\n([\s\S]*?)\n\}/)?.[1] ?? '';
-  assert.match(phone, /#c2d-choice-top, #board-choice-top, #c2d-bests, #bc-bests, #c2d-summary, #bc-summary,\n  #c2d-choice::before, #board-choice::before, #c2d-choice::after, #board-choice::after \{ display: none; \}/);
+  assert.match(phone, /#c2d-bests, #bc-bests, #c2d-summary, #bc-summary,\n  #c2d-choice::before, #board-choice::before, #c2d-choice::after, #board-choice::after \{ display: none; \}/);
   assert.match(phone, /#c2d-choice-body, #board-choice-body \{ display: flex; flex-direction: column; gap: 18px; padding: 16px 18px 112px; \}/, 'one column, its foot clear of the bar');
   assert.match(phone, /#c2d-choice-body > \.ui-divider--vertical, #board-choice-body > \.ui-divider--vertical \{ width: 100%; height: 1px; \}/, 'a rule between the options and the settings');
   assert.match(phone, /#c2d-choice \.ui-option, #board-choice \.ui-option \{ min-height: 56px; padding: 9px 14px; \}/);
@@ -1564,7 +1561,7 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
   }
 });
 
-test('in a browser, the board choice at every supported window size: its window\'s width, centred under the title, no horizontal scroll, the presets unscrolled at 768 px high, one column on a phone under Back and over the pinned bar', async (t) => {
+test('in a browser, the board choice at every supported window size: its window\'s width, centred on the page, no horizontal scroll, the presets unscrolled at 768 px high, one column on a phone under its title bar and over the pinned bar', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1585,9 +1582,10 @@ test('in a browser, the board choice at every supported window size: its window\
           const body = document.getElementById('c2d-choice-body');
           return {
             scroll: document.documentElement.scrollWidth, layer: document.getElementById('c2d-choice').scrollWidth,
-            frame: r('c2d-choice-frame'), title: r('c2d-choice-wordmark'), body: [body.scrollHeight, body.clientHeight, body.scrollWidth, body.clientWidth],
+            frame: r('c2d-choice-frame'), body: [body.scrollHeight, body.clientHeight, body.scrollWidth, body.clientWidth],
             bests: getComputedStyle(document.getElementById('c2d-bests')).display, summary: getComputedStyle(document.getElementById('c2d-summary')).display,
-            play: r('c2d-play'), back: r('c2d-choice-back'), backText: document.getElementById('c2d-choice-back').innerText.split('\n')[0],
+            play: r('c2d-play'), back: r('c2d-choice-back'), backText: document.getElementById('c2d-choice-back').innerText.trim(),
+            windowButtons: [...document.querySelectorAll('#c2d-choice-frame [data-window]')].map((b) => b.getBoundingClientRect().width),
             option: r('c2d-code-option'), rule: document.querySelector('#c2d-choice-body > .ui-divider--vertical').getBoundingClientRect(),
           };
         });
@@ -1595,21 +1593,19 @@ test('in a browser, the board choice at every supported window size: its window\
         assert.equal(Math.round(m.frame.width), frame, `${at}: the window's width`);
         assert.ok(m.frame.bottom <= height + 0.5 && m.play.bottom <= height, `${at} ${size}: the window and Play in the page`);
         if (width > 719) {
-          assert.ok(m.frame.top >= m.title.bottom, `${at} ${size}: the window under the title`);
-          const band = width >= 1440 ? 176 : width >= 1200 ? 106 : 96;
+          const margin = width >= 1440 ? 40 : 24;
           const centred = Math.abs((m.frame.top + m.frame.bottom) / 2 - height / 2) <= 1;
-          assert.ok(m.frame.top >= band - 0.5 && (centred || m.frame.top - band <= 0.5), `${at} ${size}: centred, or held at the band under the wordmark`);
+          assert.ok(m.frame.top >= margin - 0.5 && (centred || m.frame.top - margin <= 0.5), `${at} ${size}: centred, or held at the canvas's margin`);
           if (size !== 'custom' && height <= 900) assert.ok(m.body[0] <= m.body[1], `${at} ${size}: the window fits the page unscrolled`);
-          if (width === 1366 && size === 'intermediate') assert.ok(Math.abs(m.frame.height - 506) <= 2 && Math.abs(m.frame.top - 131) <= 1, `${at}: the canvas's window, 506 px tall at 131`);
-          assert.equal(m.backText, 'Main menu');
+          assert.equal(m.backText, '', 'Back shows its arrow alone');
+          assert.deepEqual(m.windowButtons.map(Math.round), [38, 38, 38], `${at}: Minimise, Fullscreen and Quit, 38 px squares`);
         } else {
-          assert.equal(m.title.height, 0, 'no title on a phone');
+          assert.deepEqual(m.windowButtons, [0, 0, 0], 'no window buttons on a phone');
           assert.equal(m.bests, 'none', 'no bests on a phone');
           assert.equal(m.summary, 'none');
           assert.ok(Math.abs(m.play.bottom - height) <= 24, 'Play pinned at the bottom');
           assert.equal(Math.round(m.play.height), 54, 'Play compact');
-          assert.equal(m.backText, 'Back', 'Back reads Back');
-          assert.ok(m.back.height >= 44, 'a 44 px Back');
+          assert.ok(Math.round(m.back.height) === 40 && Math.round(m.back.width) === 40, 'a 40 px Back, the canvas\'s');
           assert.ok(m.option.height >= 56, 'the options at least 56 px');
           assert.ok(m.rule.height === 1 && m.rule.width > 300, 'a rule between the options and the settings');
         }
@@ -1753,7 +1749,7 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
           });
           assert.ok(v.bottom <= v.controlsTop - 12, `${at}: the board area ends the body's gap above the controls`);
           const tile = Math.floor(Math.min(v.width / 30, v.height / 16));
-          assert.ok(tile >= 24, `${at}: Expert fits the viewer at ${tile} px, with no scrolling (J-Replay-m draws its 16 rows at 24 px)`);
+          assert.ok(tile >= 21, `${at}: Expert fits the viewer under its heading at ${tile} px, with no scrolling`);
         }
         assert.deepEqual(errors, [], `${at}: no page errors`);
         await page.close();
@@ -1822,12 +1818,12 @@ test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter 
         const area = document.getElementById('c2d-board').getBoundingClientRect();
         const line = (els) => { const r = els.map(rect); const top = Math.min(...r.map((x) => x.y)); return r.every((x) => x.y < top + Math.max(...r.map((y) => y.height)) - 1); };
         return {
-          head: line([document.getElementById('hud-swap'), document.getElementById('c2d-title'), document.getElementById('c2d-pause')]),
+          head: line([document.getElementById('hud-swap'), document.querySelector('#c2d-frame .ui-frame__logo'), document.getElementById('c2d-pause'), ...document.querySelectorAll('#c2d-frame [data-window]')]),
           strip: line([document.getElementById('c2d-mines-left'), document.getElementById('c2d-restart'), document.getElementById('c2d-time')]),
           stripBottom: rect(document.getElementById('c2d-counters')).bottom, boardTop: area.top + v.layout.viewY,
         };
       });
-      assert.ok(rows.head, `${at}: Swap clicks, the title and Pause on one line`);
+      assert.ok(rows.head, `${at}: Swap clicks, the logo, Pause and the window buttons on one line`);
       assert.ok(rows.strip, `${at}: mines left, Restart and the timer on one line`);
       assert.ok(rows.stripBottom <= rows.boardTop, `${at}: the strip above the board`);
       // The first click starts the game, so a restart asks first.

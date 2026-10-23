@@ -1691,7 +1691,7 @@ Feature: shared-screen-layout
 
 ## 282. Window title bar and game logo on every screen
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/components.css, css/style.css, themes/joyful-tiles/theme.css, js/ui/kit-catalogue.js, js/ui/components.js, js/ui.js, js/shell/router.js, js/shell/navigation.js, js/main.js, js/records/screen.js, dev/components.html, tests/components.test.mjs, tests/components-menu-screens.test.mjs, tests/theme-conformance.test.mjs, tests/shell-router.test.mjs, tests/shell-menu.test.mjs, tests/records-screen.test.mjs
 Preconditions: 281

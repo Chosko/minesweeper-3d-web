@@ -394,9 +394,12 @@ const MENU = section('<section id="menu"', '<!-- 3D board choice -->');
 const BOARD = section('<section id="board-choice"', '<!-- Coming soon -->');
 const SOON = section('<section id="coming-soon"', '<!-- Click to play -->');
 
-test('index.html: the wordmark, one mode list of the nine entries in their blocks, the preview panel, the key hints and the build label', () => {
-  assert.match(MENU, /<h1 class="ui-wordmark" id="menu-title" aria-label="Minesweeper 3D">(<span class="ui-wordmark__word" aria-hidden="true">[^<]+<\/span>){3}<\/h1>/);
-  assert.deepEqual([...MENU.matchAll(/ui-wordmark__word[^>]*>([^<]+)</g)].map((m) => m[1]), ['Mine', 'sweeper', '3D'], 'the title in one line');
+test('index.html: the menu\'s window under its title bar, one mode list of the nine entries in their blocks, the preview panel, the key hints and the build label', () => {
+  assert.match(MENU, /<section id="menu" class="overlay" aria-label="Main menu">\s*<section class="ui-frame" id="menu-frame" aria-labelledby="menu-title">/, 'the menu in its window, no game title above it');
+  assert.match(MENU, /<header class="ui-frame__head">\s*<div class="ui-frame__start"><\/div>\s*<h1 class="ui-logo ui-frame__logo" id="menu-title" aria-label="Minesweeper 3D"><\/h1>/, 'the title bar with no Back, the logo naming the menu');
+  assert.doesNotMatch(MENU, /ui-frame__heading/, 'no heading: the logo names it');
+  assert.match(MENU, /<div class="ui-frame__body" id="menu-body">\s*<div class="ui-mode-list" id="menu-entries"/, 'the entries in the body');
+  assert.match(MENU, /<footer class="ui-frame__foot" id="menu-foot">\s*<div class="ui-key-hints" id="menu-hints">/, 'the key hints and the build label in the foot');
   const entries = [...MENU.matchAll(/<button type="button" class="ui-mode-entry" id="menu-entry-([\w-]+)" data-entry="([\w-]+)"( data-block-start)?><span class="ui-mode-entry__icon" aria-hidden="true"><svg [^>]*>[\s\S]*?<\/svg><\/span><span class="ui-mode-entry__label">([^<]+)<\/span><span class="ui-chip hidden" data-last>Last played<\/span><span class="ui-mode-entry__lock" aria-hidden="true">/g)];
   assert.deepEqual(entries.map((m) => m[2]), MENU_ENTRIES.map((e) => e.id));
   assert.deepEqual(entries.map((m) => m[1]), MENU_ENTRIES.map((e) => e.id), 'each entry has its id');
@@ -422,11 +425,13 @@ test('the 3D board choice holds the presets and custom board, and a Back button'
   assert.match(BOARD, /id="board-choice-back"/);
 });
 
-test('the placeholder screen is a screen frame on the backdrop: Main menu with its key hint, the mode as title, the line and Back', () => {
+test('the placeholder screen is a screen frame on the backdrop: the title bar\'s Back, the mode as its heading, the line and Back', () => {
   assert.match(SOON, /<section id="coming-soon" class="overlay ui-backdrop hidden" aria-label="Coming soon">/);
   assert.match(SOON, /<section class="ui-frame" id="coming-soon-frame" aria-labelledby="coming-soon-title">\s*<div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"><\/div>/);
-  assert.match(SOON, /<div class="ui-frame__start"><button type="button" id="coming-soon-menu" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>\s*<h2 class="ui-frame__title" id="coming-soon-title">Coming soon<\/h2>\s*<div class="ui-frame__end"><\/div>/,
-    'the head: Main menu after the arrow icon, reading Back on a phone, the title the shell sets to the mode, no action');
+  assert.match(SOON, /<div class="ui-frame__start"><button type="button" id="coming-soon-menu" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"><\/button><\/div>\s*<h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"><\/h1>/,
+    'the title bar: Back its arrow alone, named Back to Main menu, then the logo');
+  assert.match(SOON, /<div class="ui-frame__heading">\s*<h2 class="ui-frame__title" id="coming-soon-title">Coming soon<\/h2>\s*<div class="ui-frame__action"><\/div>\s*<\/div>/,
+    'the heading: the title the shell sets to the mode, no action');
   assert.match(SOON, /<span id="coming-soon-badge" aria-hidden="true"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"\/><path d="M8 11V8a4 4 0 0 1 8 0v3"\/><\/svg><\/span>\s*<h3 class="ui-card__title" id="coming-soon-heading">Coming soon<\/h3>\s*<p id="coming-soon-text" class="ui-text">This part of the game is coming soon\.<\/p>/,
     'the lock badge above the title and its line');
   assert.match(SOON, /<button type="button" id="coming-soon-back" class="ui-button ui-button--secondary" data-icon="arrow-left">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
@@ -442,7 +447,6 @@ test('the placeholder screen is a screen frame on the backdrop: Main menu with i
   assert.match(css, /#coming-soon-panel \{[^}]*gap: 16px;/, 'the badge, title, line and Back 16 px apart');
   assert.match(css, /#coming-soon-badge \{[^}]*width: 120px;[^}]*height: 120px;/, 'the badge 120 px square');
   assert.match(css, /@media \(max-width: 719px\) \{[^@]*#coming-soon-frame \{[^}]*width: 100%;[^}]*height: 100%;[^}]*margin-top: 0;/, 'full-bleed on a phone');
-  assert.match(css, /@media \(max-width: 719px\) \{[^@]*#coming-soon-menu \[data-label="wide"\][^{]*\{ display: none; \}/, 'the head\'s Back reads Back on a phone');
   const theme = read('themes/joyful-tiles/theme.css');
   assert.match(theme, /:root\[data-theme="joyful-tiles"\] #coming-soon-badge \{[^}]*border-radius: 30px;[^}]*background: var\(--color-locked\);[^}]*box-shadow: 0 8px 0 var\(--color-locked-edge\);/,
     'the badge: radius 30, the locked fill and its drop');
@@ -485,7 +489,7 @@ test('without WebGL 2 the shell starts on one availability flag: no "Cannot star
 
 test('the catalogue documents the main menu, the 3D board choice and the placeholder', () => {
   const head = read('css/components.css').match(/^\/\*([\s\S]*?)\*\//)[1];
-  assert.match(head, /Main menu \(index\.html #menu\)[\s\S]*?ui-wordmark[\s\S]*?ui-mode-list[\s\S]*?ui-scene-panel[\s\S]*?ui-key-hints[\s\S]*?build label[\s\S]*?Default focus: the entry last opened[\s\S]*?last mode played/);
+  assert.match(head, /Main menu \(index\.html #menu\)[\s\S]*?ui-frame[\s\S]*?title bar with no Back[\s\S]*?ui-mode-list[\s\S]*?ui-scene-panel[\s\S]*?ui-key-hints[\s\S]*?build label[\s\S]*?Default focus: the entry last opened[\s\S]*?last mode played/);
   assert.match(head, /3D board choice \(index\.html #board-choice\)/);
   assert.match(head, /Coming soon \(index\.html #coming-soon\)/);
 });
@@ -670,22 +674,22 @@ test('in a browser, the menu shows the nine entries with the selected one\'s pre
   }
 });
 
-test('in a browser, the menu fits each window: the title\'s size, the entries as tall as the preview, the selected one taller, no sideways scroll; a phone shows no preview; the Classic 2D and Daily previews draw the whole board in its frame; a coarse pointer keeps every unselected entry a 44 px touch target; the key hints follow the active device', async (t) => {
+test('in a browser, the menu fits each window: its window filling the page\'s height under the title bar, the logo\'s size, the entries as tall as the preview, the selected one taller, no sideways scroll; a phone shows no preview; the Classic 2D and Daily previews draw the whole board in its frame; a coarse pointer keeps every unselected entry a 44 px touch target; the key hints follow the active device', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
-    // Per artboard (J-Menu-xl, -l, -m, -p): the title, the entries' column (left, width, top, height; a phone's from
-    // its sides), the preview's (left, width), the list's gap and its blocks' spacing, the selected entry's share,
-    // and the rest / selected label, icon box and glyph sizes.
+    // Per window size: the logo's size, the window's inset from the page's sides and top, the body's padding, the
+    // entries' and the preview's widths, the list's gap and its blocks' spacing, the selected entry's share, and the
+    // rest / selected label, icon box and glyph sizes.
     const SIZES = [
-      { width: 1920, height: 1080, title: 84, entries: [96, 590, 176, 804], preview: [860, 964], gap: 12, block: 36, grow: 1.45, label: [24, 30], icon: [42, 56], glyph: [24, 30], minSelected: 101 },
-      { width: 1366, height: 768, title: 58, entries: [56, 450, 118, 580], preview: [562, 748], gap: 10, block: 30, grow: 1.4, label: [22, 27], icon: [36, 48], glyph: [20, 26] },
-      { width: 1024, height: 768, title: 50, entries: [36, 390, 106, 596], preview: [462, 526], gap: 10, block: 30, grow: 1.4, label: [20, 25], icon: [36, 48], glyph: [20, 24] },
-      { width: 390, height: 844, title: 31, entries: [20, 350, 100], phone: true, gap: 10, block: 28, grow: 1.35, label: [19, 24], icon: [36, 48], glyph: [20, 24] },
+      { width: 1920, height: 1080, title: 44, inset: [96, 36], pad: 26, entries: 590, preview: 964, gap: 12, block: 36, grow: 1.45, label: [24, 30], icon: [42, 56], glyph: [24, 30], minSelected: 101 },
+      { width: 1366, height: 768, title: 36, inset: [56, 24], pad: 18, entries: 450, preview: 712, gap: 10, block: 30, grow: 1.4, label: [22, 27], icon: [36, 48], glyph: [20, 26] },
+      { width: 1024, height: 768, title: 36, inset: [36, 24], pad: 18, entries: 390, preview: 490, gap: 10, block: 30, grow: 1.4, label: [20, 25], icon: [36, 48], glyph: [20, 24] },
+      { width: 390, height: 844, title: 20, inset: [0, 0], pad: 20, entries: 350, phone: true, gap: 10, block: 28, grow: 1.35, label: [19, 24], icon: [36, 48], glyph: [20, 24] },
     ];
-    // [the Classic 2D preview's tile, the Daily preview's tile] per desktop artboard (J-Menu-xl, -l, -m; J-Menu-extra).
-    const PREVIEW = { 1920: [41, 27], 1366: [27, null], 1024: [23, null] };
+    // [the Classic 2D preview's tile, the Daily preview's tile] at each desktop size, the preview filling the window's body.
+    const PREVIEW = { 1920: [43, 27], 1366: [27, null], 1024: [21, null] };
     // Laid out at the window's size: two frames, then every animation that ends (the selected entry's move) done.
     const settle = async (page) => {
       await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
@@ -723,6 +727,9 @@ test('in a browser, the menu fits each window: the title\'s size, the entries as
           selected: sizes(buttons[0]), rest: sizes(buttons[1]),
           scroll: document.documentElement.scrollWidth,
           bottom: Math.max(...[...document.querySelectorAll('#menu-foot > :not(.hidden)')].map((e) => rect(e).bottom)),
+          frame: [rect(document.getElementById('menu-frame')).left, rect(document.getElementById('menu-frame')).top, rect(document.getElementById('menu-frame')).right, rect(document.getElementById('menu-frame')).bottom],
+          body: [rect(document.getElementById('menu-body')).left, rect(document.getElementById('menu-body')).top, rect(document.getElementById('menu-body')).right, rect(document.getElementById('menu-body')).bottom],
+          head: rect(document.querySelector('#menu-frame > .ui-frame__head')).bottom,
         };
       });
       const label = `${width} × ${height}`;
@@ -741,16 +748,17 @@ test('in a browser, the menu fits each window: the title\'s size, the entries as
       assert.deepEqual([m.rest.glyph, m.selected.glyph], size.glyph, `${label}: the glyphs at rest and selected`);
       assert.ok(m.scroll <= width, `${label}: no sideways scroll (${m.scroll})`);
       assert.ok(m.bottom <= height, `${label}: the foot inside the window (${m.bottom})`);
-      const [left, w, top, h] = size.entries;
-      assert.ok(Math.abs(m.list[0] - left) <= 1 && Math.abs(m.list[1] - w) <= 1 && Math.abs(m.list[2] - top) <= 1,
-        `${label}: the entries at x ${left}, ${w} px wide, from y ${top} (${m.list})`);
+      const [side, top] = size.inset;
+      assert.deepEqual(m.frame.map(Math.round), [side, top, width - side, height - top], `${label}: the window ${side} px in from the sides, filling the page's height ${top} px in`);
+      assert.ok(Math.abs(m.body[1] - m.head) <= 1, `${label}: the body under the title bar`);
+      assert.ok(Math.abs(m.list[0] - (m.body[0] + size.pad)) <= 1 && Math.abs(m.list[1] - size.entries) <= 1 && Math.abs(m.list[2] - (m.body[1] + size.pad)) <= 1,
+        `${label}: the entries ${size.entries} px wide at the body's padded corner (${m.list})`);
+      assert.ok(Math.abs(m.list[2] + m.list[3] - (m.body[3] - size.pad)) <= 1, `${label}: the entries fill the body down to its padding (${m.list})`);
       if (phone) {
         assert.equal(m.preview[1], 0, `${label}: no preview`);
-        assert.ok(Math.abs(m.list[2] + m.list[3] - (height - 96)) <= 1, `${label}: the entries fill the screen down to the foot (${m.list})`);
       } else {
-        assert.ok(Math.abs(m.list[3] - h) <= 1, `${label}: the entries ${h} px tall (${m.list[3]})`);
-        assert.ok(Math.abs(m.preview[0] - size.preview[0]) <= 1 && Math.abs(m.preview[1] - size.preview[1]) <= 1,
-          `${label}: the preview at x ${size.preview[0]}, ${size.preview[1]} px wide (${m.preview})`);
+        assert.ok(Math.abs(m.preview[0] + m.preview[1] - (m.body[2] - size.pad)) <= 1 && Math.abs(m.preview[1] - size.preview) <= 1,
+          `${label}: the preview ${size.preview} px wide at the body's right (${m.preview})`);
         assert.ok(Math.abs(m.list[2] - m.preview[2]) <= 1 && Math.abs(m.list[3] - m.preview[3]) <= 1, `${label}: the entries together as tall as the preview`);
         assert.ok(Math.abs(m.tops[8] + m.heights[8] - (m.preview[2] + m.preview[3])) <= 1, `${label}: the last entry ends with the preview`);
       }
@@ -848,7 +856,7 @@ async function openPlaceholder(page, base) {
   await page.waitForFunction(() => globalThis.__ms.state.mode === 'coming-soon');
 }
 
-test('in a browser, the placeholder as J-Other draws it: its window 4 px above centre, the lock badge over the title, both Backs after the arrow, full-bleed on a phone with the head\'s Back reading Back', async (t) => {
+test('in a browser, the placeholder as J-Other draws it: its window 4 px above centre, the lock badge over the title, both Backs after the arrow, full-bleed on a phone', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -882,7 +890,7 @@ test('in a browser, the placeholder as J-Other draws it: its window 4 px above c
             above: rect(badge).bottom <= rect($('coming-soon-heading')).top,
             gap: getComputedStyle($('coming-soon-panel')).rowGap,
             lead: [lead('coming-soon-menu'), lead('coming-soon-back')],
-            menu: { wide: shown(menu.querySelector('[data-label="wide"]')), phone: shown(menu.querySelector('[data-label="phone"]')), name: menu.getAttribute('aria-label') },
+            menu: { text: menu.innerText.trim(), name: menu.getAttribute('aria-label'), shown: shown(menu) },
           };
         });
         assert.deepEqual(m.frame, [top, left], `${label}: the window's top left`);
@@ -891,8 +899,8 @@ test('in a browser, the placeholder as J-Other draws it: its window 4 px above c
         assert.equal(m.glyph, 56, `${label}: the 56 px lock`);
         assert.ok(m.above, `${label}: the badge above Coming soon`);
         assert.equal(m.gap, '16px', `${label}: 16 px apart`);
-        assert.deepEqual(m.lead, [true, true], `${label}: Main menu and Back each start with the arrow`);
-        assert.deepEqual(m.menu, { wide: !phone, phone: !!phone, name: 'Back to Main menu' }, `${label}: the head's Back reads ${phone ? 'Back' : 'Main menu'}`);
+        assert.deepEqual(m.lead, [true, true], `${label}: the title bar's Back and the body's each start with the arrow`);
+        assert.deepEqual(m.menu, { text: '', name: 'Back to Main menu', shown: true }, `${label}: the title bar's Back, its arrow alone, named Back to Main menu`);
       } finally {
         await context.close();
       }
@@ -944,7 +952,7 @@ test('[slow] in a browser, the placeholder\'s window pops in and its layer fades
   }
 });
 
-test('in a browser, a window too short for the menu scrolls it, every entry still a finger tall', async (t) => {
+test('in a browser, a window too short for the menu scrolls its window\'s body, every entry still a finger tall', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -955,21 +963,22 @@ test('in a browser, a window too short for the menu scrolls it, every entry stil
       await page.goto(`${base}/index.html?still-backdrop`);
       await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
       const m = await page.evaluate(() => {
-        const menu = document.getElementById('menu');
+        const menu = document.getElementById('menu-body');
         return {
           overflow: getComputedStyle(menu).overflowY, scrollHeight: menu.scrollHeight, clientHeight: menu.clientHeight,
           heights: [...document.querySelectorAll('#menu-entries .ui-mode-entry')].map((b) => b.offsetHeight),
           sideways: menu.scrollWidth - menu.clientWidth,
+          page: document.getElementById('menu').scrollHeight - document.getElementById('menu').clientHeight,
         };
       });
       const label = `${width} × ${height}`;
-      assert.equal(m.overflow, 'auto', `${label}: the menu scrolls`);
+      assert.equal(m.overflow, 'auto', `${label}: the window's body scrolls`);
+      assert.equal(m.page, 0, `${label}: the window stays in the page, its title bar and foot in view`);
       assert.ok(m.scrollHeight > m.clientHeight, `${label}: its content is taller than the window (${m.scrollHeight} > ${m.clientHeight})`);
       assert.ok(m.heights.every((h) => h >= 44), `${label}: no entry squeezed below 44 px (${m.heights})`);
       assert.equal(m.sideways, 0, `${label}: no sideways scroll`);
-      await page.evaluate(() => { const menu = document.getElementById('menu'); menu.scrollTop = menu.scrollHeight; });
       const foot = await page.evaluate(() => document.getElementById('menu-build').getBoundingClientRect().bottom);
-      assert.ok(foot <= height, `${label}: scrolled down, the build label shows (${foot})`);
+      assert.ok(foot <= height, `${label}: the build label shows in the foot (${foot})`);
       await context.close();
     }
   } finally {
@@ -1478,10 +1487,10 @@ test('[slow] in a browser, a controller alone walks the menu, the 3D board choic
       assert.equal(await focused(), 'coming-soon-back', 'its Back button takes the focus');
       assert.equal(await page.evaluate(() => document.getElementById('coming-soon-text').textContent), 'This part of the game is coming soon.');
       assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#coming-soon .ui-key-hint')].map((h) => [h.classList.contains('ui-key-hint--pad'), h.textContent])),
-        [[true, 'B'], [true, 'B']], 'the head\'s Main menu and Back show the controller\'s Back button');
-      // The head's Main menu goes back too, as the frame's Back does on every screen.
+        [[true, 'B']], 'the body\'s Back shows the controller\'s Back button; the title bar\'s shows its arrow alone');
+      // The title bar's Back goes back too, as the frame's Back does on every screen.
       await press(PAD_BTN.UP);
-      assert.equal(await focused(), 'coming-soon-menu', 'the D-pad reaches the head\'s Main menu');
+      assert.equal(await focused(), 'coming-soon-menu', 'the D-pad reaches the title bar\'s Back');
       await press(PAD_BTN.DOWN);
       assert.equal(await focused(), 'coming-soon-back');
       await press(PAD_BTN.B);

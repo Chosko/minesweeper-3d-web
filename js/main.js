@@ -31,7 +31,7 @@ import { token, onThemeChange } from './tokens.js';
 import { themeApplier } from './themes/applier.js';
 import { bindBoardArt } from './shell/board-art.js';
 import { BOARD_ART } from './classic2d/tile-skin.js';
-import { storage, blobStore } from './platform/index.js';
+import { storage, blobStore, capabilities } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
 import { countedClicks } from './records/summary.js';
@@ -43,7 +43,7 @@ import { panelRect, mountBoardView, BOARD_FRAME } from './classic2d/board-view.j
 import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent, resultsEnter, LOOK_REFUSED } from './results/view.js';
-import { copyBoardCode, applyIcons } from './ui/components.js';
+import { copyBoardCode, applyIcons, applyLogos, bindWindowButtons } from './ui/components.js';
 import { DAILY_SCREEN, dailyModes, dailyPanel, createDailyBoards, bindDailyScreen, countedAttempt, dailyPreview } from './shell/daily.js';
 import { resolveCode, gameStart, freeStart, createChallengeLinks } from './shell/challenge.js';
 import { dailyGame, dateText } from './records/board-code.js';
@@ -423,8 +423,13 @@ const ui = new UI({
 });
 ui.setNoMouse(NO_MOUSE, COARSE_ONLY);
 ui.setTouch3D(COARSE_ONLY);
-// The icons the screens' markup names (data-icon), the Settings page's included once the UI built it.
+// The icons the screens' markup names (data-icon), the Settings page's included once the UI built it,
+// and the game logo of every title bar.
 applyIcons(document.body);
+applyLogos(document.body);
+// The title bar's window buttons: a desktop host the capability flags report gives them its actions;
+// the web build has none, so they press and do nothing.
+bindWindowButtons(document.body, { capabilities });
 
 // ---------- active device ----------
 // The controller while the last input came from a connected controller, else the keyboard and
@@ -1232,8 +1237,8 @@ const SETTINGS_EXPORT = bindExportActions({
 // Watch shows once the replay viewer's route is registered; Back closes a Delete confirmation, else
 // is the back stack. The Pinned first switch is remembered in its own document, loaded at start-up.
 const RECORDS_VIEW_PREFS = createRecordsViewPrefs({ storage });
-// Records' Back reads "Main menu" when it returns to the menu, else "Back" (the results screen, a replay's
-// way back): data-to-menu on #records-back picks the label.
+// Records' Back is named "Back to Main menu" when it returns to the menu, else "Back" (the results screen,
+// a replay's way back); data-to-menu on #records-back marks the first.
 function recordsBackLabel() {
   const back = document.getElementById('records-back');
   const toMenu = (SHELL.stack.at(-1) ?? 'menu') === 'menu';
@@ -1908,6 +1913,7 @@ function navStep(layer, items, cur, dir) {
       return d === 'down' ? inside[0] : inside[inside.length - 1];
     },
     groupOf: (el) => el.closest('table, .ui-menu'),
+    rowOf: (el) => el.closest('.ui-frame__head'),
   });
   const group = vertical && found?.getAttribute('role') === 'radio' ? found.closest('[role="radiogroup"]') : null;
   if (!group || group.contains(cur)) return found;

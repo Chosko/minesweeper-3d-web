@@ -261,7 +261,7 @@ test('a replay that could not be saved stays playable for the session', async ()
 
 test('the shell creates the replay library over platform storage and the blob store and hands it to the results flow', () => {
   const main = read('js/main.js');
-  assert.match(main, /import \{ storage, blobStore \} from '\.\/platform\/index\.js'/);
+  assert.match(main, /import \{ storage, blobStore(, [^}]*)? \} from '\.\/platform\/index\.js'/);
   assert.match(main, /const REPLAYS = createReplayLibrary\(\{\s*storage,\s*blobStore/);
   assert.match(main, /REPLAYS\.load\(\)/);
   const flowBlock = main.slice(main.indexOf('createResultsFlow({'), main.indexOf('});', main.indexOf('createResultsFlow({')));

@@ -6,8 +6,10 @@
 // (js/platform/memory-blob-store.js) when IndexedDB is unavailable or refuses to open.
 //
 // Exports `storage` and its methods `register`, `load`, `save`, `clear`, `available` — the interface
-// documented in js/platform/storage.js — and `blobStore`, the interface documented in
-// js/platform/blob-store.js.
+// documented in js/platform/storage.js —, `blobStore`, the interface documented in
+// js/platform/blob-store.js, and `capabilities`, the flags of what the host the page runs in offers:
+// `desktopHost`, whether a desktop host gives the title bar's window buttons their actions. The web
+// build has no host, so every flag is off.
 
 import { createStorage } from './storage.js';
 import { createBrowserBackend } from './browser-backend.js';
@@ -22,3 +24,5 @@ export const blobStore = createBlobStore({
   open: () => openIndexedDBBlobStore(),
   fallback: () => createMemoryBlobStore(),
 });
+
+export const capabilities = Object.freeze({ desktopHost: false });

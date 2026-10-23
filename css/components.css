@@ -51,7 +51,8 @@
    move focus as the D-pad does, except an arrow the focused control owns. The
    selected segmented option is the only option in the Tab order (arrow keys
    move the selection); controller navigation reaches every option.
-   Each Back that Esc triggers carries its back ui-key-hint inside it.
+   Each Back that Esc triggers carries its back ui-key-hint inside it,
+   but the title bar's, which shows its icon alone.
 
    ui-button--primary — the screen's main action, always in one of its two
    colours (the button colour rule):
@@ -112,7 +113,8 @@
    (ICONS in js/ui/components.js): arrow-left, play, pause, restart,
    refresh, skip-back, skip-forward, copy, link, chart, shuffle, grid,
    cube, film, trophy, eye, swap, speaker, camera, download, upload,
-   trash, pin, mouse, hand, check, close, info, warning. Each draws in
+   trash, pin, mouse, hand, check, close, minimise, fullscreen, windowed,
+   info, warning. Each draws in
    currentColor, so it takes the ink of the control around it.
      Element: <svg class="ui-icon" data-icon="<name>" aria-hidden="true"
                 focusable="false" viewBox="0 0 24 24" …>…</svg>
@@ -121,7 +123,8 @@
    A button's leading icon sits before its label, set off by the
    button's gap: 18px on sm and md buttons, 24px on ui-button--lg, 14px on
    a code chip's buttons. The label stays the button's name; an
-   icon-only button (the Records replays' delete) carries aria-label.
+   icon-only button (the Records replays' delete, the title bar's) carries
+   aria-label.
    In markup a button names its icon, applyIcons(root) draws it:
      <button type="button" class="ui-button ui-button--primary
        ui-button--go" data-icon="play">Play</button>
@@ -511,17 +514,24 @@
      touch-stick      the 3D touch stick (<div class="touch-stick">, its
                       .touch-stick__knob), aria-hidden.
 
-   ui-wordmark — the game's title in one line (the main menu, the board choices)
-     Element: <h1 class="ui-wordmark" aria-label="Minesweeper 3D">
-                <span class="ui-wordmark__word" aria-hidden="true">Mine</span>
-                <span class="ui-wordmark__word" aria-hidden="true">sweeper</span>
-                <span class="ui-wordmark__word" aria-hidden="true">3D</span>
+   ui-logo — the game logo, the straight one at rest: the title bar's
+   centre on every window
+     Element: <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D">
+                <span class="ui-logo__word" aria-hidden="true">
+                  <span class="ui-logo__letter">M</span> …
+                </span>
+                <span class="ui-logo__word" aria-hidden="true">…3D</span>
               </h1>
      Role:    heading (native)
      Name:    aria-label
-     Look:    the three words on one line, centred, in capitals, each in its
-              own accent; sized with the window — 84 px on the largest
-              desktop window, 50 px at 1024 × 768, 31 px on a phone.
+     Markup:  the heading alone; drawLogo(logo) and applyLogos(root)
+              (js/ui/components.js) draw its two words, MINESWEEPER and 3D,
+              letter by letter.
+     Look:    one line, centred: each letter of MINESWEEPER in a game colour
+              (blue, coral, teal, violet, green, orange, repeating), 3D in
+              yellow; a white outline and a short darker extrusion, sized
+              with the window-size steps the theme holds. Its bouncy version
+              (a game-start animation) is not built.
 
    ui-backdrop — the page behind a screen (Joyful tiles' dotted paper)
      Element: <div class="ui-backdrop"> holding the screen's ui-frame </div>
@@ -529,20 +539,54 @@
      Name:    none
      Layout:  fills its layer and centres the frame on it.
 
-   ui-frame — a screen's window: head, scrolling body, foot
+   ui-frame — a screen's window: the title bar, the heading, a scrolling
+   body and a foot
      Element: <section class="ui-frame" aria-labelledby="T">
                 <div class="ui-frame__chrome" data-slot="window-chrome"
                      aria-hidden="true"></div>
                 <header class="ui-frame__head">
-                  <div class="ui-frame__start">[Back: a ui-button--secondary with its back key hint]</div>
-                  <h2 class="ui-frame__title" id="T">…</h2>
-                  <div class="ui-frame__end">[the screen's action, or nothing]</div>
+                  <div class="ui-frame__start">[Back, or nothing]</div>
+                  <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+                  <div class="ui-frame__end">[an in-game action, or nothing]
+                    <div class="ui-frame__window" role="group" aria-label="Window">
+                      <button type="button" class="ui-button ui-button--secondary
+                        ui-button--sm" data-window="minimise" data-icon="minimise"
+                        aria-label="Minimise" title="Minimise"></button>
+                      <button type="button" class="ui-button ui-button--secondary
+                        ui-button--sm" data-window="fullscreen" data-icon="fullscreen"
+                        aria-label="Fullscreen" title="Fullscreen"></button>
+                      <button type="button" class="ui-button ui-button--primary
+                        ui-button--stop ui-button--sm" data-window="quit"
+                        data-icon="close" aria-label="Quit" title="Quit"></button>
+                    </div>
+                  </div>
                 </header>
+                <div class="ui-frame__heading">
+                  <h2 class="ui-frame__title" id="T">…</h2>
+                  <div class="ui-frame__action">[the screen's control, or nothing]</div>
+                </div>
                 <div class="ui-frame__body">…</div>
                 <footer class="ui-frame__foot">…</footer>
               </section>
      Role:    region (section named by its title)
      Name:    aria-labelledby → the title
+     Head:    the game's own title bar on every desktop window: Back at the
+              start as the arrow-left icon alone (a ui-button--secondary
+              ui-button--sm ui-frame__back, data-icon="arrow-left", named by
+              its aria-label with the "Back" tooltip; none on the main
+              menu), the game logo (ui-logo) in the centre, and at the end
+              the window buttons Minimise, Fullscreen / Windowed (the
+              windowed icon and name while the desktop window is full
+              screen) and Quit, the stop button — every one icon-only, with
+              its tooltip and its accessible name. On the web they press
+              like any button and do nothing (bindWindowButtons, js/ui/
+              components.js: a desktop host the platform layer's capability
+              flags report attaches their actions). On a phone the head
+              holds only Back and the logo.
+     Heading: the screen's name, the title, at the top of the window's body,
+              a control the screen puts beside its name at its right
+              (ui-frame__action); the main menu has none, the logo naming
+              it.
      Foot:    a status line, <p class="ui-frame__status">…</p>, or a bottom
               bar: <p class="ui-frame__summary">…</p> (the selection
               summarised) beside a ui-actions ui-actions--row; a frame
@@ -551,16 +595,20 @@
               <footer class="ui-frame__foot ui-frame__foot--action">: the
               surface under a ruled line, roomier, its summary larger; on a
               phone a bottom bar with its actions on the right. The game
-              window keeps the head-coloured foot.
-     Steps:   the head and foot, their titles and the small buttons follow
-              the window-size steps the theme holds — desktop, compact (the
-              smaller desktop windows) and touch (a phone upright or
-              sideways); the title stays on one line at every step.
-     Slot:    window-chrome, the frame's title-bar decoration (a title bar's
-              decorative buttons), hidden unless a theme draws it.
+              window keeps the head-coloured foot. The results card keeps a
+              head of its own: the outcome title between the trophy and the
+              rank (ui-frame__start, ui-frame__title, ui-frame__end).
+     Steps:   the head, the logo, the heading and foot, their titles and the
+              small buttons follow the window-size steps the theme holds —
+              desktop, compact (the smaller desktop windows) and touch (a
+              phone upright or sideways); the title stays on one line at
+              every step.
+     Slot:    window-chrome, the frame's title-bar decoration, hidden unless
+              a theme draws it.
      Layout:  sized to its content, never wider or taller than its
-              backdrop; head and foot stay in view while the body scrolls
-              vertically. The title sits centred between Back and the action.
+              backdrop; head, heading and foot stay in view while the body
+              scrolls vertically. The logo sits centred between Back and the
+              window buttons.
 
    ui-mode-entry — a main-menu entry: a mode, or a place (Records, Settings)
      Element: <div class="ui-mode-list" role="group" aria-label="…">
@@ -797,8 +845,10 @@
      ui-key-hints      a row of ui-key-hint.
      ui-list           the list of ui-list-row, its columns shared.
 
-   Main menu (index.html #menu): on the page's own backdrop, the
-     ui-wordmark at the top; under it, on the left, one ui-mode-list of the
+   Main menu (index.html #menu): on the page's own backdrop, a ui-frame
+     filling the window's height whose head is the title bar with no Back
+     and whose body has no heading, the logo naming it; in its body, on the
+     left, one ui-mode-list of the
      nine entries (Classic 2D, Hexagon, Triangle, Surface, 3D; Daily,
      Records, Settings; Quit — three blocks, data-block-start on the first
      entry of the second and third, no group labels; each a ui-mode-entry
@@ -807,10 +857,11 @@
      lock and any reason line), the entries together as tall as the
      preview; on the right the
      preview of the selected entry, a ui-scene-panel (a board drawn by its
-     board view, the 3D scene live, or a card); under them the
+     board view, the 3D scene live, or a card); the foot holds the
      ui-key-hints (move, select) and the build label, a ui-text--muted line,
      with the touch note on a coarse-only device, a ui-text line after its
-     hand ui-icon. On a phone: no preview, the entries filling the screen. Default focus: the entry last opened
+     hand ui-icon. On a phone: the frame full-bleed, no preview, the entries
+     filling the body. Default focus: the entry last opened
      from the menu when Back returns to it, else the last mode played's,
      else the first available entry.
    3D board choice (index.html #board-choice): the Classic 2D board choice's composition
@@ -831,8 +882,8 @@
      choice.
      Default focus: the last board choice, the chosen option.
    Daily (index.html #daily, filled by js/shell/daily.js): the Classic 2D
-     board choice's composition and placement (below), titled "Daily", Back
-     the same "Main menu" with its arrow-left icon and back key hint. On the
+     board choice's composition and placement (below), its heading
+     "Daily", its title bar's Back the same, named "Back to Main menu". On the
      left, a column of fixed width: a ui-section-label "Today" with the date
      as its aside, a ui-text--muted intro line and a ui-options of one
      ui-option per mode in menu order (data-mode: Classic 2D, Hexagon,
@@ -854,26 +905,24 @@
      kept replay) and Play (go, large, its play icon and confirm key
      hint; disabled once the day's attempt is used and on a mode that
      cannot be played). On the smaller desktop windows the columns and the
-     option rows are denser. On a phone: one full-bleed column, no
-     wordmark, no preview and no summary, a ui-divider between the mode
-     list and the detail, Back reading "Back" after its arrow, the code
-     chip full width, the bar pinned at the bottom. Default focus: the
+     option rows are denser. On a phone: one full-bleed column, no preview
+     and no summary, a ui-divider between the mode list and the detail,
+     the code chip full width, the bar pinned at the bottom. Default focus: the
      selected mode, the first playable one when the screen first shows.
    Coming soon (index.html #coming-soon): the one placeholder every menu
      entry whose screen has not landed routes to; ui-backdrop holding a
-     ui-frame (Main menu, a secondary button led by the arrow-left icon
-     with its back key hint, named "Back to Main menu"; the entry's name
-     as title) whose body centres the message card's column: the lock
+     ui-frame (the title bar's Back named "Back to Main menu"; the entry's
+     name as its heading) whose body centres the message card's column: the lock
      badge (#coming-soon-badge), a larger ui-card__title "Coming soon", a
      ui-text line and Back (secondary, led by the arrow-left icon, with
-     its back key hint). On a phone the frame is full-bleed and the head's
-     button reads "Back". Default focus: Back.
+     its back key hint). On a phone the frame is full-bleed. Default focus:
+     Back.
    Records (index.html #records): ui-backdrop holding a ui-frame inset on
-     it, not full height (Back, a secondary "Main menu" led by the
-     arrow-left icon with its back key hint, named "Back to Main menu" and
-     reading "Back" on a phone, returning one step; the title; at the end
-     the 2D | 3D switch as a ui-segmented choice (#records-mode, its two
-     options in the markup, data-value the mode)) whose body holds the
+     it, not full height (the title bar's Back, named "Back to Main menu"
+     when it returns to the menu and "Back" otherwise, returning one step;
+     the heading, with the 2D | 3D switch at its right as a ui-segmented
+     choice (#records-mode, its two options in the markup, data-value the
+     mode)) whose body holds the
      phone's full-width copy of the switch (#records-mode-touch, shown on a
      phone only, in place of the head's), the board picker as a
      ui-segmented choice on one line, scrolling sideways under a fade at
@@ -938,11 +987,11 @@
      dashes, its counters 0 or a dash, both charts their empty line, the
      recent games the board's empty line; only the win rate line goes.
      Below 1024 px the columns stack in that order and the body scrolls;
-     on a phone the frame is full-bleed, its head Back and the title.
+     on a phone the frame is full-bleed, its heading the title alone.
      Default focus: the chosen board in the picker.
    Settings page (index.html #settings): ui-backdrop holding a ui-frame
-     (Back, a secondary "Main menu" with its arrow icon and back key hint,
-     "Back" on a phone, and the title "Settings"; no foot) whose body,
+     (the title bar's Back, named "Back to Main menu", and the heading
+     "Settings"; no foot) whose body,
      generated by js/settings/page.js, is one ui-columns of ui-column, each
      an independent stack of ui-panel sections under their
      ui-section-label: Controls and Audio, Graphics and Theme, Bindings
@@ -970,11 +1019,10 @@
      stack.
      Default focus: the look sensitivity slider.
    Classic 2D board choice (index.html #c2d-choice): ui-backdrop holding
-     the ui-wordmark over a ui-frame (Back, a secondary "Main menu" led by
-     the arrow-left icon with its back key hint, named "Back to Main menu",
-     and the title "Classic 2D") sized to its content and centred on the
-     page, pushed below the wordmark only when the page is too short for
-     both. Its body: on the left a ui-section-label
+     a ui-frame (the title bar's Back, named "Back to Main menu", and the
+     heading "Classic 2D", its action the slot the board choice panel's
+     toggle takes) sized to its content and centred on the page. Its body:
+     on the left a ui-section-label
      (Board), a ui-options of the standard sizes and Custom (data-size;
      each a ui-option with its Last played ui-chip in its name line, the presets' size and
      density meta, Custom's meta its board once chosen), a ui-divider and a
@@ -1000,15 +1048,17 @@
      (go, large, its play icon and confirm key hint), disabled on a
      refused custom board and on an empty or refused code. On the smaller
      desktop windows the option rows, Play and the tiles are denser. On a
-     phone: one full-bleed column, no wordmark, no bests and no summary, a
-     ui-divider between the options and the settings, Back reading "Back"
-     after its arrow, Records and Play pinned at the bottom.
+     phone: one full-bleed column, no bests and no summary, a ui-divider
+     between the options and the settings, Records and Play pinned at the
+     bottom.
      Default focus: the last board choice, the chosen option.
    Classic 2D game window (index.html #c2d): ui-backdrop holding a
      ui-frame that hugs its content, centred above the HUD strip; its head
-     Swap clicks (a latched toggle, a fine pointer only), the title (the
-     mode and the board) and Pause (small secondary, with its back key hint).
-     Its body: the board column — a ui-counter-strip (mines left, Restart
+     the title bar — Swap clicks (a latched toggle, a fine pointer only) at
+     its start, the logo, then Pause (small secondary, with its back key
+     hint) before the window buttons —, its heading the title (the mode and
+     the board), there for assistive technology only. Its body: the board
+     column — a ui-counter-strip (mines left, Restart
      with its restart key hint, the timer) over the board area, sized to
      the board and left-aligned under the strip, where the board sits in
      its ui-board-frame with the first-use hint strip laid over it, and
@@ -1153,9 +1203,9 @@
      (css/style.css); no first-use toast draws over it.
    Replay viewer (index.html #replay, filled by js/replay/viewer.js): ui-backdrop
      holding a ui-frame (#replay-frame) inset on it at the canvas's size (a
-     step smaller on the smaller desktop windows): Back (a small secondary
-     button, its arrow-left icon and its back key hint) and the title,
-     "Replay · <mode> · <board>" once a replay is ready. Its body, top to
+     step smaller on the smaller desktop windows): the title bar's Back,
+     named "Back", and the heading, "Replay · <mode> · <board>" once a
+     replay is ready. Its body, top to
      bottom: a ui-counter-strip across it of the replay's figures inline and
      unlabelled (the clock in seconds to the thousandth, the mines left after
      its flag icon, "3BV solved / 3BV", "3BV/s") with a ui-code chip of the
@@ -1729,13 +1779,26 @@
 }
 .ui-frame__start, .ui-frame__end { display: flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
 .ui-frame__end { justify-content: flex-end; }
+.ui-frame__window { display: flex; align-items: center; }
+/* the title bar's icon-only buttons: square, the icon alone */
+:is(.ui-frame__back, .ui-frame__window > .ui-button) { padding: 0; aspect-ratio: 1; }
+/* the screen's name over the body, its control at the right */
+.ui-frame__heading {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.ui-frame__action { display: flex; align-items: center; gap: var(--space-2); flex: none; }
 .ui-frame__title {
   min-width: 0;
   margin: 0;
   overflow: hidden;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-heavy);
-  text-align: center;
+  text-align: start;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1910,20 +1973,17 @@
 .ui-controls__key { padding-inline-end: var(--space-3); }
 .ui-controls__action { text-align: end; }
 
-/* ---------- wordmark: one centred line, sized with the window ---------- */
-.ui-wordmark {
+/* ---------- game logo: its two words on one centred line, each letter a box of its own ---------- */
+.ui-logo {
   display: flex;
   justify-content: center;
-  gap: 0.28em;
+  align-items: center;
   margin: 0;
-  font-size: clamp(31px, min(3.8vw + 11px, 7.8vh), 84px);
-  font-weight: var(--font-weight-heavy);
   line-height: 1;
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
-@media (max-width: 719px) { .ui-wordmark { font-size: 31px; } }
+.ui-logo__word { display: flex; }
+.ui-logo__letter { display: inline-block; }
 
 /* ---------- scene panel: the stage fills it, the tag over its corner ---------- */
 .ui-scene-panel {
@@ -2140,6 +2200,8 @@
   .ui-table:not(:has(thead)) th[scope="row"] ~ td { text-align: left; }
   #pause { padding: 12px; }
   #pause-card { padding: 18px; }
+  /* a phone shows only Back and the logo in the title bar */
+  .ui-frame__window { display: none; }
 }
 
 /* ---------- focused state ----------

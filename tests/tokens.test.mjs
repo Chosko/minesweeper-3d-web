@@ -135,7 +135,8 @@ test('the theme declares every token the base stylesheets and the screens read',
   const sources = ['../css/components.css', '../css/style.css', '../themes/joyful-tiles/theme.css'];
   for (const f of sources) {
     for (const [, name] of strip(read(f)).matchAll(/var\((--[\w-]+)/g)) {
-      if (['--f', '--e', '--o'].includes(name)) continue; // the menu entries' own accent slots
+      // the menu entries' and the logo letters' own accent slots, and the logo's extrusion and outline by size step
+      if (['--f', '--e', '--o', '--logo-x', '--logo-y', '--logo-o'].includes(name)) continue;
       assert.ok(ALL.has(name), `${f} reads undeclared ${name}`);
     }
   }

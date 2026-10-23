@@ -545,7 +545,10 @@ test('the records screen is the kit composition: picker, figures, overall, note 
   const option = (value, on) => `<button type="button" class="ui-segmented__option" role="radio" aria-checked="${on}" data-value="${value}">`;
   const tab = (value, on) => `<button type="button" class="ui-tabs__tab" role="tab" aria-selected="${on}" id="records-tab-${value}" aria-controls="records-${value}" data-value="${value}">`;
   assert.deepEqual(buttons, [
-    '<button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-to-menu data-icon="arrow-left" aria-label="Back to Main menu">',
+    '<button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-to-menu data-icon="arrow-left" aria-label="Back to Main menu" title="Back">',
+    '<button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise">',
+    '<button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen">',
+    '<button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit">',
     option('classic-2d', true), option('3d', false),
     option('classic-2d', true), option('3d', false),
     '<button type="button" id="records-export-csv" class="ui-button ui-button--secondary ui-button--sm" data-icon="download">',
@@ -579,13 +582,13 @@ test('the board\'s figures sit on the frame under section labels: three plain st
   assert.match(read('themes/joyful-tiles/theme.css'), /#records-counters > \.ui-stat \{ border-radius: 12px; background: var\(--color-surface-sunk\); \}/, 'the counters sunk');
 });
 
-test('the screen is a frame: Back, the title and the switch in its head; the picker, then two columns — figures and export; history and the tabs — then the note', () => {
+test('the screen is a frame: Back in its title bar, the title and the switch its heading; the picker, then two columns — figures and export; history and the tabs — then the note', () => {
   const at = (needle) => { const i = RECORDS_HTML.indexOf(needle); assert.ok(i >= 0, needle); return i; };
   const head = RECORDS_HTML.slice(at('<header class="ui-frame__head">'), at('</header>'));
-  assert.ok(head.includes('id="records-back"') && head.includes('id="records-title"') && head.includes('id="records-mode"'), 'Back, the title and the switch in the head');
-  assert.match(head, /<div class="ui-frame__start"><button type="button" id="records-back"[^>]*><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
-    '"Main menu" led by its arrow, "Back" on a phone');
-  assert.match(head, /<div class="ui-frame__end">/);
+  const heading = RECORDS_HTML.slice(at('<div class="ui-frame__heading">'), at('<div class="ui-frame__body" id="records-body">'));
+  assert.ok(head.includes('id="records-back"') && heading.includes('id="records-title"') && heading.includes('id="records-mode"'), 'Back in the title bar; the title and the switch in the heading');
+  assert.match(head, /<div class="ui-frame__start"><button type="button" id="records-back"[^>]*><\/button><\/div>/, 'Back, its arrow alone');
+  assert.match(heading, /<h2 class="ui-frame__title" id="records-title">Records<\/h2>\s*<div class="ui-frame__action"><div data-pad-hinted>/, 'the switch at the heading\'s right, between its controller glyphs');
   assert.ok(at('id="records-picker"') > at('<div class="ui-frame__body" id="records-body">'), 'the picker in the body');
   assert.ok(at('id="records-picker"') < at('<div class="ui-columns ui-columns--two" id="records-columns">'), 'the picker above both columns');
   const cols = RECORDS_HTML.slice(at('<div class="ui-columns ui-columns--two" id="records-columns">'));
@@ -729,8 +732,8 @@ test('in a browser, the menu opens the records screen on the last board played, 
     const options = await page.evaluate(() => [...document.querySelectorAll('#records-picker .ui-segmented__option')].map((o) => o.textContent));
     assert.deepEqual(options, [...STANDARD_LABELS, DAILY_OPTION]);
     assert.equal(await active(), 'Beginner', 'the picker takes default focus');
-    assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('records-back'); return [b.hasAttribute('data-to-menu'), b.getAttribute('aria-label'), b.innerText.split('\n')[0].trim()]; }),
-      [true, 'Back to Main menu', 'Main menu'], 'opened from the menu, Back reads Main menu');
+    assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('records-back'); return [b.hasAttribute('data-to-menu'), b.getAttribute('aria-label'), b.innerText.trim()]; }),
+      [true, 'Back to Main menu', ''], 'opened from the menu, Back is named Back to Main menu, its arrow alone');
     assert.equal(await text('records-games-empty'), 'No games on this board yet.', 'the list says the board has no games');
     assert.equal(await visible('records-games-empty'), true);
     assert.deepEqual(await page.evaluate(() => ['records-filters', 'records-won-only', 'records-charts', 'records-averages', 'records-tabs']

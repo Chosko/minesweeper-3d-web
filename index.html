@@ -29,14 +29,17 @@
 
   <!-- Classic 2D board choice -->
   <section id="c2d-choice" class="overlay ui-backdrop hidden" aria-label="Classic 2D board choice">
-    <div id="c2d-choice-top"><h1 class="ui-wordmark" id="c2d-choice-wordmark" aria-label="Minesweeper 3D"><span class="ui-wordmark__word" aria-hidden="true">Mine</span><span class="ui-wordmark__word" aria-hidden="true">sweeper</span><span class="ui-wordmark__word" aria-hidden="true">3D</span></h1></div>
     <section class="ui-frame" id="c2d-choice-frame" aria-labelledby="c2d-choice-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start"><button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
-        <h2 class="ui-frame__title" id="c2d-choice-title">Classic 2D</h2>
-        <div class="ui-frame__end"></div>
+        <div class="ui-frame__start"><button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"></button></div>
+        <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
       </header>
+      <div class="ui-frame__heading">
+        <h2 class="ui-frame__title" id="c2d-choice-title">Classic 2D</h2>
+        <div class="ui-frame__action"></div>
+      </div>
       <div class="ui-frame__body" id="c2d-choice-body">
         <div class="ui-column" id="c2d-choice-options">
           <div class="ui-section-label"><h3 class="ui-section-label__text" id="c2d-board-label">Board</h3></div>
@@ -100,9 +103,12 @@
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
         <div class="ui-frame__start"><button type="button" id="hud-swap" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false" data-no-focus title="Swap left and right click on closed cells"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button></div>
-        <h2 class="ui-frame__title" id="c2d-title">Classic 2D</h2>
-        <div class="ui-frame__end"><button type="button" id="c2d-pause" class="ui-button ui-button--secondary ui-button--sm" aria-label="Pause game"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pause <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
+        <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><button type="button" id="c2d-pause" class="ui-button ui-button--secondary ui-button--sm" aria-label="Pause game"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pause <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
       </header>
+      <div class="ui-frame__heading">
+        <h2 class="ui-frame__title" id="c2d-title">Classic 2D</h2>
+      </div>
       <div class="ui-frame__body" id="c2d-body">
         <div id="c2d-main">
           <div class="ui-counter-strip" id="c2d-counters" role="group" aria-label="Counters">
@@ -229,36 +235,48 @@
 
   <!-- Main menu -->
   <section id="menu" class="overlay" aria-label="Main menu">
-    <h1 class="ui-wordmark" id="menu-title" aria-label="Minesweeper 3D"><span class="ui-wordmark__word" aria-hidden="true">Mine</span><span class="ui-wordmark__word" aria-hidden="true">sweeper</span><span class="ui-wordmark__word" aria-hidden="true">3D</span></h1>
-    <div class="ui-mode-list" id="menu-entries" role="group" aria-label="Main menu">
-      <button type="button" class="ui-mode-entry" id="menu-entry-classic-2d" data-entry="classic-2d"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></span><span class="ui-mode-entry__label">Classic 2D</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
-      <button type="button" class="ui-mode-entry" id="menu-entry-hexagon" data-entry="hexagon"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8.7 5v10L12 22l-8.7-5V7z"/><path d="M12 7l4.3 2.5v5L12 17l-4.3-2.5v-5z"/></svg></span><span class="ui-mode-entry__label">Hexagon</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
-      <button type="button" class="ui-mode-entry" id="menu-entry-triangle" data-entry="triangle"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 3l-4.75 8.5h9.5zM7.25 11.5L2.5 20M16.75 11.5L21.5 20M7.25 11.5L12 20l4.75-8.5"/></svg></span><span class="ui-mode-entry__label">Triangle</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
-      <button type="button" class="ui-mode-entry" id="menu-entry-surface" data-entry="surface"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 15c3-4 5-4 8 0s5 4 8 0 3-3 4-2"/><path d="M2 9c3-4 5-4 8 0s5 4 8 0 3-3 4-2"/></svg></span><span class="ui-mode-entry__label">Surface</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
-      <button type="button" class="ui-mode-entry" id="menu-entry-3d" data-entry="3d"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/></svg></span><span class="ui-mode-entry__label">3D</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
-      <button type="button" class="ui-mode-entry" id="menu-entry-daily" data-entry="daily" data-block-start><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/></svg></span><span class="ui-mode-entry__label">Daily</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
-      <button type="button" class="ui-mode-entry" id="menu-entry-records" data-entry="records"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span><span class="ui-mode-entry__label">Records</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
-      <button type="button" class="ui-mode-entry" id="menu-entry-settings" data-entry="settings"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></span><span class="ui-mode-entry__label">Settings</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
-      <button type="button" class="ui-mode-entry" id="menu-entry-quit" data-entry="quit" data-block-start><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg></span><span class="ui-mode-entry__label">Quit</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
-    </div>
-    <figure class="ui-scene-panel" id="menu-preview" aria-labelledby="menu-preview-tag"><div class="ui-scene-panel__stage" id="menu-preview-stage"></div><figcaption class="ui-scene-panel__tag" id="menu-preview-tag"></figcaption></figure>
-    <div id="menu-foot">
-      <div class="ui-key-hints" id="menu-hints"><span class="ui-key-hint" data-action="move"><span class="ui-key-hint__label">Move</span></span><span class="ui-key-hint" data-action="select"><span class="ui-key-hint__label">Select</span></span></div>
-      <p id="touch-note" class="ui-text hidden" data-icon="hand" role="alert"><span class="ui-note__text">Both modes play by touch: 3D and Classic 2D.</span></p>
-      <p class="ui-text ui-text--muted" id="menu-build"></p>
-    </div>
+    <section class="ui-frame" id="menu-frame" aria-labelledby="menu-title">
+      <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
+      <header class="ui-frame__head">
+        <div class="ui-frame__start"></div>
+        <h1 class="ui-logo ui-frame__logo" id="menu-title" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
+      </header>
+      <div class="ui-frame__body" id="menu-body">
+        <div class="ui-mode-list" id="menu-entries" role="group" aria-label="Main menu">
+          <button type="button" class="ui-mode-entry" id="menu-entry-classic-2d" data-entry="classic-2d"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></span><span class="ui-mode-entry__label">Classic 2D</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
+          <button type="button" class="ui-mode-entry" id="menu-entry-hexagon" data-entry="hexagon"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8.7 5v10L12 22l-8.7-5V7z"/><path d="M12 7l4.3 2.5v5L12 17l-4.3-2.5v-5z"/></svg></span><span class="ui-mode-entry__label">Hexagon</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
+          <button type="button" class="ui-mode-entry" id="menu-entry-triangle" data-entry="triangle"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 3l-4.75 8.5h9.5zM7.25 11.5L2.5 20M16.75 11.5L21.5 20M7.25 11.5L12 20l4.75-8.5"/></svg></span><span class="ui-mode-entry__label">Triangle</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
+          <button type="button" class="ui-mode-entry" id="menu-entry-surface" data-entry="surface"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 15c3-4 5-4 8 0s5 4 8 0 3-3 4-2"/><path d="M2 9c3-4 5-4 8 0s5 4 8 0 3-3 4-2"/></svg></span><span class="ui-mode-entry__label">Surface</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
+          <button type="button" class="ui-mode-entry" id="menu-entry-3d" data-entry="3d"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/></svg></span><span class="ui-mode-entry__label">3D</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
+          <button type="button" class="ui-mode-entry" id="menu-entry-daily" data-entry="daily" data-block-start><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/></svg></span><span class="ui-mode-entry__label">Daily</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
+          <button type="button" class="ui-mode-entry" id="menu-entry-records" data-entry="records"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span><span class="ui-mode-entry__label">Records</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
+          <button type="button" class="ui-mode-entry" id="menu-entry-settings" data-entry="settings"><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></span><span class="ui-mode-entry__label">Settings</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
+          <button type="button" class="ui-mode-entry" id="menu-entry-quit" data-entry="quit" data-block-start><span class="ui-mode-entry__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg></span><span class="ui-mode-entry__label">Quit</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-mode-entry__lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></button>
+        </div>
+        <figure class="ui-scene-panel" id="menu-preview" aria-labelledby="menu-preview-tag"><div class="ui-scene-panel__stage" id="menu-preview-stage"></div><figcaption class="ui-scene-panel__tag" id="menu-preview-tag"></figcaption></figure>
+      </div>
+      <footer class="ui-frame__foot" id="menu-foot">
+        <div class="ui-key-hints" id="menu-hints"><span class="ui-key-hint" data-action="move"><span class="ui-key-hint__label">Move</span></span><span class="ui-key-hint" data-action="select"><span class="ui-key-hint__label">Select</span></span></div>
+        <p id="touch-note" class="ui-text hidden" data-icon="hand" role="alert"><span class="ui-note__text">Both modes play by touch: 3D and Classic 2D.</span></p>
+        <p class="ui-text ui-text--muted" id="menu-build"></p>
+      </footer>
+    </section>
   </section>
 
   <!-- 3D board choice -->
   <section id="board-choice" class="overlay ui-backdrop hidden" aria-label="3D board choice">
-    <div id="board-choice-top"><h1 class="ui-wordmark" id="board-choice-wordmark" aria-label="Minesweeper 3D"><span class="ui-wordmark__word" aria-hidden="true">Mine</span><span class="ui-wordmark__word" aria-hidden="true">sweeper</span><span class="ui-wordmark__word" aria-hidden="true">3D</span></h1></div>
     <section class="ui-frame" id="board-choice-frame" aria-labelledby="board-choice-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start"><button type="button" id="board-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
-        <h2 class="ui-frame__title" id="board-choice-title">3D</h2>
-        <div class="ui-frame__end"></div>
+        <div class="ui-frame__start"><button type="button" id="board-choice-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"></button></div>
+        <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
       </header>
+      <div class="ui-frame__heading">
+        <h2 class="ui-frame__title" id="board-choice-title">3D</h2>
+        <div class="ui-frame__action"></div>
+      </div>
       <div class="ui-frame__body" id="board-choice-body">
         <div class="ui-column" id="board-choice-options">
           <div class="ui-section-label"><h3 class="ui-section-label__text" id="bc-board-label">Board</h3></div>
@@ -339,10 +357,14 @@
     <section class="ui-frame" id="coming-soon-frame" aria-labelledby="coming-soon-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start"><button type="button" id="coming-soon-menu" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
-        <h2 class="ui-frame__title" id="coming-soon-title">Coming soon</h2>
-        <div class="ui-frame__end"></div>
+        <div class="ui-frame__start"><button type="button" id="coming-soon-menu" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"></button></div>
+        <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
       </header>
+      <div class="ui-frame__heading">
+        <h2 class="ui-frame__title" id="coming-soon-title">Coming soon</h2>
+        <div class="ui-frame__action"></div>
+      </div>
       <div class="ui-frame__body" id="coming-soon-body">
         <div class="ui-column" id="coming-soon-panel">
           <span id="coming-soon-badge" aria-hidden="true"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
@@ -408,10 +430,14 @@
     <section class="ui-frame" id="settings-frame" aria-labelledby="settings-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
-        <h2 class="ui-frame__title" id="settings-title">Settings</h2>
-        <div class="ui-frame__end"></div>
+        <div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"></button></div>
+        <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
       </header>
+      <div class="ui-frame__heading">
+        <h2 class="ui-frame__title" id="settings-title">Settings</h2>
+        <div class="ui-frame__action"></div>
+      </div>
       <div class="ui-frame__body" id="settings-body"></div>
     </section>
   </section>
@@ -421,10 +447,14 @@
     <section class="ui-frame" id="records-frame" aria-labelledby="records-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start"><button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-to-menu data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
-        <h2 class="ui-frame__title" id="records-title">Records</h2>
-        <div class="ui-frame__end"><div data-pad-hinted><kbd data-pad-hint data-pad-glyph="lt" aria-hidden="true">LT</kbd><div id="records-mode" class="ui-segmented" role="radiogroup" aria-label="Mode"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="classic-2d">Classic 2D</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="3d">3D</button></div><kbd data-pad-hint data-pad-glyph="rt" aria-hidden="true">RT</kbd></div></div>
+        <div class="ui-frame__start"><button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-to-menu data-icon="arrow-left" aria-label="Back to Main menu" title="Back"></button></div>
+        <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
       </header>
+      <div class="ui-frame__heading">
+        <h2 class="ui-frame__title" id="records-title">Records</h2>
+        <div class="ui-frame__action"><div data-pad-hinted><kbd data-pad-hint data-pad-glyph="lt" aria-hidden="true">LT</kbd><div id="records-mode" class="ui-segmented" role="radiogroup" aria-label="Mode"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="classic-2d">Classic 2D</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="3d">3D</button></div><kbd data-pad-hint data-pad-glyph="rt" aria-hidden="true">RT</kbd></div></div>
+      </div>
       <div class="ui-frame__body" id="records-body">
         <div id="records-mode-touch" class="ui-segmented" role="radiogroup" aria-label="Mode"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="classic-2d">Classic 2D</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="3d">3D</button></div>
         <div data-pad-hinted id="records-board-picker"><kbd data-pad-hint data-pad-glyph="lb" aria-hidden="true">LB</kbd><div id="records-picker-clip"><div id="records-picker-scroll"><div id="records-picker" class="ui-segmented" role="radiogroup" aria-label="Board"></div></div></div><kbd data-pad-hint data-pad-glyph="rb" aria-hidden="true">RB</kbd></div>
@@ -530,10 +560,14 @@
     <section class="ui-frame" id="replay-frame" aria-labelledby="replay-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start"><button type="button" id="rp-back" class="ui-button ui-button--secondary ui-button--sm" data-icon="arrow-left">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
-        <h2 class="ui-frame__title" id="replay-title">Replay</h2>
-        <div class="ui-frame__end"></div>
+        <div class="ui-frame__start"><button type="button" id="rp-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-icon="arrow-left" aria-label="Back" title="Back"></button></div>
+        <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
       </header>
+      <div class="ui-frame__heading">
+        <h2 class="ui-frame__title" id="replay-title">Replay</h2>
+        <div class="ui-frame__action"></div>
+      </div>
       <div class="ui-frame__body" id="replay-body">
         <div class="ui-counter-strip replay-bar" role="group" aria-label="Replay">
           <div class="replay-figure replay-figure--clock" role="group" aria-label="Time"><span id="rp-clock">00.000</span></div>
@@ -661,14 +695,17 @@
 
   <!-- Daily -->
   <section id="daily" class="overlay ui-backdrop hidden" aria-label="Daily">
-    <div id="daily-top"><h1 class="ui-wordmark" id="daily-wordmark" aria-label="Minesweeper 3D"><span class="ui-wordmark__word" aria-hidden="true">Mine</span><span class="ui-wordmark__word" aria-hidden="true">sweeper</span><span class="ui-wordmark__word" aria-hidden="true">3D</span></h1></div>
     <section class="ui-frame" id="daily-frame" aria-labelledby="daily-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start"><button type="button" id="daily-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
-        <h2 class="ui-frame__title" id="daily-title">Daily</h2>
-        <div class="ui-frame__end"></div>
+        <div class="ui-frame__start"><button type="button" id="daily-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"></button></div>
+        <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
       </header>
+      <div class="ui-frame__heading">
+        <h2 class="ui-frame__title" id="daily-title">Daily</h2>
+        <div class="ui-frame__action"></div>
+      </div>
       <div class="ui-frame__body" id="daily-body">
         <div class="ui-column" id="daily-modes">
           <div class="ui-section-label"><h3 class="ui-section-label__text" id="daily-today">Today</h3><span class="ui-section-label__aside" id="daily-date" data-date></span></div>

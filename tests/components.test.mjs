@@ -9,7 +9,7 @@ import {
   bindSlider, bindSliderFill, sliderFill, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
   boardLink, copyBoardCode, createCodeChip, bindCodeChip, COPY_FALLBACK, COPIED, bindSelectOnHover, SELECT_ON_HOVER,
   bindFiguresLive, LIVE_FIGURES_INTERVAL, bindFigures, ICONS, iconMarkup, createIcon, setButtonIcon, createButton, applyIcons,
-  setNote, NOTE_TONES,
+  setNote, NOTE_TONES, LOGO_WORDS, drawLogo, applyLogos, WINDOW_BUTTONS, bindWindowButtons,
 } from '../js/ui/components.js';
 import { KIT_CATALOGUE, REQUIRED_TOKENS } from '../js/ui/kit-catalogue.js';
 import { KEY_HINTS, keyHintKeys, reminderKeys } from '../js/settings/bindings.js';
@@ -66,7 +66,7 @@ const COMPONENTS = {
   'ui-chip': { interactive: false },
   'ui-list-row': { interactive: false },
   'ui-scene-panel': { interactive: false },
-  'ui-wordmark': { interactive: false },
+  'ui-logo': { interactive: false },
   'ui-divider': { interactive: false },
   'ui-board-frame': { interactive: false },
   'ui-tabs': { interactive: true, control: '.ui-tabs__tab' },
@@ -892,13 +892,13 @@ test('the main menu, the 3D board choice and the pause card are built only from 
     const [root, ...inner] = tags(html);
     assert.deepEqual(classesOf(root).filter((c) => c !== 'hidden'), name === 'board-choice' ? ['overlay', 'ui-backdrop'] : ['overlay'], `#${name} is a shell overlay layer`);
     if (name === 'board-choice') {
-      // The board choice sits on the page's backdrop: the wordmark over a screen frame, no card.
-      for (const cls of ['ui-wordmark', 'ui-frame', 'ui-option', 'ui-key-hint']) assert.ok(inner.some((t) => classesOf(t).includes(cls)), `#${name} uses ${cls}`);
+      // The board choice sits on the page's backdrop: a screen frame under its title bar, no card.
+      for (const cls of ['ui-logo', 'ui-frame', 'ui-option', 'ui-key-hint']) assert.ok(inner.some((t) => classesOf(t).includes(cls)), `#${name} uses ${cls}`);
       assert.ok(!inner.some((t) => classesOf(t).includes('ui-card')), `#${name} holds no card`);
     } else if (name === 'menu') {
-      // The main menu sits on the page's backdrop with no card: the wordmark, the entries, the preview, the hints.
+      // The main menu sits on the page's backdrop in a screen frame, no card: the title bar, the entries, the preview, the hints.
       assert.ok(root.attrs['aria-label'], '#menu is named');
-      for (const cls of ['ui-wordmark', 'ui-mode-list', 'ui-mode-entry', 'ui-scene-panel', 'ui-key-hints', 'ui-key-hint', 'ui-chip', 'ui-text']) {
+      for (const cls of ['ui-frame', 'ui-logo', 'ui-mode-list', 'ui-mode-entry', 'ui-scene-panel', 'ui-key-hints', 'ui-key-hint', 'ui-chip', 'ui-text']) {
         assert.ok(inner.some((t) => classesOf(t).includes(cls)), `#menu uses ${cls}`);
       }
       assert.ok(!inner.some((t) => classesOf(t).includes('ui-card')), '#menu holds no card');
@@ -1161,12 +1161,13 @@ test('each Back that Esc triggers holds its back key hint, and no "Esc: Back" te
   for (const id of ['r-menu']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the Back holds its key hint (#${id})`);
   }
-  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'records-back', 'coming-soon-menu', 'settings-back']) {
-    assert.match(html, new RegExp(`id="${id}"[^>]*><span data-label="wide">Main menu</span><span data-label="phone">Back</span> <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`),
-      `the board choices', Daily's, Records', the placeholder's and Settings' Back holds its key hint, reading Back on a phone (#${id})`);
+  // The title bar's Back shows its arrow alone: named, with its tooltip, and no key hint.
+  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'records-back', 'coming-soon-menu', 'settings-back', 'rp-back']) {
+    assert.match(html, new RegExp(`<button type="button" id="${id}" class="ui-button ui-button--secondary ui-button--sm ui-frame__back"[^>]* data-icon="arrow-left" aria-label="Back(?: to Main menu)?" title="Back"></button>`),
+      `the title bar's Back is its arrow alone, named, with its tooltip (#${id})`);
   }
-  assert.match(read('css/style.css'), /#records-back:not\(\[data-to-menu\]\) \[data-label="wide"\]/, 'Records\' Back reads Back unless it returns to the menu');
-  for (const id of ['coming-soon-back', 'rp-back', 'replay-message-back', 'ready-back']) {
+  assert.doesNotMatch(html, /data-label="(wide|phone)"/, 'no Back reads one label on a wide window and another on a phone');
+  for (const id of ['coming-soon-back', 'replay-message-back', 'ready-back']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `so does a Back that returns one step (#${id})`);
   }
   assert.match(read('js/ui.js'), /for \(const id of \[[^\]]*'ready', 'learn-end', 'ctx-lost'[^\]]*\]\) showKeyHints\(/, 'the ready, Learn 3D end and context-lost cards\' key hints follow the device');
@@ -1522,7 +1523,7 @@ test('the Classic 2D window hugs its content: the board column, a 2 px divider a
   assert.match(top('#c2d'), /padding:\s*33px var\(--space-4\) 83px/, 'centred in the room above the HUD strip');
   assert.doesNotMatch(top('#c2d-frame'), /width|height/, 'no fill-the-viewport width or height, no max-width');
   assert.doesNotMatch(STYLE, /#c2d-frame \{[^}]*max-width:\s*1600px/, 'no 1600 px cap');
-  assert.match(top('#c2d-body'), /grid-template-columns:\s*auto auto 300px/, 'the board column as wide as its board, the divider, the figures column');
+  assert.match(top('#c2d-body'), /grid-template-columns:\s*minmax\(auto, 1fr\) auto 300px/, 'the board column as wide as its board (or what a wider title bar leaves it), the divider, the figures column');
   assert.match(top('#c2d-main'), /gap:\s*var\(--space-3\)/, 'the board 12 px under the counter strip');
   assert.match(top('#c2d-main'), /padding:\s*22px/);
   assert.match(top('#c2d-stage'), /flex:\s*none/, 'the board area is sized, never stretched');
@@ -1536,11 +1537,11 @@ test('the Classic 2D window hugs its content: the board column, a 2 px divider a
   assert.match(top('#c2d.c2d--measure #c2d-stage'), /flex:\s*1 1 auto;\s*align-self:\s*stretch/);
   // The size steps: J-Game2D-l (the compact step) and -m.
   const compact = ruleIn(STYLE, COMPACT_STEP);
-  assert.match(compact('#c2d-body'), /grid-template-columns:\s*auto auto 260px/);
+  assert.match(compact('#c2d-body'), /grid-template-columns:\s*minmax\(auto, 1fr\) auto 260px/);
   assert.match(compact('#c2d-main'), /padding:\s*var\(--space-4\)/, 'main padding 16 at l');
   assert.match(compact('#c2d-figures .ui-figures__body'), /padding:\s*var\(--space-4\) var\(--space-5\)/, 'figures padding 16px 20px at l');
   const m = ruleIn(STYLE, '(max-width: 1199px)');
-  assert.match(m('#c2d-body'), /grid-template-columns:\s*auto auto 232px/);
+  assert.match(m('#c2d-body'), /grid-template-columns:\s*minmax\(auto, 1fr\) auto 232px/);
   assert.match(m('#c2d-main'), /padding:\s*14px/, 'main padding 14 at m');
   assert.match(m('#c2d-figures .ui-figures__body'), /padding:\s*14px 18px/);
   assert.match(ruleIn(STYLE, '(max-height: 820px)')('#c2d'), /padding-top:\s*13px;\s*padding-bottom:\s*64px/);
@@ -1927,6 +1928,10 @@ const CANVAS_ICONS = {
   cube: [['path', { d: 'M12 2l9 5v10l-9 5-9-5V7z' }], ['path', { d: 'M12 12l9-5M12 12v10M12 12L3 7' }]],
   pin: [['path', { d: 'M9 3h6l-1 6 4 4H6l4-4z' }], ['path', { d: 'M12 13v8' }]],
   check: [['path', { d: 'M5 12l5 5 9-10' }]],
+  // the title bar's window buttons
+  minimise: [['path', { d: 'M6 17h12' }]],
+  fullscreen: [['path', { d: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5' }]],
+  windowed: [['path', { d: 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' }]],
   info: [['circle', { cx: '12', cy: '12', r: '9' }], ['path', { d: 'M12 11v6M12 7.5v.5' }]],
   warning: [['path', { d: 'M12 3l10 18H2z' }], ['path', { d: 'M12 10v5M12 18v.5' }]],
 };
@@ -1955,6 +1960,8 @@ function stubDocument() {
       querySelectorAll(sel) {
         const out = [];
         const match = (n) => (sel === ':scope > .ui-icon' ? n.parentNode === el && n.classList.contains('ui-icon')
+          : sel === ':scope > .ui-logo__word' ? n.parentNode === el && n.classList.contains('ui-logo__word')
+          : sel === '.ui-logo' ? n.classList.contains('ui-logo')
           : sel === ':scope > .ui-note__text' ? n.parentNode === el && n.classList.contains('ui-note__text')
             : sel === '.ui-button[data-icon], .ui-note[data-icon]' ? (n.classList.contains('ui-button') || n.classList.contains('ui-note')) && 'data-icon' in n.attrs : false);
         const walk = (n) => { for (const c of n.children) { if (match(c)) out.push(c); walk(c); } };
@@ -1981,7 +1988,7 @@ test('the icon set holds the canvas\'s stroke icons path for path, each drawn in
   }
   assert.ok(Object.isFrozen(ICONS) && Object.values(ICONS).every((i) => Object.isFrozen(i)), 'the set is frozen data');
   for (const [name, icon] of Object.entries(ICONS)) {
-    assert.equal(icon.stroke, name === 'check' ? 3 : name === 'close' ? 2.6 : 2.3, `${name}'s stroke is the canvas's`);
+    assert.equal(icon.stroke, name === 'check' ? 3 : name === 'close' ? 2.6 : ['minimise', 'fullscreen', 'windowed'].includes(name) ? 2.4 : 2.3, `${name}'s stroke is the canvas's`);
     const svg = iconMarkup(name);
     assert.match(svg, /^<svg class="ui-icon" data-icon="[\w-]+" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="[\d.]+" stroke-linecap="round" stroke-linejoin="round">/, `${name} draws in currentColor`);
     assert.doesNotMatch(svg, /#[0-9a-f]{3,8}\b|rgb|width="\d+px"/i, `${name} carries no colour of its own`);
@@ -2229,9 +2236,9 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint', 'ui-key-hints', 'ui-chip', 'ui-spinner', 'ui-counter-strip', 'ui-counter', 'ui-code', 'ui-segmented', 'ui-slider__input', 'ui-figures']) {
     assert.match(replay, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the replay viewer uses ${cls}`);
   }
-  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint']) assert.match(settings, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Settings page uses ${cls}`);
+  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-logo']) assert.match(settings, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Settings page uses ${cls}`);
   assert.doesNotMatch(settings, /class="[^"]*\bui-card(?![\w-])/, 'the Settings page holds no card');
-  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-panel--muted', 'ui-stat--tile']) {
+  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-logo', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-panel--muted', 'ui-stat--tile']) {
     assert.match(records, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Records screen uses ${cls}`);
   }
   assert.doesNotMatch(records, /class="[^"]*\bui-card(?![\w-])/, 'the Records screen holds no card');
@@ -2242,16 +2249,16 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   for (const cls of ['ui-section-label', 'ui-button--danger', 'ui-key-hint', 'ui-panel--muted']) assert.match(pause, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the pause card uses ${cls}`);
   const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(daily, '').replace(soon, '').replace(pause, '').replace(results, '').replace(records, '').replace(settings, '').replace(replay, '')
     .replace(ready, '').replace(ctxLost, '').replace(learnEnd, '').replace(noscript, '').replace(fatal, '').replace(game2d, '');
-  for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
+  for (const cls of ['ui-frame', 'ui-logo', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }
   for (const [name, html] of [['Classic 2D', choice], ['3D', choice3d]]) {
-    for (const cls of ['ui-backdrop', 'ui-wordmark', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-divider', 'ui-key-hint', 'ui-chip', 'ui-stat--tile']) {
+    for (const cls of ['ui-backdrop', 'ui-logo', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-divider', 'ui-key-hint', 'ui-chip', 'ui-stat--tile']) {
       assert.match(html, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the ${name} board choice uses ${cls}`);
     }
   }
   assert.match(choice3d, /class="ui-option ui-option--learn"/, 'the 3D board choice uses ui-option--learn');
-  for (const cls of ['ui-backdrop', 'ui-wordmark', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-divider', 'ui-key-hint', 'ui-chip', 'ui-scene-panel', 'ui-code']) {
+  for (const cls of ['ui-backdrop', 'ui-logo', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-divider', 'ui-key-hint', 'ui-chip', 'ui-scene-panel', 'ui-code']) {
     assert.match(daily, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Daily screen uses ${cls}`);
   }
   assert.doesNotMatch(daily, /class="[^"]*\bui-card(?![\w-])/, 'the Daily screen holds no card');
@@ -2261,7 +2268,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   }
 });
 
-test('screen frame: a named section on the backdrop with its head (back with its key hint, title, action), body, foot and the window-chrome slot', () => {
+test('screen frame: a named section on the backdrop with its title bar (Back, the logo, the window buttons), its heading (the title, the action), body, foot and the window-chrome slot', () => {
   const backdrop = within(LAYOUT_TAGS, '.ui-backdrop')[0];
   assert.ok(backdrop, 'a page backdrop');
   const frames = within(inside(LAYOUT, LAYOUT_TAGS, backdrop), '.ui-frame');
@@ -2269,22 +2276,29 @@ test('screen frame: a named section on the backdrop with its head (back with its
   for (const frame of frames) {
     assert.equal(frame.tag, 'section');
     const parts = inside(LAYOUT, LAYOUT_TAGS, frame);
+    const heading = within(parts, '.ui-frame__heading')[0];
     const title = within(parts, '.ui-frame__title')[0];
     assert.ok(title && /^h[1-6]$/.test(title.tag), 'the title is a heading');
+    assert.ok(heading && inside(LAYOUT, LAYOUT_TAGS, heading).includes(title), 'the title sits in the heading over the body');
     assert.equal(frame.attrs['aria-labelledby'], title.attrs.id, 'the frame is named by its title');
     const head = within(parts, '.ui-frame__head')[0];
     assert.equal(head.tag, 'header');
+    assert.ok(head.index < heading.index && heading.index < within(parts, '.ui-frame__body')[0].index, 'the title bar, then the heading, then the body');
     const chrome = within(parts, '.ui-frame__chrome')[0];
     assert.ok(chrome, 'the window-chrome slot is in the markup');
     assert.equal(chrome.attrs['data-slot'], 'window-chrome');
     assert.equal(chrome.attrs['aria-hidden'], 'true', 'decoration only');
     assert.ok(chrome.index < head.index, 'the chrome slot opens the frame, above its head');
-    const start = within(inside(LAYOUT, LAYOUT_TAGS, head), '.ui-frame__start')[0];
-    assert.ok(start && within(inside(LAYOUT, LAYOUT_TAGS, head), '.ui-frame__end').length === 1, 'the head\'s start and end cells');
-    const back = within(inside(LAYOUT, LAYOUT_TAGS, start), '.ui-button.ui-button--secondary')[0];
-    assert.ok(back, 'the head\'s start holds the screen\'s Back');
-    const hint = within(inside(LAYOUT, LAYOUT_TAGS, back), '.ui-key-hint')[0];
-    assert.ok(hint && hint.attrs['data-action'] === 'back' && hint.attrs['aria-hidden'] === 'true', 'Back carries its key hint, out of its name');
+    const inHead = inside(LAYOUT, LAYOUT_TAGS, head);
+    const start = within(inHead, '.ui-frame__start')[0];
+    assert.ok(start && within(inHead, '.ui-frame__end').length === 1, 'the head\'s start and end cells');
+    const back = within(inside(LAYOUT, LAYOUT_TAGS, start), '.ui-button.ui-button--secondary.ui-frame__back')[0];
+    assert.ok(back && back.attrs['data-icon'] === 'arrow-left' && back.attrs['aria-label'] && back.attrs.title === 'Back', 'the head\'s start holds Back: its arrow, named, with its tooltip');
+    assert.equal(within(inside(LAYOUT, LAYOUT_TAGS, back), '.ui-key-hint').length, 0, 'the title bar\'s Back shows its icon alone');
+    const logo = within(inHead, '.ui-logo.ui-frame__logo')[0];
+    assert.ok(logo && logo.tag === 'h1' && logo.attrs['aria-label'] === 'Minesweeper 3D', 'the logo in the centre, named');
+    const windowButtons = within(inHead, '.ui-frame__window .ui-button'.split(' ')[1]).filter((t) => 'data-window' in t.attrs);
+    assert.deepEqual(windowButtons.map((t) => t.attrs['data-window']), WINDOW_BUTTONS, 'Minimise, Fullscreen and Quit at the end');
     assert.equal(within(parts, '.ui-frame__body').length, 1, 'one body');
     const foot = within(parts, '.ui-frame__foot')[0];
     assert.equal(foot.tag, 'footer');
@@ -2292,6 +2306,173 @@ test('screen frame: a named section on the backdrop with its head (back with its
   const feet = frames.map((f) => inside(LAYOUT, LAYOUT_TAGS, f));
   assert.ok(feet.some((p) => within(p, '.ui-frame__status').length === 1), 'a foot as a status line');
   assert.ok(feet.some((p) => within(p, '.ui-frame__summary').length === 1 && within(p, '.ui-actions.ui-actions--row').length === 1), 'a foot as a bottom bar: the summary beside the actions');
+  assert.ok(feet.some((p) => within(p, '.ui-frame__action').some((a) => p.some((t) => t.index > a.index && hasClasses(t, '.ui-button')))), 'a heading with its control at the right');
+});
+
+// The desktop windows whose head is the title bar, by frame id, with their Back's id (none on the main menu).
+const TITLE_BARS = {
+  'menu-frame': null, 'c2d-choice-frame': 'c2d-choice-back', 'board-choice-frame': 'board-choice-back', 'daily-frame': 'daily-back',
+  'records-frame': 'records-back', 'settings-frame': 'settings-back', 'replay-frame': 'rp-back', 'coming-soon-frame': 'coming-soon-menu',
+  'c2d-frame': null,
+};
+const INDEX_TAGS = tags(INDEX);
+const frameParts = (id) => inside(INDEX, INDEX_TAGS, INDEX_TAGS.find((t) => t.attrs.id === id));
+
+test('the title bar on every desktop window: Back as its arrow alone (none on the main menu), the logo in the centre, Minimise, Fullscreen and Quit at the end, each icon-only, named, with its tooltip', () => {
+  for (const [id, backId] of Object.entries(TITLE_BARS)) {
+    const parts = frameParts(id);
+    assert.ok(parts.length > 0, `#${id} is in index.html`);
+    const head = within(parts, '.ui-frame__head')[0];
+    const inHead = inside(INDEX, INDEX_TAGS, head);
+    const cells = inHead.filter((t) => hasClasses(t, '.ui-frame__start') || hasClasses(t, '.ui-frame__logo') || hasClasses(t, '.ui-frame__end'));
+    assert.deepEqual(cells.map((t) => classesOf(t).find((c) => /^ui-frame__(start|logo|end)$/.test(c))), ['ui-frame__start', 'ui-frame__logo', 'ui-frame__end'], `#${id}: Back's cell, the logo, the end`);
+    const logo = cells[1];
+    assert.ok(logo.tag === 'h1' && hasClasses(logo, '.ui-logo') && logo.attrs['aria-label'] === 'Minesweeper 3D', `#${id}: the game logo, named`);
+    const start = inside(INDEX, INDEX_TAGS, cells[0]).filter((t) => t.tag === 'button');
+    if (backId) {
+      assert.deepEqual(start.map((t) => t.attrs.id), [backId], `#${id}: Back at the start`);
+      const back = start[0];
+      assert.ok(hasClasses(back, '.ui-button.ui-button--secondary.ui-button--sm.ui-frame__back') && back.attrs['data-icon'] === 'arrow-left', `#${id}: Back is the arrow icon`);
+      assert.ok(back.attrs['aria-label'] && back.attrs.title === 'Back', `#${id}: Back named, with its tooltip`);
+      assert.equal(inside(INDEX, INDEX_TAGS, back).length, 0, `#${id}: Back shows its icon alone`);
+    } else if (id === 'menu-frame') {
+      assert.equal(start.length, 0, 'no Back on the main menu');
+    }
+    const group = within(inHead, '.ui-frame__window')[0];
+    assert.ok(group && group.attrs.role === 'group' && group.attrs['aria-label'] === 'Window', `#${id}: the window buttons in a named group`);
+    const buttons = inside(INDEX, INDEX_TAGS, group).filter((t) => t.tag === 'button');
+    assert.deepEqual(buttons.map((t) => [t.attrs['data-window'], t.attrs['aria-label'], t.attrs.title, t.attrs['data-icon']]),
+      [['minimise', 'Minimise', 'Minimise', 'minimise'], ['fullscreen', 'Fullscreen', 'Fullscreen', 'fullscreen'], ['quit', 'Quit', 'Quit', 'close']], `#${id}: Minimise, Fullscreen, Quit`);
+    for (const b of buttons) assert.equal(inside(INDEX, INDEX_TAGS, b).length, 0, `#${id}: ${b.attrs['data-window']} shows its icon alone`);
+    assert.ok(hasClasses(buttons[2], '.ui-button.ui-button--primary.ui-button--stop.ui-button--sm'), `#${id}: Quit is the stop button`);
+    assert.ok(buttons.slice(0, 2).every((b) => hasClasses(b, '.ui-button.ui-button--secondary.ui-button--sm')), `#${id}: Minimise and Fullscreen secondary`);
+  }
+  // The window buttons' icons are the set's; Quit the close cross.
+  for (const name of ['minimise', 'fullscreen', 'windowed', 'close']) assert.ok(ICONS[name], `the set holds ${name}`);
+  assert.equal((INDEX.match(/data-window="quit"/g) ?? []).length, Object.keys(TITLE_BARS).length, 'one Quit per title bar, none elsewhere');
+});
+
+test('every screen\'s name is the heading at the top of its window\'s body, its control at the heading\'s right; the main menu has none', () => {
+  const headings = { 'c2d-choice-frame': 'c2d-choice-title', 'board-choice-frame': 'board-choice-title', 'daily-frame': 'daily-title', 'records-frame': 'records-title',
+    'settings-frame': 'settings-title', 'replay-frame': 'replay-title', 'coming-soon-frame': 'coming-soon-title', 'c2d-frame': 'c2d-title' };
+  for (const [id, titleId] of Object.entries(headings)) {
+    const parts = frameParts(id);
+    const frame = INDEX_TAGS.find((t) => t.attrs.id === id);
+    const heading = within(parts, '.ui-frame__heading')[0];
+    assert.ok(heading, `#${id} has its heading`);
+    const head = within(parts, '.ui-frame__head')[0];
+    const body = within(parts, '.ui-frame__body')[0];
+    assert.ok(head.index < heading.index && heading.index < body.index, `#${id}: the heading between the title bar and the body`);
+    const title = inside(INDEX, INDEX_TAGS, heading).find((t) => hasClasses(t, '.ui-frame__title'));
+    assert.ok(title && title.tag === 'h2' && title.attrs.id === titleId, `#${id}: its title #${titleId} in the heading`);
+    assert.equal(frame.attrs['aria-labelledby'], titleId, `#${id}: named by its heading`);
+    assert.equal(within(inside(INDEX, INDEX_TAGS, head), '.ui-frame__title').length, 0, `#${id}: no title in the title bar`);
+  }
+  // Records' 2D | 3D switch sits at the right of its heading; the board choices keep the slot their panel toggle takes.
+  const action = (id) => inside(INDEX, INDEX_TAGS, within(frameParts(id), '.ui-frame__action')[0]);
+  assert.ok(action('records-frame').some((t) => t.attrs.id === 'records-mode'), 'Records\' mode switch at its heading\'s right');
+  for (const id of ['c2d-choice-frame', 'board-choice-frame']) assert.ok(within(frameParts(id), '.ui-frame__action').length === 1, `#${id}: the heading's action slot`);
+  assert.equal(within(frameParts('menu-frame'), '.ui-frame__heading').length, 0, 'the main menu has no heading: the logo names it');
+  assert.equal(INDEX_TAGS.find((t) => t.attrs.id === 'menu-frame').attrs['aria-labelledby'], 'menu-title', 'the menu\'s window is named by its logo');
+});
+
+test('no large game title remains: the wordmark is gone from every screen, the kit and the gallery; the logo is catalogued in its place', () => {
+  for (const [f, src] of [['index.html', INDEX], ['css/components.css', RAW], ['css/style.css', read('css/style.css')], ['theme.css', THEME_RAW], ['dev/components.html', GALLERY]]) {
+    assert.doesNotMatch(src, /ui-wordmark|-wordmark"|#(c2d-choice|board-choice|daily)-top\b/, `${f} carries no wordmark`);
+  }
+  assert.equal(KIT_CATALOGUE.find((c) => c.name === 'ui-wordmark'), undefined, 'the wordmark leaves the catalogue');
+  const logo = KIT_CATALOGUE.find((c) => c.name === 'ui-logo');
+  assert.deepEqual(logo.parts.map((x) => [x.name, x.selector]), [['word', '.ui-logo__word'], ['letter', '.ui-logo__letter']]);
+  const frame = KIT_CATALOGUE.find((c) => c.name === 'ui-frame');
+  assert.deepEqual(frame.parts.map((x) => x.name), ['head', 'back', 'logo', 'window', 'minimise', 'fullscreen', 'quit', 'heading', 'title', 'action', 'body', 'foot', 'status', 'summary']);
+  assert.equal(frame.parts.find((x) => x.name === 'quit').as, 'ui-button--stop', 'Quit is the stop button');
+  assert.ok(GALLERY_BODY_TAGS.some((t) => hasClasses(t, '.ui-logo') && t.attrs['data-canvas'] === 'title-bar-logo'), 'the gallery shows the logo');
+  assert.match(GALLERY, /applyLogos\(document\)/, 'and draws it as the page does');
+  assert.match(read('js/main.js'), /applyLogos\(document\.body\);/, 'the page draws every title bar\'s logo');
+});
+
+test('drawLogo draws MINESWEEPER and 3D letter by letter, hidden from assistive technology, once; applyLogos draws every logo', () => {
+  assert.deepEqual(LOGO_WORDS, ['MINESWEEPER', '3D']);
+  const doc = stubDocument();
+  const logo = doc.createElement('h1');
+  logo.setAttribute('class', 'ui-logo');
+  logo.setAttribute('aria-label', 'Minesweeper 3D');
+  drawLogo(logo);
+  assert.deepEqual(logo.children.map((w) => [w.attrs.class, w.attrs['aria-hidden'], w.children.map((l) => l.textContent).join('')]),
+    [['ui-logo__word', 'true', 'MINESWEEPER'], ['ui-logo__word', 'true', '3D']]);
+  assert.ok(logo.children.every((w) => w.children.every((l) => l.attrs.class === 'ui-logo__letter' && l.textContent.length === 1)), 'one letter per box');
+  drawLogo(logo);
+  assert.equal(logo.children.length, 2, 'a drawn logo is left as it is');
+  const root = doc.createElement('div');
+  const a = doc.createElement('h1');
+  a.setAttribute('class', 'ui-logo ui-frame__logo');
+  root.append(a);
+  applyLogos(root);
+  assert.equal(a.children.length, 2, 'applyLogos draws every logo under the root');
+});
+
+test('the logo in Joyful tiles: MINESWEEPER a game colour per letter — blue, coral, teal, violet, green, orange, repeating — 3D in yellow; a white outline and a short darker extrusion, sized with the frame\'s steps', () => {
+  assert.match(THEME_RAW, /--color-logo-blue: #6f9ff7;/);
+  assert.match(THEME_RAW, /--color-logo-violet: #a084f5;/);
+  const letter = bodyOf(THEME_RULES, '.ui-logo__letter');
+  assert.match(letter, /--f: var\(--color-logo-blue\);\s*--e: var\(--color-blue\);\s*color: var\(--f\);/, 'the first letter blue');
+  assert.match(letter, /text-shadow:\s*var\(--logo-x\) var\(--logo-y\) 0 color-mix\(in srgb, var\(--e\) 62%, var\(--color-ink\)\),\s*calc\(var\(--logo-x\) \* 2\) calc\(var\(--logo-y\) \* 2\) 0 color-mix\(in srgb, var\(--e\) 62%, var\(--color-ink\)\)/, 'a two-step extrusion of the edge a third towards the ink');
+  assert.equal((letter.match(/var\(--color-surface\)/g) ?? []).length, 32, 'a white outline around the letter and around the extrusion\'s end');
+  const colour = (n) => bodyOf(THEME_RULES, `.ui-logo__word:first-child > .ui-logo__letter:nth-child(${n})`);
+  assert.match(colour('6n + 2'), /--f: var\(--color-accent-fill\); --e: var\(--color-accent-edge\);/, 'coral');
+  assert.match(colour('6n + 3'), /--f: var\(--color-teal\); --e: var\(--color-teal-edge\);/, 'teal');
+  assert.match(colour('6n + 4'), /--f: var\(--color-logo-violet\); --e: var\(--color-violet\);/, 'violet');
+  assert.match(colour('6n + 5'), /--f: var\(--color-green\); --e: var\(--color-green-edge\);/, 'green');
+  assert.match(colour('6n'), /--f: var\(--color-orange\); --e: var\(--color-orange-edge\);/, 'orange');
+  assert.match(bodyOf(THEME_RULES, '.ui-logo__word:last-child > .ui-logo__letter'), /--f: var\(--color-yellow\); --e: var\(--color-yellow-edge\);/, '3D yellow');
+  assert.match(bodyOf(THEME_RULES, '.ui-logo'), /--logo-x: 0\.9px;\s*--logo-y: 2px;\s*--logo-o: 3px;\s*gap: 20px;\s*font-size: 44px;\s*font-weight: 900;/, 'desktop: 44 px');
+  assert.match(bodyOf(mediaRules(THEME_CSS, COMPACT_STEP), '.ui-logo'), /--logo-x: 0\.7px;\s*--logo-y: 1\.6px;\s*--logo-o: 2px;\s*gap: 16px;\s*font-size: 36px;/, 'compact: 36 px');
+  assert.match(bodyOf(mediaRules(THEME_CSS, TOUCH_QUERY), '.ui-logo'), /--logo-x: 0\.4px;\s*--logo-y: 1\.2px;\s*--logo-o: 2px;\s*gap: 8px;\s*font-size: 20px;/, 'touch: 20 px');
+  const base = bodyOf(RULES, '.ui-logo');
+  assert.match(base, /display: flex;/);
+  assert.match(base, /white-space: nowrap;/, 'one line');
+});
+
+test('the title bar follows the canvas\'s steps: 68 / 60 / 52 px, 38 px square buttons with 20 px icons (40 px Back on a phone), 8 px apart; the heading 30 / 26 / 24 px black; a phone hides the window buttons', () => {
+  const bar = '.ui-frame__head:has(> .ui-frame__logo)';
+  assert.match(bodyOf(THEME_RULES, bar), /min-height: 68px;\s*padding: 10px 14px 14px;/, 'desktop');
+  assert.match(bodyOf(mediaRules(THEME_CSS, COMPACT_STEP), bar), /min-height: 60px;\s*padding: 8px 12px 12px;/, 'compact');
+  assert.match(bodyOf(mediaRules(THEME_CSS, TOUCH_QUERY), bar), /min-height: 52px;\s*padding: 4px 10px 10px;/, 'touch');
+  const square = ':is(.ui-frame__back, .ui-frame__window > .ui-button)';
+  assert.match(bodyOf(THEME_RULES, square), /width: 38px;\s*height: 38px;\s*min-height: 38px;\s*border-radius: var\(--radius-md\);/);
+  assert.match(bodyOf(THEME_RULES, `${square} > .ui-icon`), /width: 20px; height: 20px;/);
+  assert.match(bodyOf(mediaRules(THEME_CSS, TOUCH_QUERY), square), /width: 40px; height: 40px; min-height: 40px;/);
+  assert.match(bodyOf(THEME_RULES, '.ui-frame__window'), /gap: 8px;/);
+  assert.match(bodyOf(RULES, ':is(.ui-frame__back, .ui-frame__window > .ui-button)'), /padding: 0;/, 'icon-only: no label padding');
+  assert.match(bodyOf(THEME_RULES, '.ui-frame__heading'), /padding: 22px 26px 0;/);
+  assert.match(bodyOf(THEME_RULES, '.ui-frame__heading > .ui-frame__title'), /font-size: 30px; font-weight: 900; line-height: 1\.1;/);
+  assert.match(bodyOf(mediaRules(THEME_CSS, COMPACT_STEP), '.ui-frame__heading > .ui-frame__title'), /font-size: 26px;/);
+  assert.match(bodyOf(mediaRules(THEME_CSS, TOUCH_QUERY), '.ui-frame__heading > .ui-frame__title'), /font-size: 24px;/);
+  assert.match(bodyOf(RULES, '.ui-frame__heading'), /display: flex;[\s\S]*justify-content: space-between;/, 'the control at the heading\'s right');
+  assert.match(bodyOf(mediaRules(CSS, TOUCH_QUERY), '.ui-frame__window'), /display: none;/, 'a phone shows only Back and the logo');
+});
+
+test('bindWindowButtons: with no desktop host a window button presses and does nothing; a host the capability flags report gets its action', () => {
+  const listeners = {};
+  const root = { addEventListener: (type, fn) => { listeners[type] = fn; }, removeEventListener: (type) => { delete listeners[type]; } };
+  const press = (name) => listeners.click({ target: { closest: (sel) => (sel === '[data-window]' ? { getAttribute: () => name } : null) } });
+  const calls = [];
+  const actions = Object.fromEntries(WINDOW_BUTTONS.map((n) => [n, () => calls.push(n)]));
+  const unbind = bindWindowButtons(root, { capabilities: { desktopHost: false }, actions });
+  for (const n of WINDOW_BUTTONS) press(n);
+  assert.deepEqual(calls, [], 'no action without a host: no message, no confirmation, no lock');
+  unbind();
+  assert.equal(listeners.click, undefined, 'unbinds');
+  bindWindowButtons(root, { capabilities: { desktopHost: true }, actions });
+  for (const n of WINDOW_BUTTONS) press(n);
+  assert.deepEqual(calls, ['minimise', 'fullscreen', 'quit'], 'the host attaches each action');
+  listeners.click({ target: { closest: () => null } });
+  assert.equal(calls.length, 3, 'a press elsewhere is not a window button');
+  bindWindowButtons(root, { capabilities: { desktopHost: true } });
+  press('quit');
+  assert.equal(calls.length, 3, 'a host without that action does nothing');
+  assert.match(read('js/platform/index.js'), /\nexport const capabilities = Object\.freeze\(\{ desktopHost: false \}\);/, 'the web build reports no desktop host');
+  assert.match(read('js/main.js'), /bindWindowButtons\(document\.body, \{ capabilities \}\);/, 'the shell binds every title bar\'s window buttons to the platform\'s flags');
 });
 
 test('mode entry: a native button with its icon, label, accent by entry, the Last played chip, and a disabled entry with its reason and lock', () => {
@@ -3195,8 +3376,10 @@ for (const [size, device, place] of WINDOW_SIZES) {
 // J-Game2D-xl, -l, -m, -p and -ls: Intermediate in the game window, as the artboards draw it.
 const ARTBOARDS_2D = [
   ['xl', { viewport: { width: 1920, height: 1080 } }, { window: [417, 1086, 964], column: 784, board: 740, figures: 300, padding: '22px 26px', digits: '34px', value: '28px', bbbv: '16px', figure: '11px' }],
-  ['l', { viewport: { width: 1366, height: 768 } }, { window: [286.5, 793, 691], column: 531, board: 499, figures: 260, padding: '16px 20px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
-  ['m', { viewport: { width: 1024, height: 768 } }, { window: [131.5, 761, 687], column: 527, board: 499, figures: 232, padding: '14px 18px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
+  // At 1366 × 768 the compact title bar leaves the board 27 px tiles: the artboard's 691 px window is 3 px short of
+  // its own 28 px board under that title bar.
+  ['l', { viewport: { width: 1366, height: 768 } }, { window: [286.5, 793, 661], column: 498, board: 466, figures: 260, padding: '16px 20px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
+  ['m', { viewport: { width: 1024, height: 768 } }, { window: [131.5, 761, 690], column: 527, board: 499, figures: 232, padding: '14px 18px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
   ['narrow', { viewport: { width: 1000, height: 700 } }, { digits: '28px', under: true }],
   ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { digits: '26px' }],
   ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, { digits: '26px' }],
@@ -3246,12 +3429,15 @@ for (const [size, device, want] of ARTBOARDS_2D) {
           figures: box($('c2d-figures')), divider: box($('c2d-divider')), restart: box($('c2d-restart')), tap: box($('hud-tap')), foot: box($('c2d-size')),
           mines: box(counters[0]), time: box(counters[1]), clock: box(counters[1].querySelector('.ui-counter__icon')), timeDigits: box($('c2d-time')),
           layout: { ...globalThis.__ms.board2D.layout },
-          // The head's own width: its title between two equal side columns (Swap clicks, Pause), gaps and padding.
+          // The title bar's own width: its logo between its two sides (Swap clicks; Pause and the window
+          // buttons), gaps and padding.
           head: (() => {
             const h = $('c2d-frame').querySelector('.ui-frame__head');
             const c = getComputedStyle(h);
             const w = (sel) => h.querySelector(sel).getBoundingClientRect().width;
-            return 2 * Math.max(w('.ui-frame__start > *'), w('.ui-frame__end > *')) + w('.ui-frame__title') + 2 * parseFloat(c.columnGap) + parseFloat(c.paddingLeft) + parseFloat(c.paddingRight);
+            const side = (sel) => [...h.querySelector(sel).children].filter((e) => e.getClientRects().length > 0)
+              .reduce((sum, e, i) => sum + e.getBoundingClientRect().width + (i ? parseFloat(getComputedStyle(h.querySelector(sel)).columnGap) : 0), 0);
+            return side('.ui-frame__start') + side('.ui-frame__end') + w('.ui-frame__logo') + 2 * parseFloat(c.columnGap) + parseFloat(c.paddingLeft) + parseFloat(c.paddingRight);
           })(),
           padding: style($('c2d-figures').querySelector('.ui-figures__body'), 'padding'),
           surface: [style($('c2d-figures'), 'backgroundColor'), style($('c2d-figures'), 'boxShadow')],
@@ -3267,10 +3453,15 @@ for (const [size, device, want] of ARTBOARDS_2D) {
       if (size !== 'ls') assert.ok(near(g.stage.y, g.strip.bottom + 12, 0.5), `${size}: the board 12 px under the counter strip (${g.stage.y}, ${g.strip.bottom})`);
       if (want.window) {
         const [left, width, height] = want.window;
-        assert.ok(near(g.frame.x, left) && near(g.frame.width, width), `${size}: the window ${width} px wide at ${left} (${g.frame.x}, ${g.frame.width})`);
+        // The window hugs its board and figures, or its title bar while that holds Swap clicks and Pause beside the
+        // window buttons and is the wider (the in-game window's own head is in-game-layout's).
+        const hug = want.column + 2 + want.figures;
+        const wide = g.head > hug + 1 ? g.head : null;
+        assert.ok(wide ? near(g.frame.width, wide) && near(g.frame.x, (device.viewport.width - wide) / 2)
+          : near(g.frame.x, left) && near(g.frame.width, width), `${size}: the window ${width} px wide at ${left}, or its title bar's width (${g.frame.x}, ${g.frame.width}, ${g.head})`);
         assert.ok(g.frame.height <= height + 1 && g.frame.height >= height - 16, `${size}: the window hugs its content, about ${height} px tall (${g.frame.height})`);
         assert.ok(near(g.frame.y + g.frame.height / 2, (device.viewport.height - 50) / 2, 2), `${size}: centred in the room above the HUD strip (${g.frame.y})`);
-        assert.ok(near(g.main.width, want.column), `${size}: the board column ${want.column} px (${g.main.width})`);
+        assert.ok(near(g.main.width, want.column) && near(g.main.x, g.frame.x), `${size}: the board column ${want.column} px at the window's start (${g.main.width})`);
         assert.equal(g.layout.scrolls, false, `${size}: Intermediate fits`);
         assert.deepEqual([g.stage.width, g.stage.height, g.panel.width, g.panel.x, g.panel.y], [want.board, want.board, want.board, g.strip.x, g.stage.y], `${size}: the board fills the column, left-aligned at the strip's width`);
         assert.ok(near(g.strip.width, want.board), `${size}: the strip as wide as the board`);
@@ -3316,7 +3507,7 @@ for (const [size, device, want] of ARTBOARDS_2D) {
           return { strip: box(el), parent: el.parentElement.id, stage: box(document.getElementById('c2d-stage')), main: box(document.getElementById('c2d-main')), figures: box(document.getElementById('c2d-figures')), tile: globalThis.__ms.board2D.layout.tile, gap: globalThis.__ms.board2D.layout.gap };
         });
         assert.deepEqual([h.stage.width, h.stage.height, h.tile], [g.stage.width, g.stage.height, g.layout.tile], `${size}: the board keeps its size with the strip shown`);
-        if (want.window) assert.deepEqual([h.tile, h.gap], size === 'xl' ? [42, 4] : [28, 3], `${size}: the tile and gap as without the strip`);
+        if (want.window) assert.deepEqual([h.tile, h.gap], size === 'xl' ? [42, 4] : size === 'l' ? [27, 2] : [28, 3], `${size}: the tile and gap as without the strip`);
         assert.equal(h.parent, 'c2d-stage', `${size}: the strip in the board area`);
         assert.ok(near(h.stage.bottom - h.strip.bottom, 10, 0.5) && h.strip.top >= h.stage.y, `${size}: over the board, 10 px above its foot`);
         if (size === 'xl') assert.ok(near(h.main.bottom - h.strip.bottom, 32, 0.5), `${size}: 32 px off the board column's foot, as J-Game2D-states draws it`);

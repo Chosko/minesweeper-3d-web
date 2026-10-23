@@ -327,7 +327,7 @@ const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const RECORDS_HTML = INDEX.slice(INDEX.indexOf('<section id="records"'), INDEX.indexOf('<!-- /Records -->'));
 
-test('the 2D | 3D switch is a kit segmented choice in the frame\'s head, above the board picker', () => {
+test('the 2D | 3D switch is a kit segmented choice at the right of the frame\'s heading, above the board picker', () => {
   const at = RECORDS_HTML.indexOf('id="records-mode"');
   assert.ok(at > 0, '#records-mode');
   assert.ok(at < RECORDS_HTML.indexOf('id="records-picker"'), 'above the picker');
@@ -336,8 +336,8 @@ test('the 2D | 3D switch is a kit segmented choice in the frame\'s head, above t
   const options = [...group.matchAll(/<button type="button" class="ui-segmented__option" role="radio" aria-checked="(true|false)" data-value="([^"]+)">([^<]+)<\/button>/g)]
     .map((m) => [m[2], m[3], m[1]]);
   assert.deepEqual(options, [['classic-2d', 'Classic 2D', 'true'], ['3d', '3D', 'false']]);
-  const head = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div class="ui-frame__end">'), RECORDS_HTML.indexOf('</header>'));
-  assert.ok(head.includes('id="records-mode"'), 'the switch is the frame head\'s end');
+  const heading = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div class="ui-frame__action">'), RECORDS_HTML.indexOf('<div class="ui-frame__body"'));
+  assert.ok(heading.includes('id="records-mode"'), 'the switch at the right of the heading');
   const body = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div class="ui-frame__body" id="records-body">'));
   assert.match(body, /^<div class="ui-frame__body" id="records-body">\s*<div id="records-mode-touch" class="ui-segmented" role="radiogroup" aria-label="Mode">/,
     'the phone\'s full-width bar opens the body, above the picker');

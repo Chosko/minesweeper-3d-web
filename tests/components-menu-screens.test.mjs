@@ -147,11 +147,11 @@ test('in a browser, the menu and the screens it opens meet the contrast contract
     await page.click('#c2d-choice-back');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
-    // The placeholder in its frame, readable: Back focused, its key hint and the head's beside it.
+    // The placeholder in its frame, readable: Back focused with its key hint; the title bar's Back its arrow alone.
     await page.click('#menu-entry-hexagon');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'coming-soon');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'coming-soon-back');
-    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#coming-soon .ui-key-hint__key')].map((k) => k.textContent)), ['Esc', 'Esc']);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#coming-soon .ui-key-hint__key')].map((k) => k.closest('button').id)), ['coming-soon-back']);
     await check(page, '#coming-soon', 'coming-soon', 3);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no horizontal scroll');
     await page.click('#coming-soon-menu');
@@ -183,6 +183,86 @@ test('in a browser, the menu and the screens it opens meet the contrast contract
     await page.click('#board-choice-back');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the title bar: the logo drawn letter by letter in its colours, the window buttons press and do nothing on the web, the arrow keys and Tab reach each of them, a phone shows only Back and the logo', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    // Every title bar's logo is drawn: MINESWEEPER and 3D, a colour per letter, the first a light blue, 3D yellow.
+    const logo = await page.evaluate(() => {
+      const logos = [...document.querySelectorAll('.ui-frame__logo')];
+      const letters = (l) => [...l.querySelectorAll('.ui-logo__letter')];
+      const first = letters(document.getElementById('menu-title'));
+      return {
+        drawn: logos.every((l) => letters(l).map((x) => x.textContent).join('') === 'MINESWEEPER3D'),
+        count: logos.length,
+        colours: first.slice(0, 7).map((x) => getComputedStyle(x).color),
+        three: getComputedStyle(first[11]).color,
+        outline: getComputedStyle(first[0]).textShadow.includes('rgb(255, 255, 255)'),
+        name: document.getElementById('menu-title').getAttribute('aria-label'),
+      };
+    });
+    assert.ok(logo.drawn && logo.count >= 9, `every title bar's logo drawn (${logo.count})`);
+    assert.deepEqual(logo.colours, ['rgb(111, 159, 247)', 'rgb(255, 107, 107)', 'rgb(73, 198, 184)', 'rgb(160, 132, 245)', 'rgb(95, 208, 126)', 'rgb(255, 154, 60)', 'rgb(111, 159, 247)'],
+      'blue, coral, teal, violet, green, orange, repeating');
+    assert.equal(logo.three, 'rgb(255, 201, 60)', '3D yellow');
+    assert.ok(logo.outline, 'a white outline');
+    assert.equal(logo.name, 'Minesweeper 3D');
+
+    // The board choice's title bar: Back, then the arrow keys walk right to Minimise, Fullscreen and Quit.
+    await page.click('#menu-entry-classic-2d');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d-choice');
+    const mode = 'classic-2d-choice';
+    await page.focus('#c2d-choice-back');
+    const walked = [];
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press('ArrowRight');
+      walked.push(await page.evaluate(() => document.activeElement.dataset.window ?? document.activeElement.id));
+    }
+    assert.deepEqual(walked, ['minimise', 'fullscreen', 'quit'], 'the arrow keys, as the D-pad, reach every window button');
+    await page.focus('#c2d-choice-back');
+    const tabbed = [];
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press('Tab');
+      tabbed.push(await page.evaluate(() => document.activeElement.dataset.window ?? document.activeElement.id));
+    }
+    assert.deepEqual(tabbed, ['minimise', 'fullscreen', 'quit'], 'Tab reaches them in order');
+    // On the web each presses and does nothing: no action, no message, no confirmation, no lock.
+    for (const name of ['minimise', 'fullscreen', 'quit']) {
+      await page.click(`#c2d-choice-frame [data-window="${name}"]`);
+      const after = await page.evaluate((n) => ({
+        mode: globalThis.__ms.state.mode, toast: document.getElementById('toast').classList.contains('on'),
+        fullscreen: document.fullscreenElement !== null, disabled: document.querySelector(`#c2d-choice-frame [data-window="${n}"]`).disabled,
+        confirm: !document.getElementById('pause').classList.contains('hidden'),
+      }), name);
+      assert.deepEqual(after, { mode, toast: false, fullscreen: false, disabled: false, confirm: false }, `${name} does nothing on the web`);
+    }
+    const sizes = await page.evaluate(() => [...document.querySelectorAll('#c2d-choice-frame .ui-frame__head .ui-button')].map((b) => {
+      const r = b.getBoundingClientRect();
+      return [b.dataset.window ?? b.id, Math.round(r.width), Math.round(r.height), b.getAttribute('title')];
+    }));
+    assert.deepEqual(sizes, [['c2d-choice-back', 38, 38, 'Back'], ['minimise', 38, 38, 'Minimise'], ['fullscreen', 38, 38, 'Fullscreen'], ['quit', 38, 38, 'Quit']], '38 px squares, each with its tooltip');
+    // A phone shows only Back and the logo.
+    await page.setViewportSize({ width: 390, height: 844 });
+    const phone = await page.evaluate(() => ({
+      buttons: [...document.querySelectorAll('#c2d-choice-frame [data-window]')].map((b) => b.getClientRects().length),
+      back: document.getElementById('c2d-choice-back').getClientRects().length,
+      logo: document.querySelector('#c2d-choice-frame .ui-frame__logo').getBoundingClientRect().width > 0,
+    }));
+    assert.deepEqual(phone, { buttons: [0, 0, 0], back: 1, logo: true }, 'Back and the logo only');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Back still returns to the menu');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

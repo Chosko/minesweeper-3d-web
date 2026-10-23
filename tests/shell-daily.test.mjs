@@ -363,13 +363,12 @@ const MAIN = read('js/main.js');
 const STYLE = read('css/style.css');
 const DAILY_HTML = INDEX.slice(INDEX.indexOf('<section id="daily"'), INDEX.indexOf('<!-- /Daily -->'));
 
-test('index.html holds the Daily screen in the board choice composition: wordmark, frame, five mode options, the panel, code chip and bottom bar', () => {
+test('index.html holds the Daily screen in the board choice composition: the frame under its title bar, its heading, five mode options, the panel, code chip and bottom bar', () => {
   assert.ok(DAILY_HTML.length > 400, 'index.html has #daily');
-  assert.match(DAILY_HTML, /^<section id="daily" class="overlay ui-backdrop hidden" aria-label="Daily">/);
-  assert.match(DAILY_HTML, /<h1 class="ui-wordmark" id="daily-wordmark"/);
-  assert.match(DAILY_HTML, /<section class="ui-frame" id="daily-frame" aria-labelledby="daily-title">/);
-  assert.match(DAILY_HTML, /id="daily-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/,
-    'Back: the arrow-left icon, "Main menu" (on a phone "Back") and its back key hint');
+  assert.match(DAILY_HTML, /^<section id="daily" class="overlay ui-backdrop hidden" aria-label="Daily">\s*<section class="ui-frame" id="daily-frame" aria-labelledby="daily-title">/, 'no game title above the window');
+  assert.match(DAILY_HTML, /id="daily-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"><\/button>/,
+    'Back: the title bar\'s arrow alone, named Back to Main menu');
+  assert.match(DAILY_HTML, /<div class="ui-frame__heading">\s*<h2 class="ui-frame__title" id="daily-title">Daily<\/h2>/, 'Daily its heading');
   const modes = [...DAILY_HTML.matchAll(/<button type="button" class="ui-option" aria-pressed="false" id="daily-entry-([\w-]+)" data-mode="([\w-]+)"/g)];
   assert.deepEqual(modes.map((m) => [m[1], m[2]]), MENU_ENTRIES.filter((e) => e.mode).map((e) => [e.mode, e.mode]), 'one option per mode, in menu order');
   for (const mode of ['classic-2d', '3d']) {
@@ -393,9 +392,9 @@ test('index.html holds the Daily screen in the board choice composition: wordmar
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden' || c === 'overlay', `kit class only: ${c}`);
 });
 
-test('the Daily screen on a phone: one full-bleed column, no wordmark, no preview and no summary; Watch replay and Play pinned at the bottom', () => {
+test('the Daily screen on a phone: one full-bleed column, no preview and no summary; Watch replay and Play pinned at the bottom', () => {
   const phone = STYLE.slice(STYLE.lastIndexOf('@media (max-width: 719px)'));
-  assert.match(phone, /#daily-top[^{]*#daily-preview|#daily-preview[^{]*#daily-top/);
+  assert.match(phone, /#daily-preview, #daily-summary[^{]*\{ display: none; \}/);
   assert.match(phone, /#daily-frame[^{]*\{[^}]*width: 100%[^}]*border-radius: 0[^}]*\}/);
   assert.match(phone, /#daily-frame > \.ui-frame__foot[^{]*\{[^}]*position: absolute[^}]*bottom: 0/, 'the bar pinned at the bottom');
 });
@@ -460,7 +459,7 @@ test('in a browser, the Daily screen matches its artboards at each size: key hin
         const option = $('#daily-entry-classic-2d');
         const foot = $('#daily-frame > .ui-frame__foot');
         return {
-          back: { wide: shown('#daily-back [data-label="wide"]'), phone: shown('#daily-back [data-label="phone"]'), name: $('#daily-back').getAttribute('aria-label'), hint: hint('#daily-back'), icon: icon('#daily-back') },
+          back: { text: $('#daily-back').innerText.trim(), name: $('#daily-back').getAttribute('aria-label'), hint: hint('#daily-back'), icon: icon('#daily-back') },
           play: { hint: hint('#daily-play'), icon: icon('#daily-play'), right: Math.round(box('#daily-play').right) },
           copy: [icon('#daily-copy'), icon('#daily-copy-link')],
           watch: $('#daily-watch').getAttribute('data-icon'),
@@ -481,12 +480,12 @@ test('in a browser, the Daily screen matches its artboards at each size: key hin
         };
       });
       assert.equal(got.back.name, 'Back to Main menu', `${label}: Back's name`);
-      assert.deepEqual([got.back.wide, got.back.phone], phone ? [false, true] : [true, false], `${label}: Back reads ${phone ? '"Back"' : '"Main menu"'}`);
-      assert.equal(got.back.icon, 18, `${label}: Back's 18 px arrow-left`);
+      assert.equal(got.back.text, '', `${label}: Back shows its arrow alone`);
+      assert.equal(got.back.icon, 20, `${label}: Back's 20 px arrow-left`);
       assert.equal(got.play.icon, 24, `${label}: Play's 24 px play triangle`);
       assert.deepEqual(got.copy, [14, 14], `${label}: Copy and Copy link's 14 px icons`);
       assert.equal(got.watch, 'film', `${label}: Watch replay's icon`);
-      if (!phone) assert.deepEqual([got.back.hint, got.play.hint], ['Esc', ''], `${label}: "← Main menu [Esc]" and "▷ Play" with no Enter label`);
+      if (!phone) assert.deepEqual([got.back.hint, got.play.hint], ['', ''], `${label}: "←" and "▷ Play", with no key labels`);
       assert.equal(got.status.justify, 'space-between', `${label}: the status row spreads its two ends`);
       assert.ok(Math.abs(got.status.streakRight - got.status.statusRight) <= 1, `${label}: the days in a row at the right`);
       assert.match(got.streak.family, /JetBrains Mono/, `${label}: the days in a row in the mono face`);

@@ -164,17 +164,27 @@ export const KIT_CATALOGUE = Object.freeze([
     variants: ['ui-button--sm'],
     parts: [selectable('button', '.ui-button--quiet', { chosen: '.ui-button--quiet[aria-pressed="true"]' })],
   }),
-  // The game's title: three words on one line, each in its own accent.
-  component('ui-wordmark', { parts: [part('word', '.ui-wordmark__word')] }),
+  // The game logo, the straight one at rest: MINESWEEPER a game colour per letter, 3D in yellow.
+  component('ui-logo', { parts: [part('word', '.ui-logo__word'), part('letter', '.ui-logo__letter')] }),
   component('ui-backdrop'),
-  // The white action foot (ui-frame__foot--action) ends a screen's bar of actions; the game window keeps the plain foot.
+  // The head is the game's title bar: Back as an arrow icon (none on the main menu), the game logo in
+  // the centre and the window buttons — Minimise, Fullscreen / Windowed and Quit, the stop button — at
+  // the end, each icon-only; the screen's name is the body heading, its control at the heading's
+  // right. The white action foot (ui-frame__foot--action) ends a screen's bar of actions; the game
+  // window keeps the plain foot.
   component('ui-frame', {
     variants: ['ui-frame__foot--action'],
     parts: [
       part('head', '.ui-frame__head'),
-      part('back', '.ui-frame__start .ui-button', { optional: true, as: 'ui-button--secondary' }),
+      part('back', '.ui-frame__start > .ui-frame__back', { optional: true, as: 'ui-button--secondary' }),
+      part('logo', '.ui-frame__logo', { optional: true, as: 'ui-logo' }),
+      part('window', '.ui-frame__end > .ui-frame__window', { optional: true }),
+      part('minimise', '.ui-frame__window [data-window="minimise"]', { optional: true, as: 'ui-button--secondary' }),
+      part('fullscreen', '.ui-frame__window [data-window="fullscreen"]', { optional: true, as: 'ui-button--secondary' }),
+      part('quit', '.ui-frame__window [data-window="quit"]', { optional: true, as: 'ui-button--stop' }),
+      part('heading', '.ui-frame__heading', { optional: true }),
       part('title', '.ui-frame__title'),
-      part('action', '.ui-frame__end .ui-button', { optional: true, as: 'ui-button--secondary' }),
+      part('action', '.ui-frame__action', { optional: true }),
       part('body', '.ui-frame__body'),
       part('foot', '.ui-frame__foot', { optional: true }),
       part('status', '.ui-frame__status', { optional: true }),

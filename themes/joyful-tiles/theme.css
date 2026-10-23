@@ -90,6 +90,9 @@
   --color-orange-edge: #c96a12;
   --color-orange-on: #16204a;
   --color-ink-edge: #0a1030;
+  /* the game logo's lighter blue and violet letters */
+  --color-logo-blue: #6f9ff7;
+  --color-logo-violet: #a084f5;
 
   /* status */
   --color-figure: #0d7064;
@@ -772,11 +775,65 @@
   box-shadow: inset 0 0 0 3px var(--color-head);
 }
 
-/* ---------- wordmark: blue, coral and yellow words (--f), each on a stack of its own hard edge (--e) ---------- */
-:root[data-theme="joyful-tiles"] .ui-wordmark { font-weight: 900; }
-:root[data-theme="joyful-tiles"] .ui-wordmark__word { --f: var(--color-blue); --e: var(--color-blue-edge); color: var(--f); text-shadow: 0 0.05em 0 var(--e), 0 0.1em 0 var(--e), 0 0.2em 0.24em var(--shade-press); }
-:root[data-theme="joyful-tiles"] .ui-wordmark__word:nth-child(2) { --f: var(--color-accent-fill); --e: var(--color-accent-edge); }
-:root[data-theme="joyful-tiles"] .ui-wordmark__word:nth-child(3) { --f: var(--color-yellow); --e: var(--color-yellow-edge); }
+/* ---------- game logo: each letter of MINESWEEPER in a game colour (--f) over its extrusion, its edge
+   (--e) mixed a third towards the ink, two steps down-right (--logo-x, --logo-y); 3D in yellow; a white
+   outline of --logo-o around the letter and the extrusion's end. Sized with the frame's steps. ---------- */
+:root[data-theme="joyful-tiles"] .ui-logo {
+  --logo-x: 0.9px;
+  --logo-y: 2px;
+  --logo-o: 3px;
+  gap: 20px;
+  font-size: 44px;
+  font-weight: 900;
+  transform: translateY(-2px);
+}
+:root[data-theme="joyful-tiles"] .ui-logo__word { gap: 3px; }
+:root[data-theme="joyful-tiles"] .ui-logo__letter {
+  --f: var(--color-logo-blue);
+  --e: var(--color-blue);
+  color: var(--f);
+  text-shadow:
+    var(--logo-x) var(--logo-y) 0 color-mix(in srgb, var(--e) 62%, var(--color-ink)),
+    calc(var(--logo-x) * 2) calc(var(--logo-y) * 2) 0 color-mix(in srgb, var(--e) 62%, var(--color-ink)),
+    calc(var(--logo-o) * 1.0) 0px 0 var(--color-surface),
+    calc(var(--logo-o) * 0.92) calc(var(--logo-o) * 0.38) 0 var(--color-surface),
+    calc(var(--logo-o) * 0.71) calc(var(--logo-o) * 0.71) 0 var(--color-surface),
+    calc(var(--logo-o) * 0.38) calc(var(--logo-o) * 0.92) 0 var(--color-surface),
+    0px calc(var(--logo-o) * 1.0) 0 var(--color-surface),
+    calc(var(--logo-o) * -0.38) calc(var(--logo-o) * 0.92) 0 var(--color-surface),
+    calc(var(--logo-o) * -0.71) calc(var(--logo-o) * 0.71) 0 var(--color-surface),
+    calc(var(--logo-o) * -0.92) calc(var(--logo-o) * 0.38) 0 var(--color-surface),
+    calc(var(--logo-o) * -1.0) 0px 0 var(--color-surface),
+    calc(var(--logo-o) * -0.92) calc(var(--logo-o) * -0.38) 0 var(--color-surface),
+    calc(var(--logo-o) * -0.71) calc(var(--logo-o) * -0.71) 0 var(--color-surface),
+    calc(var(--logo-o) * -0.38) calc(var(--logo-o) * -0.92) 0 var(--color-surface),
+    0px calc(var(--logo-o) * -1.0) 0 var(--color-surface),
+    calc(var(--logo-o) * 0.38) calc(var(--logo-o) * -0.92) 0 var(--color-surface),
+    calc(var(--logo-o) * 0.71) calc(var(--logo-o) * -0.71) 0 var(--color-surface),
+    calc(var(--logo-o) * 0.92) calc(var(--logo-o) * -0.38) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * 1.0) calc(var(--logo-y) * 2) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * 0.92) calc(var(--logo-y) * 2 + var(--logo-o) * 0.38) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * 0.71) calc(var(--logo-y) * 2 + var(--logo-o) * 0.71) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * 0.38) calc(var(--logo-y) * 2 + var(--logo-o) * 0.92) 0 var(--color-surface),
+    calc(var(--logo-x) * 2) calc(var(--logo-y) * 2 + var(--logo-o) * 1.0) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * -0.38) calc(var(--logo-y) * 2 + var(--logo-o) * 0.92) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * -0.71) calc(var(--logo-y) * 2 + var(--logo-o) * 0.71) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * -0.92) calc(var(--logo-y) * 2 + var(--logo-o) * 0.38) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * -1.0) calc(var(--logo-y) * 2) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * -0.92) calc(var(--logo-y) * 2 + var(--logo-o) * -0.38) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * -0.71) calc(var(--logo-y) * 2 + var(--logo-o) * -0.71) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * -0.38) calc(var(--logo-y) * 2 + var(--logo-o) * -0.92) 0 var(--color-surface),
+    calc(var(--logo-x) * 2) calc(var(--logo-y) * 2 + var(--logo-o) * -1.0) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * 0.38) calc(var(--logo-y) * 2 + var(--logo-o) * -0.92) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * 0.71) calc(var(--logo-y) * 2 + var(--logo-o) * -0.71) 0 var(--color-surface),
+    calc(var(--logo-x) * 2 + var(--logo-o) * 0.92) calc(var(--logo-y) * 2 + var(--logo-o) * -0.38) 0 var(--color-surface);
+}
+:root[data-theme="joyful-tiles"] .ui-logo__word:first-child > .ui-logo__letter:nth-child(6n + 2) { --f: var(--color-accent-fill); --e: var(--color-accent-edge); }
+:root[data-theme="joyful-tiles"] .ui-logo__word:first-child > .ui-logo__letter:nth-child(6n + 3) { --f: var(--color-teal); --e: var(--color-teal-edge); }
+:root[data-theme="joyful-tiles"] .ui-logo__word:first-child > .ui-logo__letter:nth-child(6n + 4) { --f: var(--color-logo-violet); --e: var(--color-violet); }
+:root[data-theme="joyful-tiles"] .ui-logo__word:first-child > .ui-logo__letter:nth-child(6n + 5) { --f: var(--color-green); --e: var(--color-green-edge); }
+:root[data-theme="joyful-tiles"] .ui-logo__word:first-child > .ui-logo__letter:nth-child(6n) { --f: var(--color-orange); --e: var(--color-orange-edge); }
+:root[data-theme="joyful-tiles"] .ui-logo__word:last-child > .ui-logo__letter { --f: var(--color-yellow); --e: var(--color-yellow-edge); }
 
 /* ---------- page backdrop and screen frame: dotted paper, a white window under a yellow head ---------- */
 :root[data-theme="joyful-tiles"] .ui-backdrop {
@@ -798,7 +855,24 @@
   color: var(--color-ink);
 }
 :root[data-theme="joyful-tiles"] .ui-frame__end { gap: 10px; }
+/* the title bar: a head holding the logo, its Back and window buttons 38 px squares with 20 px icons */
+:root[data-theme="joyful-tiles"] .ui-frame__head:has(> .ui-frame__logo) {
+  min-height: 68px;
+  padding: 10px 14px 14px;
+}
+:root[data-theme="joyful-tiles"] .ui-frame__window { gap: 8px; }
+:root[data-theme="joyful-tiles"] :is(.ui-frame__back, .ui-frame__window > .ui-button) {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  border-radius: var(--radius-md);
+}
+:root[data-theme="joyful-tiles"] :is(.ui-frame__back, .ui-frame__window > .ui-button) > .ui-icon { width: 20px; height: 20px; }
+/* the heading: the screen's name, 30 px black, over the body */
+:root[data-theme="joyful-tiles"] .ui-frame__heading { padding: 22px 26px 0; }
+:root[data-theme="joyful-tiles"] .ui-frame__action { gap: 10px; }
 :root[data-theme="joyful-tiles"] .ui-frame__title { font-size: 20px; color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-frame__heading > .ui-frame__title { font-size: 30px; font-weight: 900; line-height: 1.1; }
 :root[data-theme="joyful-tiles"] .ui-frame__body { color: var(--color-ink); scrollbar-color: var(--color-edge) transparent; }
 :root[data-theme="joyful-tiles"] .ui-frame__foot {
   padding: 8px 22px;
@@ -808,6 +882,12 @@
 }
 :root[data-theme="joyful-tiles"] :is(.ui-frame__status, .ui-frame__summary) { font-size: 15px; color: var(--color-ink); }
 :root[data-theme="joyful-tiles"] .ui-frame__summary { font-weight: var(--font-weight-bold); }
+/* the main menu's foot: the build label on the surface under a ruled line */
+:root[data-theme="joyful-tiles"] #menu-foot {
+  padding: 12px 24px 14px;
+  border-top: 2px solid var(--color-line);
+  background: var(--color-surface);
+}
 /* the white action foot of a screen's actions (board choices, Daily, results): the surface under a ruled line */
 :root[data-theme="joyful-tiles"] .ui-frame__foot--action {
   padding: 14px 24px 18px;
@@ -849,7 +929,21 @@
     min-height: 56px;
     padding: 8px 14px;
   }
+  :root[data-theme="joyful-tiles"] .ui-frame__head:has(> .ui-frame__logo) {
+    min-height: 60px;
+    padding: 8px 12px 12px;
+  }
+  :root[data-theme="joyful-tiles"] .ui-logo {
+    --logo-x: 0.7px;
+    --logo-y: 1.6px;
+    --logo-o: 2px;
+    gap: 16px;
+    font-size: 36px;
+  }
+  :root[data-theme="joyful-tiles"] .ui-logo__word { gap: 2px; }
+  :root[data-theme="joyful-tiles"] .ui-frame__heading { padding: 14px 22px 0; }
   :root[data-theme="joyful-tiles"] .ui-frame__title { font-size: 18px; }
+  :root[data-theme="joyful-tiles"] .ui-frame__heading > .ui-frame__title { font-size: 26px; }
   :root[data-theme="joyful-tiles"] .ui-frame__foot--action { padding: 10px 20px 14px; }
   :root[data-theme="joyful-tiles"] #results-actions { padding: 14px 22px 18px; }
 }
@@ -858,7 +952,23 @@
     min-height: 60px;
     padding: 8px 10px;
   }
+  :root[data-theme="joyful-tiles"] .ui-frame__head:has(> .ui-frame__logo) {
+    min-height: 52px;
+    padding: 4px 10px 10px;
+  }
+  :root[data-theme="joyful-tiles"] .ui-logo {
+    --logo-x: 0.4px;
+    --logo-y: 1.2px;
+    --logo-o: 2px;
+    gap: 8px;
+    font-size: 20px;
+    transform: translateY(-1px);
+  }
+  :root[data-theme="joyful-tiles"] .ui-logo__word { gap: 1px; }
+  :root[data-theme="joyful-tiles"] :is(.ui-frame__back, .ui-frame__window > .ui-button) { width: 40px; height: 40px; min-height: 40px; }
+  :root[data-theme="joyful-tiles"] .ui-frame__heading { padding: 16px 18px 0; }
   :root[data-theme="joyful-tiles"] .ui-frame__title { font-size: 17px; }
+  :root[data-theme="joyful-tiles"] .ui-frame__heading > .ui-frame__title { font-size: 24px; }
   :root[data-theme="joyful-tiles"] .ui-button--sm { min-height: 44px; }
   /* the large go button slimmer still, on its small edge */
   :root[data-theme="joyful-tiles"] .ui-button--lg.ui-button--go {
