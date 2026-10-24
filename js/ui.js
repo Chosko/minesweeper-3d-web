@@ -4,7 +4,7 @@
 // (js/settings/bindings.js) for the active mode and the active device (the controller in the
 // connected controller's glyphs).
 import {
-  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote, setButtonIcon,
+  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote, setButtonIcon, fitTitleBar,
 } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
 import { helpListHtml, readyListHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys, reminderKeys } from './settings/bindings.js';
@@ -459,8 +459,8 @@ export class UI {
    * (board-view.js). The room is measured with the window at its largest (#c2d.c2d--measure, the
    * area taking what the chrome leaves) and the area sized at once, in one task, so nothing paints
    * in between. Measured at its largest, the window's chrome can be shorter than at the
-   * board's width (the figures row under the board wraps more): the area gives back what the body
-   * then overflows. Returns whether the area's size changed; a hidden window is left as it is.
+   * board's width (the figures row under the board wraps more): the area gives back what the body,
+   * or the board column, then overflows. Returns whether the area's size changed; a hidden window is left as it is.
    */
   sizeBoard2D(extent) {
     const { c2d, c2dStage: stage } = this.el;
@@ -482,9 +482,33 @@ export class UI {
     };
     place(b.height);
     const body = stage.closest('.ui-frame__body');
-    const over = body ? body.scrollHeight - body.clientHeight : 0;
-    if (over > 0) place(b.height - over);
+    const column = stage.parentElement;
+    // A narrower board narrows the window, which can wrap the figures row under it once more: give back again,
+    // what the body overflows or what the board column, squeezed by that row, does.
+    for (let i = 0, room = b.height; body && i < 3; i++) {
+      const over = Math.max(body.scrollHeight - body.clientHeight, column.scrollHeight - column.clientHeight);
+      if (over <= 0) break;
+      room -= over;
+      place(room);
+    }
+    this.fitTitle2D();
     return stage.style.width !== before[0] || stage.style.height !== before[1];
+  }
+  /**
+   * The Classic 2D window's title bar fitted to the board column the window hugs: the logo scaled
+   * down, or hidden under its floor (fitTitleBar); a column narrower than Pause and the window
+   * buttons alone widens the window to them.
+   */
+  fitTitle2D() {
+    const frame = this.el.c2dStage.closest('.ui-frame');
+    const head = frame?.querySelector(':scope > .ui-frame__head');
+    if (!head) return;
+    const least = fitTitleBar(head);
+    const min = least === null ? '' : `${Math.ceil(least)}px`;
+    if (frame.style.minWidth !== min) {
+      frame.style.minWidth = min;
+      fitTitleBar(head);
+    }
   }
   /** The Classic 2D board the window's foot line (the title, then the board) and the pause card's board line (the title and boardLine2D joined) name; { width, height, mines, noGuess, identity }. */
   setBoard2D(board) { this._board2D(board); this._sizeMines(board.mines, this.el.c2dMines); }

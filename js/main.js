@@ -670,6 +670,7 @@ function sizeSoon2D() {
   if (!sizing2D) sizing2D = requestAnimationFrame(() => { sizing2D = 0; size2D(); });
 }
 new ResizeObserver(size2D).observe(document.getElementById('c2d'));
+document.fonts?.addEventListener?.('loadingdone', size2D); // the title bar's logo refitted to its font
 /** Either mode's live-figures toggle: the one stored state flipped, both modes' panels shown or hidden, the Classic 2D board refitted to the room left. */
 function toggleFigures() {
   LIVE_FIGURES.setOpen(!LIVE_FIGURES.open);
