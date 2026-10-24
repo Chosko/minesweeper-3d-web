@@ -40,7 +40,7 @@ is the head comment of `css/components.css` (*Daily*); its ids are
 - `resolveCode(text, {today, mode?})` → `{kind: 'refused' | 'daily' |
   'challenge', …}`, a code of another mode refused with `otherMode` its
   mode; `otherModeHint(mode)`, naming the mode from `MODE_NAMES` (Classic
-  2D, Hexagon, 3D); `gameStart({board, seed,
+  2D, Hexagon, Triangle, 3D); `gameStart({board, seed,
   startCell, daily?, pregenerated?})` → `{mode, choice}` (2D `fixed`, 3D
   `forced`); `freeStart(board)`; `boardHash(hash)`;
   `createChallengeLinks({location, history, onDaily, onChallenge,

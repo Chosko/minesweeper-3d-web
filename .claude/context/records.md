@@ -12,7 +12,7 @@ chart, which draws on the canvas it is handed.
 
 | File | Responsibility | Detail in |
 | ---- | -------------- | --------- |
-| `js/records/board.js` | Board identity (2D and 3D forms, the 2D one Classic 2D's or Hexagon's), key, parser, label, the square and hexagon standard boards, cube 3D presets. Imports nothing. | here |
+| `js/records/board.js` | Board identity (2D and 3D forms, the 2D one Classic 2D's, Hexagon's or Triangle's), key, parser, label, the square, hexagon and triangle standard boards, cube 3D presets. Imports nothing. | here |
 | `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the two daily boards. | [records-board-code.md](records-board-code.md) |
 | `js/records/summary.js` | Summary builder, derived stats, best eligibility. | here |
 | `js/records/model.js` | Records model: bests, per-mode counters, history, comparison, the records format step. No storage. | [records-store.md](records-store.md) |
@@ -36,12 +36,13 @@ Board identity (`js/records/board.js`; its header documents the key format)
   fields, plus `daily: true` on a Daily board only, else a `RangeError`. 2D
   `{ mode, grid, width, height, mines, noGuess }`; 3D `{ mode: MODE_3D,
   width, height, depth, mines, noGuess }` (no `grid`; sides `1 .. 100`).
-  A hexagon board is the 2D form with mode `hexagon` and grid `hex`.
+  A hexagon board is the 2D form with mode `hexagon` and grid `hex`, a
+  triangle board the 2D form with mode `triangle` and grid `tri`.
   `MODE_3D` — `'3d'`.
 - `boardKey(identity)` → `classic-2d:square:30x16:99:no-guess` /
-  `hexagon:hex:30x16:100:guess` / `3d:10x10x10:100:no-guess` (a 3D key
-  never equals a 2D key; a hexagon key is the 2D format with its own mode
-  and grid), a Daily board
+  `hexagon:hex:30x16:100:guess` / `triangle:tri:41x17:103:guess` /
+  `3d:10x10x10:100:no-guess` (a 3D key never equals a 2D key; a hexagon or
+  triangle key is the 2D format with its own mode and grid), a Daily board
   `daily:<board key>`; `parseBoardKey(key)` its inverse; `BOARD_KEY_FORMAT`
   — `2`.
 - `boardLabel(identity)` → `"Expert · no-guess"`, `"20 × 12 · 50 mines"`,
@@ -50,8 +51,9 @@ Board identity (`js/records/board.js`; its header documents the key format)
   by its dimensions).
 - `standardBoard(identity)` → the standard board an identity is on its
   grid: `STANDARD_BOARDS` (Beginner, Intermediate, Expert) on `square`,
-  `STANDARD_BOARDS_HEX` on `hex` (an equal copy of the Hexagon board setup's
-  `STANDARD_SIZES`, [classic2d.md](classic2d.md), held equal by a test);
+  `STANDARD_BOARDS_HEX` on `hex` and `STANDARD_BOARDS_TRI` on `tri` (equal
+  copies of the Hexagon and Triangle board setups' `STANDARD_SIZES`,
+  [classic2d.md](classic2d.md), each held equal by a test);
   `preset3D(identity)` / `PRESETS_3D` (Cube Intro, Beginner,
   Intermediate, Expert — equal to the 3D board choice's `PRESETS`,
   [mode3d.md](mode3d.md)). Null for a custom board, a former preset's
@@ -81,7 +83,8 @@ Summary (`js/records/summary.js`)
 - **Identity, not names.** Every exact combination of the six fields is its
   own board, so a board and its no-guess twin, and a 2D and a 3D board, keep
   separate records. Standard and preset names are recognised from size and
-  mine count (on the `square` and `hex` grids, each against its own list)
+  mine count (on the `square`, `hex` and `tri` grids, each against its own
+  list)
   and never stored, so
   a custom board matching one is that board. A board whose preset was
   dropped keeps its key and records and reads as custom: the former double
@@ -110,6 +113,8 @@ Summary (`js/records/summary.js`)
   — the 3D board identity, key and labels, 3D summaries.
 - [../domain/features/hexagon-grid.md](../domain/features/hexagon-grid.md)
   — the hexagon board identity and its standard boards.
+- [../domain/features/triangle-grid.md](../domain/features/triangle-grid.md)
+  — the triangle board identity and its standard boards.
 - [../domain/features/cell-graph-rules-engine.md](../domain/features/cell-graph-rules-engine.md)
   — what 3BV, 3BV solved and a counted click are.
 
@@ -126,7 +131,8 @@ Summary (`js/records/summary.js`)
   `boardKey`.
 - [classic2d.md](classic2d.md), [mode3d.md](mode3d.md) — the callers of the
   builder, one summary id per game; classic2d.md also holds the Hexagon
-  board setup `STANDARD_BOARDS_HEX` mirrors.
+  and Triangle board setups `STANDARD_BOARDS_HEX` and `STANDARD_BOARDS_TRI`
+  mirror.
 - [testing.md](testing.md) — `tests/records-board*.test.mjs`,
   `tests/records-summary*.test.mjs`.
 
@@ -135,9 +141,10 @@ Summary (`js/records/summary.js`)
 - Changing the key format or the identity's fields: read `board.js` whole,
   and bump `BOARD_KEY_FORMAT` with a records format version.
 - Changing a 3D preset: `PRESETS_3D` in `board.js` changes together with
-  `PRESETS` in `js/mode3d/board-choice.js`; a Hexagon standard board:
-  `STANDARD_BOARDS_HEX` together with `STANDARD_SIZES` in
-  `js/hexagon/board-setup.js`.
+  `PRESETS` in `js/mode3d/board-choice.js`; a Hexagon or Triangle standard
+  board: `STANDARD_BOARDS_HEX` or `STANDARD_BOARDS_TRI` together with
+  `STANDARD_SIZES` in `js/hexagon/board-setup.js` or
+  `js/triangle/board-setup.js`.
 - Adding a summary field or a derived stat: `buildSummary` and `STAT_VALUE`
   in `summary.js`; a new best stat joins `BEST_STATS` and `model.js`'s
   `STAT_VALUE` and `BETTER` tables.

@@ -71,12 +71,14 @@ Built within the recorded technical direction, as `hexagon-grid` is (see
   No-guess generation on every standard board, Expert included, meets the
   attempt budget (`dev/measure-noguess-tri.mjs`).
 - **Geometry** — the triangle implementation of `flat-grid-geometry`:
-  triangles a half side apart along a row and one triangle height apart
-  between rows (plus the gap), each outline pointing the cell's way, the
-  glyph box centred on the centroid, the cursor moves above, the floor and
-  the scale cap.
-- **Board setup values** — standard sizes and custom limits, read by the
-  Triangle board choice and the board-code parser.
+  rows one triangle height plus the gap apart, and tiles along a row spaced
+  so every pair of facing sides is one gap apart, each outline pointing the
+  cell's way, the glyph box the square around the circle inside the tile,
+  centred on the centroid, the cursor moves above, the floor and the scale
+  cap.
+- **Board setup values** — the standard sizes and the custom limits in
+  `js/triangle/board-setup.js`, read by the Triangle board choice and the
+  board-code parser.
 - **Board identity** — the 2D form with mode `triangle` and grid `tri`,
   standard names recognised on the `tri` grid.
 

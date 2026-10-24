@@ -16,23 +16,26 @@ comment states the full contract.
 | `js/geometry/index.js` | the contract, the kind lookup `createGeometry`, `GRID_KINDS` |
 | `js/geometry/square.js` | the square geometry: Classic 2D's tiles one pitch apart |
 | `js/geometry/hex.js` | the hexagon geometry: flat-top tiles in columns, odd columns half a row step lower |
+| `js/geometry/tri.js` | the triangle geometry: rows of alternating triangles, each pointing its cell's way |
 
 ## PUBLIC API
 
 - `GRID_KINDS` — the grid kinds a geometry can be built for (`square`,
-  `hex`); `createGeometry(kind, width, height)` → the geometry, a
+  `hex`, `tri`); `createGeometry(kind, width, height)` → the geometry, a
   `RangeError` for an unknown kind. `createSquareGeometry(width, height)`,
-  `createHexGeometry(width, height)` — a size that is not a whole number of
-  cells is a `RangeError`.
+  `createHexGeometry(width, height)`, `createTriGeometry(width, height)` — a
+  size that is not a whole number of cells is a `RangeError`.
 - A geometry → frozen `{kind, width, height, count, minTile, tileCap(scale),
   extent(tile, gap), centre(c, tile, gap), outline(c, tile, gap),
   glyphBox(c, tile, gap), cellAt(x, y, tile, gap), neighbour(c,
   direction)}`. Positions are CSS pixels from the board's top-left corner
-  for a tile size (a square's side, a hexagon across the flats) and a gap
+  for a tile size (a square's side, a hexagon across the flats, a
+  triangle's side) and a gap
   in whole pixels (the layout's `gap`).
   - `outline` → frozen `{shape, orientation, x, y, width, height, points}`:
-    the shape (`square`, `hexagon`), its orientation (`none` for a shape with
-    one), its bounding box and corners; `centre`, `outline` and `glyphBox`
+    the shape (`square`, `hexagon`, `triangle`), its orientation (`up` or
+    `down` for a triangle, `none` for a shape with one), its bounding box and
+    corners; `centre`, `outline` and `glyphBox`
     are null for a cell off the board.
   - `cellAt` → the cell whose slot holds the point, -1 off the board.
   - `neighbour(c, direction)` → the cursor's next cell `up`, `down`, `left`
@@ -44,22 +47,36 @@ comment states the full contract.
 ## INTERNAL PATTERNS
 
 - **Cell numbering is the engine's.** Cell c is column `c % width`, row
-  `floor(c / width)` on both kinds, the grid providers' index layout
-  (`square-grid.js`, `hex-grid.js`); a geometry built for another size than
+  `floor(c / width)` on every kind, the grid providers' index layout
+  (`square-grid.js`, `hex-grid.js`, `tri-grid.js`); a geometry built for another size than
   the board's grid is refused by the board view.
 - **Every point has one slot.** Square: a cell's slot is its tile and the
   gap after it, so a point in a gap goes to the tile before it. Hexagon: the
   slot is every point nearer the cell's centre than any other, a tie to the
-  lower index.
+  lower index. Triangle: the slot is every point nearer the cell's outline
+  than any other tile's, a tie to the lower index, so a press in a gap goes
+  to the nearest tile.
 - **Hexagon placement.** Neighbours sit one row step (the tile plus the
   gap) apart in all six directions, so the column step is √3 / 2 of it; the
   glyph box is the tile across the flats, centred on the cell. The cursor
   moves up and down within a column, and left and right to the same row
   index of the next column, zig-zagging along a row.
-- **Floor and cap are read, never copied.** Both kinds take `minTile` from
-  the tile skin's `MIN_TILE_SIZE` and `tileCap` from the board view's
-  `tileCap`; the geometry modules import them, and the board view imports
-  the geometry, a cycle that holds because each is read only at call time.
+- **Triangle placement.** Cell c points up when column + row is even, the
+  triangle provider's `orientation`. Rows sit one triangle height plus the
+  gap apart, base facing base; along a row the tiles sit half a side plus
+  2·gap / √3 apart, so every pair of facing sides, slanted or flat, is one
+  gap apart. The centre is the centroid, and the glyph box the square
+  around the circle inside the tile (side / √3). The cursor moves left and
+  right along the row, and up and down to the same column in the row above
+  or below.
+- **Floor and cap are read, never copied.** The square and hexagon kinds
+  take `minTile` from the tile skin's `MIN_TILE_SIZE` and `tileCap` from the
+  board view's `tileCap`; the triangle kind has its own floor a side
+  (`tri.js`'s `MIN_SIDE`, where the circle inside the tile is about the
+  square floor's tile) and a cap of the board view's `tileCap` × √3,
+  rounded, so its glyph matches the square's at each board scale. The
+  geometry modules import them, and the board view imports the geometry, a
+  cycle that holds because each is read only at call time.
 - **Who builds which.** The Classic 2D mode, the menu's and Daily
   previews build the square geometry of their grid; the 2D replay viewer
   rebuilds its board's from the replay's board identity (`replayGeometry`);
@@ -72,11 +89,13 @@ comment states the full contract.
   — the contract and what moved onto it.
 - [../domain/features/hexagon-grid.md](../domain/features/hexagon-grid.md)
   — the hexagon board, its placement and hit-testing.
+- [../domain/features/triangle-grid.md](../domain/features/triangle-grid.md)
+  — the triangle board, its placement, hit-testing and floor.
 
 ## CROSS-REFERENCES
 
-- [engine.md](engine.md) — the square and hexagon grid providers whose
-  index layout the geometries share.
+- [engine.md](engine.md) — the square, hexagon and triangle grid providers
+  whose index layout and orientation the geometries share.
 - [classic2d-board-view.md](classic2d-board-view.md) — the layout and fit
   rule on the geometry; [classic2d-tile-skin.md](classic2d-tile-skin.md) —
   a tile drawn through its outline and glyph box;

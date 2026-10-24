@@ -1481,7 +1481,7 @@ Feature: triangle-grid
 
 ## 261. Update documentation for feature `triangle-grid`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/engine.md, .claude/context/generation.md, .claude/context/records.md, .claude/context/records-board-code.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/triangle-grid.md
 Preconditions: 258, 259, 260
