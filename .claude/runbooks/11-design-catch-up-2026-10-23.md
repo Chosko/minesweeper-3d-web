@@ -112,7 +112,7 @@ Context:
 
 Done: 2026-10-24, commit `e1cac9f` (22 files, +247/-143). The stale wording reached past the task's file list, so eight more context files were updated; the feature document's other passages still carry the old wording, left for `/architect`.
 
-## [~] 8. Implement task 288 — Update documentation for feature in-game-layout
+## [x] 8. Implement task 288 — Update documentation for feature in-game-layout
 
 Depends on: 5, 6
 
@@ -124,6 +124,8 @@ Context:
 ```prompt
 /task-implement 288 --review
 ```
+
+Done: 2026-10-24, commit `8ffe78c` (7 files, +23/-17). Premise wrong: tasks 286 and 287 had already updated the mode context files; what was stale was `testing.md`, three INDEX.md rows and `platform.md`'s document owners.
 
 ## [x] 9. Update the Joyful tiles theme from its canvas
 
