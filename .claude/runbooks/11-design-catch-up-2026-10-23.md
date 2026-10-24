@@ -54,7 +54,7 @@ Context: none
 
 Done: 2026-10-24, commit `8c37909` (28 files, +812/-416). Decision: the panel behaviour is `bindChoicePanel` in `js/classic2d/board-choice.js`, which the 3D binder imports; `choiceSummary` and `LEARN_SUMMARY` are removed and `show()` no longer takes `played`.
 
-## [ ] 5. Implement task 286 — Classic 2D game window: title bar with Pause, mode in the footer, collapsed live figures
+## [x] 5. Implement task 286 — Classic 2D game window: title bar with Pause, mode in the footer, collapsed live figures
 
 Depends on: 1, 2, 4
 
@@ -74,11 +74,14 @@ Context:
 /task-implement 286 --review
 ```
 
-## [ ] 6. Implement task 287 — 3D game overlay without a title: floating Pause and live-figures toggle
+Done: 2026-10-24, commit `249ecd5` (28 files, +448/-179). Decision: RB toggles the live figures in a Classic 2D game, listed in its controller rows; Swap clicks has no controller button.
+
+## [~] 6. Implement task 287 — 3D game overlay without a title: floating Pause and live-figures toggle
 
 Depends on: 5
 
-Context: none
+Context:
+- 2026-10-24 (from step 5): the live figures' open state is the stored `shell.liveFigures` document, meant to be shared with the 3D overlay; RB is Classic 2D's live-figures button (listed in its controller rows), chosen so the same button can serve the 3D toggle.
 
 ```prompt
 /task-implement 287 --review
@@ -103,7 +106,8 @@ Done: 2026-10-24, commit `e1cac9f` (22 files, +247/-143). The stale wording reac
 
 Depends on: 5, 6
 
-Context: none
+Context:
+- 2026-10-24 (from step 5): task 286's commit already updated several `.claude/context` files to match its code.
 
 ```prompt
 /task-implement 288 --review
