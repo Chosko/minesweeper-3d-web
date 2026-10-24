@@ -270,7 +270,7 @@ Context: none
 
 Done: 2026-10-24, commit `0d42cff` (8 files, +490/-81). Decision: the flat-mode configuration argument is optional everywhere and defaults to the square values, so existing calls still work; side limits and the size hint stay shared by every flat mode.
 
-## [ ] 21. Implement task 268 — Hexagon and Triangle modes with their board choice screens
+## [x] 21. Implement task 268 — Hexagon and Triangle modes with their board choice screens
 
 Depends on: 8, 9, 12, 13, 20
 
@@ -282,6 +282,8 @@ Context:
 /task-implement 268 --review
 ```
 
+Done: 2026-10-24, commit `f010847` (21 files, +501/-70). Decision: the Hexagon and Triangle menu tiles open their own board choices, so browser tests that reached the Coming soon page through them go through Surface; the routes live in js/main.js's screen table, not js/shell/router.js.
+
 ## [ ] 22. Implement task 269 — Play in Hexagon and Triangle
 
 Depends on: 17, 21
@@ -289,6 +291,7 @@ Depends on: 17, 21
 Context:
 - 2026-10-23 (amend): task 269 was re-planned for the new in-game window (Pause in the title bar, mode in the footer, live figures hidden by default, icon-only Restart) and now waits on task 286, the m2b-themes Classic 2D window, which this runbook does not run.
 - 2026-10-24 (from step 17): on hexagon and triangle boards the cursor ring and the end effect's flash are still drawn around the tile's square box — no task's acceptance criteria cover them.
+- 2026-10-24 (from step 21): Play on the Hexagon and Triangle board choices already starts the mode in the shared Classic 2D game window, but the parts of js/main.js that check for `classic-2d` do not handle these modes yet.
 
 ```prompt
 /task-implement 269 --review
@@ -302,6 +305,7 @@ Context:
 - 2026-10-24 (from step 9): a hexagon board code already parses (js/records/board.js), so a `#board=` link carrying one tries to start a mode that does not exist until this task routes it.
 - 2026-10-24 (from step 13): a triangle board code (`T` prefix) now parses too, so a `#board=` link carrying one also needs this task's routing.
 - 2026-10-24 (from step 20): the flat-mode configuration's code token is not read by anything yet — board codes still route through js/records/board-code.js's own table.
+- 2026-10-24 (from step 21): the Hexagon and Triangle board choices' code fields already check codes live; starting a coded board is this task's.
 
 ```prompt
 /task-implement 270 --review
@@ -313,6 +317,7 @@ Depends on: 20, 21, 22, 23
 
 Context:
 - 2026-10-24 (from step 20): task 267 left the Classic 2D and shell context files for this task — js/flat-modes.js (`CLASSIC_2D`, the per-mode configuration, optional everywhere and defaulting to square) and `SQUARE_SETUP` in js/classic2d/board-setup.js.
+- 2026-10-24 (from step 21): `#hex-choice` and `#tri-choice` in index.html copy `#c2d-choice` (a test holds them equal); every css/style.css and Joyful tiles rule styling Classic 2D's board choice also names its Hexagon and Triangle twins (enforced by a test); the routes are in js/main.js's screen table; task 268 already updated the menu-routing statements in .claude/context/app-shell-menu.md and INDEX.md, the rest of the context update is this task's.
 
 ```prompt
 /task-implement 271 --review
@@ -333,7 +338,8 @@ Context:
 
 Depends on: 25
 
-Context: none
+Context:
+- 2026-10-24 (from step 21): the Hexagon and Triangle board choices' *All records* link already opens the Records screen with a mode the screen does not list yet.
 
 ```prompt
 /task-implement 273 --review
