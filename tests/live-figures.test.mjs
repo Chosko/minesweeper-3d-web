@@ -200,14 +200,15 @@ test('a malformed or newer panel document reads as closed; a failed save keeps t
   }
 });
 
-test('one preference, loaded before the first screen, drives the Classic 2D window\'s panel and its toggle', () => {
+test('one preference, loaded before the first screen, drives the Classic 2D window\'s and the 3D overlay\'s panels and their toggles', () => {
   const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
   assert.match(main, /const LIVE_FIGURES = createFiguresPanel\(\{ storage \}\);/);
-  assert.match(main, /await Promise\.all\(\[[^\]]*LIVE_FIGURES\.load\(\)\.catch\(\(\) => \{\}\)[^\]]*\]\);\nui\.setFigures2D\(LIVE_FIGURES\.open\);\nshowMainMenu\(\);/, 'the window opens on the stored state');
+  assert.match(main, /await Promise\.all\(\[[^\]]*LIVE_FIGURES\.load\(\)\.catch\(\(\) => \{\}\)[^\]]*\]\);\nui\.setFigures2D\(LIVE_FIGURES\.open\);\nui\.setFigures3D\(LIVE_FIGURES\.open\);\nshowMainMenu\(\);/, 'the window and the 3D overlay open on the stored state');
   assert.match(main, /onToggleFigures: \(\) => toggleFigures\(\),/);
   const toggle = main.slice(main.indexOf('function toggleFigures('), main.indexOf('}', main.indexOf('function toggleFigures(')) + 1);
   assert.match(toggle, /LIVE_FIGURES\.setOpen\(!LIVE_FIGURES\.open\)/, 'the toggle flips the one stored state');
   assert.match(toggle, /ui\.setFigures2D\(LIVE_FIGURES\.open\)/);
+  assert.match(toggle, /ui\.setFigures3D\(LIVE_FIGURES\.open\)/, 'the 3D overlay\'s panel under the same state');
   assert.match(toggle, /size2D\(\)/, 'and the window refits its board to the room left');
 });
 

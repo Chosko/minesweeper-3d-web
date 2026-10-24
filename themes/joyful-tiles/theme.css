@@ -1647,26 +1647,23 @@
 /* the 3D game's overlay over the scene: the counter strip and the figures panel raised on their edges */
 :root[data-theme="joyful-tiles"] .hud-counters { box-shadow: inset 0 0 0 2px var(--color-border), 0 6px 0 var(--color-edge); }
 :root[data-theme="joyful-tiles"] .hud-figures { box-shadow: inset 0 0 0 2px var(--color-border), 0 6px 0 var(--color-edge), var(--elevation-1); }
-/* on a phone the panel is its title bar alone, a head surface; held sideways the title is a head pill and Pause stands alone */
-@media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
-  :root[data-theme="joyful-tiles"] .hud-figures { box-shadow: 0 6px 0 var(--color-head-edge), var(--elevation-1); }
-  :root[data-theme="joyful-tiles"] .hud-figures .ui-figures__head { border-bottom: 0; }
+/* its floating Pause: a 38 px square with its 20 px icon — 40 px on a phone upright and in Learn 3D, 44 px
+   held sideways; the live-figures toggle the panel toggle's square, its icon 20 px */
+:root[data-theme="joyful-tiles"] .hud-pause {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  border-radius: var(--radius-md);
+}
+:root[data-theme="joyful-tiles"] :is(.hud-pause, .hud-figures-toggle) > .ui-icon { width: 20px; height: 20px; }
+@media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
+  :root[data-theme="joyful-tiles"] #hud.hud--learn .hud-pause { width: 40px; height: 40px; min-height: 40px; }
+}
+@media (min-height: 501px) and (max-width: 719px), (orientation: portrait) and (max-width: 719px) {
+  :root[data-theme="joyful-tiles"] .hud-pause { width: 40px; height: 40px; min-height: 40px; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
-  :root[data-theme="joyful-tiles"] .hud-figures { background: transparent; box-shadow: none; }
-  :root[data-theme="joyful-tiles"] .hud-figures .ui-figures__head { background: transparent; }
-  :root[data-theme="joyful-tiles"] .hud-figures .ui-figures__title {
-    font-size: 15px;
-    border-radius: var(--radius-xl);
-    background: var(--color-head);
-    box-shadow: 0 6px 0 var(--color-head-edge), var(--elevation-1);
-  }
-}
-/* Learn 3D's overlay above a phone: the panel is its head alone, a head surface, the title 18 px */
-@media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
-  :root[data-theme="joyful-tiles"] #hud.hud--learn .hud-figures { box-shadow: 0 6px 0 var(--color-head-edge), var(--elevation-1); }
-  :root[data-theme="joyful-tiles"] #hud.hud--learn .hud-figures .ui-figures__head { border-bottom: 0; }
-  :root[data-theme="joyful-tiles"] #hud.hud--learn .hud-figures .ui-figures__title { font-size: 18px; }
+  :root[data-theme="joyful-tiles"] .hud-pause { width: 44px; height: 44px; min-height: 44px; }
 }
 /* the first-use hint strip: an ink pill; in touch play, where it wraps, a rounded box */
 :root[data-theme="joyful-tiles"] #hint-strip {

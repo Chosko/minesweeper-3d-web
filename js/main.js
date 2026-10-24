@@ -670,10 +670,11 @@ function sizeSoon2D() {
   if (!sizing2D) sizing2D = requestAnimationFrame(() => { sizing2D = 0; size2D(); });
 }
 new ResizeObserver(size2D).observe(document.getElementById('c2d'));
-/** The live-figures toggle: the one stored state flipped, the panel shown or hidden, the board refitted to the room left. */
+/** Either mode's live-figures toggle: the one stored state flipped, both modes' panels shown or hidden, the Classic 2D board refitted to the room left. */
 function toggleFigures() {
   LIVE_FIGURES.setOpen(!LIVE_FIGURES.open);
   ui.setFigures2D(LIVE_FIGURES.open);
+  ui.setFigures3D(LIVE_FIGURES.open);
   size2D();
 }
 const board2d = { generating: false, failure: null, progress: null };
@@ -2300,6 +2301,7 @@ function frame(now) {
 
 await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {}), RECORDS_VIEW_PREFS.load().catch(() => {}), BOARD_PANEL.load().catch(() => {}), LIVE_FIGURES.load().catch(() => {})]);
 ui.setFigures2D(LIVE_FIGURES.open);
+ui.setFigures3D(LIVE_FIGURES.open);
 showMainMenu();
 LINKS.start(); // a #board= link: its challenge or daily over the menu, so Back leads to the menu
 window.addEventListener('hashchange', () => LINKS.hashchange());

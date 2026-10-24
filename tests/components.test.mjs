@@ -14,7 +14,7 @@ import {
 import { KIT_CATALOGUE, REQUIRED_TOKENS } from '../js/ui/kit-catalogue.js';
 import { KEY_HINTS, keyHintKeys, reminderKeys } from '../js/settings/bindings.js';
 import { GLYPHS } from '../js/gamepad.js';
-import { UI, boardTitle3D, shortTitle3D, figuresLine } from '../js/ui.js';
+import { UI, boardTitle3D, figuresLine } from '../js/ui.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { measureContrast, focusShows } from './helpers/contrast.mjs';
@@ -523,12 +523,12 @@ const HUD_TAGS = tags(HUD);
 
 const byIdHud = (id) => HUD_TAGS.find((t) => t.attrs.id === id);
 
-test('the 3D game overlay is built from catalogued components: the counter strip with mines left, Restart and the timer; the figures panel headed by the title and Pause, with the live figures and the controls reminder', () => {
+test('the 3D game overlay is built from catalogued components with no title: Pause floating first, the counter strip with mines left, the icon-only Restart and the timer, the figures panel with no head bar holding the live figures and the controls reminder, and the live-figures toggle', () => {
   const overlay = byIdHud('hud-overlay');
   assert.ok(overlay, '#hud holds the overlay');
   const parts = inside(HUD, HUD_TAGS, overlay);
   // Besides the kit: the shell's visibility utility and the overlay's own placement hooks.
-  const allowed = new Set(['hidden', 'hud-overlay', 'hud-counters', 'hud-figures']);
+  const allowed = new Set(['hidden', 'hud-overlay', 'hud-pause', 'hud-counters', 'hud-figures', 'hud-figures-toggle']);
   for (const t of parts) for (const c of classesOf(t)) assert.ok(c.startsWith('ui-') || allowed.has(c), `#hud-overlay <${t.tag} class="${c}"> is not a kit class`);
   assert.ok(!HUD_TAGS.some((t) => hasClasses(t, '.ui-overlay-bar')), 'the 3D game shows no overlay bar');
 
@@ -545,24 +545,27 @@ test('the 3D game overlay is built from catalogued components: the counter strip
     assert.equal(textOf(HUD, byIdHud(id)), '000', `#${id} starts in the counter format`);
   }
   assert.ok(hasClasses(restart, '.ui-button.ui-button--secondary.ui-button--sm') && restart.tag === 'button' && restart.attrs.type === 'button');
-  assert.match(textOf(HUD, restart), /^Restart/);
-  const restartHint = within(inside(HUD, HUD_TAGS, restart), '.ui-key-hint')[0];
-  assert.ok(restartHint && restartHint.attrs['data-action'] === 'restart', 'Restart carries its key hint');
+  assert.equal(textOf(HUD, restart).trim(), '', 'Restart is icon-only, with no text and no key hint');
+  assert.deepEqual([restart.attrs['data-icon'], restart.attrs['aria-label'], restart.attrs.title], ['restart', 'Restart', 'Restart'], 'its restart icon, named and tooltipped Restart');
   assert.ok('data-no-focus' in restart.attrs, 'Restart never takes the game\'s keys');
 
-  const panel = byIdHud('hud-figures');
-  assert.ok(hasClasses(panel, '.ui-figures') && panel.tag === 'section' && panel.attrs['aria-labelledby'] === 'hud-title', 'the figures panel, named by its title');
-  const pp = inside(HUD, HUD_TAGS, panel);
-  const head = within(pp, '.ui-figures__head')[0];
-  const hp = inside(HUD, HUD_TAGS, head);
-  const title = byIdHud('hud-title');
-  assert.ok(hp.includes(title) && hasClasses(title, '.ui-figures__title') && /^h[2-6]$/.test(title.tag), 'the head\'s title');
   const pause = byIdHud('hud-pause');
-  assert.ok(hp.includes(pause) && title.index < pause.index, 'Pause after the title in the head');
-  assert.ok(hasClasses(pause, '.ui-button.ui-button--secondary.ui-button--sm.ui-figures__action') && pause.tag === 'button' && pause.attrs.type === 'button');
-  assert.match(pause.attrs['aria-label'] ?? '', /pause/i, 'Pause is named');
-  const pauseHint = within(inside(HUD, HUD_TAGS, pause), '.ui-key-hint')[0];
-  assert.ok(pauseHint && pauseHint.attrs['data-action'] === 'back' && pauseHint.attrs['aria-hidden'] === 'true', 'Pause carries its key hint');
+  assert.ok(parts.includes(pause) && pause.index < strip.index, 'Pause floats first, over the scene, in no panel');
+  assert.ok(hasClasses(pause, '.ui-button.ui-button--secondary.ui-button--sm.hud-pause') && pause.tag === 'button' && pause.attrs.type === 'button');
+  assert.deepEqual([pause.attrs['data-icon'], pause.attrs['aria-label'], pause.attrs.title], ['pause', 'Pause game', 'Pause'], 'the pause icon alone, named');
+  assert.equal(textOf(HUD, pause).trim(), '', 'no text and no key hint');
+
+  const panel = byIdHud('hud-figures');
+  assert.ok(hasClasses(panel, '.ui-figures') && panel.tag === 'section' && panel.attrs['aria-label'] === 'Live figures', 'the figures panel, named Live figures');
+  const pp = inside(HUD, HUD_TAGS, panel);
+  assert.equal(within(pp, '.ui-figures__head').length, 0, 'no head bar: no title and no Pause in the panel');
+  assert.ok(!HUD_TAGS.some((t) => t.attrs.id === 'hud-title'), 'no mode or difficulty label anywhere in the overlay');
+
+  const toggle = byIdHud('hud-figures-toggle');
+  assert.ok(parts.includes(toggle) && hasClasses(toggle, '.ui-button.ui-button--quiet.ui-button--sm.hud-figures-toggle') && toggle.tag === 'button' && toggle.attrs.type === 'button', 'the toggle, floating over the scene');
+  assert.deepEqual([toggle.attrs['data-icon'], toggle.attrs['aria-label'], toggle.attrs.title, toggle.attrs['aria-pressed'], toggle.attrs['aria-controls']],
+    ['panel', 'Live figures', 'Live figures', 'false', 'hud-figures'], 'Classic 2D\'s live-figures toggle: the panel icon, named, latched, controlling the panel');
+  assert.ok('data-panel-toggle' in toggle.attrs && 'data-no-focus' in toggle.attrs, 'the panel toggle that never takes the focus from the mouse');
   const figures = within(pp, '.ui-figure');
   assert.deepEqual(figures.map((f) => f.attrs['data-figure']), ['bbbv', 'pace', 'rate', 'clicks', 'flags'], 'the live figures in their order');
   for (const f of figures) {
@@ -815,32 +818,44 @@ test('UI.updateHud writes the click count, only when it changes', () => {
   assert.deepEqual([shown, writes], ['183', 2], 'a feed without a count leaves the readout as it is');
 });
 
-test('the 3D overlay\'s title names the mode and the board; its short form is the mode alone', () => {
+test('the pause card\'s 3D board title names the mode and the board', () => {
   assert.equal(boardTitle3D({ X: 8, Y: 8, Z: 8, mines: 40 }), '3D · Cube Intermediate');
   assert.equal(boardTitle3D({ X: 6, Y: 6, Z: 6, mines: 10, noGuess: true }), '3D · Cube Intro');
   assert.equal(boardTitle3D({ X: 7, Y: 5, Z: 3, mines: 12 }), '3D · Custom');
   assert.equal(boardTitle3D({ X: 8, Y: 8, Z: 8, mines: 40, daily: true }), '3D · Daily');
   assert.equal(boardTitle3D({ X: 4, Y: 4, Z: 4, mines: 6, learn: true }), 'Learn 3D');
-  assert.equal(shortTitle3D('3D · Cube Intermediate'), '3D', 'the difficulty dropped');
-  assert.equal(shortTitle3D('Learn 3D'), 'Learn 3D', 'a title with no board part has no shorter form');
 });
 
-test('the 3D overlay\'s title drops the difficulty only when the full name does not fit on its line, as measured; the full name stays its tooltip and accessible name', () => {
-  const title = (width) => {
-    let text = '';
-    const attrs = {};
-    return { attrs, get textContent() { return text; }, set textContent(v) { text = v; }, get clientWidth() { return width; }, get scrollWidth() { return text.length * 10; }, setAttribute(n, v) { attrs[n] = v; } };
-  };
-  for (const [width, shown] of [[120, '3D'], [300, '3D · Cube Intermediate'], [0, '3D · Cube Intermediate']]) {
-    const fake = { el: { hudTitle: title(width) }, _fitTitle3D: UI.prototype._fitTitle3D };
-    UI.prototype._setTitle3D.call(fake, '3D · Cube Intermediate');
-    assert.equal(fake.el.hudTitle.textContent, shown, `a ${width} px line`);
-    assert.deepEqual(fake.el.hudTitle.attrs, { title: '3D · Cube Intermediate', 'aria-label': '3D · Cube Intermediate' }, 'the full name as tooltip and name');
-  }
+test('the 3D overlay shows no title: no title-fitting rule, and setBoard names the board for the pause card alone', () => {
   const ui = read('js/ui.js');
-  assert.match(ui, /new ResizeObserver\(\(\) => this\._fitTitle3D\(\)\)/, 'refitted whenever its line changes width');
-  const fit = ui.slice(ui.indexOf('  _fitTitle3D() {'), ui.indexOf('\n  }', ui.indexOf('  _fitTitle3D() {')));
-  assert.doesNotMatch(fit, /innerWidth|matchMedia|@media/, 'measured, never decided by window size');
+  assert.doesNotMatch(ui, /_fitTitle3D|shortTitle3D|hud-title/, 'the title and its fitting rule are gone');
+  const fake = { _sizeMines: () => {} };
+  UI.prototype.setBoard.call(fake, { X: 8, Y: 8, Z: 8, mines: 40 });
+  assert.match(fake._boardText, /^3D · Cube Intermediate · 8 × 8 × 8/, 'the pause card\'s board line');
+});
+
+test('UI.setFigures3D opens or closes the 3D panel through #hud and latches its toggle; the shell shows both modes\' panels from the one stored state', () => {
+  const attrs = {};
+  const fake = { el: { hud: { dataset: {} }, hudFiguresToggle: { setAttribute: (n, v) => { attrs[n] = v; } } } };
+  UI.prototype.setFigures3D.call(fake, true);
+  assert.deepEqual([fake.el.hud.dataset.figures, attrs['aria-pressed']], ['open', 'true']);
+  UI.prototype.setFigures3D.call(fake, false);
+  assert.deepEqual(['figures' in fake.el.hud.dataset, attrs['aria-pressed']], [false, 'false']);
+  const main = read('js/main.js');
+  assert.match(main, /function toggleFigures\(\) \{\s*LIVE_FIGURES\.setOpen\(!LIVE_FIGURES\.open\);\s*ui\.setFigures2D\(LIVE_FIGURES\.open\);\s*ui\.setFigures3D\(LIVE_FIGURES\.open\);/, 'either toggle flips the one stored state, both panels following it');
+  assert.match(main, /LIVE_FIGURES\.load\(\)[^\n]*\]\);\nui\.setFigures2D\(LIVE_FIGURES\.open\);\nui\.setFigures3D\(LIVE_FIGURES\.open\);\n/, 'both panels as stored before the first screen');
+  const ui = read('js/ui.js');
+  assert.match(ui, /this\.el\.hudFiguresToggle\.addEventListener\('click', \(\) => cb\.onToggleFigures\?\.\(\)\)/, 'the 3D toggle calls the shell\'s toggle');
+  assert.match(ui, /this\.el\.hudFiguresToggle\.addEventListener\('mousedown', \(e\) => e\.preventDefault\(\)\)/, 'never taking the focus from the mouse');
+  assert.match(ui, /this\.el\.hudFiguresToggle\.addEventListener\('keydown', \(e\) => \{ if \(PRESS_KEYS\.has\(e\.code\)\) e\.stopPropagation\(\); \}\)/, 'Enter or Space on it never reaches the scene');
+  const style = read('css/style.css');
+  assert.match(style, /#hud:not\(\[data-figures="open"\]\) \.hud-figures \{ display: none; \}/, 'hidden by default');
+});
+
+test('UI.overlayBottom3D is the lowest of the counter strip, Pause and the toggle where they show', () => {
+  const rect = (bottom, height = 40) => ({ getBoundingClientRect: () => ({ bottom, height }) });
+  assert.equal(UI.prototype.overlayBottom3D.call({ el: { hudCounters: rect(78), hudPause: rect(62), hudFiguresToggle: rect(62) } }), 78);
+  assert.equal(UI.prototype.overlayBottom3D.call({ el: { hudCounters: rect(116), hudPause: rect(52), hudFiguresToggle: rect(0, 0) } }), 116, 'a phone: Pause over the strip, no toggle');
 });
 
 test('UI.updateFigures3D writes the 3D figures panel and announces the 3BV solved and mines left on a count change only', () => {
@@ -1602,7 +1617,6 @@ test('the in-game readouts follow the frame\'s size steps in Joyful tiles, in th
   assert.match(compact('.ui-figure'), /padding:\s*8px 0/);
   assert.match(compact('.ui-figures__title'), /font-size:\s*15px/);
   assert.match(phone('.ui-figures__title'), /font-size:\s*16px/);
-  assert.match(ruleIn(THEME_CSS, '(max-height: 500px) and (orientation: landscape)')('.hud-figures .ui-figures__title'), /font-size:\s*15px/, 'the sideways phone\'s title pill');
   // The steps come after the rules they step, so they win at equal weight.
   const at = (needle) => THEME_CSS.indexOf(needle);
   assert.ok(at(`@media ${COMPACT_STEP} {\n  :root[data-theme="joyful-tiles"] .ui-counter__digits`) > at(':root[data-theme="joyful-tiles"] .ui-figure--progress .ui-figure__value {'), 'the readouts\' steps after the readouts');
@@ -1658,7 +1672,7 @@ test('touch play: the toolbar and the stick show only in touch play, the toolbar
   assert.match(body('#touch-stick'), /pointer-events:\s*none/, 'the stick takes no touch');
   const coarse = rules(coarseBlocks(style));
   assert.ok(coarse.some(([sel, b]) => sel.includes('#touch-modes .ui-button') && /min-width:\s*76px/.test(b) && /min-height:\s*44px/.test(b)), 'the toolbar\'s 76 × 44 px buttons');
-  assert.ok(coarse.some(([sel, b]) => sel.includes('#hud-pause::after') && /height:\s*44px/.test(b)), 'the pause button takes a touch in a 44 px band, the bar\'s layout unchanged');
+  assert.ok(coarse.some(([sel, b]) => sel.includes('#hud-pause::after') && /width:\s*44px/.test(b) && /height:\s*44px/.test(b)), 'the floating pause button takes a touch in a 44 px square, its layout unchanged');
   assert.doesNotMatch(topLevel(style), /#hud-pause[^{]*\{[^}]*44px/, 'a fine pointer keeps the pause button\'s size');
 });
 

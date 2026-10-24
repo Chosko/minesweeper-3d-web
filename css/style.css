@@ -609,12 +609,17 @@ body.replaying #menu { display: none; }
 
 /* ---------- HUD ---------- */
 #hud { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-hud); }
-/* The 3D game's overlay over the full-window scene (J-Game3D-xl, -l, -m): the counter strip — mines left,
-   Restart, the timer — at the top centre; the figures panel on the right, centred vertically, headed by
-   the title and Pause, its width stepping down with the window. Each part carries its own surface. */
+/* The 3D game's overlay over the full-window scene (J-Game3D-l, -m, -states), with no title: Pause floating
+   at the top left, the counter strip — mines left, Restart, the timer — at the top centre and the
+   live-figures toggle at the top right; the figures panel, shown only while the stored preference is
+   open (#hud[data-figures="open"], UI.setFigures3D), on the right, centred vertically, its width
+   stepping down with the window. Each part carries its own surface. */
 .hud-overlay { display: contents; }
+.hud-pause { position: absolute; top: 24px; left: 24px; padding: 0; aspect-ratio: 1; pointer-events: auto; }
+.hud-figures-toggle { position: absolute; top: 24px; right: 24px; pointer-events: auto; }
 .hud-counters { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); gap: 18px; width: max-content; pointer-events: auto; }
 .hud-figures { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); width: 300px; max-height: calc(100vh - 2 * 104px); box-sizing: border-box; pointer-events: auto; }
+#hud:not([data-figures="open"]) .hud-figures { display: none; }
 .hud-figures .ui-figures__body { min-height: 0; overflow-y: auto; padding-top: 14px; }
 .hud-figures .ui-figure__value { white-space: nowrap; }
 /* In touch play on a tablet it ends above the touch toolbar; the help panel stands beside it, centred vertically as it is. */
@@ -630,15 +635,14 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
   .hud-figures { width: 280px; }
   #hud:not(.hud--2d) ~ #help { right: 328px; }
 }
-/* Learn 3D's own play layout (J-Ready-states, "Learn 3D · prompt 1–4"): no figures panel — the panel is its
-   head alone, the title and Pause —, and above a phone a column at the top left, the head over the strip of
-   mines and Restart (no timer), the help panel on the right edge the panel leaves. */
-#hud.hud--learn .hud-figures :is(.ui-figures__body, .ui-figures__live) { display: none; }
+/* Learn 3D's own play layout (J-Ready-states, "Learn 3D · prompt 1–4"): no figures panel and no toggle, and
+   above a phone a column at the top left, Pause over the strip of mines and Restart (no timer), the help
+   panel on the right edge the panel leaves. */
+#hud.hud--learn :is(.hud-figures, .hud-figures-toggle) { display: none; }
 @media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
   #hud.hud--learn .hud-overlay { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; position: absolute; top: 24px; left: 24px; }
-  #hud.hud--learn :is(.hud-counters, .hud-figures) { position: static; transform: none; width: auto; max-height: none; }
-  #hud.hud--learn .hud-figures { order: -1; }
-  #hud.hud--learn .hud-figures .ui-figures__head { gap: 16px; padding: 8px 8px 8px 20px; }
+  #hud.hud--learn .hud-counters { position: static; transform: none; width: auto; }
+  #hud.hud--learn .hud-pause { position: relative; top: auto; left: auto; }
   #hud.hud--learn ~ #help { right: 24px; }
 }
 #hud.hud--2d #crosshair, #hud.hud--2d #crosshair-arrow, #hud.hud--2d #aim-readout, #hud.hud--2d #mode-chips { display: none; }
@@ -891,29 +895,23 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
 /* Over the 3D scene, below the crosshair. */
 #hud:not(.hidden):not(.hud--2d) ~ #toast { top: 58%; bottom: auto; }
 
-/* The 3D overlay on a phone (J-Game3D-p, -ls): no figures and no key strip. Upright, the title and Pause
-   bar on top and the counters under it; held sideways, the title a pill at the top left, the counters
-   and Restart at the top centre and Pause an icon button at the top right. The touch hint strip sits
-   under them, the view chips above the toolbar. */
+/* The 3D overlay on a phone (J-Game3D-p, -ls), in Learn 3D too: of the floating controls only Pause, and
+   no figures and no key strip. Upright, Pause on top and the counters under it; held sideways, Pause at
+   the top left and the counters and Restart at the top centre. The touch hint strip sits under them,
+   the view chips above the toolbar. */
 @media (max-height: 500px) and (orientation: landscape), (max-width: 719px) {
-  .hud-figures .ui-figures__body, #hud .hud-tools { display: none; }
-  .hud-figures, body.touch-play .hud-figures { max-height: none; }
+  #hud :is(.hud-figures, .hud-figures-toggle, .hud-tools) { display: none; }
 }
 @media (min-height: 501px) and (max-width: 719px), (orientation: portrait) and (max-width: 719px) {
-  .hud-overlay { display: flex; flex-direction: column; gap: 10px; position: absolute; top: 12px; left: 12px; right: 12px; }
-  .hud-counters, .hud-figures { position: static; transform: none; width: auto; }
-  .hud-figures { order: -1; }
-  .hud-figures .ui-figures__head { padding: 8px 8px 8px 20px; }
+  .hud-overlay { display: flex; flex-direction: column; align-items: stretch; gap: 10px; position: absolute; top: 12px; left: 12px; right: 12px; }
+  .hud-counters { position: static; transform: none; width: auto; }
+  .hud-pause { position: relative; top: auto; left: auto; align-self: flex-start; }
   #hud:not(.hud--2d) #hint-strip { top: 150px; bottom: auto; }
   #hud:not(.hud--2d) #mode-chips { bottom: 190px; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   .hud-counters { top: 10px; gap: var(--space-3); }
-  .hud-figures { top: 10px; left: 12px; right: 12px; width: auto; transform: none; overflow: visible; pointer-events: none; }
-  .hud-figures .ui-figures__head { padding: 0; }
-  .hud-figures .ui-figures__title { flex: none; display: flex; align-items: center; height: 48px; padding: 0 16px; overflow: visible; }
-  #hud-pause { width: 48px; height: 48px; min-height: 48px; padding: 0; gap: 0; font-size: 0; pointer-events: auto; }
-  #hud-pause .ui-key-hint { display: none; }
+  .hud-pause { top: 10px; left: 12px; }
   #hud:not(.hud--2d) .touch-modes { bottom: 20px; }
   #touch-stick { width: 110px; height: 110px; bottom: 18px; }
   #hud:not(.hud--2d) #hint-strip { top: 76px; bottom: auto; }
@@ -925,9 +923,9 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
   #hud-tap { display: inline-flex; flex-wrap: nowrap; flex: none; align-self: center; height: 48px; box-sizing: border-box; }
   /* Swap clicks trades mouse buttons: a coarse primary pointer is never fine, so this is js/main.js COARSE_ONLY */
   #hud-swap { display: none; }
-  /* Pause (the 3D bar's and the Classic 2D window's) and the window's Restart take a touch anywhere in a 44 px band around their centre, their layout unchanged */
-  #hud-pause, #hud-restart, #c2d-pause, #c2d-restart { position: relative; }
-  #hud-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
+  /* Pause (the 3D overlay's, always positioned, in a 44 px square; the Classic 2D window's) and each strip's Restart take a touch anywhere in a 44 px band around their centre, their layout unchanged */
+  #hud-restart, #c2d-pause, #c2d-restart { position: relative; }
+  #hud-pause::after { content: ""; position: absolute; left: calc(50% - 22px); top: calc(50% - 22px); width: 44px; height: 44px; }
   #hud-restart::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #c2d-restart::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #c2d-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }

@@ -274,7 +274,7 @@ test('on a coarse-only device the prompts name the touch toolbar\'s buttons and 
   assert.match(read('js/ui.js'), /if \(learn\) this\.el\.hintStripText\.textContent = this\.hint\(learn\);/);
 });
 
-test('Learn 3D\'s play layout: no timer, no figures panel — a head with the title and Pause over a strip of mines and Restart, top left', () => {
+test('Learn 3D\'s play layout: no timer, no figures panel and no toggle — Pause over a strip of mines and Restart, top left', () => {
   assert.equal(pauseLine(12.5, 3, { timed: false }), '3 mines left');
   assert.equal(pauseLine(12.5, 1, { timed: false }), '1 mine left');
   const ui = code('js/ui.js');
@@ -288,19 +288,18 @@ test('Learn 3D\'s play layout: no timer, no figures panel — a head with the ti
   assert.doesNotMatch(MAIN, /setTimed/);
   const css = read('css/style.css');
   assert.doesNotMatch(css, /hud-figures--untimed/);
-  // J-Ready-states' "Learn 3D · prompt 1–4": a column at the top left, the head above the strip, 12 px apart, no figures.
+  // J-Ready-states' "Learn 3D · prompt 1–4": a column at the top left, Pause above the strip, 12 px apart, no figures.
   const wide = css.slice(css.indexOf('/* Learn 3D\'s own play layout'));
   assert.ok(wide.length < css.length, 'the layout is documented');
+  assert.match(wide, /^[^@]*#hud\.hud--learn :is\(\.hud-figures, \.hud-figures-toggle\) \{ display: none; \}/, 'no figures panel and no toggle at any size');
   assert.match(wide, /@media \(min-width: 720px\) and \(min-height: 501px\), \(min-width: 720px\) and \(orientation: portrait\) \{\s*#hud\.hud--learn \.hud-overlay \{ display: flex; flex-direction: column; align-items: flex-start; gap: 12px; position: absolute; top: 24px; left: 24px; \}/);
-  assert.match(wide, /#hud\.hud--learn :is\(\.hud-counters, \.hud-figures\) \{ position: static; transform: none; width: auto; max-height: none; \}/);
-  assert.match(wide, /#hud\.hud--learn \.hud-figures \{ order: -1; \}/, 'the head first');
-  assert.match(wide, /#hud\.hud--learn \.hud-figures \.ui-figures__head \{ gap: 16px; padding: 8px 8px 8px 20px; \}/);
+  assert.match(wide, /#hud\.hud--learn \.hud-counters \{ position: static; transform: none; width: auto; \}/);
+  assert.match(wide, /#hud\.hud--learn \.hud-pause \{ position: relative; top: auto; left: auto; \}/, 'Pause first, in the column\'s flow');
+  assert.ok(INDEX.indexOf('id="hud-pause"') < INDEX.indexOf('id="hud-counters"'), 'Pause before the strip');
   assert.match(wide, /#hud\.hud--learn ~ #help \{ right: 24px; \}/, 'the help panel takes the right edge the panel left');
   assert.doesNotMatch(wide, /#hud:not\(\.hud--2d\) ~ #help/, 'after every step of the help panel\'s place beside the figures, so it wins');
-  assert.match(css, /#hud\.hud--learn \.hud-figures :is\(\.ui-figures__body, \.ui-figures__live\) \{ display: none; \}/, 'no 3BV, Clicks, Flags or reminder');
   const theme = read('themes/joyful-tiles/theme.css');
-  assert.match(theme, /#hud\.hud--learn \.hud-figures \{ box-shadow: 0 6px 0 var\(--color-head-edge\), var\(--elevation-1\); \}/, 'the head on its own surface');
-  assert.match(theme, /#hud\.hud--learn \.hud-figures \.ui-figures__title \{ font-size: 18px; \}/, 'the title 18 px');
+  assert.match(theme, /#hud\.hud--learn \.hud-pause \{ width: 40px; height: 40px; min-height: 40px; \}/, 'Pause 40 px');
   assert.match(MAIN, /bests3D = board\.learn \? null : RECORDS\.bests/, 'the guided board reads no bests');
 });
 
@@ -406,17 +405,19 @@ test('in a browser, Learn 3D: the entry, the marked cube, the four prompts, the 
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
     assert.equal(await shown('ready-learn'), false, 'no Learn 3D line on its own ready card');
     assert.equal(await shown('ready-rules'), false, 'the "How 3D works" block does not show');
-    assert.equal(await ms(() => document.getElementById('hud-title').textContent), 'Learn 3D');
+    assert.equal(await ms(() => document.getElementById('hud-title')), null, 'no title in the overlay');
     assert.equal(await shown('hud-time'), false, 'no timer');
     await ms(() => globalThis.__ms.forcePlay());
-    // Its own layout: the head (title and Pause) at the top left, the strip of mines and Restart under it, no figures.
+    // Its own layout: Pause at the top left, the strip of mines and Restart under it, no figures and no toggle, even with the preference open.
+    await ms(() => { document.getElementById('hud').dataset.figures = 'open'; });
     const box = (sel) => ms((q) => { const r = document.querySelector(q).getBoundingClientRect(); return { left: r.left, top: r.top, bottom: r.bottom, width: r.width }; }, sel);
-    const head = await box('#hud-figures .ui-figures__head'), counters = await box('#hud-counters');
-    assert.deepEqual([Math.round(head.left), Math.round(head.top)], [24, 24], 'the head at the top left');
+    const pause = await box('#hud-pause'), counters = await box('#hud-counters');
+    assert.deepEqual([Math.round(pause.left), Math.round(pause.top), Math.round(pause.width)], [24, 24, 40], 'the 40 px Pause at the top left');
     assert.equal(Math.round(counters.left), 24, 'the strip under it, left-aligned');
-    assert.equal(Math.round(counters.top - head.bottom), 12, '12 px apart');
-    assert.equal(await ms(() => document.querySelector('#hud-figures .ui-figures__body').getClientRects().length), 0, 'no 3BV, Clicks, Flags or reminder');
-    assert.equal(await ms(() => getComputedStyle(document.getElementById('hud-title')).fontSize), '18px');
+    assert.equal(Math.round(counters.top - pause.bottom), 12, '12 px apart');
+    assert.equal(await ms(() => document.getElementById('hud-figures').getClientRects().length), 0, 'no 3BV, Clicks, Flags or reminder');
+    assert.equal(await shown('hud-figures-toggle'), false, 'no live-figures toggle');
+    await ms(() => { delete document.getElementById('hud').dataset.figures; });
     assert.equal(await shown('hud-pause'), true);
     assert.equal(await shown('hud-restart'), true);
     await page.keyboard.press('KeyH');

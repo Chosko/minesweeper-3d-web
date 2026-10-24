@@ -850,7 +850,7 @@ test('in a browser, the 3D board choice: a click chooses, Play or Enter plays; t
     await page.click('#bc-learn');
     await page.click('#bc-play');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
-    assert.equal(await text('hud-title'), 'Learn 3D');
+    assert.equal(await text('ready-board'), 'Learn 3D');
     assert.equal(await lastChoice(), null, 'no last choice saved');
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'board-choice');

@@ -1081,9 +1081,9 @@ test('in a browser with touch on a phone, the toolbar clears the overlay\'s coun
     const overlap = await ms(() => {
       const tb = document.getElementById('touch-modes').getBoundingClientRect();
       const apart = (el) => { const r = el.getBoundingClientRect(); return tb.top >= r.bottom || tb.bottom <= r.top || tb.left >= r.right || tb.right <= r.left; };
-      return !apart(document.getElementById('hud-counters')) || !apart(document.querySelector('#hud-figures .ui-figures__head'));
+      return !apart(document.getElementById('hud-counters')) || !apart(document.getElementById('hud-pause'));
     });
-    assert.equal(overlap, false, 'the toolbar is clear of the overlay\'s counters and title bar');
+    assert.equal(overlap, false, 'the toolbar is clear of the overlay\'s counters and Pause');
     await ms(() => { globalThis.__ms.aimAt(3); globalThis.__ms.click('left'); });
     await page.tap('#touch-modes [data-mode="ctrl"]');
     const pauseBox = await page.locator('#hud-pause').boundingBox();
