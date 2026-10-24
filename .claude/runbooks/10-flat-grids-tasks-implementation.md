@@ -331,7 +331,7 @@ Context:
 
 Done: 2026-10-24, commit `82bf37a` (17 files, +267/-109).
 
-## [ ] 25. Implement task 272 — Records model and summaries for Hexagon and Triangle
+## [x] 25. Implement task 272 — Records model and summaries for Hexagon and Triangle
 
 Depends on: 9, 13, 22
 
@@ -342,6 +342,8 @@ Context:
 /task-implement 272 --review
 ```
 
+Done: 2026-10-24, commit `26ce6a5` (10 files, +206/-43). Decision: the mode-to-grid check sits in `createBoardIdentity` (js/records/board.js), tying only Hexagon and Triangle to a grid; `RECORDS_VERSION` is 5 and `MODES` follows the menu order.
+
 ## [ ] 26. Implement task 273 — Records screen's mode switch over four modes
 
 Depends on: 25
@@ -349,6 +351,7 @@ Depends on: 25
 Context:
 - 2026-10-24 (from step 21): the Hexagon and Triangle board choices' *All records* link already opens the Records screen with a mode the screen does not list yet.
 - 2026-10-24 (from step 22): js/results/flow.js guards Records from a Hexagon or Triangle results screen — it opens the last Classic 2D or 3D board played, since the screen crashed on an unknown mode; once this task adds the modes the board passes through with no further change there.
+- 2026-10-24 (from step 25): js/records/board.js's `MODES` is `classic-2d`, `hexagon`, `triangle`, `3d` (menu order), with new `MODE_HEXAGON` and `MODE_TRIANGLE` exports; `EXPORT_MODES` in js/records/export.js and `FIRST_USE_MODES` in js/shell/first-use.js still list only `classic-2d` and `3d` — the step-25 reviewer assigned the exports to this task.
 
 ```prompt
 /task-implement 273 --review
@@ -369,7 +372,8 @@ Context:
 
 Depends on: 17, 27
 
-Context: none
+Context:
+- 2026-10-24 (from step 25): the replay viewer's title (js/replay/viewer.js, around line 614) still calls every non-3D replay "Classic 2D".
 
 ```prompt
 /task-implement 275 --review
@@ -379,7 +383,8 @@ Context: none
 
 Depends on: 25, 26, 27, 28
 
-Context: none
+Context:
+- 2026-10-24 (from step 25): task 272 already updated .claude/context/records.md and records-store.md — `RECORDS_VERSION` 5 (the 4→5 step reuses `upgradeRecords`), the mode-to-grid check in `createBoardIdentity`, `MODES` in menu order, boards played by mode using each grid's own standard list.
 
 ```prompt
 /task-implement 276 --review
