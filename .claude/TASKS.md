@@ -1451,7 +1451,7 @@ Feature: hexagon-grid
 
 ## 258. Triangle graph provider and the `tri` generation description
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/engine/tri-grid.js, js/generation/generate.js, js/generation/start-cell.js, js/generation/worker.js, js/generation/solver.js, tests/engine-tri-grid.test.mjs, tests/generation-solver.test.mjs, tests/generation-noguess.test.mjs
 Preconditions: none

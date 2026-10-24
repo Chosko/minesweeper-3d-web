@@ -57,8 +57,8 @@ unchanged.
   `onProgress({ candidates })` at most every `PROGRESS_INTERVAL_MS` (250);
   it never changes the result.
 - `graph` is a description, `{ kind: 'square', width, height }`,
-  `{ kind: 'hex', width, height }` or `{ kind: 'box', X, Y, Z }`, built by
-  `boardGraph(description)`.
+  `{ kind: 'hex', width, height }`, `{ kind: 'tri', width, height }` or
+  `{ kind: 'box', X, Y, Z }`, built by `boardGraph(description)`.
   `ATTEMPT_BUDGET` — 2000 candidates.
 - `startCell(description)` → the centre cell of each side (⌊side / 2⌋) as an
   index in the provider's order. A request input like any first click: no
@@ -98,7 +98,10 @@ unchanged.
   no-guess generation recorded beside the constant and in the feature
   document's § Attempt budget and timing. Hexagon Expert's mine count is the
   one at which every seed `dev/measure-noguess-hex.mjs` measures meets the
-  budget, and `tests/generation-noguess.test.mjs` holds it to that.
+  budget, and `tests/generation-noguess.test.mjs` holds it to that; every
+  triangle standard board, Expert included, meets it on every seed
+  `dev/measure-noguess-tri.mjs` measures, and the same test file holds
+  triangle Expert to it.
 - **Solver soundness.** It never sees the mine set: it learns a number only
   by opening a deduced-safe cell, and runs single, subset and global stages
   in a fixed order, back to the first after every deduction (`solver.js`'s
@@ -123,13 +126,15 @@ unchanged.
   — the cell graph, the square-grid provider and the first-click hand-off.
 - [../domain/features/hexagon-grid.md](../domain/features/hexagon-grid.md)
   — the `hex` description and its Expert no-guess timing.
+- [../domain/features/triangle-grid.md](../domain/features/triangle-grid.md)
+  — the `tri` description and its Expert no-guess timing.
 - `tests/fidelity/minesweeper-online.md` — "First-click guarantee", the
   reference rule the placer honours.
 
 ## CROSS-REFERENCES
 
-- [engine.md](engine.md) — the cell graph and the square and hexagon grids
-  generation runs over, and `supplyBoard`, which takes the mine set;
+- [engine.md](engine.md) — the cell graph and the square, hexagon and
+  triangle grids generation runs over, and `supplyBoard`, which takes the mine set;
   [engine-3d.md](engine-3d.md) — the box graph.
 - [classic2d-session.md](classic2d-session.md), [mode3d-session.md](mode3d-session.md) — the sessions'
   board requests, generating state and failure offer.

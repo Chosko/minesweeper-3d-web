@@ -5,6 +5,7 @@ import { solve, solveFrom } from '../js/generation/solver.js';
 import { createSeededSource } from '../js/generation/random.js';
 import { placeMines } from '../js/generation/placer.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
+import { createTriGrid } from '../js/engine/tri-grid.js';
 import { cellGraphFromLists } from '../js/engine/graph.js';
 import { timed } from './helpers/timing.mjs';
 
@@ -185,6 +186,24 @@ test('solver: works over a non-square graph (a 4 × 4 torus) and agrees with the
   assert.equal(solve({ graph: line, mines: [4], firstClick: 0 }).cleared, true);
 });
 
+test('solver: works over the 12-neighbour triangle grid and agrees with the reference', () => {
+  let checked = 0, clearedCount = 0;
+  for (const [w, h, m] of [[5, 4, 3], [6, 4, 4], [5, 5, 5]]) {
+    const grid = createTriGrid(w, h);
+    for (let seed = 0; seed < 120; seed++) {
+      const first = createSeededSource(seed + 3000).int(w * h);
+      const mines = Array.from(placeMines({ graph: grid.graph, mineCount: m, firstClick: first, source: createSeededSource(seed) }));
+      const r = solve({ graph: grid.graph, mines, firstClick: first });
+      const o = oracle(grid.graph, mines, [first]);
+      assert.equal(r.cleared, o.cleared, `tri ${w}x${h} seed ${seed}`);
+      assert.deepEqual(Array.from(r.unresolved), o.unresolved, `tri ${w}x${h} seed ${seed}`);
+      checked++;
+      clearedCount += r.cleared;
+    }
+  }
+  assert.ok(clearedCount > 0 && clearedCount < checked, 'the sample holds solvable and guess-needing boards');
+});
+
 // ---------- never reads a mine ----------
 
 test('solver: learns the board only through open(), on deduced-safe cells, each once', () => {
@@ -231,6 +250,35 @@ test('solver: a group over its enumeration budget only loses deductions, never m
     }
   }
   assert.throws(() => solveFrom({ graph: createSquareGrid(3, 3).graph, mineCount: 1, firstClick: 0, open: () => 0, groupBudget: 0 }), RangeError);
+});
+
+test('solver: on the 12-neighbour triangle grid an oversized group is unconstrained — deductions lost, none wrong', () => {
+  // Triangle Expert density: frontier groups are larger with 12 neighbours. A starved budget may
+  // only lose deductions against the full one, and it never opens a mine.
+  let lost = 0;
+  for (const [w, h, m] of [[6, 5, 5], [13, 7, 8], [41, 17, 103]]) {
+    const grid = createTriGrid(w, h);
+    for (let seed = 0; seed < 60; seed++) {
+      const first = createSeededSource(seed + 4000).int(w * h);
+      const mines = placeMines({ graph: grid.graph, mineCount: m, firstClick: first, source: createSeededSource(seed) });
+      const isMine = new Uint8Array(w * h);
+      for (const c of mines) isMine[c] = 1;
+      const open = (c) => {
+        assert.equal(isMine[c], 0, `tri ${w}x${h} seed ${seed}: opened mine ${c}`);
+        let k = 0;
+        grid.graph.forEachNeighbour(c, (d) => { k += isMine[d]; });
+        return k;
+      };
+      const full = solve({ graph: grid.graph, mines, firstClick: first });
+      for (const budget of [1, 50]) {
+        const starved = solveFrom({ graph: grid.graph, mineCount: m, firstClick: first, open, groupBudget: budget });
+        if (starved.cleared) assert.equal(full.cleared, true);
+        for (const c of full.unresolved) assert.ok(starved.unresolved.includes(c), `tri ${w}x${h} seed ${seed} budget ${budget}: cell ${c}`);
+        lost += starved.unresolved.length > full.unresolved.length;
+      }
+    }
+  }
+  assert.ok(lost > 0, 'the starved budget does lose deductions on some boards');
 });
 
 // ---------- requests ----------

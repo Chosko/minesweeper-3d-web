@@ -68,6 +68,8 @@ Built within the recorded technical direction, as `hexagon-grid` is (see
   no-guess loop run over it unchanged. The solver's frontier groups are
   larger with 12 neighbours. Its node budget treats an oversized group as
   unconstrained, which can lose deductions but never makes a wrong one.
+  No-guess generation on every standard board, Expert included, meets the
+  attempt budget (`dev/measure-noguess-tri.mjs`).
 - **Geometry** — the triangle implementation of `flat-grid-geometry`:
   triangles a half side apart along a row and one triangle height apart
   between rows (plus the gap), each outline pointing the cell's way, the
@@ -111,6 +113,4 @@ Built within the recorded technical direction, as `hexagon-grid` is (see
 
 ## Open questions
 
-- No-guess generation time on Expert, where groups are larger, has not been
-  measured on this graph. If it misses the attempt budget's timing, the
-  budget question goes back to `board-generation`.
+None.

@@ -6,7 +6,8 @@ The one rules engine every mode plays through: a board is an immutable graph of
 cells and neighbours, and reveal, flood fill, flag, chord, win, loss, 3BV and
 click counts are implemented once over that graph. Classic 2D plays the
 reference profile (Minesweeper Online, default options) on the square grid,
-and the hexagon grid is a provider the same profile plays on unchanged;
+and the hexagon and triangle grids are providers the same profile plays on
+unchanged;
 the 3D mode plays the 3D profile (the original 3D game's rules) on the box
 graph, read through the 3D state view ([engine-3d.md](engine-3d.md)).
 DOM-free, no three.js, no timer; it never places mines itself. Each module's
@@ -19,6 +20,7 @@ graph, the grid providers and the rule profiles. The game and its metrics are
 | `js/engine/graph.js` | the immutable cell graph (flat compressed rows) and the cell-graph interface every provider serves |
 | `js/engine/square-grid.js` | square-grid provider: index layout and neighbour order of the 8-neighbour board |
 | `js/engine/hex-grid.js` | hexagon-grid provider: index layout and neighbour order of the 6-neighbour board |
+| `js/engine/tri-grid.js` | triangle-grid provider: index layout, orientation and neighbour order of the 12-neighbour board |
 | `js/engine/box-grid.js` | box graph provider ([engine-3d.md](engine-3d.md)) |
 | `js/engine/profiles.js` | rule-profile table keyed by profile and rules version, each marker's fidelity citation |
 | `js/engine/rules.js` | the game ([engine-rules.md](engine-rules.md)) |
@@ -27,7 +29,7 @@ graph, the grid providers and the rule profiles. The game and its metrics are
 
 ## PUBLIC API
 
-Cell graph, square and hexagon grids
+Cell graph, square, hexagon and triangle grids
 - `createCellGraph(count, offsets, targets)` (compressed rows: cell i's
   neighbours are `targets[offsets[i] .. offsets[i+1]-1]`, in the provider's
   order; validated, copied, frozen), `cellGraphFromLists(count, lists)`.
@@ -43,6 +45,11 @@ Cell graph, square and hexagon grids
   flat-top hexagons, odd columns half a row lower, a tile's neighbours the
   tiles sharing a side (the row above at the sides in an even column, the
   row below in an odd one), every list ascending.
+- `createTriGrid(width, height)` → the same shape and index plus
+  `orientation(index)` (`'up'` or `'down'`); H rows of W triangles, the tile
+  at (col, row) pointing up when col + row is even, a tile's neighbours the
+  tiles sharing a side or a corner (3 on its tip's side, 2 each way in its
+  row, 5 on its base's side), every list ascending. Numbers run to 12.
 
 Rule profiles (`profiles.js`)
 - `REFERENCE_PROFILE` (`'minesweeper-online'`, version 1), `PROFILE_3D`
@@ -63,7 +70,7 @@ Rule profiles (`profiles.js`)
 
 - **Neighbour order is the provider's** and is preserved exactly; flood fill
   and generation follow it. Changing a provider's order (`square-grid.js`,
-  `hex-grid.js`) changes flood-fill order and every seeded board on it.
+  `hex-grid.js`, `tri-grid.js`) changes flood-fill order and every seeded board on it.
 - **Index layout is shared.** A flat grid's geometry places cell c at column
   `c % width`, row `floor(c / width)`, the providers' layout
   ([geometry.md](geometry.md)).
@@ -80,6 +87,8 @@ overriding rule, checked against a recorded observation, not asserted.
   — graph model, square grid, profiles and versions.
 - [../domain/features/hexagon-grid.md](../domain/features/hexagon-grid.md)
   — the hexagon grid provider.
+- [../domain/features/triangle-grid.md](../domain/features/triangle-grid.md)
+  — the triangle grid provider.
 - `tests/fidelity/minesweeper-online.md` — the observed reference behaviour
   every reference marker cites.
 - The 3D profile's sources: [engine-3d.md](engine-3d.md) § Domain dependencies.
