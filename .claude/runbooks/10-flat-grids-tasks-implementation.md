@@ -229,7 +229,7 @@ Context:
 
 Done: 2026-10-24, commit `add9968` (7 files, +481/-145). Decision: triangle glyphs use the geometry's side / √3 box, so js/tile-art.js's `TRIANGLE_GLYPH` (0.55 of the side) and the feature document now disagree with the painter; the cursor ring and end-effect flash are still drawn around the tile's square box on hexagon and triangle boards; the tile-skin Expert fit-rule browser test is fixed.
 
-## [ ] 18. Implement task 265 — The theme skill reads Hexagon and Triangle board sheets
+## [x] 18. Implement task 265 — The theme skill reads Hexagon and Triangle board sheets
 
 Depends on: 16
 
@@ -240,6 +240,8 @@ Context:
 /task-implement 265 --review
 ```
 
+Done: 2026-10-24, commit `5a4b431` (7 files, +50/-24). Decision: a canvas missing a Hexagon or Triangle board sheet, or a Triangle sheet without numbers 9–12, stops the skill rather than asking — no rule derives a grid's gap and radius.
+
 ## [ ] 19. Implement task 266 — Update documentation for feature `hex-tri-board-art`
 
 Depends on: 15, 16, 17, 18
@@ -248,6 +250,7 @@ Context:
 - 2026-10-24 (from step 15): the tile recipe (js/tile-art.js) takes an `outline` option on `drawFace` and exports `OUTLINES`, `outlineBox`, `outlinePoints`, `glyphBox` and `inGlyphBox`; a hexagon is sized across its flats, a triangle by its side; style fractions and corner radius are measured against the tile height; an angled bevel edge blends the shades of its two neighbouring sides.
 - 2026-10-24 (from step 16): .claude/context/app-shell-board-module.md still describes numbers 1–8 and `minTileSize` — the board module now has `style2d.grids: { hex, tri }`, numbers to 12, `GRID_NUMBERS`, and `checkBoardModule({ floors: { square, hex, tri } })`.
 - 2026-10-24 (from step 17): the painter draws triangle glyphs in the geometry's side / √3 box, while the hex-tri-board-art document and js/tile-art.js's `TRIANGLE_GLYPH` still say 0.55 of the side — settle the document on the geometry's box (via `/architect amend`) and flag `TRIANGLE_GLYPH`. classic2d-tile-skin.md and classic2d-board-view.md are stale: the "Square tile skin" title, `tileKey` now keyed by the recipe's outline name (`square`, `hexagon`, `triangle-up`, `triangle-down`), numbers past 8 (`OUTLINE_NUMBERS` in tile-skin.js, pinned to `GRID_NUMBERS`), and the gap read from `params` or `grids`; js/classic2d/motion-layer.js moves hexagon and triangle cells about their geometry centre; js/themes/board-module.js reads `GRID_UNIT` from the board view.
+- 2026-10-24 (from step 18): task 265 already updated the number-colours bullet in .claude/domain/features/theme-implement-skill.md (1–12, with 9–12 from the Triangle board sheet); the theme skill stops on a missing Hexagon or Triangle board sheet and on a hexagon or triangle tile that differs from the 2D sheet in anything but gap and radius.
 
 ```prompt
 /task-implement 266 --review
