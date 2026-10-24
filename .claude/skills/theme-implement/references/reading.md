@@ -27,6 +27,8 @@ canvas has one. Among them, by the rest of the title:
 | `<Theme> · Tokens` | the token block: surfaces, ink, accents, borders, radii, shadows, type, durations and easings, the contrast pairs |
 | `<Theme> · Components` | the components artboard: every kit component in every state, decoration slots, overlays, the in-game counters |
 | `<Theme> · 2D board sheet` | the Classic 2D tiles in every state, numbers, glyphs, the board frame, the cursor, the cell motion |
+| `<Theme> · Hexagon board sheet` | the hexagon tiles: the gap between them and their corner radius, measured on the tile across the flats |
+| `<Theme> · Triangle board sheet` | the triangle tiles pointing up and down: the gap between them and their corner radius, measured on the tile height; the numbers 9–12 |
 | `<Theme> · 3D sheet` | the 3D cubes and their style, numbers past 8, the sky and fog, the selection, the start-cell tint, confetti, the solved pulse |
 | `<Theme> · <screen> · <w> × <h>` and `<Theme> · <screen> — states` | the screens at each window size and in each state, for the comparison at step 6 and for values the sheets leave out |
 
@@ -34,16 +36,18 @@ Shared component boards (`Component · …`), UI-kit boards and boards of other
 themes are not the theme's: they hold the same components under other token
 sets.
 
-The match is **ambiguous** when no board, or more than one, takes a role in
-the first four rows; when the page and the title prefix disagree; or when the
-theme's name matches more than one prefix. Ambiguity is a question at step 3,
-listing the candidate boards by title.
+The match is **ambiguous** when more than one board takes a role of a row
+above the screens'; when no board takes the tokens, components, 2D board
+sheet or 3D sheet role; when the page and the title prefix disagree; or when
+the theme's name matches more than one prefix. Ambiguity is a question at
+step 3, listing the candidate boards by title. No board taking the Hexagon or
+the Triangle board sheet role is a stop (`./stops.md`).
 
 ## Reading
 
-Read each artboard of the first four rows, and each screen artboard a value
-or the comparison needs, with `action: "read"` and its `path` (`paths` for
-several at once). The tool saves each file to the scratchpad; search the
+Read each artboard of the rows above the screens', and each screen artboard
+a value or the comparison needs, with `action: "read"` and its `path` (`paths`
+for several at once). The tool saves each file to the scratchpad; search the
 saved file — its `<style>` blocks, its custom properties, its class rules and
 the labelled specimens — rather than loading it whole.
 

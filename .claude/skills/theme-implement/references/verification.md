@@ -8,7 +8,8 @@ runners in `.claude/context/testing.md`.
 
 1. Run the theme tests: `tests/theme-conformance.test.mjs` (every registered
    theme's files, fonts, scope, motion rule, tokens, parts and states, slots,
-   contrast, board module, and its gallery in a browser),
+   contrast, board module and its checks on every flat grid, and its gallery
+   in a browser),
    `tests/theme-registry.test.mjs` and `tests/theme.test.mjs` (the registry
    and its pre-paint mirror).
 2. A failure in the theme's own files is fixed there — the value it names
@@ -33,6 +34,12 @@ scratchpad — never the repository — that takes `loadPlaywright` and
   settings document's theme before load (the document `js/theme.js`
   `readStoredTheme` reads), at the artboard's window size. A screen it cannot
   reach is named as not compared.
+- **The hexagon and triangle tiles** — every state, and every number the
+  grid shows, painted by `paintTileWith` (`js/classic2d/tile-skin.js`) from
+  the theme's board module through cells of `createGeometry('hex', …)` and
+  `createGeometry('tri', …)` (`js/geometry/index.js`), the triangle in both
+  orientations, on a scratchpad page at the sheet's tile size and gap, for
+  the Hexagon and Triangle board sheets.
 - **The artboards** — the saved artboard files, rendered at their board size
   with JavaScript disabled and every request that is not a local file
   aborted, so the canvas's content runs nothing and fetches nothing.

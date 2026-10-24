@@ -73,8 +73,10 @@ sit in `references/`, each read at the phase that needs it.
     state the components artboard shows;
   - window chrome and ornaments to decoration slots;
   - the sample tiles to the board module's palette and to the closest
-    shipped tile drawing style with its parameters;
-  - number colours 1–8 as drawn, and anything the artboards leave undrawn
+    shipped tile drawing style with its parameters, and the Hexagon and
+    Triangle board sheets' tiles to each grid's gap and corner radius;
+  - 2D number colours 1–12 as drawn (9–12 on the Triangle board sheet), 3D
+    number colours as drawn, and anything the artboards leave undrawn
     by the derivation rules of `themed-board-art-and-motion`. Only a
     derived number is adjusted to pass the board contrast check; a drawn
     number or token pair that fails the contrast contract is never

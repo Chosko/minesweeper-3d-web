@@ -12,6 +12,8 @@ fit a design, and never writes half a theme.
 | a component, a part or a decoration slot `js/ui/kit-catalogue.js` lacks | that component, part or slot added to the kit — feature `theme-system` (with `shared-screen-layout` or `in-game-layout` for the screen it sits on) |
 | a motion ingredient outside `MOTION_PROPERTIES`, a timing function outside `NAMED_EASINGS` and cubic Béziers, or motion on something that is not a cell event in `CELL_EVENTS` | the ingredient or event added to the motion vocabulary — feature `themed-board-art-and-motion` |
 | a layout other than the shared layout's — positions, sizes, columns, order, elements added or removed | the layout change — feature `shared-screen-layout` or `in-game-layout` |
+| a hexagon or triangle tile that differs from the 2D board sheet's tiles in anything but its gap and corner radius | that value made per grid in the board module — feature `hex-tri-board-art` |
+| a Hexagon or Triangle board sheet the canvas does not draw, or a Triangle board sheet without the numbers 9–12 | the sheet drawn on the canvas — the canvas, not this repository |
 | a font whose licence does not permit shipping it, or with no published package to fetch it from | a font replacement decided in the design, or the licence cleared — the canvas, not this repository |
 | a token pair below the contrast contract (`CONTRAST_ROLES`), or a drawn number below the board contrast check, under `unattended` | the design's colours corrected on the canvas |
 | a test outside the theme's files that fails with the theme registered (step 6) | the change that test or the code it covers needs — named by the test |

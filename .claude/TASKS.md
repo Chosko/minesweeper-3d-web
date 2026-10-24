@@ -1521,7 +1521,7 @@ Feature: hex-tri-board-art
 
 ## 265. The theme skill reads Hexagon and Triangle board sheets
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/skills/theme-implement/SKILL.md, .claude/skills/theme-implement/references/reading.md, .claude/skills/theme-implement/references/mapping.md, .claude/skills/theme-implement/references/verification.md, .claude/skills/theme-implement/references/stops.md
 Preconditions: 263

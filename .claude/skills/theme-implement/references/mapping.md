@@ -78,8 +78,8 @@ only its colours, borders, radii, shadows, type and decoration — is a stop.
 
 ## The board module — from the board sheets
 
-Each entry of the board module's shape, from the 2D board sheet and the 3D
-sheet:
+Each entry of the board module's shape, from the 2D board sheet, the Hexagon
+and Triangle board sheets and the 3D sheet:
 
 - **Palettes** — `faces2d` from the 2D tiles in each state (closed, pressed,
   revealed, exploded, the marked start cell); `faces3d` from the 3D cube
@@ -95,15 +95,25 @@ sheet:
   side the sheet draws in a colour no mix of the face with its light or dark
   bevel gives is that `#rrggbb` colour. A tile no shipped style draws within
   its parameters is a stop.
-- **Numbers** — two lists: `numbers2d`, the 2D sheet's numbers 1–8 as
-  drawn, and `numbers3d`, the 3D sheet's numbers as drawn. Every 3D number
-  past those the sheet draws takes the 3D mode's reference hue
-  (`js/textures.js`, the hues the unthemed atlas starts from), adjusted in
-  lightness, hue kept, until it passes the board conformance contrast check
-  against every point of the 3D revealed face; each is named in the report with its value.
-  A drawn number that fails that check is not adjusted: it is a question
-  (attended) or a stop (unattended), naming the number, as a failing token
-  pair is.
+- **Per-grid shape** — `style2d.grids`: `hex` from the Hexagon board sheet's
+  tiles, `tri` from the Triangle board sheet's, each the `gap` between tiles
+  and the tile's corner `radius` in the unit the board module's head comment
+  gives that grid. A sheet drawing several variants supplies the one it marks
+  as kept; with none marked, which one is a question (SKILL.md step 3). Every
+  other 2D value is the 2D board sheet's and shared by the three grids, so a
+  hexagon or triangle tile that differs from the 2D board sheet's in anything
+  but its gap and corner radius is a stop.
+- **Numbers** — two lists: `numbers2d`, the 2D sheet's numbers 1–8 and the
+  Triangle board sheet's numbers 9–12 as drawn, and `numbers3d`, the 3D
+  sheet's numbers as drawn. A number two sheets draw in different colours is
+  a question (SKILL.md step 3). Every 3D number past those the sheet draws
+  takes the 3D mode's reference hue (`js/textures.js`, the hues the unthemed
+  atlas starts from), adjusted in lightness, hue kept, until it passes the
+  board conformance contrast check against every point of the 3D revealed
+  face; each is named in the report with its value. A drawn number that
+  fails the board contrast check against its own mode's revealed face is not
+  adjusted: it is a question (attended) or a stop (unattended), naming the
+  number, as a failing token pair is.
 - **Glyphs** — flag, mine, wrong-flag cross and number shadow as drawn; an
   undrawn mine and cross take the theme's ink and danger colours.
 - **Font** — the number font: one of the theme's own faces, at the weight the
