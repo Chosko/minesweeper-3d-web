@@ -10,8 +10,10 @@
 //                <w>X<h>M<mines>   any other 2D square board, e.g. 20X12M50
 //                H + one of those two  a hexagon board, its own standard boards as HB, HI, HE,
 //                                  any other as e.g. H20X12M50
+//                T + one of those two  a triangle board, its own standard boards as TB, TI, TE,
+//                                  any other as e.g. T20X12M50
 //                <x>X<y>X<z>M<mines>  every 3D board, cube presets included, e.g. 8X8X8M40
-//                + a trailing N when the board is no-guess: EN, HEN, 8X8X8M40N
+//                + a trailing N when the board is no-guess: EN, HEN, TEN, 8X8X8M40N
 //   daily code   <board>-<YYYYMMDD>-<check>        e.g. EN-20261011-1F3A
 //                seed dailySeed(date, board token), start cell the board's marked start cell
 //                (js/generation/start-cell.js)
@@ -39,7 +41,8 @@ import { createBoardIdentity, standardBoard, STANDARD_BOARDS, MODE_3D } from './
 import { startCell as markedCell } from '../generation/start-cell.js';
 import { GENERATOR_VERSION } from '../generation/placer.js';
 import { validateCustom as validate2D, MODE as MODE_2D, GRID } from '../classic2d/board-setup.js';
-import { validateCustom as validateHex, MODE as MODE_HEX, GRID as GRID_HEX, STANDARD_SIZES as HEX_SIZES } from '../hexagon/board-setup.js';
+import * as hexagon from '../hexagon/board-setup.js';
+import * as triangle from '../triangle/board-setup.js';
 import { validateCustom as validate3D, noGuessAvailable, noGuessReason } from '../mode3d/board-choice.js';
 
 export const CODE_REASONS = Object.freeze({
@@ -52,7 +55,16 @@ export const CODE_REASONS = Object.freeze({
 });
 
 const LETTERS = Object.freeze({ Beginner: 'B', Intermediate: 'I', Expert: 'E' });
-const HEX = 'H';
+
+// The 2D modes: each one's token prefix, grid, custom-limit validation and standard board by name.
+const flatMode = (prefix, mode, grid, validate, standardOf) => Object.freeze({ prefix, mode, grid, validate, standardOf });
+const SQUARE = flatMode('', MODE_2D, GRID, validate2D, (name) => STANDARD_BOARDS.find((b) => b.name === name));
+const sizesOf = (setup) => (name) => setup.STANDARD_SIZES[name.toLowerCase()];
+const PREFIXED = Object.freeze([
+  flatMode('H', hexagon.MODE, hexagon.GRID, hexagon.validateCustom, sizesOf(hexagon)),
+  flatMode('T', triangle.MODE, triangle.GRID, triangle.validateCustom, sizesOf(triangle)),
+]);
+const flatOf = (mode) => PREFIXED.find((f) => f.mode === mode) ?? SQUARE;
 
 // The 32-bit FNV-1a hash of a string of ASCII characters.
 export function fnv1a(text) {
@@ -92,15 +104,15 @@ const plain = (board) => {
 };
 
 // The board token of a board identity: B / I / E, <w>X<h>M<mines> or <x>X<y>X<z>M<mines>, a hexagon
-// board's with a leading H, + N.
+// board's with a leading H and a triangle board's with a leading T, + N.
 export function boardToken(identity) {
   const id = plain(identity);
   let base;
   if (id.mode === MODE_3D) base = `${id.width}X${id.height}X${id.depth}M${id.mines}`;
   else {
-    const hexagon = id.mode === MODE_HEX;
-    const standard = id.grid === (hexagon ? GRID_HEX : GRID) ? standardBoard(id) : null;
-    base = `${hexagon ? HEX : ''}${standard ? LETTERS[standard.name] : `${id.width}X${id.height}M${id.mines}`}`;
+    const flat = flatOf(id.mode);
+    const standard = id.grid === flat.grid ? standardBoard(id) : null;
+    base = `${flat.prefix}${standard ? LETTERS[standard.name] : `${id.width}X${id.height}M${id.mines}`}`;
   }
   return id.noGuess ? `${base}N` : base;
 }
@@ -109,7 +121,7 @@ export function boardToken(identity) {
 export function graphOf(identity) {
   const id = plain(identity);
   if (id.mode === MODE_3D) return { kind: 'box', X: id.width, Y: id.height, Z: id.depth };
-  return { kind: id.mode === MODE_HEX ? GRID_HEX : GRID, width: id.width, height: id.height };
+  return { kind: flatOf(id.mode).grid, width: id.width, height: id.height };
 }
 
 const cellsOf = (id) => id.width * id.height * (id.depth ?? 1);
@@ -156,8 +168,8 @@ const SEED = /^[0-9A-F]{8}$/;
 const START = new RegExp(`^${NUM}$`);
 const CHECK = /^(0|[1-9][0-9]*)([0-9A-F]{3})$/;
 
-// The fields a 2D token (a hexagon board's without its H) names on `mode` and `grid`, or null.
-function flatOfToken(token, mode, grid, standardOf) {
+// The fields a 2D token (without its mode's prefix) names in the 2D mode `flat`, or null.
+function flatOfToken(token, { mode, grid, standardOf }) {
   let m = TOKEN_STD.exec(token);
   if (m) {
     const s = standardOf(Object.keys(LETTERS).find((k) => LETTERS[k] === m[1]));
@@ -168,16 +180,14 @@ function flatOfToken(token, mode, grid, standardOf) {
   return null;
 }
 
-const squareStandard = (name) => STANDARD_BOARDS.find((b) => b.name === name);
-const hexStandard = (name) => HEX_SIZES[name.toLowerCase()];
-
 // The identity a board token names, or null.
 function boardOfToken(token) {
   if (typeof token !== 'string') return null;
-  if (token.startsWith(HEX)) return flatOfToken(token.slice(HEX.length), MODE_HEX, GRID_HEX, hexStandard);
+  const prefixed = PREFIXED.find((f) => token.startsWith(f.prefix));
+  if (prefixed) return flatOfToken(token.slice(prefixed.prefix.length), prefixed);
   const m = TOKEN_3D.exec(token);
   if (m) return { mode: MODE_3D, width: +m[1], height: +m[2], depth: +m[3], mines: +m[4], noGuess: m[5] === 'N' };
-  return flatOfToken(token, MODE_2D, GRID, squareStandard);
+  return flatOfToken(token, SQUARE);
 }
 
 // Why a board is outside its mode's custom limits, or null when it is inside them.
@@ -190,7 +200,7 @@ function limitsReason(b) {
     if (b.noGuess && !noGuessAvailable(choice)) return `${noGuessReason(choice)}.`;
     return null;
   }
-  const v = (b.mode === MODE_HEX ? validateHex : validate2D)({ width: b.width, height: b.height, mines: b.mines });
+  const v = flatOf(b.mode).validate({ width: b.width, height: b.height, mines: b.mines });
   return v.ok ? null : `${v.reason.charAt(0).toUpperCase()}${v.reason.slice(1)}.`;
 }
 

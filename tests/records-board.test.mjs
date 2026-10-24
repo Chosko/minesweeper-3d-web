@@ -5,6 +5,7 @@ import {
   BOARD_KEY_FORMAT,
   STANDARD_BOARDS,
   STANDARD_BOARDS_HEX,
+  STANDARD_BOARDS_TRI,
   createBoardIdentity,
   boardKey,
   boardLabel,
@@ -16,6 +17,8 @@ const square = (width, height, mines, noGuess = false) =>
   createBoardIdentity({ mode: 'classic-2d', grid: 'square', width, height, mines, noGuess });
 const hexagon = (width, height, mines, noGuess = false) =>
   createBoardIdentity({ mode: 'hexagon', grid: 'hex', width, height, mines, noGuess });
+const triangle = (width, height, mines, noGuess = false) =>
+  createBoardIdentity({ mode: 'triangle', grid: 'tri', width, height, mines, noGuess });
 
 // ---------- identity ----------
 
@@ -198,6 +201,49 @@ test('hexagon: Beginner, Intermediate and Expert are recognised from exact size 
   assert.equal(boardLabel(hexagon(30, 16, 100, true)), 'Expert · no-guess');
   assert.equal(boardLabel(hexagon(30, 16, 123)), '30 × 16 · 123 mines');
   assert.equal(boardLabel(createBoardIdentity({ ...hexagon(30, 16, 100, true), daily: true })), 'Daily · Expert · no-guess');
+});
+
+// ---------- the triangle form ----------
+
+test('triangle: the standard boards are Beginner 13 × 7 · 8, Intermediate 25 × 13 · 36 and Expert 41 × 17 · 103', () => {
+  assert.deepEqual(STANDARD_BOARDS_TRI.map((b) => [b.name, b.width, b.height, b.mines]), [
+    ['Beginner', 13, 7, 8],
+    ['Intermediate', 25, 13, 36],
+    ['Expert', 41, 17, 103],
+  ]);
+  assert.ok(Object.isFrozen(STANDARD_BOARDS_TRI));
+  assert.ok(STANDARD_BOARDS_TRI.every(Object.isFrozen));
+});
+
+test('triangle: the identity is the 2D form with mode triangle and grid tri, keyed in the same format', () => {
+  const id = triangle(41, 17, 103, true);
+  assert.deepEqual({ ...id }, { mode: 'triangle', grid: 'tri', width: 41, height: 17, mines: 103, noGuess: true });
+  assert.equal(BOARD_KEY_FORMAT, 2);
+  assert.equal(boardKey(id), 'triangle:tri:41x17:103:no-guess');
+  assert.equal(boardKey(triangle(13, 7, 8)), 'triangle:tri:13x7:8:guess');
+  assert.equal(boardKey(triangle(20, 12, 50)), 'triangle:tri:20x12:50:guess');
+  for (const board of [id, triangle(13, 7, 8), triangle(1, 2, 1, true), createBoardIdentity({ ...id, daily: true })]) {
+    assert.deepEqual(parseBoardKey(boardKey(board)), board);
+  }
+  assert.equal(boardKey(createBoardIdentity({ ...id, daily: true })), 'daily:triangle:tri:41x17:103:no-guess');
+  assert.notEqual(boardKey(triangle(30, 16, 99)), boardKey(square(30, 16, 99)));
+  assert.notEqual(boardKey(triangle(30, 16, 100)), boardKey(hexagon(30, 16, 100)));
+});
+
+test('triangle: Beginner, Intermediate and Expert are recognised from exact size and mine count on the tri grid', () => {
+  assert.equal(standardBoard(triangle(13, 7, 8)).name, 'Beginner');
+  assert.equal(standardBoard(triangle(25, 13, 36, true)).name, 'Intermediate');
+  assert.equal(standardBoard(triangle(41, 17, 103)).name, 'Expert');
+  assert.equal(standardBoard(triangle(41, 17, 102)), null);
+  assert.equal(standardBoard(triangle(17, 41, 103)), null);
+  assert.equal(standardBoard(triangle(30, 16, 99)), null, 'a square standard size is custom on the tri grid');
+  assert.equal(standardBoard(triangle(30, 16, 100)), null, 'a hexagon standard size is custom on the tri grid');
+  assert.equal(standardBoard(square(13, 7, 8)), null, 'a triangle standard size is custom on the square grid');
+  assert.equal(standardBoard(hexagon(41, 17, 103)), null, 'a triangle standard size is custom on the hex grid');
+  assert.equal(boardLabel(triangle(13, 7, 8)), 'Beginner');
+  assert.equal(boardLabel(triangle(41, 17, 103, true)), 'Expert · no-guess');
+  assert.equal(boardLabel(triangle(41, 17, 120)), '41 × 17 · 120 mines');
+  assert.equal(boardLabel(createBoardIdentity({ ...triangle(41, 17, 103, true), daily: true })), 'Daily · Expert · no-guess');
 });
 
 // ---------- the daily board ----------

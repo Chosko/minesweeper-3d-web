@@ -1,8 +1,7 @@
-// Measures no-guess generation on the triangle standard boards (the triangle-grid feature's
-// Beginner, Intermediate and Expert) against the attempt budget, beside the square Expert board
-// the budget was set from. The measurement behind the triangle-grid feature's statement that
-// every standard board, Expert included, meets the attempt budget. A budget change is board
-// generation's.
+// Measures no-guess generation on the triangle standard boards (js/triangle/board-setup.js)
+// against the attempt budget, beside the square Expert board the budget was set from. The
+// measurement behind the triangle-grid feature's statement that every standard board, Expert
+// included, meets the attempt budget. A budget change is board generation's.
 //
 // Usage: node dev/measure-noguess-tri.mjs [seeds]   (default 300 seeds per board)
 //
@@ -13,12 +12,13 @@
 import { ATTEMPT_BUDGET } from '../js/generation/generate.js';
 import { startCell } from '../js/generation/start-cell.js';
 import { measure } from './measure-noguess-hex.mjs';
+import { STANDARD_SIZES, GRID } from '../js/triangle/board-setup.js';
 
-const triangle = (name, width, height, mineCount) => ({ name: `triangle ${name}`, graph: { kind: 'tri', width, height }, mineCount });
+const triangle = (name, { width, height, mines }) => ({ name: `triangle ${name}`, graph: { kind: GRID, width, height }, mineCount: mines });
 export const BOARDS = Object.freeze([
-  triangle('Beginner', 13, 7, 8),
-  triangle('Intermediate', 25, 13, 36),
-  triangle('Expert', 41, 17, 103),
+  triangle('Beginner', STANDARD_SIZES.beginner),
+  triangle('Intermediate', STANDARD_SIZES.intermediate),
+  triangle('Expert', STANDARD_SIZES.expert),
   { name: 'square Expert', graph: { kind: 'square', width: 30, height: 16 }, mineCount: 99 },
 ]);
 

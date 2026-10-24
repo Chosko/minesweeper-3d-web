@@ -62,6 +62,15 @@ test('a board choice refuses a hexagon code as another mode\'s, as it does a 3D 
   assert.equal(otherModeHint('hexagon'), 'This is a Hexagon board code. Paste it in the Hexagon board choice.');
 });
 
+test('a board choice refuses a triangle code as another mode\'s, as it does a hexagon code', () => {
+  const triCode = encodeBoardCode({ board: createBoardIdentity({ mode: 'triangle', grid: 'tri', width: 13, height: 7, mines: 8, noGuess: true }), seed: 3, startCell: 45, generatorVersion: 1 });
+  for (const mode of ['classic-2d', 'hexagon', '3d']) {
+    assert.deepEqual(resolveCode(triCode, { today: '20261011', mode }), { kind: 'refused', reason: otherModeHint('triangle'), otherMode: 'triangle' }, mode);
+  }
+  assert.equal(resolveCode(triCode, { today: '20261011', mode: 'triangle' }).kind, 'challenge');
+  assert.equal(otherModeHint('triangle'), 'This is a Triangle board code. Paste it in the Triangle board choice.');
+});
+
 test('a challenge reaches its mode with its forced start and seed; a daily with its date and board; Play again is free', () => {
   const two = gameStart({ ...parseBoardCode(code2D) });
   assert.equal(two.mode, 'classic-2d');

@@ -1471,7 +1471,7 @@ Feature: triangle-grid
 
 ## 260. Triangle boards, limits, identity and board-code token
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/triangle/board-setup.js, js/records/board.js, js/records/board-code.js, tests/triangle-board-setup.test.mjs, tests/records-board.test.mjs, tests/records-board-code.test.mjs
 Preconditions: 256, 258

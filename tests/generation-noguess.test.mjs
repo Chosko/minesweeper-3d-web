@@ -11,20 +11,19 @@ import { createHexGrid } from '../js/engine/hex-grid.js';
 import { createTriGrid } from '../js/engine/tri-grid.js';
 import { handleMessage } from '../js/generation/worker.js';
 import { STANDARD_SIZES as HEX_SIZES } from '../js/hexagon/board-setup.js';
+import { STANDARD_SIZES as TRI_SIZES } from '../js/triangle/board-setup.js';
 
 const square = (width, height) => ({ kind: 'square', width, height });
 const hex = (width, height) => ({ kind: 'hex', width, height });
 const tri = (width, height) => ({ kind: 'tri', width, height });
-// The triangle-grid feature's standard boards (Beginner, Intermediate, Expert).
-const TRI_SIZES = { beginner: [13, 7, 8], intermediate: [25, 13, 36], expert: [41, 17, 103] };
 const LEVELS = [
   { name: 'Beginner', graph: square(9, 9), mineCount: 10, seeds: 300 },
   { name: 'Intermediate', graph: square(16, 16), mineCount: 40, seeds: 150 },
   { name: 'Expert', graph: square(30, 16), mineCount: 99, seeds: 60 },
   { name: 'hexagon Beginner', graph: hex(9, 9), mineCount: 13, seeds: 150 },
   { name: 'hexagon Intermediate', graph: hex(16, 16), mineCount: 50, seeds: 60 },
-  { name: 'triangle Beginner', graph: tri(13, 7), mineCount: 8, seeds: 150 },
-  { name: 'triangle Intermediate', graph: tri(25, 13), mineCount: 36, seeds: 60 },
+  { name: 'triangle Beginner', graph: tri(TRI_SIZES.beginner.width, TRI_SIZES.beginner.height), mineCount: TRI_SIZES.beginner.mines, seeds: 150 },
+  { name: 'triangle Intermediate', graph: tri(TRI_SIZES.intermediate.width, TRI_SIZES.intermediate.height), mineCount: TRI_SIZES.intermediate.mines, seeds: 60 },
 ];
 
 // ---------- request and result ----------
@@ -287,8 +286,9 @@ test('generate: a tri no-guess board is pinned for a fixed seed, with the same a
 });
 
 test('generate: triangle Expert no-guess — every seed is accepted within the budget and clears from the start cell', () => {
-  // Measured with dev/measure-noguess-tri.mjs: well inside the attempt budget on every seed.
-  const [width, height, mines] = TRI_SIZES.expert;
+  // The standard Triangle Expert board; measured with dev/measure-noguess-tri.mjs, well inside the
+  // attempt budget on every seed.
+  const { width, height, mines } = TRI_SIZES.expert;
   const graph = tri(width, height);
   const cells = boardGraph(graph);
   const firstClick = startCell(graph);
@@ -304,7 +304,7 @@ test('generate: triangle Expert no-guess — every seed is accepted within the b
 
 test('generate: the same tri request and seed give the same result in the worker and in Node', () => {
   const plain = (x) => ({ ...x, mines: x.mines ? [...x.mines] : x.mines });
-  const cases = Object.values(TRI_SIZES).flatMap(([w, h, m]) => [[tri(w, h), m, false], [tri(w, h), m, true]]);
+  const cases = Object.values(TRI_SIZES).flatMap(({ width: w, height: h, mines: m }) => [[tri(w, h), m, false], [tri(w, h), m, true]]);
   // a no-guess miss for the failure result's parity: 3 × 3 with 7 mines never clears (above)
   for (const [graph, mineCount, noGuess, seeds = [1, 5, 4000000000]] of [...cases, [tri(3, 3), 7, true, [1]]]) {
     for (const seed of seeds) {

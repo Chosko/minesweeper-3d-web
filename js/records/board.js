@@ -3,8 +3,9 @@
 // A board identity names one board, and every exact combination of its fields is its own board.
 // It takes one of two forms, chosen by its mode:
 //   2D — mode, grid, width, height, mines and noGuess. Beginner, Intermediate and Expert are
-//        recognised from their exact size and mine count on the square grid (STANDARD_BOARDS) and
-//        on the hex grid (STANDARD_BOARDS_HEX), a hexagon board being mode `hexagon`, grid `hex`.
+//        recognised from their exact size and mine count on the square grid (STANDARD_BOARDS), on
+//        the hex grid (STANDARD_BOARDS_HEX) and on the tri grid (STANDARD_BOARDS_TRI), a hexagon
+//        board being mode `hexagon`, grid `hex`, and a triangle board mode `triangle`, grid `tri`.
 //   3D — mode `3d`, width (X), height (Y), depth (Z), mines and noGuess, with no grid. The presets,
 //        "Cube" Intro, Beginner, Intermediate and Expert, are recognised from their exact size and
 //        mine count; any other 3D board, a former preset's included, is a custom board.
@@ -18,7 +19,8 @@
 //   3D     3d:<width>x<height>x<depth>:<mines>:<guess|no-guess>
 //   Daily  daily:<the plain board's key>, e.g. `daily:classic-2d:square:30x16:99:no-guess`
 // e.g. Expert with no-guess is `classic-2d:square:30x16:99:no-guess`, a 20 × 12 custom board
-// with 50 mines `classic-2d:square:20x12:50:guess`, Hexagon Expert `hexagon:hex:30x16:100:guess`, Cube Expert with no-guess
+// with 50 mines `classic-2d:square:20x12:50:guess`, Hexagon Expert `hexagon:hex:30x16:100:guess`,
+// Triangle Expert `triangle:tri:41x17:103:guess`, Cube Expert with no-guess
 // `3d:10x10x10:100:no-guess`. mode and grid are lowercase tokens (letters, digits, single
 // hyphens), so no field can contain the `:` separator; a 3D key has one field fewer than a 2D
 // key, so the two never coincide.
@@ -41,6 +43,14 @@ export const STANDARD_BOARDS_HEX = Object.freeze([
   Object.freeze({ name: 'Expert', width: 30, height: 16, mines: 100 }),
 ]);
 
+// The Triangle standard boards, the sizes and mines of the Triangle board setup
+// (js/triangle/board-setup.js, kept equal by a test).
+export const STANDARD_BOARDS_TRI = Object.freeze([
+  Object.freeze({ name: 'Beginner', width: 13, height: 7, mines: 8 }),
+  Object.freeze({ name: 'Intermediate', width: 25, height: 13, mines: 36 }),
+  Object.freeze({ name: 'Expert', width: 41, height: 17, mines: 103 }),
+]);
+
 // The 3D presets in menu order, the sizes and mines of the 3D board choice
 // (js/mode3d/board-choice.js, kept equal by a test).
 const preset = (family, name, width, height, depth, mines) => Object.freeze({ family, name, width, height, depth, mines });
@@ -51,7 +61,7 @@ export const PRESETS_3D = Object.freeze([
   preset('Cube', 'Expert', 10, 10, 10, 100),
 ]);
 
-const STANDARD_BY_GRID = new Map([['square', STANDARD_BOARDS], ['hex', STANDARD_BOARDS_HEX]]);
+const STANDARD_BY_GRID = new Map([['square', STANDARD_BOARDS], ['hex', STANDARD_BOARDS_HEX], ['tri', STANDARD_BOARDS_TRI]]);
 const DIM_MAX_3D = 100;
 const TOKEN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
