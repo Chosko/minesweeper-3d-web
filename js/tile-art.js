@@ -3,7 +3,8 @@
 // the two modes read as one game. A face is drawn through `drawFace` in one of
 // the named drawing styles (`STYLES`) with its parameters, and the glyphs over
 // it by their own functions, each in a `size` × `size` box at the context's
-// origin, at any size, with every colour passed in by the caller: both callers
+// origin (or the box of a hexagon or triangle outline, the glyphs in its glyph
+// box), at any size, with every colour passed in by the caller: both callers
 // pass the active theme's board module's (js/themes/board-module.js) — the atlas
 // its 3D style and palette, the 2D skin its Classic 2D ones. This module
 // imports nothing, reads no token and touches no DOM.
@@ -71,6 +72,143 @@ function clipped(ctx, S, radius, draw) {
   ctx.restore();
 }
 
+// ---- outlines: the shape a face is drawn in ----
+// A face is drawn in an outline: the square of its size, the flat-top hexagon
+// whose size is across its flats, or the triangle whose size is its side,
+// pointing up or down. A hexagon or triangle measures its style's fractions
+// against its height, which for the square and the hexagon is the size.
+const SQRT3 = Math.sqrt(3);
+export const OUTLINES = Object.freeze(['square', 'hexagon', 'triangle-up', 'triangle-down']);
+// A triangle's glyph box, as a fraction of its side.
+const TRIANGLE_GLYPH = 0.55;
+
+const outlineOf = (outline) => (OUTLINES.includes(outline) ? outline : 'square');
+
+// The outline's box at a tile `size`, from the context's origin.
+export function outlineBox(outline, size) {
+  switch (outlineOf(outline)) {
+    case 'hexagon': return { width: (2 * size) / SQRT3, height: size };
+    case 'triangle-up':
+    case 'triangle-down': return { width: size, height: (size * SQRT3) / 2 };
+    default: return { width: size, height: size };
+  }
+}
+
+// The outline's corners in its box, clockwise on the page.
+export function outlinePoints(outline, size) {
+  const { width: w, height: h } = outlineBox(outline, size);
+  switch (outlineOf(outline)) {
+    case 'hexagon': {
+      const s = w / 2;
+      return [[s / 2, 0], [w - s / 2, 0], [w, h / 2], [w - s / 2, h], [s / 2, h], [0, h / 2]];
+    }
+    case 'triangle-up': return [[w / 2, 0], [w, h], [0, h]];
+    case 'triangle-down': return [[0, 0], [w, 0], [w / 2, h]];
+    default: return [[0, 0], [w, 0], [w, h], [0, h]];
+  }
+}
+
+// The box the glyphs are set in, in the outline's box: the square's whole
+// tile, a hexagon's size across the flats centred on it, and a square of 0.55
+// of a triangle's side centred on its centroid.
+export function glyphBox(outline, size) {
+  const kind = outlineOf(outline);
+  const { width: w, height: h } = outlineBox(kind, size);
+  if (kind === 'square') return { x: 0, y: 0, width: size, height: size };
+  if (kind === 'hexagon') return { x: (w - size) / 2, y: 0, width: size, height: size };
+  const g = size * TRIANGLE_GLYPH;
+  const cy = kind === 'triangle-up' ? (2 * h) / 3 : h / 3;
+  return { x: w / 2 - g / 2, y: cy - g / 2, width: g, height: g };
+}
+
+// Calls draw(S) with the context moved to a glyph box's square — its smaller
+// side, centred in it — so any glyph below draws in that box.
+export function inGlyphBox(ctx, box, draw) {
+  const S = Math.min(box.width, box.height);
+  ctx.save();
+  ctx.translate(box.x + (box.width - S) / 2, box.y + (box.height - S) / 2);
+  draw(S);
+  ctx.restore();
+}
+
+const centroid = (points) => [
+  points.reduce((a, p) => a + p[0], 0) / points.length,
+  points.reduce((a, p) => a + p[1], 0) / points.length,
+];
+
+// Each edge of a convex polygon, corner i to corner i + 1: its direction and
+// its outward normal, a component under a billionth taken as zero.
+function edges(points) {
+  const n = points.length;
+  const [cx, cy] = centroid(points);
+  return points.map(([x0, y0], i) => {
+    const [x1, y1] = points[(i + 1) % n];
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    let m = [(y1 - y0) / len, (x0 - x1) / len];
+    if (m[0] * ((x0 + x1) / 2 - cx) + m[1] * ((y0 + y1) / 2 - cy) < 0) m = [-m[0], -m[1]];
+    return { from: [x0, y0], u: [(x1 - x0) / len, (y1 - y0) / len], out: m.map((c) => (Math.abs(c) < 1e-9 ? 0 : c)) };
+  });
+}
+
+// A convex polygon's corners moved `d` in from every edge.
+function inset(points, d) {
+  if (!(d > 0)) return points;
+  const lines = edges(points).map(({ from, u, out }) => ({ p: [from[0] - out[0] * d, from[1] - out[1] * d], u }));
+  return lines.map((b, i) => {
+    const a = lines[(i + lines.length - 1) % lines.length];
+    const t = ((b.p[0] - a.p[0]) * b.u[1] - (b.p[1] - a.p[1]) * b.u[0]) / (a.u[0] * b.u[1] - a.u[1] * b.u[0]);
+    return [a.p[0] + a.u[0] * t, a.p[1] + a.u[1] * t];
+  });
+}
+
+// The polygon's path, its corners rounded by `r` when above zero, each
+// corner's arc no longer than half its shorter edge allows.
+function polygonPath(ctx, points, r) {
+  const n = points.length;
+  ctx.beginPath();
+  if (!(r > 0)) {
+    points.forEach((p, i) => (i ? ctx.lineTo(...p) : ctx.moveTo(...p)));
+    ctx.closePath();
+    return;
+  }
+  const last = points[n - 1];
+  ctx.moveTo((last[0] + points[0][0]) / 2, (last[1] + points[0][1]) / 2);
+  for (let i = 0; i < n; i++) {
+    const a = points[(i + n - 1) % n], b = points[i], c = points[(i + 1) % n];
+    const ab = Math.hypot(a[0] - b[0], a[1] - b[1]), cb = Math.hypot(c[0] - b[0], c[1] - b[1]);
+    const angle = Math.acos(((a[0] - b[0]) * (c[0] - b[0]) + (a[1] - b[1]) * (c[1] - b[1])) / (ab * cb));
+    ctx.arcTo(b[0], b[1], c[0], c[1], Math.min(r, Math.tan(angle / 2) * (Math.min(ab, cb) / 2)));
+  }
+  ctx.closePath();
+}
+
+function fillPolygon(ctx, points, style, r = 0) {
+  ctx.fillStyle = style;
+  polygonPath(ctx, points, r);
+  ctx.fill();
+}
+
+const topOf = (points) => Math.min(...points.map((p) => p[1]));
+const bottomOf = (points) => Math.max(...points.map((p) => p[1]));
+
+// The hexagon or triangle a face is drawn in: its box and corners. Null for
+// the square, which every style draws on its own path.
+function tileOf(outline, size) {
+  const kind = outlineOf(outline);
+  if (kind === 'square') return null;
+  return { ...outlineBox(kind, size), points: outlinePoints(kind, size) };
+}
+
+// A face drawn in a hexagon or triangle: clipped to the outline, its corners
+// rounded by the style's radius, a fraction of the height.
+function outlined(ctx, tile, radius, draw) {
+  ctx.save();
+  polygonPath(ctx, tile.points, radius > 0 ? tile.height * radius : 0);
+  ctx.clip();
+  draw();
+  ctx.restore();
+}
+
 // ---- bevel: a raised face inside a thin edge, framed by four sloped sides ----
 // Parameters: `edge` and `slope` the edge's and each slope's width, and
 // `revealedEdge` the revealed face's inset, as fractions of the size; `sides`
@@ -127,19 +265,27 @@ function slopes(ctx, S, r, b, rim, shades) {
     ctx.fillRect(r, r, S - 2 * r, S - 2 * r);
     return;
   }
+  slopeRuns(ctx, outer, inner, shades);
+}
+
+// The slopes between an outer and an inner polygon, side i running corner i
+// to corner i + 1 in shades[i], a run of neighbouring sides of one shade one
+// polygon; the run holding the first side draws first, the rest follow it.
+function slopeRuns(ctx, outer, inner, shades) {
+  const n = shades.length;
   let from = 0;
-  while (shades[(from + 3) % 4] === shades[from]) from = (from + 3) % 4;
+  while (shades[(from + n - 1) % n] === shades[from]) from = (from + n - 1) % n;
   const runs = [];
-  for (let i = 0; i < 4;) {
-    const first = (from + i) % 4;
+  for (let i = 0; i < n;) {
+    const first = (from + i) % n;
     let k = 1;
-    while (i + k < 4 && shades[(from + i + k) % 4] === shades[first]) k++;
+    while (i + k < n && shades[(from + i + k) % n] === shades[first]) k++;
     runs.push([first, k]);
     i += k;
   }
   for (const [first, k] of runs) {
     // corners q0…qk along the run; the slope of side i runs corner i to corner i + 1
-    const q = Array.from({ length: k + 1 }, (_, j) => (first + j) % 4);
+    const q = Array.from({ length: k + 1 }, (_, j) => (first + j) % n);
     ctx.fillStyle = shades[first];
     ctx.beginPath();
     ctx.moveTo(...outer[q[1]]);
@@ -153,7 +299,75 @@ function slopes(ctx, S, r, b, rim, shades) {
 
 const bevelShades = (q, p, sign) => SIDES.map((side) => sideShade(p, q.sides[side], sign));
 
-function bevelClosed(ctx, S, q, p, depth, px) {
+// The shade of each edge of a hexagon or triangle, by the way it faces: its
+// outward normal's share of across (left or right) and of up or down weighs
+// the two sides' shades, so an edge facing straight up is the top side's. An
+// edge between a shade and a colour takes the one it faces more.
+function edgeShades(q, p, points, sign) {
+  return edges(points).map(({ out: [nx, ny] }) => {
+    const across = nx > 0 ? q.sides.right : q.sides.left, wa = Math.abs(nx);
+    const upDown = ny > 0 ? q.sides.bottom : q.sides.top, wu = Math.abs(ny);
+    if (!wa) return sideShade(p, upDown, sign);
+    if (!wu) return sideShade(p, across, sign);
+    if (typeof across === 'string' || typeof upDown === 'string') return sideShade(p, wa > wu ? across : upDown, sign);
+    return sideShade(p, (across * wa + upDown * wu) / (wa + wu), sign);
+  });
+}
+
+// A bevel's closed or sunk face in a hexagon or triangle: the edge, the slope
+// along every side inside it, and the face; `sign` 1 raised, -1 sunk.
+function bevelRaisedIn(ctx, tile, q, p, depth, px, sign) {
+  outlined(ctx, tile, q.radius, () => {
+    const H = tile.height;
+    const { rim: r, bevel: b } = bevelBands(H, q, depth, px);
+    const outer = inset(tile.points, r);
+    const inner = inset(tile.points, r + b);
+    ctx.fillStyle = p.rim;
+    ctx.fillRect(0, 0, tile.width, H);
+    if (b > 0) {
+      const shades = edgeShades(q, p, tile.points, sign);
+      if (shades.every((c) => c === shades[0])) fillPolygon(ctx, outer, shades[0]);
+      else slopeRuns(ctx, outer, inner, shades);
+    }
+    if (sign < 0) {
+      fillPolygon(ctx, inner, p.face);
+      return;
+    }
+    const g = ctx.createLinearGradient(0, topOf(inner), 0, bottomOf(inner));
+    g.addColorStop(0, p.face);
+    g.addColorStop(1, p.faceShade ?? p.face);
+    fillPolygon(ctx, inner, g);
+    if (p.gloss === undefined) return;
+    const shine = inset(inner, H * (3 / 128));
+    const from = topOf(shine);
+    const gl = ctx.createLinearGradient(0, from, 0, H * 0.55);
+    gl.addColorStop(0, p.gloss);
+    gl.addColorStop(1, p.glossFade);
+    ctx.save();
+    polygonPath(ctx, shine, 0);
+    ctx.clip();
+    ctx.fillStyle = gl;
+    ctx.fillRect(0, from, tile.width, Math.min(H * 0.32, H - from));
+    ctx.restore();
+  });
+}
+
+// A bevel's revealed face in a hexagon or triangle: flat inside its edge.
+function bevelRevealedIn(ctx, tile, q, p, depth, px) {
+  outlined(ctx, tile, q.radius, () => {
+    const { rim: r, edge: e } = bevelBands(tile.height, q, 1, px);
+    ctx.fillStyle = p.rim;
+    ctx.fillRect(0, 0, tile.width, tile.height);
+    fillPolygon(ctx, inset(tile.points, r), p.edge);
+    const g = ctx.createLinearGradient(0, 0, tile.width, tile.height);
+    g.addColorStop(0, p.face);
+    g.addColorStop(1, p.faceShade ?? p.face);
+    fillPolygon(ctx, inset(tile.points, e), g);
+  });
+}
+
+function bevelClosed(ctx, S, q, p, depth, px, tile) {
+  if (tile) { bevelRaisedIn(ctx, tile, q, p, depth, px, 1); return; }
   clipped(ctx, S, q.radius, () => {
     const { rim: r, bevel: b } = bevelBands(S, q, depth, px);
     slopes(ctx, S, r, b, p.rim, bevelShades(q, p, 1));
@@ -173,7 +387,8 @@ function bevelClosed(ctx, S, q, p, depth, px) {
   });
 }
 
-function bevelSunk(ctx, S, q, p, depth, px) {
+function bevelSunk(ctx, S, q, p, depth, px, tile) {
+  if (tile) { bevelRaisedIn(ctx, tile, q, p, depth, px, -1); return; }
   clipped(ctx, S, q.radius, () => {
     const { rim: r, bevel: b } = bevelBands(S, q, depth, px);
     slopes(ctx, S, r, b, p.rim, bevelShades(q, p, -1));
@@ -182,7 +397,8 @@ function bevelSunk(ctx, S, q, p, depth, px) {
   });
 }
 
-function bevelRevealed(ctx, S, q, p, depth, px) {
+function bevelRevealed(ctx, S, q, p, depth, px, tile) {
+  if (tile) { bevelRevealedIn(ctx, tile, q, p, depth, px); return; }
   clipped(ctx, S, q.radius, () => {
     const { rim: r, edge: e } = bevelBands(S, q, 1, px);
     ctx.fillStyle = p.rim;
@@ -198,7 +414,8 @@ function bevelRevealed(ctx, S, q, p, depth, px) {
 }
 
 // ---- flat: a face with a light top band and a dark bottom edge; revealed flush ----
-// Parameters: as fractions of the size, `band` the light top band, `edge` the
+// Parameters: as fractions of the size (a hexagon's or triangle's height),
+// `band` the light top band, `edge` the
 // dark bottom edge, `press` the sunk face's inset shade along its top and
 // `radius` the corner radius; in drawing units (CSS pixels on a Classic 2D
 // tile), so constant at every size, `hairline` the revealed face's border and
@@ -206,7 +423,20 @@ function bevelRevealed(ctx, S, q, p, depth, px) {
 // draws; a sunk face is flat, its shade in bevelDark.
 const FLAT = Object.freeze({ band: 0.1, edge: 0.1, press: 0.08, hairline: 1, border: 2, radius: 0.15 });
 
-function flatClosed(ctx, S, q, p, depth, px) {
+function flatClosed(ctx, S, q, p, depth, px, tile) {
+  if (tile) {
+    outlined(ctx, tile, q.radius, () => {
+      const { width: W, height: H } = tile;
+      const band = snap(H * q.band, px), edge = snap(H * q.edge, px);
+      ctx.fillStyle = p.face;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = p.bevelLight;
+      ctx.fillRect(0, 0, W, band);
+      ctx.fillStyle = p.bevelDark;
+      ctx.fillRect(0, H - edge, W, edge);
+    });
+    return;
+  }
   clipped(ctx, S, q.radius, () => {
     const band = snap(S * q.band, px), edge = snap(S * q.edge, px);
     ctx.fillStyle = p.face;
@@ -218,7 +448,16 @@ function flatClosed(ctx, S, q, p, depth, px) {
   });
 }
 
-function flatSunk(ctx, S, q, p, depth, px) {
+function flatSunk(ctx, S, q, p, depth, px, tile) {
+  if (tile) {
+    outlined(ctx, tile, q.radius, () => {
+      ctx.fillStyle = p.face;
+      ctx.fillRect(0, 0, tile.width, tile.height);
+      ctx.fillStyle = p.bevelDark;
+      ctx.fillRect(0, 0, tile.width, snap(tile.height * q.press, px));
+    });
+    return;
+  }
   clipped(ctx, S, q.radius, () => {
     const shade = snap(S * q.press, px);
     ctx.fillStyle = p.face;
@@ -228,7 +467,16 @@ function flatSunk(ctx, S, q, p, depth, px) {
   });
 }
 
-function flatRevealed(ctx, S, q, p, depth, px) {
+function flatRevealed(ctx, S, q, p, depth, px, tile) {
+  if (tile) {
+    outlined(ctx, tile, q.radius, () => {
+      const h = snap(q.hairline, px);
+      ctx.fillStyle = p.rim;
+      ctx.fillRect(0, 0, tile.width, tile.height);
+      fillPolygon(ctx, inset(tile.points, h), p.face, Math.max(0, tile.height * q.radius - h));
+    });
+    return;
+  }
   clipped(ctx, S, q.radius, () => {
     const h = snap(q.hairline, px);
     ctx.fillStyle = p.rim;
@@ -241,7 +489,8 @@ function flatRevealed(ctx, S, q, p, depth, px) {
 
 // The drawing styles, the first the one an unknown style name falls back to.
 // Each draws every face from its parameters (its own `params` filling any the
-// caller leaves out), the palette and a depth.
+// caller leaves out), the palette and a depth, in the square of its size or,
+// given a tile (tileOf), in that hexagon or triangle.
 export const STYLES = Object.freeze({
   bevel: Object.freeze({ params: BEVEL, closed: bevelClosed, sunk: bevelSunk, revealed: bevelRevealed }),
   flat: Object.freeze({ params: FLAT, closed: flatClosed, sunk: flatSunk, revealed: flatRevealed }),
@@ -250,13 +499,15 @@ export const STYLES = Object.freeze({
 const DEV = /^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(globalThis.location?.hostname ?? '');
 const reported = new Set();
 
-// Draws `face` (one of FACES) in a `size` × `size` box at the context's origin
-// in the drawing style named `style`, with its `params`, the face's `palette`
+// Draws `face` (one of FACES) in an `outline` (one of OUTLINES, the square by
+// default) of a tile `size`, its box (outlineBox) at the context's origin, in
+// the drawing style named `style`, with its `params`, the face's `palette`
 // entries and a `depth` from 0 (flat) to 1 (fully raised). `px`, when given, is
 // one device pixel in drawing units: every band then snaps to whole device
 // pixels, never thinner than one. An unknown style draws the first shipped
-// style with its own parameters, and is reported once in development.
-export function drawFace(ctx, size, face, { style = 'bevel', params, palette, depth = 1, px } = {}) {
+// style with its own parameters, and is reported once in development; an
+// unknown outline draws the square.
+export function drawFace(ctx, size, face, { style = 'bevel', params, palette, depth = 1, px, outline = 'square' } = {}) {
   let drawing = STYLES[style];
   let q;
   if (drawing) {
@@ -270,7 +521,7 @@ export function drawFace(ctx, size, face, { style = 'bevel', params, palette, de
     drawing = Object.values(STYLES)[0];
     q = drawing.params;
   }
-  drawing[face]?.(ctx, size, q, palette, clamp01(depth), px);
+  drawing[face]?.(ctx, size, q, palette, clamp01(depth), px, tileOf(outline, size));
 }
 
 // The parameters a style draws the exploded tile's revealed face with: its

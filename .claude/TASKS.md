@@ -1491,7 +1491,7 @@ Feature: triangle-grid
 
 ## 262. Hexagon and triangle outlines in the tile recipe
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/tile-art.js, tests/tile-art.test.mjs
 Preconditions: none

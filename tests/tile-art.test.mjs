@@ -432,3 +432,327 @@ test('an unknown style draws the first shipped style and reports the error once'
   art.drawFace(fakeContext(), 48, 'closed', { style: 'glitter', palette: CLOSED });
   assert.equal(logged.length, 2, 'another unknown style is reported in its turn');
 });
+
+// ---------------------------------------------------------------- outlines
+
+const SQRT3 = Math.sqrt(3);
+const SHAPED = ['hexagon', 'triangle-up', 'triangle-down'];
+const near = (a, b, eps = 1e-9) => Math.abs(a - b) <= eps;
+// Whether a point lies inside or on a convex polygon, within eps.
+function insidePolygon(points, [x, y], eps = 1e-6) {
+  const n = points.length;
+  let sign = 0;
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = points[i];
+    const [x1, y1] = points[(i + 1) % n];
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    const cross = ((x1 - x0) * (y - y0) - (y1 - y0) * (x - x0)) / len;
+    if (Math.abs(cross) <= eps) continue;
+    const s = Math.sign(cross);
+    if (sign && s !== sign) return false;
+    sign = s;
+  }
+  return true;
+}
+// Whether a point lies inside any polygon, convex or not (ray casting).
+function containsPoint(points, [x, y]) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const [xi, yi] = points[i];
+    const [xj, yj] = points[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+const centroidOf = (points) => [points.reduce((s, p) => s + p[0], 0) / points.length, points.reduce((s, p) => s + p[1], 0) / points.length];
+
+test('the recipe names its outlines, square first, and gives each its box and corners at a tile size', async () => {
+  const art = await artModule();
+  assert.deepEqual([...art.OUTLINES], ['square', 'hexagon', 'triangle-up', 'triangle-down']);
+  assert.ok(Object.isFrozen(art.OUTLINES));
+  for (const S of [26, 60]) {
+    assert.deepEqual(art.outlineBox('square', S), { width: S, height: S });
+    assert.deepEqual(art.outlinePoints('square', S), [[0, 0], [S, 0], [S, S], [0, S]]);
+    // A hexagon's size is across the flats, flat side up, as the geometry measures it.
+    const hex = art.outlineBox('hexagon', S);
+    assert.ok(near(hex.width, 2 * S / SQRT3) && hex.height === S, `${S}px: a hexagon's box is two sides wide and the size tall`);
+    const hp = art.outlinePoints('hexagon', S);
+    assert.equal(hp.length, 6);
+    assert.ok(hp.every(([x, y]) => x >= -1e-9 && x <= hex.width + 1e-9 && y >= 0 && y <= S), `${S}px: the corners sit in the box`);
+    assert.equal(hp.filter(([, y]) => y === 0).length, 2, `${S}px: a flat side on top`);
+    assert.equal(hp.filter(([, y]) => y === S).length, 2, `${S}px: and one at the bottom`);
+    // A triangle's size is its side; up has its apex on top, down at the bottom.
+    for (const [outline, apexY, baseY] of [['triangle-up', 0, 1], ['triangle-down', 1, 0]]) {
+      const box = art.outlineBox(outline, S);
+      assert.ok(box.width === S && near(box.height, S * SQRT3 / 2), `${S}px: ${outline}'s box is a side wide and its height tall`);
+      const tp = art.outlinePoints(outline, S);
+      assert.equal(tp.length, 3);
+      assert.ok(tp.some(([x, y]) => near(x, S / 2) && near(y, apexY * box.height)), `${S}px: ${outline}'s apex`);
+      assert.equal(tp.filter(([, y]) => near(y, baseY * box.height)).length, 2, `${S}px: ${outline}'s base`);
+    }
+  }
+});
+
+test('the square outline draws exactly the face drawn with no outline, in both styles, every face and depth', async () => {
+  const art = await artModule();
+  for (const style of ['bevel', 'flat']) {
+    for (const S of SIZES) {
+      for (const px of PXS) {
+        for (const face of art.FACES) {
+          for (const depth of [0, 0.5, 1]) {
+            for (const radius of [0, 0.15]) {
+              const opts = { style, params: { radius }, palette: PALETTES[face], depth, px };
+              const bare = fakeContext();
+              art.drawFace(bare, S, face, opts);
+              const square = fakeContext();
+              art.drawFace(square, S, face, { ...opts, outline: 'square' });
+              assert.deepEqual(trace(square), trace(bare), `${style} ${face} ${S}px px ${px} depth ${depth} radius ${radius}`);
+            }
+          }
+        }
+      }
+    }
+  }
+});
+
+test('a hexagon or triangle face is clipped to its outline before any paint, and every shape it fills lies inside the outline', async () => {
+  const art = await artModule();
+  for (const outline of SHAPED) {
+    for (const style of ['bevel', 'flat']) {
+      for (const S of [26, 48, 120]) {
+        const box = art.outlineBox(outline, S);
+        const corners = art.outlinePoints(outline, S);
+        for (const face of art.FACES) {
+          for (const depth of [0, 0.5, 1]) {
+            const label = `${outline} ${style} ${face} ${S}px depth ${depth}`;
+            const ctx = fakeContext();
+            art.drawFace(ctx, S, face, { style, params: { radius: 0 }, palette: PALETTES[face], depth, px: 1, outline });
+            const clip = ctx.calls.findIndex((c) => c.op === 'clip');
+            assert.ok(clip >= 0, `${label}: clipped`);
+            assert.ok(clip < ctx.calls.findIndex((c) => c.op === 'fill' || c.op === 'fillRect'), `${label}: the clip comes before any paint`);
+            const clipPath = ctx.calls.slice(0, clip).filter((c) => c.op === 'moveTo' || c.op === 'lineTo').map((c) => c.args);
+            assert.equal(clipPath.length, corners.length, `${label}: the clip runs round every corner`);
+            clipPath.forEach((p, i) => assert.ok(near(p[0], corners[i][0], 1e-6) && near(p[1], corners[i][1], 1e-6), `${label}: corner ${i} of the outline`));
+            assert.equal(ctx.calls.at(-1).op, 'restore', `${label}: the clip ends with the face`);
+            for (const { points } of paths(ctx)) {
+              assert.ok(points.every((p) => insidePolygon(corners, p)), `${label}: a filled shape lies inside the outline`);
+            }
+            for (const c of ctx.calls.filter((k) => k.op === 'fillRect')) {
+              const [x, y, w, h] = c.args;
+              assert.ok(x >= -1e-9 && y >= -1e-9 && x + w <= box.width + 1e-9 && y + h <= box.height + 1e-9, `${label}: a band lies in the outline's box, under its clip`);
+            }
+          }
+        }
+      }
+    }
+  }
+});
+
+test('a radius rounds a hexagon\'s or triangle\'s corners, as a fraction of the tile\'s height', async () => {
+  const art = await artModule();
+  for (const outline of SHAPED) {
+    for (const style of ['bevel', 'flat']) {
+      const S = 60;
+      const ctx = fakeContext();
+      art.drawFace(ctx, S, 'closed', { style, params: { radius: 0.06 }, palette: CLOSED, px: 1, outline });
+      const clip = ctx.calls.findIndex((c) => c.op === 'clip');
+      const arcs = ctx.calls.slice(0, clip).filter((c) => c.op === 'arcTo');
+      assert.equal(arcs.length, art.outlinePoints(outline, S).length, `${outline} ${style}: every corner rounded`);
+      const h = art.outlineBox(outline, S).height;
+      assert.ok(arcs.every((c) => near(c.args[4], h * 0.06)), `${outline} ${style}: the radius is 0.06 of the tile's height`);
+    }
+  }
+});
+
+test('flat in an outline: the closed face\'s light top band and dark bottom edge, the sunk face\'s pressed shade, the revealed face inside its hairline', async () => {
+  const art = await artModule();
+  const params = art.STYLES.flat.params;
+  for (const outline of SHAPED) {
+    for (const S of [26, 60]) {
+      const { width: W, height: H } = art.outlineBox(outline, S);
+      const corners = art.outlinePoints(outline, S);
+      const closed = fakeContext();
+      art.drawFace(closed, S, 'closed', { style: 'flat', palette: CLOSED, px: 1, outline });
+      const cf = fills(closed);
+      assert.equal(cf[0].fill, CLOSED.face, `${outline} ${S}px: the closed face first`);
+      const band = cf.find((c) => c.fill === CLOSED.bevelLight);
+      const edge = cf.find((c) => c.fill === CLOSED.bevelDark);
+      assert.deepEqual(band.args.slice(0, 3), [0, 0, W], `${outline} ${S}px: the band runs along the top`);
+      assert.ok(Math.abs(band.args[3] - H * params.band) <= 1, `${outline} ${S}px: the band is ${params.band} of the height`);
+      assert.ok(near(edge.args[1] + edge.args[3], H), `${outline} ${S}px: the edge sits on the bottom`);
+      const sunk = fakeContext();
+      art.drawFace(sunk, S, 'sunk', { style: 'flat', palette: SUNK, px: 1, outline });
+      assert.equal(fills(sunk)[0].fill, SUNK.face);
+      assert.deepEqual(fills(sunk).find((c) => c.fill === SUNK.bevelDark).args.slice(0, 3), [0, 0, W], `${outline} ${S}px: the pressed shade along the top`);
+      const revealed = fakeContext();
+      art.drawFace(revealed, S, 'revealed', { style: 'flat', palette: REVEALED, px: 1, outline });
+      assert.deepEqual(fills(revealed).map((c) => c.fill), [REVEALED.rim, REVEALED.face], `${outline} ${S}px: the hairline, then the face inside it`);
+      const face = paths(revealed).at(-1).points;
+      // Every corner of the face sits one hairline in from the outline's edges.
+      for (const p of face) {
+        const d = Math.min(...corners.map(([x0, y0], i) => {
+          const [x1, y1] = corners[(i + 1) % corners.length];
+          return Math.abs((x1 - x0) * (p[1] - y0) - (y1 - y0) * (p[0] - x0)) / Math.hypot(x1 - x0, y1 - y0);
+        }));
+        assert.ok(near(d, params.hairline, 1e-6), `${outline} ${S}px: the face is a hairline in (${d})`);
+      }
+    }
+  }
+});
+
+test('flat in an outline ignores depth, and every colour it draws is the palette\'s', async () => {
+  const art = await artModule();
+  for (const outline of SHAPED) {
+    for (const face of art.FACES) {
+      const at = (depth) => {
+        const ctx = fakeContext();
+        art.drawFace(ctx, 40, face, { style: 'flat', palette: PALETTES[face], depth, px: 1, outline });
+        return ctx;
+      };
+      assert.deepEqual(trace(at(0)), trace(at(1)), `${outline} ${face}: depth 0 is depth 1`);
+      const palette = Object.values(PALETTES[face]);
+      for (const c of fills(at(1))) for (const colour of styleColours(c.fill)) assert.ok(palette.includes(colour), `${outline} ${face}: ${colour} is a palette entry`);
+    }
+  }
+});
+
+test('a bevel\'s sloped sides follow the outline\'s edges, each shaded by the way it faces; a sunk face turns them over', async () => {
+  const art = await artModule();
+  const S = 60;
+  for (const outline of SHAPED) {
+    const corners = art.outlinePoints(outline, S);
+    const centre = centroidOf(corners);
+    // Each edge's outward normal.
+    const normals = corners.map(([x0, y0], i) => {
+      const [x1, y1] = corners[(i + 1) % corners.length];
+      let n = [y1 - y0, x0 - x1];
+      const len = Math.hypot(...n);
+      n = [n[0] / len, n[1] / len];
+      const mid = [(x0 + x1) / 2 - centre[0], (y0 + y1) / 2 - centre[1]];
+      return n[0] * mid[0] + n[1] * mid[1] < 0 ? [-n[0], -n[1]] : n;
+    });
+    for (const [face, sign] of [['closed', 1], ['sunk', -1]]) {
+      const p = PALETTES[face];
+      const ctx = fakeContext();
+      art.drawFace(ctx, S, face, { style: 'bevel', palette: p, depth: 1, px: 1, outline });
+      const slopes = paths(ctx).filter((s) => s.points.length >= 4 && typeof s.fill === 'string' && s.fill !== p.rim && s.fill !== p.face);
+      assert.ok(slopes.length >= 2, `${outline} ${face}: its slopes are drawn`);
+      // Each edge's slope: the one holding the point halfway across its band, in from the edge's middle.
+      const H = art.outlineBox(outline, S).height;
+      const band = Math.round(H / 64) + Math.round(H * art.STYLES.bevel.params.slope) / 2;
+      const shadeOfEdge = normals.map(([nx, ny], i) => {
+        const [x0, y0] = corners[i];
+        const [x1, y1] = corners[(i + 1) % corners.length];
+        const probe = [(x0 + x1) / 2 - nx * band, (y0 + y1) / 2 - ny * band];
+        return slopes.find((s) => containsPoint(s.points, probe))?.fill;
+      });
+      normals.forEach(([nx, ny], i) => {
+        const fill = shadeOfEdge[i];
+        assert.ok(fill, `${outline} ${face}: edge ${i} has a slope`);
+        const lit = (ny < -0.99 || (nx < -0.8 && ny < 0)) ? 1 : (ny > 0.99 || (nx > 0.8 && ny > 0)) ? -1 : 0;
+        if (lit * sign > 0) assert.equal(fill, p.bevelLight, `${outline} ${face}: edge ${i} faces the light`);
+        if (lit * sign < 0) assert.equal(fill, p.bevelDark, `${outline} ${face}: edge ${i} faces away`);
+        // A side facing up and right, or down and left, sits between the two shades.
+        if (Math.abs(nx) > 0.5 && nx * ny < 0) {
+          assert.ok(fill !== p.bevelLight && fill !== p.bevelDark, `${outline} ${face}: edge ${i}, facing (${nx.toFixed(2)}, ${ny.toFixed(2)}), is a shade between (${fill})`);
+        }
+      });
+      // Every slope lies in a band along the outline, no deeper than the edge and the slope.
+      const { rim } = art.tileBands(art.outlineBox(outline, S).height, 1);
+      const depthIn = rim + Math.round(art.outlineBox(outline, S).height * art.STYLES.bevel.params.slope) + 1e-6;
+      for (const s of slopes) {
+        for (const pt of s.points) {
+          const d = Math.min(...corners.map(([x0, y0], i) => {
+            const [x1, y1] = corners[(i + 1) % corners.length];
+            return Math.abs((x1 - x0) * (pt[1] - y0) - (y1 - y0) * (pt[0] - x0)) / Math.hypot(x1 - x0, y1 - y0);
+          }));
+          assert.ok(d <= depthIn, `${outline} ${face}: a slope point lies within the band (${d} <= ${depthIn})`);
+        }
+      }
+    }
+    // Depth 0: no slope at all.
+    const flat = fakeContext();
+    art.drawFace(flat, S, 'closed', { style: 'bevel', palette: CLOSED, depth: 0, px: 1, outline });
+    assert.ok(!fills(flat).some((c) => [CLOSED.bevelLight, CLOSED.bevelDark].includes(c.fill)), `${outline}: depth 0 draws no slope`);
+    // The revealed face takes no slope at any depth.
+    for (const depth of [0, 0.4, 1]) {
+      const revealed = fakeContext();
+      art.drawFace(revealed, S, 'revealed', { style: 'bevel', palette: REVEALED, depth, px: 1, outline });
+      assert.deepEqual(fills(revealed).map((c) => styleColours(c.fill).join()), [REVEALED.rim, REVEALED.edge, [REVEALED.face, REVEALED.faceShade].join()], `${outline}: revealed at depth ${depth} is the edge and the face`);
+    }
+  }
+});
+
+test('the glyph box: the square\'s whole tile, a hexagon\'s size across the flats, a triangle\'s 0.55 of its side on its centroid', async () => {
+  const art = await artModule();
+  for (const S of [26, 60]) {
+    assert.deepEqual(art.glyphBox('square', S), { x: 0, y: 0, width: S, height: S });
+    const hex = art.glyphBox('hexagon', S);
+    const hw = art.outlineBox('hexagon', S).width;
+    assert.ok(near(hex.x, (hw - S) / 2) && hex.y === 0 && hex.width === S && hex.height === S, `${S}px: the hexagon's box is its size, centred`);
+    for (const outline of ['triangle-up', 'triangle-down']) {
+      const g = art.glyphBox(outline, S);
+      const [cx, cy] = centroidOf(art.outlinePoints(outline, S));
+      assert.ok(near(g.width, 0.55 * S) && near(g.height, 0.55 * S), `${S}px: ${outline}'s box is 0.55 of the side`);
+      assert.ok(near(g.x + g.width / 2, cx) && near(g.y + g.height / 2, cy), `${S}px: ${outline}'s box is centred on its centroid`);
+    }
+  }
+});
+
+test('every glyph draws in a given glyph box: at its corner, a square of its smaller side centred in it', async () => {
+  const art = await artModule();
+  const glyphs = {
+    number: (ctx, S) => art.drawNumberGlyph(ctx, S, 3, { color: '#135bad', shadow: 'rgba(0,0,0,0.12)' }),
+    flag: (ctx, S) => art.drawFlagGlyph(ctx, S, { base: '#16204a', shadow: '#000000', cloth: '#c62f2f', clothShade: '#8a1f1f' }),
+    mine: (ctx, S) => art.drawMineGlyph(ctx, S, { body: '#16204a', highlight: '#ffffff' }),
+    cross: (ctx, S) => art.drawCross(ctx, S, { outline: '#ffffff', mark: '#c62f2f' }),
+    ring: (ctx, S) => art.drawMarkRing(ctx, S, { color: '#16204a' }),
+  };
+  for (const outline of art.OUTLINES) {
+    const box = art.glyphBox(outline, 60);
+    for (const [name, draw] of Object.entries(glyphs)) {
+      const boxed = fakeContext();
+      art.inGlyphBox(boxed, box, (S) => draw(boxed, S));
+      assert.equal(boxed.calls[0].op, 'save', `${outline} ${name}: the box is its own state`);
+      assert.deepEqual(boxed.calls[1], { op: 'translate', args: [box.x, box.y], fill: '#000000', stroke: '#000000' }, `${outline} ${name}: drawn from the box's corner`);
+      assert.equal(boxed.calls.at(-1).op, 'restore');
+      const plain = fakeContext();
+      draw(plain, box.width);
+      assert.deepEqual(trace(boxed).slice(2, -1), trace(plain), `${outline} ${name}: the glyph at the box's size`);
+    }
+  }
+  // A box wider than tall sets its glyph in a square of its height, centred across.
+  const ctx = fakeContext();
+  let side;
+  art.inGlyphBox(ctx, { x: 4, y: 6, width: 30, height: 20 }, (S) => { side = S; });
+  assert.equal(side, 20);
+  assert.deepEqual(ctx.calls[1].args, [9, 6]);
+});
+
+test('a bevel side that is a colour shades the outline\'s edges facing more its way: the closed face draws it, the sunk face turns it over', async () => {
+  const art = await artModule();
+  const S = 60;
+  const sides = { top: 1, right: '#5e92ec', bottom: -1, left: 1 };
+  for (const outline of ['hexagon', 'triangle-up']) {
+    const corners = art.outlinePoints(outline, S);
+    const H = art.outlineBox(outline, S).height;
+    const band = Math.round(H / 64) + Math.round(H * art.STYLES.bevel.params.slope) / 2;
+    // The up-right edge: from the topmost right corner down to the right.
+    const i = corners.findIndex(([x0, y0], k) => {
+      const [x1, y1] = corners[(k + 1) % corners.length];
+      return x1 > x0 && y1 > y0 && y0 === Math.min(...corners.map((c) => c[1]));
+    });
+    assert.ok(i >= 0, `${outline}: an up-right edge`);
+    const [x0, y0] = corners[i];
+    const [x1, y1] = corners[(i + 1) % corners.length];
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    const inward = [-(y1 - y0) / len, (x1 - x0) / len];
+    const probe = [(x0 + x1) / 2 + inward[0] * band, (y0 + y1) / 2 + inward[1] * band];
+    for (const [face, expected] of [['closed', '#5e92ec'], ['sunk', art.mix(PALETTES.sunk.face, '#5e92ec', -1)]]) {
+      const ctx = fakeContext();
+      art.drawFace(ctx, S, face, { style: 'bevel', params: { sides }, palette: PALETTES[face], depth: 1, px: 1, outline });
+      const slope = paths(ctx).find((s) => s.points.length >= 4 && typeof s.fill === 'string' && containsPoint(s.points, probe));
+      assert.equal(slope?.fill, expected, `${outline} ${face}: the up-right edge, facing more right than up, takes the right side's colour`);
+    }
+  }
+});
