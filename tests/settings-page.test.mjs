@@ -1293,7 +1293,7 @@ test('in a browser, Reset all data turns a played profile back into a new player
       await globalThis.__ms.records.settled();
       for (const k of ['ms3d.lookSens', 'ms3d.volume', 'ms3d.muted', 'ms3d.invertY', 'ms3d.hintH.done', 'ms3d.custom']) localStorage.setItem(k, '1');
     });
-    await page.waitForFunction(() => document.querySelector('[data-entry][data-last]') !== null);
+    await page.waitForFunction(() => localStorage.getItem('ms3d:doc:shell.lastMode') !== null);
     assert.ok((await doc('records.history')).data.length >= 1, 'the game is in the history');
     assert.ok(await doc('classic2d.lastChoice'), 'the board choice is kept');
     for (let i = 0; i < 50 && (await blobCount()) !== 1; i++) await page.waitForTimeout(20);
@@ -1330,7 +1330,6 @@ test('in a browser, Reset all data turns a played profile back into a new player
     assert.equal(await ms(() => globalThis.__ms.settings.get('theme')), DEFAULT_THEME_ID);
     assert.equal(await ms(() => globalThis.__ms.settings.get('camera')), 'fly');
     assert.equal(await ms(() => globalThis.__ms.settings.get('lookSensitivity')), 1, 'every setting at its default: nothing carried over');
-    assert.equal(await ms(() => document.querySelector('[data-entry][data-last]')), null, 'no Last played mark');
     const history = await doc('records.history');
     assert.ok(history === null || history.data.length === 0, 'an empty history');
     assert.equal(await doc('classic2d.lastChoice'), null);

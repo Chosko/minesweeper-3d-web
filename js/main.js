@@ -16,9 +16,9 @@ import { create3DMode, createFiguresFeed } from './shell/mode-3d.js';
 import { createSession, create3DGame } from './mode3d/session.js';
 import { createSampler3D } from './replay/sampler-3d.js';
 import { createGenerationClient } from './generation/client.js';
-import { createMenu, createLastMode, createLastBoardChoice, openingEntry, menuPreview, entryReasonLine, buildLabel, UNAVAILABLE_REASONS, WEB_MISSING } from './shell/menu.js';
+import { createMenu, createLastMode, createLastBoardChoice, openingEntry, menuPreview, entryReason, entryShortReason, buildLabel, UNAVAILABLE_REASONS } from './shell/menu.js';
 import { VERSION } from './version.js';
-import { bindMenuPreview, demoBoard2D, dailyBoard2D, demoBoard3D, DEMO_SPACING_3D } from './shell/menu-preview.js';
+import { bindMenuPreview, mountTilePreviews, demoBoard2D, dailyBoard2D, demoBoard3D, DEMO_SPACING_3D } from './shell/menu-preview.js';
 import { boardBests } from './shell/returning.js';
 import { aimReadout } from './readability.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
@@ -490,7 +490,7 @@ const GEN_3D = createGenerationClient();
 // Every screen change goes through SHELL; each screen declares its default focus and its Back.
 const SHELL = createRouter({
   screens: {
-    menu: { defaultFocus: () => `#menu-entry-${menuFocusEntry()}`, show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); showPreview(); DAILY_BOARDS_HELD.prepare(RECORDS); } },
+    menu: { defaultFocus: () => `#menu-entry-${menuFocusEntry()}`, show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); DAILY_BOARDS_HELD.prepare(RECORDS); } },
     [DAILY_SCREEN]: { defaultFocus: () => DAILY_VIEW.defaultFocus(), show: () => { MODES.leave(); showMenuBackdrop(); ui.showDaily(); showDaily(); } },
     'board-choice': { defaultFocus: '[data-preset][aria-pressed="true"]', show: (d = {}, from) => { MODES.leave(); GEN_3D.warm(); showMenuBackdrop(); ui.showBoardChoice(); showChoice3D(from); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
@@ -737,7 +737,7 @@ const DAILY_PREVIEW = bindMenuPreview({
   panel: document.getElementById('daily-preview'),
   stage: document.getElementById('daily-preview-stage'),
   tag: document.getElementById('daily-preview-tag'),
-  iconOf: (entry) => document.querySelector(`#menu-entry-${entry} .ui-mode-entry__icon > svg`),
+  iconOf: (entry) => document.querySelector(`#menu-entry-${entry} .ui-play-tile__icon > svg`),
   mountBoard: ({ container, grid, geometry }) => mountBoardView({ container, grid, geometry, minTile: 1, framed: true }),
   boardOf: () => {
     const daily = dailyPreview();
@@ -1269,16 +1269,16 @@ const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, r
 });
 
 // ---------- main menu ----------
-// Each entry is a route; the last mode played is kept through platform storage and marked on the menu.
-// An entry that cannot open here (3D without WebGL 2, Quit on the web) is disabled with its reason line (none for Quit).
-const MISSING = [...WEB_MISSING, ...(WEBGL2 ? [] : ['webgl2'])];
+// Each entry is a route; the last mode played is kept through platform storage and opens the menu.
+// A tile that cannot open here (3D without WebGL 2) is disabled with its reason and its preview locked.
+const MISSING = WEBGL2 ? [] : ['webgl2'];
 const MENU = createMenu({ router: SHELL, modes: MODES, missing: MISSING });
 for (const entry of MENU.entries) {
-  if (MENU.unavailable(entry.id)) ui.setEntryUnavailable(entry.id, entryReasonLine(entry, MISSING));
+  if (MENU.unavailable(entry.id)) ui.setEntryUnavailable(entry.id, entryReason(entry, MISSING), entryShortReason(entry, MISSING));
 }
 // The guided board is never the last mode played: its game started is not passed on.
 const LAST_MODE = createLastMode({ storage, modes: { on: (type, fn) => MODES.on(type, (e) => { if (!learnGame()) fn(e); }) } });
-MODES.on('started', ({ mode }) => { if (!learnGame()) ui.setLastMode(mode); FIRST_USE.gameStarted(mode, learnGame()); menuOpened = null; });
+MODES.on('started', ({ mode }) => { FIRST_USE.gameStarted(mode, learnGame()); menuOpened = null; });
 
 /**
  * The menu's selection: the entry last opened from it while Back returns to the menu (a coming-soon
@@ -1294,40 +1294,15 @@ function menuFocusEntry() {
   return menuOpened ?? openingEntry(LAST_MODE.current, { missing: MISSING });
 }
 
-// The preview of the selected entry (js/shell/menu-preview.js): a Classic 2D board drawn by its board
-// view, the 3D demo board drawn into the panel, today's daily Expert board, or the entry's card. It
-// follows the focus among the entries; the 3D scene draws only while its preview shows.
+// Every play tile shows its own preview at once (js/shell/menu-preview.js): the Classic 2D tile a
+// real game in progress drawn by its board view, the others their own art; the menu shows no 3D scene.
 const DEMO_2D = demoBoard2D();
-const MENU_PREVIEW = bindMenuPreview({
-  panel: document.getElementById('menu-preview'),
-  stage: document.getElementById('menu-preview-stage'),
-  tag: document.getElementById('menu-preview-tag'),
-  iconOf: (entry) => document.querySelector(`#menu-entry-${entry} .ui-mode-entry__icon > svg`),
-  mountBoard: ({ container, grid, geometry }) => mountBoardView({ container, grid, geometry, minTile: 1, framed: true }),
-  boardOf: (kind) => {
-    if (kind === 'board') return { key: 'demo', ...DEMO_2D };
-    const daily = dailyPreview();
-    return { key: daily.date, ...dailyBoard2D(daily) };
-  },
+mountTilePreviews({
+  tiles: document.querySelectorAll('#menu .ui-play-tile'),
+  previewOf: (id) => menuPreview(id, { missing: MISSING }),
+  mountBoard: ({ container, grid, geometry }) => mountBoardView({ container, grid, geometry, minTile: 1 }),
+  boardOf: () => DEMO_2D,
 });
-function previewOf(id) {
-  const p = menuPreview(id, { missing: MISSING, hasMode: (m) => MODES.has(m) });
-  return p.kind === 'daily' ? { ...p, tag: dailyPreview().tag } : p;
-}
-/** Show the preview of the focused entry, or of the entry the menu opens on while none has the focus. */
-function showPreview() {
-  const focused = document.activeElement?.closest?.('#menu [data-entry]');
-  const id = focused?.dataset.entry ?? menuFocusEntry();
-  if (MENU_PREVIEW.shown?.id === id) return;
-  MENU_PREVIEW.show({ ...previewOf(id), id });
-  syncScenePanel();
-  needRender = true;
-}
-document.getElementById('menu-entries').addEventListener('focusin', () => showPreview());
-/** The menu shows its 3D preview: the 3D scene draws into its panel; on every other preview the menu shows no 3D scene. */
-function menuSceneShown() {
-  return MENU_PREVIEW.shown?.kind === 'scene';
-}
 ui.setBuild(buildLabel(VERSION));
 
 /** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
@@ -1630,8 +1605,7 @@ function showMenuBackdrop() {
  * clipped to its rounded corners; the layer over a replay's scene (REPLAY_OVER: the free-camera notice,
  * the press rings) covers the board area while it shows. With no live panel shown (a 3D game, the replay
  * viewer opening or with a 2D replay, even over the menu it was opened from, every screen without one)
- * the scene draws full-window. On the main menu it draws only into its 3D preview: on any other preview
- * the canvas is hidden and nothing is drawn.
+ * the scene draws full-window. The main menu shows no 3D scene: its canvas is hidden and nothing is drawn.
  */
 let scenePanel = null;
 const REPLAY_OVER = document.getElementById('replay-scene-over');
@@ -1663,11 +1637,11 @@ function syncScenePanel() {
   if (renderer.setTarget(box ? { x: box.left, y: box.top, width: box.width, height: box.height } : null)) needRender = true;
 }
 /**
- * The main menu shows a preview other than its 3D one, the Daily screen no 3D panel in view, or a
- * board choice its own backdrop: no 3D scene shows or draws.
+ * The main menu (its 3D tile a still), the Daily screen with no 3D panel in view, or a board choice on
+ * its own backdrop: no 3D scene shows or draws.
  */
 function sceneOff() {
-  return (S.mode === 'menu' && !menuSceneShown()) || S.mode === 'classic-2d-choice' || S.mode === 'board-choice'
+  return S.mode === 'menu' || S.mode === 'classic-2d-choice' || S.mode === 'board-choice'
     || (S.mode === DAILY_SCREEN && !(DAILY_PREVIEW.shown?.kind === 'scene' && scenePanel));
 }
 if (WEBGL2) window.addEventListener('resize', () => syncScenePanel()); // the panel may move with the window
@@ -2317,8 +2291,7 @@ LINKS.start(); // a #board= link: its challenge or daily over the menu, so Back 
 window.addEventListener('hashchange', () => LINKS.hashchange());
 mode2d.loadChoice().catch(() => {}); // the Classic 2D board choice opens on the last board
 const bootFocus = document.activeElement;
-LAST_MODE.load().then((mode) => {
-  ui.setLastMode(mode);
+LAST_MODE.load().then(() => {
   if (SHELL.current === 'menu' && document.activeElement === bootFocus) SHELL.refocus(); // the player has not moved yet
 });
 requestAnimationFrame(frame);

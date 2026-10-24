@@ -2,13 +2,14 @@
 // DOM-free: the router, the mode host and the storage interface are handed in by the shell.
 
 /**
- * The main menu's entries, in order, in three blocks (`block` 0, 1, 2: the modes; Daily, Records and
- * Settings; Quit). A mode entry opens that mode's board choice through the mode host; a screen entry
- * routes to its screen. While an entry's feature has not landed — its mode is not registered, or the
- * router has no such screen — it routes to the placeholder screen, titled with the entry's label. An
- * entry that `needs` a feature the build or the browser lacks is unavailable: it routes nowhere, and
- * its menu entry is disabled with the reason UNAVAILABLE_REASONS gives for that feature. Quit is the
- * desktop build's; on the web it is always unavailable.
+ * The main menu's entries, in order, in two blocks (`block` 0, 1): the play tiles — the five modes
+ * and Daily, two by two —, then Records and Settings, the small entries. A mode entry opens that
+ * mode's board choice through the mode host; a screen entry routes to its screen. While an entry's
+ * feature has not landed — its mode is not registered, or the router has no such screen — it routes
+ * to the placeholder screen, titled with the entry's label. An entry that `needs` a feature the
+ * browser lacks is unavailable: it routes nowhere, and its menu button is disabled with the reason
+ * UNAVAILABLE_REASONS gives for that feature (the short one, UNAVAILABLE_SHORT_REASONS, on a phone
+ * row). Quit is no entry: it is the title bar's.
  */
 export const MENU_ENTRIES = Object.freeze([
   Object.freeze({ id: 'classic-2d', label: 'Classic 2D', mode: 'classic-2d', block: 0 }),
@@ -16,20 +17,20 @@ export const MENU_ENTRIES = Object.freeze([
   Object.freeze({ id: 'triangle', label: 'Triangle', mode: 'triangle', block: 0 }),
   Object.freeze({ id: 'surface', label: 'Surface', mode: 'surface', block: 0 }),
   Object.freeze({ id: '3d', label: '3D', mode: '3d', needs: 'webgl2', block: 0 }),
-  Object.freeze({ id: 'daily', label: 'Daily', screen: 'daily', block: 1 }),
+  Object.freeze({ id: 'daily', label: 'Daily', screen: 'daily', block: 0 }),
   Object.freeze({ id: 'records', label: 'Records', screen: 'records', block: 1 }),
   Object.freeze({ id: 'settings', label: 'Settings', screen: 'settings', block: 1 }),
-  Object.freeze({ id: 'quit', label: 'Quit', needs: 'desktop', block: 2 }),
 ]);
 
 /** The line an unavailable entry shows under its label, by the feature it lacks. */
 export const UNAVAILABLE_REASONS = Object.freeze({
   webgl2: 'Needs WebGL 2 — not available in this browser',
-  desktop: 'Desktop build only',
 });
 
-/** What the web build always lacks: the desktop build's features. */
-export const WEB_MISSING = Object.freeze(['desktop']);
+/** The same line, short, as a phone row shows it. */
+export const UNAVAILABLE_SHORT_REASONS = Object.freeze({
+  webgl2: 'Needs WebGL 2',
+});
 
 /** The main menu's build label: the web build and the release `version` (`js/version.js`). */
 export function buildLabel(version) {
@@ -48,56 +49,55 @@ export function openingEntry(lastMode, { entries = MENU_ENTRIES, missing = [] } 
   return (open.find((e) => lastMode && e.mode === lastMode) ?? open[0] ?? entries[0]).id;
 }
 
-/** The size of the demo board the shell builds for the backdrop and the 3D preview. */
+/** The size of the demo board the shell builds for the backdrop and the menu's 3D still shows. */
 export const DEMO_BOARD_3D = Object.freeze({ X: 7, Y: 7, Z: 7 });
 
-/** The preview a mode with a board of its own shows, by mode; every other entry shows its badge. */
-const BOARD_PREVIEWS = Object.freeze({
-  'classic-2d': Object.freeze({ kind: 'board', tag: 'Classic 2D · Intermediate' }),
-  '3d': Object.freeze({ kind: 'scene', tag: `3D · Demo board ${DEMO_BOARD_3D.X} × ${DEMO_BOARD_3D.Y} × ${DEMO_BOARD_3D.Z}` }),
-});
-
-/** The note under a badge preview: a mode not built yet, or an entry unavailable here. */
+/** The line a mode not built yet reads where the Daily screen lists it. */
 export const COMING_SOON = 'Coming soon';
 
+/** Each play tile's own preview, by entry: what it draws and on which ground. */
+const TILE_PREVIEWS = Object.freeze({
+  'classic-2d': Object.freeze({ kind: 'board', ground: 'dark' }),
+  hexagon: Object.freeze({ kind: 'badge', ground: 'dark' }),
+  triangle: Object.freeze({ kind: 'badge', ground: 'dark' }),
+  surface: Object.freeze({ kind: 'still', still: 'surface', ground: 'light' }),
+  '3d': Object.freeze({ kind: 'still', still: '3d', ground: 'light' }),
+  daily: Object.freeze({ kind: 'icon', ground: 'light' }),
+});
+
 /**
- * What the menu's preview shows for entry `id` in a browser lacking `missing`, as data the shell draws:
- *   { kind: 'board', tag }          Classic 2D: a board drawn by the Classic 2D board view;
- *   { kind: 'scene', tag }          3D: the 3D demo board, the renderer drawing into the panel;
- *   { kind: 'still', tag }          3D without WebGL 2: the panel's static themed background;
- *   { kind: 'daily', tag? }         Daily: today's daily Expert board, closed, its start cell marked
- *                                   (the shell names the date in the tag);
- *   { kind: 'badge', entry, label, note, locked }  every other entry: its badge and label, with the
- *                                   note COMING_SOON for a mode not registered (`hasMode`), the reason
- *                                   for an unavailable entry (`locked`), and none for a place
- *                                   (Records, Settings).
+ * The preview play tile `id` shows at once, in a browser lacking `missing`, as data the shell draws —
+ * every tile its own, none following the selection, each cropped from the middle of its art:
+ *   { kind: 'board', ground: 'dark' }    Classic 2D: a real Intermediate game in progress, drawn by
+ *                                        the Classic 2D board view on the dark scene ground;
+ *   { kind: 'badge', ground: 'dark' }    Hexagon and Triangle: the mode's badge, placeholder art
+ *                                        until their boards land;
+ *   { kind: 'still', still, ground: 'light' }  Surface the torus, 3D the menu's demo board, each a
+ *                                        still image cut out on translucent white;
+ *   { kind: 'icon', ground: 'light' }    Daily: a calendar icon;
+ *   { kind: 'locked', ground: 'locked' } an unavailable tile (3D without WebGL 2): the lock.
+ * A small entry (Records, Settings) has no preview: null.
  */
-export function menuPreview(id, { entries = MENU_ENTRIES, missing = [], hasMode = () => true } = {}) {
+export function menuPreview(id, { entries = MENU_ENTRIES, missing = [] } = {}) {
   const entry = entries.find((e) => e.id === id);
   if (!entry) throw new Error(`unknown menu entry "${id}"`);
-  const reason = entryReason(entry, missing);
-  if (entry.id === 'daily') return { kind: 'daily' };
-  const board = entry.mode && BOARD_PREVIEWS[entry.mode];
-  if (board) return reason ? { kind: 'still', tag: entry.label } : { ...board };
-  const note = reason ?? (entry.mode && !hasMode(entry.mode) ? COMING_SOON : null);
-  return { kind: 'badge', entry: entry.id, label: entry.label, note, locked: reason !== null };
+  const preview = TILE_PREVIEWS[entry.id];
+  if (!preview) return null;
+  return entryReason(entry, missing) ? { kind: 'locked', ground: 'locked' } : { ...preview };
 }
 
 /** The platform-storage document holding the last mode played: { mode }. */
 export const LAST_MODE_DOC = 'shell.lastMode';
 export const LAST_MODE_VERSION = 1;
 
-/** Why `entry` cannot be opened in a build and browser lacking the features `missing`, or null when it can. */
+/** Why `entry` cannot be opened in a browser lacking the features `missing`, or null when it can. */
 export function entryReason(entry, missing = []) {
   return entry.needs && missing.includes(entry.needs) ? UNAVAILABLE_REASONS[entry.needs] : null;
 }
 
-/**
- * The reason line `entry`'s menu entry shows under its label: its entryReason, except for a feature
- * the web build always lacks (WEB_MISSING) — Quit shows its lock alone, its reason left to its preview.
- */
-export function entryReasonLine(entry, missing = []) {
-  return WEB_MISSING.includes(entry.needs) ? null : entryReason(entry, missing);
+/** The short reason a phone row shows for `entry` in a browser lacking `missing`, or null when it can open. */
+export function entryShortReason(entry, missing = []) {
+  return entryReason(entry, missing) && UNAVAILABLE_SHORT_REASONS[entry.needs];
 }
 
 /**
@@ -113,8 +113,8 @@ export function entryRoute(entry, { hasMode, hasScreen, missing = [] }) {
 }
 
 /**
- * The menu over a router ({ has, go }) and a mode host ({ has, openBoardChoice }), in a build and
- * browser lacking the features `missing` (e.g. ['desktop', 'webgl2']).
+ * The menu over a router ({ has, go }) and a mode host ({ has, openBoardChoice }), in a browser
+ * lacking the features `missing` (e.g. ['webgl2']).
  */
 export function createMenu({ router, modes, entries = MENU_ENTRIES, missing = [] }) {
   const find = (id) => {

@@ -1418,10 +1418,10 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.equal(abandoned[0].summary.pauses, 2, 'two pauses: the one resumed, and the one left from');
     assert.ok(abandoned[0].summary.pausedMs >= 1000, `the paused time counts the second-long pause (${abandoned[0].summary.pausedMs})`);
 
-    // The menu opens on the last mode played, with its Last played chip; Enter opens its board choice
+    // The menu opens on the last mode played, with no Last played chip; Enter opens its board choice
     // on the last choice, and the abandoned game set no best; Enter again starts that board.
     assert.equal(await active(), 'menu-entry-classic-2d', 'the menu opens on the last mode played');
-    assert.equal(await ms(() => { const e = document.querySelector('#menu-entry-classic-2d .ui-chip[data-last]'); return !!e && !e.classList.contains('hidden') && e.getBoundingClientRect().width > 0; }), true, 'with its Last played chip');
+    assert.equal(await ms(() => document.querySelectorAll('#menu .ui-chip').length), 0, 'with no Last played chip');
     const savedChoice = await ms(() => localStorage.getItem('ms3d:doc:classic2d.lastChoice'));
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'classic-2d-choice');

@@ -35,8 +35,8 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   `bindTabs(list, {onChange})` (a `ui-tabs` tablist, Left / Right select,
   the selected tab alone in the Tab order), `bindSelectOnHover(root)` (the
   one selected control: a moving mouse focuses the enabled
-  `SELECT_ON_HOVER` control under it — a button, menu entry, mode entry or
-  board option — a disabled mode entry included),
+  `SELECT_ON_HOVER` control under it — a button, menu entry, main menu
+  button or board option — a disabled play tile included),
   `initComponents(root)` (every slider, segmented choice and tablist) —
   each returns an unbind.
 - `showKeyHints(root, keysFor)`: fills every `.ui-key-hint[data-action]`

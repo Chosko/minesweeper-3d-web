@@ -16,7 +16,7 @@ screen frame, the message card — and the screens composed in the kit are
 | ---- | -------------- |
 | `css/components.css` | the component kit's structure (base stylesheet): `ui-*` classes, layout, sizes, the hidden default of every decoration slot; its head comment is the catalogue (element, role, accessible name, markup pattern, states, focus contract, screens built from them) |
 | `js/ui/kit-catalogue.js` | the kit catalogue as data (DOM-free): every component and composition, its parts, each interactive part's states as the selectors a theme styles, its decoration slots; `CONTRAST_ROLES`; `REQUIRED_TOKENS`, the token set every theme declares |
-| `dev/components.html` | the kit gallery (development only), the theme's page beside the canvas's J-Components artboard: every catalogued component in every state (`data-force` previews) and every decoration slot, and every part J-Components draws, each marked `data-canvas="<part>"` — the quiet button, the go confirm button, the title bar's Quit as a stop button, Swap clicks and the Tap choice, the hint strip, the view chip and the HUD key strip (their text from `js/settings/bindings.js`, as the game's), the board status cards, the confirm box (with its heading, text only, and as a table row) and the notes, the H help card, the crosshair, aim readout and off-screen arrow on a still scene panel, the invalid field, the switch row, the icon set and a button of each size with its icon, the Settings theme list (`settingControlHtml`, bound to the applier: a pick switches the theme), and the menu's previews in their scene panels — the Classic 2D demo board by `bindMenuPreview` and its board view, the 3D demo board by the 3D renderer on the panel's own canvas (the still panel without WebGL 2); the overlay's parts carry the ids the theme draws them by and the gallery's `<style>` lays them out as `css/style.css` does in the game. Beside them the parts the artboard does not draw stay as kit coverage (the menu list, the overlay bar, the wordmark, the board frame, the banner, the link, the columns, a counter without its icon, the forced states, the field's adjusted state), with the counters, the figures panel (with its progress bar and pace row, a board with no best's — its bar, no pace row —, and with its head bar) and the results layout `#g-results`; the cards sit apart in the page grid, so no part overlaps another; all under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
+| `dev/components.html` | the kit gallery (development only), the theme's page beside the canvas's J-Components artboard: every catalogued component in every state (`data-force` previews) and every decoration slot, and every part J-Components draws, each marked `data-canvas="<part>"` — the quiet button, the go confirm button, the title bar's Quit as a stop button, Swap clicks and the Tap choice, the hint strip, the view chip and the HUD key strip (their text from `js/settings/bindings.js`, as the game's), the board status cards, the confirm box (with its heading, text only, and as a table row) and the notes, the H help card, the crosshair, aim readout and off-screen arrow on a still scene panel, the invalid field, the switch row, the icon set and a button of each size with its icon, the Settings theme list (`settingControlHtml`, bound to the applier: a pick switches the theme), the main menu buttons in their states (`data-canvas` `play-tile`, `small-entry`, `phone-row`; the Classic 2D tile's board by `mountTilePreviews`), and the scene panels the Daily screen and a 3D replay draw into — the Classic 2D demo board by `bindMenuPreview` and its board view, the 3D demo board by the 3D renderer on the panel's own canvas (the still panel without WebGL 2); the overlay's parts carry the ids the theme draws them by and the gallery's `<style>` lays them out as `css/style.css` does in the game. Beside them the parts the artboard does not draw stay as kit coverage (the menu list, the overlay bar, the wordmark, the board frame, the banner, the link, the columns, a counter without its icon, the forced states, the field's adjusted state), with the counters, the figures panel (with its progress bar and pace row, a board with no best's — its bar, no pace row —, and with its head bar) and the results layout `#g-results`; the cards sit apart in the page grid, so no part overlaps another; all under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
 
 ## PUBLIC API
 
@@ -39,8 +39,12 @@ primary button's colour variants `ui-button--go` and `ui-button--stop`,
 `value`), the pager `ui-pager` (`button`, `current`),
 `ui-frame` (parts `head`, `back`, `title`, `action`, `body`, `foot`,
 `status`, `summary`; variant `ui-frame__foot--action`, the white action
-foot; slot `window-chrome`), `ui-mode-entry` (`entry`,
-`icon`, `label`, `reason`, `last`, `lock`), `ui-option` (`option`,
+foot; slot `window-chrome`), the main menu buttons — `ui-play-tile`
+(`tile`, `side`, `top`, `icon`, `text`, `label`, `reason`, `lock`,
+`preview`, `art`, `badge`, `still`, `calendar`; variants
+`ui-play-tile--row`, the phone row, and the preview's grounds
+`ui-play-tile__preview--light` and `--locked`) and `ui-small-entry`
+(`entry`, `icon`, `label`) —, `ui-option` (`option`,
 `badge`, `line` — the name and its Last played chip, the chip wrapping
 under the name —, `name`, `last`, `meta`, `size`, `density`, `check`; variant
 `ui-option--learn`), `ui-section-label`, `ui-key-hint`, `ui-chip`,
@@ -83,7 +87,7 @@ and `touch-stick` (`knob`).
   that test file's `CANVAS_PARTS`; every class the gallery shows is
   catalogued or the gallery's own layout, a class no theme draws.
 - **Controls.** Every interactive control is a native `<button>`, `<input>`
-  or `<a>`. Buttons, menu entries, mode entries and board options have one
+  or `<a>`. Buttons, menu entries, main menu buttons and board options have one
   selected state — hover and focus alike, no outline; *Joyful tiles* draws
   them raised at rest, level when selected, sunk when pressed, flat when
   disabled, except the quiet button, flat with a border ring and sunk in
@@ -95,8 +99,10 @@ and `touch-stick` (`knob`).
   stop (red: the title bar's Quit), each resting in a stronger pastel and
   taking its full colour when selected; Pause is a secondary button, and
   a confirm button's key hint is `confirm`, never Enter. A key hint inside
-  a button takes the button's own ink. The
-  selected mode entry is taller, with a bigger icon and label. Every other
+  a button takes the button's own ink. A main menu button rests in a
+  pastel of its colour on the pastel edge (a small entry the neutral raised
+  surface) and takes its full colour selected (a small entry the stronger
+  neutral), keeping its size; a locked one darkens. Every other
   control keeps its own hover,
   `:active`, `:focus-visible` (and `body.pad-nav :focus`) and disabled
   states, ringed from `--color-focus-ring` with the `--color-focus-halo`
@@ -137,8 +143,8 @@ and `touch-stick` (`knob`).
   style every catalogued part and state, `REQUIRED_TOKENS`' use.
 - [app-shell-markup.md](app-shell-markup.md) — the screens built from the kit.
 - [settings-page.md](settings-page.md) — the theme list's markup and binder
-  the gallery shows; [app-shell-menu-preview.md](app-shell-menu-preview.md) — the menu's
-  preview binder and demo boards the gallery draws;
+  the gallery shows; [app-shell-menu-preview.md](app-shell-menu-preview.md) — the play
+  tiles' previews, the scene panel binder and the demo boards the gallery draws;
   [settings-bindings.md](settings-bindings.md) — the strips' text.
 - [app-shell-hud.md](app-shell-hud.md) — the counters and the figures
   panels the in-game components show.

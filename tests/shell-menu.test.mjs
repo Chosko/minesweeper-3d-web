@@ -4,11 +4,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  MENU_ENTRIES, PLACEHOLDER_SCREEN, LAST_MODE_DOC, LAST_MODE_VERSION, UNAVAILABLE_REASONS, WEB_MISSING, COMING_SOON, entryRoute, entryReason,
-  createMenu, createLastMode, openingEntry, menuPreview, entryReasonLine, buildLabel, DEMO_BOARD_3D,
+  MENU_ENTRIES, PLACEHOLDER_SCREEN, LAST_MODE_DOC, LAST_MODE_VERSION, UNAVAILABLE_REASONS, UNAVAILABLE_SHORT_REASONS, entryRoute, entryReason,
+  createMenu, createLastMode, openingEntry, menuPreview, entryShortReason, buildLabel, DEMO_BOARD_3D,
 } from '../js/shell/menu.js';
 import { VERSION } from '../js/version.js';
-import { demoBoard2D, dailyBoard2D, bindMenuPreview } from '../js/shell/menu-preview.js';
+import { demoBoard2D, dailyBoard2D, bindMenuPreview, mountTilePreviews } from '../js/shell/menu-preview.js';
 import { dailyPreview } from '../js/shell/daily.js';
 import { dailyGame, dateText } from '../js/records/board-code.js';
 import { createModeHost } from '../js/shell/mode-host.js';
@@ -41,62 +41,50 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 
 // ---------------------------------------------------------------- entries and routes
 
-test('the main menu has nine entries in three blocks: the five modes; Daily, Records and Settings; Quit — and no Leaderboards', () => {
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.label), ['Classic 2D', 'Hexagon', 'Triangle', 'Surface', '3D', 'Daily', 'Records', 'Settings', 'Quit']);
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.id), ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit']);
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.block), [0, 0, 0, 0, 0, 1, 1, 1, 2]);
+test('the main menu has eight entries in two blocks: the five modes and Daily as play tiles, then Records and Settings — no Quit and no Leaderboards', () => {
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.label), ['Classic 2D', 'Hexagon', 'Triangle', 'Surface', '3D', 'Daily', 'Records', 'Settings']);
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.id), ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings']);
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.block), [0, 0, 0, 0, 0, 0, 1, 1]);
   assert.ok(Object.isFrozen(MENU_ENTRIES) && MENU_ENTRIES.every(Object.isFrozen));
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.mode ?? null), ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', null, null, null, null], 'each mode entry names its mode');
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.screen ?? null), [null, null, null, null, null, 'daily', 'records', 'settings', null]);
-  assert.ok(!MENU_ENTRIES.some((e) => /leaderboard/i.test(e.id + e.label)), 'Leaderboards is a Records tab, not an entry');
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.mode ?? null), ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', null, null, null], 'each mode entry names its mode');
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.screen ?? null), [null, null, null, null, null, 'daily', 'records', 'settings']);
+  assert.ok(!MENU_ENTRIES.some((e) => /leaderboard|quit/i.test(e.id + e.label)), 'Leaderboards is a Records tab and Quit the title bar\'s, neither an entry');
 });
 
 test('Hexagon, Triangle and Surface are enabled and open the placeholder titled with their mode until the mode is registered', () => {
   const all = { hasMode: (m) => ['classic-2d', '3d'].includes(m), hasScreen: () => true };
   for (const [id, title] of [['hexagon', 'Hexagon'], ['triangle', 'Triangle'], ['surface', 'Surface']]) {
     const entry = MENU_ENTRIES.find((e) => e.id === id);
-    assert.equal(entryReason(entry, [...WEB_MISSING]), null, `${title} is enabled`);
-    assert.deepEqual(entryRoute(entry, { ...all, missing: [...WEB_MISSING] }), { screen: PLACEHOLDER_SCREEN, data: { entry: id, title } });
+    assert.equal(entryReason(entry, ['webgl2']), null, `${title} is enabled`);
+    assert.deepEqual(entryRoute(entry, { ...all, missing: ['webgl2'] }), { screen: PLACEHOLDER_SCREEN, data: { entry: id, title } });
   }
-});
-
-test('Quit is the desktop build\'s: on the web it is disabled with its reason and opens nothing', () => {
-  const quit = MENU_ENTRIES.find((e) => e.id === 'quit');
-  assert.deepEqual(WEB_MISSING, ['desktop']);
-  assert.ok(Object.isFrozen(WEB_MISSING));
-  assert.equal(UNAVAILABLE_REASONS.desktop, 'Desktop build only');
-  assert.equal(entryReason(quit, WEB_MISSING), 'Desktop build only');
-  assert.equal(entryRoute(quit, { hasMode: () => true, hasScreen: () => true, missing: WEB_MISSING }), null);
-  const router = fakeRouter(['menu', 'coming-soon']);
-  const menu = createMenu({ router, modes: createModeHost(), missing: WEB_MISSING });
-  assert.equal(menu.open('quit'), null);
-  assert.deepEqual(router.went, [], 'Quit opens nothing on the web');
 });
 
 test('the menu opens on the last mode played; the first entry when nothing was played or that entry cannot open here', () => {
   assert.equal(openingEntry(null), 'classic-2d', 'nothing played: the first entry');
   assert.equal(openingEntry('3d'), '3d');
-  assert.equal(openingEntry('classic-2d', { missing: ['desktop', 'webgl2'] }), 'classic-2d');
-  assert.equal(openingEntry('3d', { missing: ['desktop', 'webgl2'] }), 'classic-2d', '3D without WebGL 2: the first enabled entry');
+  assert.equal(openingEntry('classic-2d', { missing: ['webgl2'] }), 'classic-2d');
+  assert.equal(openingEntry('3d', { missing: ['webgl2'] }), 'classic-2d', '3D without WebGL 2: Classic 2D, the first enabled entry');
+  assert.equal(openingEntry(null, { missing: ['webgl2'] }), 'classic-2d', 'a fresh profile without WebGL 2: Classic 2D');
   assert.equal(openingEntry('records'), 'classic-2d', 'not a mode');
   const entries = [{ id: 'a', mode: 'a', needs: 'webgl2' }, { id: 'b', mode: 'b' }];
   assert.equal(openingEntry(null, { entries, missing: ['webgl2'] }), 'b', 'the first enabled entry, not the first entry');
 });
 
-test('the preview of each entry: the Classic 2D board, the 3D scene or its static panel, the daily board, a badge with its note', () => {
-  const web = { missing: ['desktop'], hasMode: (m) => ['classic-2d', '3d'].includes(m) };
-  assert.deepEqual(menuPreview('classic-2d', web), { kind: 'board', tag: 'Classic 2D · Intermediate' });
-  assert.deepEqual(menuPreview('3d', web), { kind: 'scene', tag: '3D · Demo board 7 × 7 × 7' });
-  assert.deepEqual(menuPreview('3d', { ...web, missing: ['desktop', 'webgl2'] }), { kind: 'still', tag: '3D' }, 'no WebGL 2: the static themed background');
-  assert.deepEqual(menuPreview('daily', web), { kind: 'daily' });
-  for (const [id, label] of [['hexagon', 'Hexagon'], ['triangle', 'Triangle'], ['surface', 'Surface']]) {
-    assert.deepEqual(menuPreview(id, web), { kind: 'badge', entry: id, label, note: COMING_SOON, locked: false });
-  }
-  assert.equal(COMING_SOON, 'Coming soon');
-  assert.deepEqual(menuPreview('records', web), { kind: 'badge', entry: 'records', label: 'Records', note: null, locked: false }, 'a place: its badge alone');
-  assert.deepEqual(menuPreview('settings', web), { kind: 'badge', entry: 'settings', label: 'Settings', note: null, locked: false });
-  assert.deepEqual(menuPreview('quit', web), { kind: 'badge', entry: 'quit', label: 'Quit', note: 'Desktop build only', locked: true });
+test('each play tile shows its own preview: the Classic 2D board and the badges on the dark ground, the stills and the calendar on the light one, 3D locked without WebGL 2; the small entries none', () => {
+  assert.deepEqual(menuPreview('classic-2d'), { kind: 'board', ground: 'dark' });
+  for (const id of ['hexagon', 'triangle']) assert.deepEqual(menuPreview(id), { kind: 'badge', ground: 'dark' }, `${id}: its placeholder art`);
+  assert.deepEqual(menuPreview('surface'), { kind: 'still', still: 'surface', ground: 'light' }, 'Surface: the torus');
+  assert.deepEqual(menuPreview('3d'), { kind: 'still', still: '3d', ground: 'light' }, '3D: a still of the demo board, never the live scene');
+  assert.deepEqual(menuPreview('daily'), { kind: 'icon', ground: 'light' }, 'Daily: a calendar icon');
+  assert.deepEqual(menuPreview('3d', { missing: ['webgl2'] }), { kind: 'locked', ground: 'locked' }, 'no WebGL 2: the locked preview');
+  assert.deepEqual(menuPreview('classic-2d', { missing: ['webgl2'] }), { kind: 'board', ground: 'dark' }, 'Classic 2D draws without WebGL 2');
+  assert.equal(menuPreview('records'), null, 'a small entry: no preview');
+  assert.equal(menuPreview('settings'), null);
   assert.throws(() => menuPreview('campaign'), /unknown menu entry/);
+  const a = menuPreview('classic-2d');
+  a.kind = 'x';
+  assert.equal(menuPreview('classic-2d').kind, 'board', 'each call its own copy');
 });
 
 test('the Classic 2D preview is a real engine board, the same on every load; the daily preview is today\'s Expert, closed, its start cell marked', () => {
@@ -202,6 +190,34 @@ test('the preview binder shows each preview: a board view mounted once per board
   assert.equal(tag.classes.has('hidden'), false);
 });
 
+test('the play tiles\' previews: the Classic 2D board view mounted at once in its tile\'s art and handed its game; a mount that fails leaves the plain ground', () => {
+  const tile = (entry) => {
+    const art = { children: ['stale'], replaceChildren: (...xs) => { art.children = xs; } };
+    const preview = { dataset: {} };
+    return { dataset: { entry }, art, preview, querySelector: (sel) => (sel === '.ui-play-tile__art' ? art : preview) };
+  };
+  const tiles = MENU_ENTRIES.filter((e) => e.block === 0).map((e) => tile(e.id));
+  const mounted = [];
+  const demo = { grid: { width: 16, height: 16 }, geometry: 'square', game: 'demo-game' };
+  const views = mountTilePreviews({
+    tiles,
+    previewOf: (id) => menuPreview(id),
+    mountBoard: ({ container, grid, geometry }) => {
+      const view = { container, grid, geometry, games: [], marks: [], setGame: (g) => view.games.push(g), setMark: (m) => view.marks.push(m) };
+      mounted.push(view);
+      return view;
+    },
+    boardOf: (kind) => (kind === 'board' ? demo : null),
+  });
+  assert.deepEqual([...views.keys()], ['classic-2d'], 'only the board preview is drawn by a view; the others are the tiles\' own art');
+  assert.deepEqual([mounted.length, mounted[0].container, mounted[0].grid, mounted[0].geometry, mounted[0].games, mounted[0].marks],
+    [1, tiles[0].art, demo.grid, 'square', ['demo-game'], [-1]], 'the demo game, no mark');
+  const failing = [tile('classic-2d')];
+  const none = mountTilePreviews({ tiles: failing, previewOf: (id) => menuPreview(id), mountBoard: () => { throw new Error('no canvas'); }, boardOf: () => demo });
+  assert.equal(none.size, 0);
+  assert.deepEqual([failing[0].art.children, failing[0].preview.dataset], [[], { failed: '' }], 'the fallback: the preview\'s plain ground');
+});
+
 test('a mode entry opens its mode\'s board choice once the mode is registered', () => {
   const entry = MENU_ENTRIES.find((e) => e.id === '3d');
   assert.deepEqual(entryRoute(entry, { hasMode: (m) => m === '3d', hasScreen: () => false }), { mode: '3d' });
@@ -248,9 +264,10 @@ test('opening an entry asks the mode host for a board choice, or routes through 
 // ---------------------------------------------------------------- an entry the browser cannot run
 
 test('the 3D entry needs WebGL 2; without it the entry is unavailable with its reason and routes nowhere', () => {
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.needs ?? null), [null, null, null, null, 'webgl2', null, null, null, 'desktop'], 'only 3D needs WebGL 2');
-  assert.equal(UNAVAILABLE_REASONS.webgl2, 'Needs WebGL 2 — not available in this browser');
-  assert.ok(Object.isFrozen(UNAVAILABLE_REASONS));
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.needs ?? null), [null, null, null, null, 'webgl2', null, null, null], 'only 3D needs anything: WebGL 2');
+  assert.deepEqual(UNAVAILABLE_REASONS, { webgl2: 'Needs WebGL 2 — not available in this browser' });
+  assert.deepEqual(UNAVAILABLE_SHORT_REASONS, { webgl2: 'Needs WebGL 2' }, 'a phone row\'s short reason');
+  assert.ok(Object.isFrozen(UNAVAILABLE_REASONS) && Object.isFrozen(UNAVAILABLE_SHORT_REASONS));
   const all = { hasMode: () => true, hasScreen: () => true };
   const three = MENU_ENTRIES.find((e) => e.id === '3d');
   assert.equal(entryReason(three, ['webgl2']), UNAVAILABLE_REASONS.webgl2);
@@ -258,8 +275,11 @@ test('the 3D entry needs WebGL 2; without it the entry is unavailable with its r
   assert.equal(entryReason(three), null, 'nothing missing by default');
   assert.equal(entryRoute(three, { ...all, missing: ['webgl2'] }), null, 'an unavailable entry routes nowhere');
   assert.deepEqual(entryRoute(three, all), { mode: '3d' });
-  for (const entry of MENU_ENTRIES.filter((e) => e.id !== '3d' && e.id !== 'quit')) {
+  assert.equal(entryShortReason(three, ['webgl2']), 'Needs WebGL 2', 'its phone row\'s reason');
+  assert.equal(entryShortReason(three, []), null);
+  for (const entry of MENU_ENTRIES.filter((e) => e.id !== '3d')) {
     assert.equal(entryReason(entry, ['webgl2']), null, `${entry.label} runs without WebGL 2`);
+    assert.equal(entryShortReason(entry, ['webgl2']), null);
     assert.notEqual(entryRoute(entry, { ...all, missing: ['webgl2'] }), null);
   }
 });
@@ -272,8 +292,6 @@ test('the menu over a browser without WebGL 2 carries the 3D entry\'s reason, op
   const menu = createMenu({ router, modes, missing: ['webgl2'] });
   assert.equal(menu.unavailable('3d'), UNAVAILABLE_REASONS.webgl2);
   assert.deepEqual(MENU_ENTRIES.filter((e) => menu.unavailable(e.id)).map((e) => e.id), ['3d'], 'only 3D is unavailable');
-  const web = createMenu({ router, modes, missing: [...WEB_MISSING, 'webgl2'] });
-  assert.deepEqual(MENU_ENTRIES.filter((e) => web.unavailable(e.id)).map((e) => e.id), ['3d', 'quit'], 'on the web Quit too');
   assert.equal(menu.route('3d'), null);
   assert.equal(menu.open('3d'), null, 'opening it routes nowhere');
   assert.deepEqual(fakes['3d'].calls, [], 'the 3D board choice is not opened');
@@ -357,23 +375,11 @@ test('the menu module is DOM-free and reaches storage only through what it is ha
   assert.doesNotMatch(src, /^\s*import\b/m, 'menu.js imports nothing');
 });
 
-test('the 3D preview\'s tag names the demo board the shell builds, from one size', () => {
-  const { X, Y, Z } = DEMO_BOARD_3D;
-  assert.equal(menuPreview('3d', { missing: [] }).tag, `3D · Demo board ${X} × ${Y} × ${Z}`);
+test('the demo board the shell builds is one size, the one the 3D still shows', () => {
+  assert.deepEqual(DEMO_BOARD_3D, { X: 7, Y: 7, Z: 7 });
   const demo = read('js/shell/menu-preview.js').match(/export function demoBoard3D\(random = Math\.random\) \{[\s\S]*?\n\}/)[0];
   assert.match(demo, /create3DGame\(\{ \.\.\.DEMO_BOARD_3D,/, 'demoBoard3D builds the board of that size');
   assert.doesNotMatch(demo, /\b(343|=== 6)\b|X: 7/, 'and states no size of its own');
-});
-
-test('the locked Quit entry shows no reason line; any other unavailable entry keeps its reason', () => {
-  const quit = MENU_ENTRIES.find((e) => e.id === 'quit');
-  const cube = MENU_ENTRIES.find((e) => e.id === '3d');
-  const missing = [...WEB_MISSING, 'webgl2'];
-  assert.equal(entryReasonLine(quit, missing), null, 'Quit: the lock alone');
-  assert.equal(entryReason(quit, missing), 'Desktop build only', 'its reason still the preview\'s note');
-  assert.equal(entryReasonLine(cube, missing), UNAVAILABLE_REASONS.webgl2, '3D without WebGL 2 keeps its reason line');
-  assert.equal(entryReasonLine(cube, WEB_MISSING), null, 'an available entry has none');
-  assert.equal(menuPreview('quit', { missing }).note, 'Desktop build only');
 });
 
 test('the build label is the web build and the release version js/version.js holds', () => {
@@ -394,24 +400,39 @@ const MENU = section('<section id="menu"', '<!-- 3D board choice -->');
 const BOARD = section('<section id="board-choice"', '<!-- Coming soon -->');
 const SOON = section('<section id="coming-soon"', '<!-- Click to play -->');
 
-test('index.html: the menu\'s window under its title bar, one mode list of the nine entries in their blocks, the preview panel, the key hints and the build label', () => {
+test('index.html: the menu\'s window under its title bar, the play tiles with their own previews then the small entries, Quit only in the title bar, and a foot of the build label alone', () => {
   assert.match(MENU, /<section id="menu" class="overlay" aria-label="Main menu">\s*<section class="ui-frame" id="menu-frame" aria-labelledby="menu-title">/, 'the menu in its window, no game title above it');
   assert.match(MENU, /<header class="ui-frame__head">\s*<div class="ui-frame__start"><\/div>\s*<h1 class="ui-logo ui-frame__logo" id="menu-title" aria-label="Minesweeper 3D"><\/h1>/, 'the title bar with no Back, the logo naming the menu');
+  assert.match(MENU, /<div class="ui-frame__window"[^>]*>[\s\S]*?data-window="quit"/, 'Quit is the title bar\'s');
   assert.doesNotMatch(MENU, /ui-frame__heading/, 'no heading: the logo names it');
-  assert.match(MENU, /<div class="ui-frame__body" id="menu-body">\s*<div class="ui-mode-list" id="menu-entries"/, 'the entries in the body');
-  assert.match(MENU, /<footer class="ui-frame__foot" id="menu-foot">\s*<div class="ui-key-hints" id="menu-hints">/, 'the key hints and the build label in the foot');
-  const entries = [...MENU.matchAll(/<button type="button" class="ui-mode-entry" id="menu-entry-([\w-]+)" data-entry="([\w-]+)"( data-block-start)?><span class="ui-mode-entry__icon" aria-hidden="true"><svg [^>]*>[\s\S]*?<\/svg><\/span><span class="ui-mode-entry__label">([^<]+)<\/span><span class="ui-chip hidden" data-last>Last played<\/span><span class="ui-mode-entry__lock" aria-hidden="true">/g)];
-  assert.deepEqual(entries.map((m) => m[2]), MENU_ENTRIES.map((e) => e.id));
-  assert.deepEqual(entries.map((m) => m[1]), MENU_ENTRIES.map((e) => e.id), 'each entry has its id');
-  assert.deepEqual(entries.map((m) => m[4]), MENU_ENTRIES.map((e) => e.label));
-  assert.deepEqual(entries.filter((m) => m[3]).map((m) => m[2]),
-    MENU_ENTRIES.filter((e, i) => i > 0 && e.block !== MENU_ENTRIES[i - 1].block).map((e) => e.id), 'each later block starts with a gap, and no group label');
-  assert.equal([...MENU.matchAll(/class="ui-mode-list"/g)].length, 1, 'one list of entries');
-  assert.match(MENU, /<figure class="ui-scene-panel" id="menu-preview" aria-labelledby="menu-preview-tag"><div class="ui-scene-panel__stage" id="menu-preview-stage"><\/div><figcaption class="ui-scene-panel__tag" id="menu-preview-tag"><\/figcaption><\/figure>/);
-  assert.deepEqual([...MENU.matchAll(/class="ui-key-hint" data-action="(\w+)"><span class="ui-key-hint__label">(\w+)</g)].map((m) => [m[1], m[2]]),
-    [['move', 'Move'], ['select', 'Select']], 'move and select, no Back');
-  assert.match(MENU, /<p class="ui-text ui-text--muted" id="menu-build"><\/p>/, 'the build label');
-  assert.match(MENU, /<p id="touch-note" class="ui-text hidden" data-icon="hand" role="alert"><span class="ui-note__text">/, 'the touch note, after its hand icon');
+  assert.match(MENU, /<div class="ui-frame__body" id="menu-body">\s*<div class="ui-mode-list" id="menu-entries" role="group" aria-label="Main menu">\s*<div class="ui-mode-list__tiles">\s*<button type="button" class="ui-play-tile"/,
+    'the buttons in the body, the play tiles first');
+  assert.match(MENU, /<\/button>\s*<\/div>\s*<div class="ui-mode-list__places">\s*<button type="button" class="ui-small-entry"[\s\S]*?<\/button>\s*<\/div>\s*<\/div>\s*<\/div>\s*<footer/,
+    'then the small entries');
+  const tiles = [...MENU.matchAll(/<button type="button" class="ui-play-tile" id="menu-entry-([\w-]+)" data-entry="([\w-]+)"><span class="ui-play-tile__side"><span class="ui-play-tile__top"><span class="ui-play-tile__icon" aria-hidden="true"><svg [^>]*>[\s\S]*?<\/svg><\/span><span class="ui-play-tile__lock" aria-hidden="true"><svg [^>]*>[\s\S]*?<\/svg><\/span><\/span><span class="ui-play-tile__text"><span class="ui-play-tile__label">([^<]+)<\/span><\/span><\/span><span class="ui-play-tile__preview( ui-play-tile__preview--light)?" data-preview="(\w+)" aria-hidden="true"><span class="ui-play-tile__art"( id="[\w-]+")?>([\s\S]*?)<\/span><\/span><\/button>/g)];
+  const playing = MENU_ENTRIES.filter((e) => e.block === 0);
+  assert.deepEqual(tiles.map((m) => m[2]), playing.map((e) => e.id), 'a play tile per mode and Daily, in menu order');
+  assert.deepEqual(tiles.map((m) => m[1]), playing.map((e) => e.id), 'each with its id');
+  assert.deepEqual(tiles.map((m) => m[3]), playing.map((e) => e.label));
+  for (const m of tiles) {
+    const preview = menuPreview(m[2]);
+    assert.equal(m[5], preview.kind, `${m[2]}: its preview is the one menuPreview names`);
+    assert.equal(!!m[4], preview.ground === 'light', `${m[2]}: on its ${preview.ground} ground`);
+  }
+  const art = Object.fromEntries(tiles.map((m) => [m[2], [m[6]?.trim() ?? null, m[7]]]));
+  assert.deepEqual(art['classic-2d'], ['id="menu-preview-classic-2d"', ''], 'Classic 2D: the board view mounts there');
+  for (const id of ['hexagon', 'triangle']) assert.match(art[id][1], /^<span class="ui-play-tile__badge"><svg [^>]*>/, `${id}: its badge`);
+  assert.equal(art.surface[1], '<img class="ui-play-tile__still" data-still="surface" src="assets/menu/surface.png" alt="">', 'Surface: the torus still');
+  assert.equal(art['3d'][1], '<img class="ui-play-tile__still" data-still="3d" src="assets/menu/3d.png" alt="">', '3D: the demo board\'s still, no live scene');
+  assert.match(art.daily[1], /^<svg class="ui-play-tile__calendar" viewBox="0 0 160 140">/, 'Daily: the calendar icon');
+  const small = [...MENU.matchAll(/<button type="button" class="ui-small-entry" id="menu-entry-([\w-]+)" data-entry="([\w-]+)"><span class="ui-small-entry__icon" aria-hidden="true"><svg [^>]*>[\s\S]*?<\/svg><\/span><span class="ui-small-entry__label">([^<]+)<\/span><\/button>/g)];
+  assert.deepEqual(small.map((m) => [m[1], m[2], m[3]]), [['records', 'records', 'Records'], ['settings', 'settings', 'Settings']], 'Records and Settings, the small entries');
+  assert.equal([...MENU.matchAll(/data-entry="/g)].length, MENU_ENTRIES.length, 'no other entry: no Quit');
+  assert.equal([...MENU.matchAll(/class="ui-mode-list"/g)].length, 1, 'one list of buttons');
+  assert.doesNotMatch(MENU, /ui-scene-panel|menu-preview-stage|ui-chip|data-last|Last played/, 'no preview panel and no Last played chip');
+  assert.match(MENU, /<footer class="ui-frame__foot" id="menu-foot">\s*<p id="touch-note" class="ui-text hidden" data-icon="hand" role="alert"><span class="ui-note__text">[^<]*<\/span><\/p>\s*<p class="ui-text ui-text--muted" id="menu-build"><\/p>\s*<\/footer>/,
+    'the foot: the build label, and the touch note on a touch device; no key hints');
+  assert.doesNotMatch(MENU, /ui-key-hint|menu-hints/, 'no Move / Select hints');
   assert.doesNotMatch(MENU, /ui-menu|ui-card|menu-again|menu-strip|menu-help|menu-sound|menu-vol|data-setting|ui-link|Leaderboards/,
     'no Play again, session strip, Controls, Sound, Volume, credit line or Leaderboards');
   assert.doesNotMatch(MENU, /data-preset|id="custom"/, 'the 3D presets and custom board left the main menu');
@@ -470,9 +491,9 @@ test('the shell routes the new screens, declares their default focus and lets th
 test('without WebGL 2 the shell starts on one availability flag: no "Cannot start" card, the 3D entry disabled with its reason', () => {
   assert.doesNotMatch(MAIN, /This game needs WebGL 2|function fatal\(/, 'no full-page card for a missing WebGL 2');
   assert.match(MAIN, /const WEBGL2 = renderer !== null;/, 'one flag: the renderer was created');
-  assert.match(MAIN, /const MISSING = \[\.\.\.WEB_MISSING, \.\.\.\(WEBGL2 \? \[\] : \['webgl2'\]\)\];/, 'what the web build and the browser lack');
+  assert.match(MAIN, /const MISSING = WEBGL2 \? \[\] : \['webgl2'\];/, 'what the browser lacks');
   assert.match(MAIN, /createMenu\(\{ router: SHELL, modes: MODES, missing: MISSING \}\)/, 'the menu knows it');
-  assert.match(MAIN, /ui\.setEntryUnavailable\(/, 'the menu item shows the reason');
+  assert.match(MAIN, /ui\.setEntryUnavailable\(entry\.id, entryReason\(entry, MISSING\), entryShortReason\(entry, MISSING\)\)/, 'the menu button shows the reason, short on a phone row');
   assert.match(MAIN, /document\.body\.classList\.toggle\('no-webgl2', !WEBGL2\)/, 'the page knows it has no 3D scene');
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.match(css, /body\.no-webgl2 #scene \{ display: none; \}/, 'the #scene canvas is hidden');
@@ -489,14 +510,17 @@ test('without WebGL 2 the shell starts on one availability flag: no "Cannot star
 
 test('the catalogue documents the main menu, the 3D board choice and the placeholder', () => {
   const head = read('css/components.css').match(/^\/\*([\s\S]*?)\*\//)[1];
-  assert.match(head, /Main menu \(index\.html #menu\)[\s\S]*?ui-frame[\s\S]*?title bar with no Back[\s\S]*?ui-mode-list[\s\S]*?ui-scene-panel[\s\S]*?ui-key-hints[\s\S]*?build label[\s\S]*?Default focus: the entry last opened[\s\S]*?last mode played/);
+  const menu = head.match(/Main menu \(index\.html #menu\)[\s\S]*?Default focus:\s+the\s+entry\s+last\s+opened[\s\S]*?last\s+mode\s+played[^.]*\./)?.[0] ?? '';
+  assert.match(menu, /ui-frame[\s\S]*?title bar with no Back[\s\S]*?ui-mode-list[\s\S]*?ui-play-tile[\s\S]*?ui-small-entry[\s\S]*?build label/);
+  assert.doesNotMatch(menu, /ui-scene-panel|ui-key-hints|ui-chip|Quit,/, 'no preview panel, no key hints, no chip, no Quit entry');
+  assert.match(menu, /no Last played chip and no preview panel[\s\S]*?no key hints/);
   assert.match(head, /3D board choice \(index\.html #board-choice\)/);
   assert.match(head, /Coming soon \(index\.html #coming-soon\)/);
 });
 
 // ---------------------------------------------------------------- browser
 
-test('in a browser, the menu shows the nine entries with the selected one\'s preview, each routes, and Back returns to its entry', async (t) => {
+test('in a browser, the menu shows its eight buttons, every play tile its own preview at once and no 3D scene, each routes, and Back returns to its entry', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -512,68 +536,54 @@ test('in a browser, the menu shows the nine entries with the selected one\'s pre
     const shown = () => ms(() => ['menu', 'board-choice', 'coming-soon', 'records', 'c2d-choice', 'settings', 'daily', 'ready', 'pause']
       .filter((id) => !document.getElementById(id).classList.contains('hidden')));
     const backdrop = () => ms(() => globalThis.__ms.renderer.game === globalThis.__ms.state.demo);
-    // What the preview shows: its tag, whether the scene draws through it, the layer shown and the card's lines.
-    const preview = () => ms(() => {
-      const panel = document.getElementById('menu-preview');
-      const layer = [...panel.querySelectorAll('[data-preview]')].find((l) => !l.hidden);
-      const card = layer?.querySelector('.ui-scene-panel__card');
-      return {
-        tag: document.getElementById('menu-preview-tag').classList.contains('hidden') ? null : document.getElementById('menu-preview-tag').textContent,
-        live: panel.classList.contains('ui-scene-panel--live'),
-        layer: layer?.dataset.preview ?? null,
-        canvas: !!layer?.querySelector('canvas'),
-        card: card ? [...card.children].map((c) => c.textContent || c.dataset.entry + (c.hasAttribute('data-unavailable') ? ' locked' : '')) : null,
-        sceneShown: getComputedStyle(document.getElementById('scene')).visibility === 'visible',
-      };
-    });
+    // What every play tile's preview shows, and whether the 3D scene shows or draws anywhere on the menu.
+    const previews = () => ms(() => Object.fromEntries([...document.querySelectorAll('#menu .ui-play-tile')].map((b) => {
+      const p = b.querySelector('.ui-play-tile__preview');
+      const art = p.querySelector('.ui-play-tile__art');
+      const img = art.querySelector('img');
+      return [b.dataset.entry, {
+        kind: p.dataset.preview, light: p.classList.contains('ui-play-tile__preview--light'),
+        canvas: !!art.querySelector('canvas'), still: img ? img.complete && img.naturalWidth > 0 : null,
+        shown: p.getBoundingClientRect().width > 0,
+      }];
+    })));
+    const scene = () => ms(() => ({ shown: getComputedStyle(document.getElementById('scene')).visibility === 'visible', target: globalThis.__ms.renderer.target }));
     const select = async (id) => { await page.focus(`#menu-entry-${id}`); };
     assert.equal(await ms(() => document.getElementById('menu-build').textContent), buildLabel(VERSION), 'the build label shows the release version');
 
-    // The nine entries, in order, visible; the first takes the focus when no mode was played yet.
+    // The eight buttons, in order, visible; the first takes the focus when no mode was played yet.
     assert.equal(await mode(), 'menu');
     const labels = await ms(() => [...document.querySelectorAll('#menu [data-entry]')]
-      .filter((b) => b.getBoundingClientRect().width > 0).map((b) => b.querySelector('.ui-mode-entry__label').textContent));
-    assert.deepEqual(labels, ['Classic 2D', 'Hexagon', 'Triangle', 'Surface', '3D', 'Daily', 'Records', 'Settings', 'Quit']);
+      .filter((b) => b.getBoundingClientRect().width > 0).map((b) => b.querySelector('.ui-play-tile__label, .ui-small-entry__label').textContent));
+    assert.deepEqual(labels, ['Classic 2D', 'Hexagon', 'Triangle', 'Surface', '3D', 'Daily', 'Records', 'Settings']);
     assert.equal(await active(), 'menu-entry-classic-2d');
-    assert.deepEqual(await ms(() => [...document.querySelectorAll('#menu [data-entry]')].filter((b) => b.getAttribute('aria-disabled') === 'true')
-      .map((b) => [b.dataset.entry, b.innerText.trim(), !!b.querySelector('.ui-mode-entry__reason'), getComputedStyle(b.querySelector('.ui-mode-entry__lock')).display !== 'none'])),
-    [['quit', 'Quit', false, true]], 'on the web only Quit is disabled: its label and lock, no reason line');
-    assert.equal(await ms(() => document.querySelectorAll('#menu .ui-chip:not(.hidden)').length), 0, 'nothing played: no Last played chip');
+    assert.equal(await ms(() => document.querySelectorAll('#menu [aria-disabled="true"]').length), 0, 'with WebGL 2 nothing is disabled');
+    assert.equal(await ms(() => document.querySelectorAll('#menu .ui-chip, #menu [data-last]').length), 0, 'no Last played chip');
 
-    // The preview follows the selection.
-    assert.deepEqual(await preview(), { tag: 'Classic 2D · Intermediate', live: false, layer: 'board', canvas: true, card: null, sceneShown: false },
-      'Classic 2D: a board drawn by its board view; the 3D scene neither shows nor draws');
-    assert.equal(await ms(() => globalThis.__ms.renderer.target), null);
-    await select('3d');
-    assert.deepEqual(await preview(), { tag: '3D · Demo board 7 × 7 × 7', live: true, layer: null, canvas: false, card: null, sceneShown: true });
-    assert.ok(await backdrop(), 'the 3D demo board');
-    assert.deepEqual(await ms(() => {
-      const r = document.getElementById('menu-preview-stage').getBoundingClientRect();
-      return [globalThis.__ms.renderer.target, { x: r.left, y: r.top, width: r.width, height: r.height }];
-    }).then(([target, box]) => [target, target && Object.keys(box).every((k) => Math.abs(box[k] - target[k]) < 1)]).then(([, near]) => near), true,
-    'the scene draws into the panel\'s stage');
-    assert.match(await ms(() => document.getElementById('scene').style.clipPath), /^inset\(.* round \d+px\)$/, 'clipped to the panel\'s corners');
-    await select('daily');
-    const daily = await preview();
-    assert.match(daily.tag, /^Daily · \d{1,2} [A-Z][a-z]{2} \d{4}$/);
-    assert.deepEqual({ ...daily, tag: null }, { tag: null, live: false, layer: 'daily', canvas: true, card: null, sceneShown: false }, 'today\'s daily board');
-    for (const [id, card] of [['hexagon', ['hexagon', 'Hexagon', 'Coming soon']], ['triangle', ['triangle', 'Triangle', 'Coming soon']],
-      ['surface', ['surface', 'Surface', 'Coming soon']], ['records', ['records', 'Records']], ['settings', ['settings', 'Settings']],
-      ['quit', ['quit locked', 'Quit', 'Desktop build only']]]) {
+    // Every tile's own preview at once: the Classic 2D board drawn by its board view, the others their art.
+    await page.waitForFunction(() => document.querySelector('#menu-preview-classic-2d canvas'));
+    await page.waitForFunction(() => [...document.querySelectorAll('#menu img.ui-play-tile__still')].every((i) => i.complete && i.naturalWidth > 0));
+    const all = {
+      'classic-2d': { kind: 'board', light: false, canvas: true, still: null, shown: true },
+      hexagon: { kind: 'badge', light: false, canvas: false, still: null, shown: true },
+      triangle: { kind: 'badge', light: false, canvas: false, still: null, shown: true },
+      surface: { kind: 'still', light: true, canvas: false, still: true, shown: true },
+      '3d': { kind: 'still', light: true, canvas: false, still: true, shown: true },
+      daily: { kind: 'icon', light: true, canvas: false, still: null, shown: true },
+    };
+    assert.deepEqual(await previews(), all);
+    assert.deepEqual(await scene(), { shown: false, target: null }, 'the menu shows no 3D scene');
+    // None follows the selection: selecting 3D shows the same still and still no scene.
+    for (const id of ['3d', 'daily', 'hexagon', 'records']) {
       await select(id);
-      assert.deepEqual(await preview(), { tag: null, live: false, layer: 'card', canvas: false, card, sceneShown: false }, `${id}'s card`);
+      assert.deepEqual(await previews(), all, `${id} selected: every preview unchanged`);
+      assert.deepEqual(await scene(), { shown: false, target: null }, `${id} selected: no 3D scene`);
     }
     // The mouse selects as the keys do.
     const box = await page.locator('#menu-entry-triangle').boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.move(box.x + box.width / 2 + 3, box.y + box.height / 2);
     assert.equal(await active(), 'menu-entry-triangle');
-    assert.deepEqual((await preview()).card, ['triangle', 'Triangle', 'Coming soon']);
-
-    // Quit opens nothing on the web.
-    await page.click('#menu-entry-quit', { force: true }); // aria-disabled: Playwright counts it not enabled
-    assert.equal(await mode(), 'menu');
-    assert.equal(await active(), 'menu-entry-quit', 'it stays selected');
 
     // Classic 2D: its board choice, Back by its button to the entry.
     await page.click('#menu-entry-classic-2d');
@@ -593,7 +603,6 @@ test('in a browser, the menu shows the nine entries with the selected one\'s pre
       await page.keyboard.press('Escape');
       assert.equal(await mode(), 'menu');
       assert.equal(await active(), `menu-entry-${id}`, `Back returns with ${title} selected`);
-      assert.deepEqual((await preview()).card?.[1], title, 'and its preview');
     }
 
     // Records, Daily and Settings: their screens, by mouse and keyboard; Back returns to the entry.
@@ -634,7 +643,7 @@ test('in a browser, the menu shows the nine entries with the selected one\'s pre
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
     assert.equal(await active(), 'menu-entry-3d');
-    assert.equal((await preview()).live, true);
+    assert.equal(await ms(() => document.body.classList.contains('scene-off')), true, 'back on the menu: still no 3D scene');
     await page.click('#menu-entry-3d');
     await page.click('#board-choice-back');
     assert.equal(await mode(), 'menu');
@@ -655,8 +664,7 @@ test('in a browser, the menu shows the nine entries with the selected one\'s pre
     });
     assert.equal(await mode(), 'menu');
     assert.equal(await active(), 'menu-entry-3d', 'the menu opens on the last mode played');
-    assert.deepEqual(await ms(() => [...document.querySelectorAll('#menu .ui-chip:not(.hidden)')].map((c) => [c.closest('[data-entry]').dataset.entry, c.textContent])),
-      [['3d', 'Last played']], '3D carries the Last played chip');
+    assert.equal(await ms(() => document.querySelectorAll('#menu .ui-chip, #menu [data-last]').length), 0, 'and marks it with no chip');
     // Enter, then Play: its board choice opens on the board last played.
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'board-choice');
@@ -667,180 +675,140 @@ test('in a browser, the menu shows the nine entries with the selected one\'s pre
     await page.reload();
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     await page.waitForFunction(() => document.activeElement?.id === 'menu-entry-3d');
-    assert.equal((await preview()).live, true, 'the 3D preview shows');
+    assert.deepEqual(await scene(), { shown: false, target: null }, 'the 3D tile focused: its still, no live scene');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
   }
 });
 
-test('in a browser, the menu fits each window: its window filling the page\'s height under the title bar, the logo\'s size, the entries as tall as the preview, the selected one taller, no sideways scroll; a phone shows no preview; the Classic 2D and Daily previews draw the whole board in its frame; a coarse pointer keeps every unselected entry a 44 px touch target; the key hints follow the active device', async (t) => {
+test('in a browser, the menu fits each window as its artboard draws it: the window\'s size and place, the play tiles two by two of one height, none growing when selected, the previews\' squares, labels and icons, the small entries, no sideways scroll; a phone\'s rows in one column with their preview strips; a coarse pointer keeps every button a 44 px touch target; no key hints', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
-    // Per window size: the logo's size, the window's inset from the page's sides and top, the body's padding, the
-    // entries' and the preview's widths, the list's gap and its blocks' spacing, the selected entry's share, and the
-    // rest / selected label, icon box and glyph sizes.
+    // Per window size (J-Menu-xl, -l, -m, -p): the window's place [left, top, right, bottom], the body's
+    // padding [top, side], the gap between buttons, the space before the small entries, the preview
+    // square, the play tile's label and icon box, the small entry's height, label and icon box.
     const SIZES = [
-      { width: 1920, height: 1080, title: 44, inset: [96, 36], pad: 26, entries: 590, preview: 964, gap: 12, block: 36, grow: 1.45, label: [24, 30], icon: [42, 56], glyph: [24, 30], minSelected: 101 },
-      { width: 1366, height: 768, title: 36, inset: [56, 24], pad: 18, entries: 450, preview: 712, gap: 10, block: 30, grow: 1.4, label: [22, 27], icon: [36, 48], glyph: [20, 26] },
-      { width: 1024, height: 768, title: 36, inset: [36, 24], pad: 18, entries: 390, preview: 490, gap: 10, block: 30, grow: 1.4, label: [20, 25], icon: [36, 48], glyph: [20, 24] },
-      { width: 390, height: 844, title: 20, inset: [0, 0], pad: 20, entries: 350, phone: true, gap: 10, block: 28, grow: 1.35, label: [19, 24], icon: [36, 48], glyph: [20, 24] },
+      { width: 1920, height: 1080, frame: [470, 64, 1450, 1016], pad: [22, 26], gap: 12, block: 24, preview: 175, label: 30, icon: 52, small: [64, 21, 40] },
+      { width: 1366, height: 768, frame: [303, 28, 1063, 740], pad: [16, 22], gap: 10, block: 20, preview: 116, label: 24, icon: 42, small: [52, 19, 34] },
+      { width: 1024, height: 768, frame: [132, 28, 892, 740], pad: [16, 22], gap: 10, block: 20, preview: 116, label: 24, icon: 42, small: [52, 19, 34] },
+      { width: 390, height: 844, frame: [0, 0, 390, 844], pad: [16, 18], gap: 8, block: 16, strip: 106, label: 20, icon: 36, small: [50, 19, 34], phone: true },
     ];
-    // [the Classic 2D preview's tile, the Daily preview's tile] at each desktop size, the preview filling the window's body.
-    const PREVIEW = { 1920: [43, 27], 1366: [27, null], 1024: [21, null] };
-    // Laid out at the window's size: two frames, then every animation that ends (the selected entry's move) done.
+    // Laid out at the window's size: two frames, then every animation that ends (a button's move) done.
     const settle = async (page) => {
       await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
       await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getComputedTiming().endTime === Infinity),
         null, { timeout: patience(2000) });
     };
-    const resize = async (page, width, height) => {
-      await page.setViewportSize({ width, height });
-      await page.focus('#menu-entry-classic-2d');
-      await settle(page);
-    };
-    const fit = async (page, size) => {
-      const { width, height, title, phone } = size;
-      const m = await page.evaluate(() => {
-        const rect = (el) => el.getBoundingClientRect();
-        const px = (el, prop) => parseFloat(getComputedStyle(el)[prop]);
-        const title = document.getElementById('menu-title');
-        const buttons = [...document.querySelectorAll('#menu-entries .ui-mode-entry')];
-        const list = rect(document.getElementById('menu-entries'));
-        const preview = rect(document.getElementById('menu-preview'));
-        const sizes = (b) => ({
-          label: px(b.querySelector('.ui-mode-entry__label'), 'fontSize'),
-          icon: px(b.querySelector('.ui-mode-entry__icon'), 'width'),
-          glyph: px(b.querySelector('.ui-mode-entry__icon > svg'), 'width'),
-        });
-        return {
-          title: px(title, 'fontSize'),
-          titleCentre: rect(title).left + rect(title).width / 2,
-          // the selected entry (the first) is moved down by its transform: only the others' places are read
-          heights: buttons.map((b) => rect(b).height),
-          tops: buttons.map((b) => rect(b).top),
-          list: [list.left, list.width, list.top, list.height],
-          preview: [preview.left, preview.width, preview.top, preview.height],
-          gap: px(document.getElementById('menu-entries'), 'rowGap'),
-          selected: sizes(buttons[0]), rest: sizes(buttons[1]),
-          scroll: document.documentElement.scrollWidth,
-          bottom: Math.max(...[...document.querySelectorAll('#menu-foot > :not(.hidden)')].map((e) => rect(e).bottom)),
-          frame: [rect(document.getElementById('menu-frame')).left, rect(document.getElementById('menu-frame')).top, rect(document.getElementById('menu-frame')).right, rect(document.getElementById('menu-frame')).bottom],
-          body: [rect(document.getElementById('menu-body')).left, rect(document.getElementById('menu-body')).top, rect(document.getElementById('menu-body')).right, rect(document.getElementById('menu-body')).bottom],
-          head: rect(document.querySelector('#menu-frame > .ui-frame__head')).bottom,
-        };
-      });
-      const label = `${width} × ${height}`;
-      assert.ok(Math.abs(m.title - title) <= 3, `${label}: the title at ${title} px (${m.title})`);
-      assert.ok(Math.abs(m.titleCentre - width / 2) < 2, `${label}: the title centred`);
-      const [selected, ...rest] = m.heights;
-      assert.ok(rest.every((h) => Math.abs(h - rest[0]) <= 1), `${label}: every other entry the same height (${rest})`);
-      // flex-basis 0 on a border box: each entry its vertical padding (20 px selected, 12 px at rest) plus its share
-      assert.ok(Math.abs((selected - 20) / (rest[0] - 12) - size.grow) < 0.01, `${label}: the selected entry a ${size.grow} share (${selected} vs ${rest[0]})`);
-      if (size.minSelected) assert.ok(selected >= size.minSelected, `${label}: the selected entry at least ${size.minSelected} px (${selected})`);
-      assert.equal(m.gap, size.gap, `${label}: the entries ${size.gap} px apart`);
-      assert.ok(Math.abs(m.tops[5] - (m.tops[4] + m.heights[4]) - size.block) < 0.5, `${label}: a block ${size.block} px after the last`);
-      assert.ok(Math.abs(m.tops[8] - (m.tops[7] + m.heights[7]) - size.block) < 0.5, `${label}: Quit's block ${size.block} px after Settings`);
-      assert.deepEqual([m.rest.label, m.selected.label], size.label, `${label}: the labels at rest and selected`);
-      assert.deepEqual([m.rest.icon, m.selected.icon], size.icon, `${label}: the icon boxes at rest and selected`);
-      assert.deepEqual([m.rest.glyph, m.selected.glyph], size.glyph, `${label}: the glyphs at rest and selected`);
-      assert.ok(m.scroll <= width, `${label}: no sideways scroll (${m.scroll})`);
-      assert.ok(m.bottom <= height, `${label}: the foot inside the window (${m.bottom})`);
-      const [side, top] = size.inset;
-      assert.deepEqual(m.frame.map(Math.round), [side, top, width - side, height - top], `${label}: the window ${side} px in from the sides, filling the page's height ${top} px in`);
-      assert.ok(Math.abs(m.body[1] - m.head) <= 1, `${label}: the body under the title bar`);
-      assert.ok(Math.abs(m.list[0] - (m.body[0] + size.pad)) <= 1 && Math.abs(m.list[1] - size.entries) <= 1 && Math.abs(m.list[2] - (m.body[1] + size.pad)) <= 1,
-        `${label}: the entries ${size.entries} px wide at the body's padded corner (${m.list})`);
-      assert.ok(Math.abs(m.list[2] + m.list[3] - (m.body[3] - size.pad)) <= 1, `${label}: the entries fill the body down to its padding (${m.list})`);
-      if (phone) {
-        assert.equal(m.preview[1], 0, `${label}: no preview`);
-      } else {
-        assert.ok(Math.abs(m.preview[0] + m.preview[1] - (m.body[2] - size.pad)) <= 1 && Math.abs(m.preview[1] - size.preview) <= 1,
-          `${label}: the preview ${size.preview} px wide at the body's right (${m.preview})`);
-        assert.ok(Math.abs(m.list[2] - m.preview[2]) <= 1 && Math.abs(m.list[3] - m.preview[3]) <= 1, `${label}: the entries together as tall as the preview`);
-        assert.ok(Math.abs(m.tops[8] + m.heights[8] - (m.preview[2] + m.preview[3])) <= 1, `${label}: the last entry ends with the preview`);
-      }
-    };
-    const framed = (page, kind) => page.waitForFunction((k) => {
-      const layer = document.querySelector(`#menu-preview-stage > [data-preview="${k}"]:not([hidden])`);
-      const frame = layer?.querySelector(':scope > .ui-board-frame');
-      if (!frame || frame.classList.contains('hidden')) return null;
-      const r = frame.getBoundingClientRect();
-      const box = layer.getBoundingClientRect();
-      if (r.width === 0 || layer.querySelector('canvas').style.width !== `${Math.round(box.width)}px`) return null; // laid out in the layer as it stands
-      // Settled: the same frame on two polls running, the menu's own layout done moving.
-      const key = `${k} ${r.x} ${r.y} ${r.width} ${r.height} ${box.width} ${box.height}`;
-      const same = globalThis.__framePoll === key;
-      globalThis.__framePoll = key;
-      if (!same) return null;
+    const measure = (page) => page.evaluate(() => {
+      const rect = (el) => el.getBoundingClientRect();
+      const px = (el, prop) => parseFloat(getComputedStyle(el)[prop]);
+      const tiles = [...document.querySelectorAll('#menu .ui-play-tile')];
+      const small = [...document.querySelectorAll('#menu .ui-small-entry')];
+      const body = document.getElementById('menu-body');
       return {
-        width: Math.round(r.width), height: Math.round(r.height),
-        inside: r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5,
-        background: getComputedStyle(frame).backgroundColor, radius: parseFloat(getComputedStyle(frame).borderTopLeftRadius),
+        frame: ['left', 'top', 'right', 'bottom'].map((k) => Math.round(rect(document.getElementById('menu-frame'))[k])),
+        body: [rect(body).top, rect(body).left, px(body, 'paddingTop'), px(body, 'paddingLeft')],
+        head: rect(document.querySelector('#menu-frame > .ui-frame__head')).bottom,
+        // offsetTop and offsetHeight: the selected tile's transform left out
+        tiles: tiles.map((b) => ({ id: b.dataset.entry, left: Math.round(rect(b).left), top: b.offsetTop, height: b.offsetHeight, width: b.offsetWidth })),
+        small: small.map((b) => ({ left: Math.round(rect(b).left), top: b.offsetTop, height: b.offsetHeight })),
+        places: document.querySelector('#menu .ui-mode-list__places').offsetTop,
+        tilesBottom: document.querySelector('#menu .ui-mode-list__tiles').offsetTop + document.querySelector('#menu .ui-mode-list__tiles').offsetHeight,
+        gap: px(document.querySelector('#menu .ui-mode-list__tiles'), 'rowGap'),
+        preview: tiles.map((b) => { const r = rect(b.querySelector('.ui-play-tile__preview')); const t = rect(b); return [Math.round(r.width), Math.round(r.height), Math.round(t.right - r.right), Math.round(r.top - t.top), Math.round(t.bottom - r.bottom)]; }),
+        label: px(tiles[1].querySelector('.ui-play-tile__label'), 'fontSize'),
+        icon: px(tiles[1].querySelector('.ui-play-tile__icon'), 'width'),
+        smallLabel: px(small[0].querySelector('.ui-small-entry__label'), 'fontSize'),
+        smallIcon: px(small[0].querySelector('.ui-small-entry__icon'), 'width'),
+        hints: document.querySelectorAll('#menu .ui-key-hint').length,
+        scroll: document.documentElement.scrollWidth,
+        build: rect(document.getElementById('menu-build')).bottom,
       };
-    }, kind, { polling: 100 }).then((h) => h.jsonValue());
-    // The tile a frame of n columns was laid out at: n tiles, the gaps between them and a gap either side.
-    const tileOf = (n, w) => Array.from({ length: 80 }, (_, i) => i + 1).find((tile) => n * tile + (n + 1) * Math.round(tile * 0.09) === w);
+    });
+    const fit = async (page, size) => {
+      const { width, height } = size;
+      const label = `${width} × ${height}`;
+      const m = await measure(page);
+      assert.deepEqual(m.frame, size.frame, `${label}: the window's place`);
+      assert.ok(Math.abs(m.body[0] - m.head) <= 1, `${label}: the body under the title bar`);
+      assert.deepEqual(m.body.slice(2), size.pad, `${label}: the body's padding`);
+      assert.equal(m.gap, size.gap, `${label}: the buttons ${size.gap} px apart`);
+      const heights = new Set(m.tiles.map((x) => x.height));
+      assert.equal(heights.size, 1, `${label}: every play tile one height, the selected one too (${[...heights]})`);
+      if (size.phone) {
+        assert.equal(new Set(m.tiles.map((x) => x.left)).size, 1, `${label}: one column of phone rows`);
+        assert.ok(m.preview.every(([w, h, right, top, bottom]) => w === size.strip && right === 8 && top === 8 && bottom === 8 && h === m.tiles[0].height - 16),
+          `${label}: each row's preview a ${size.strip} px strip pinned 8 px inside its right end, the row's height less its insets (${JSON.stringify(m.preview)})`);
+        assert.equal(new Set(m.small.map((x) => x.left)).size, 1, `${label}: the small entries stacked`);
+      } else {
+        const [left, right] = [...new Set(m.tiles.map((x) => x.left))];
+        assert.deepEqual(m.tiles.map((x) => x.left === left ? 0 : x.left === right ? 1 : -1), [0, 1, 0, 1, 0, 1], `${label}: two columns — Classic 2D · Hexagon, Triangle · Surface, 3D · Daily`);
+        assert.deepEqual([...new Set(m.tiles.map((x) => x.top))].length, 3, `${label}: in three rows`);
+        assert.ok(m.preview.every(([w, h]) => w === size.preview && h === size.preview), `${label}: each preview a ${size.preview} px square (${JSON.stringify(m.preview)})`);
+        assert.deepEqual(new Set(m.small.map((x) => x.top)).size, 1, `${label}: the small entries side by side`);
+      }
+      assert.ok(Math.abs(m.places - m.tilesBottom - size.block) <= 0.5, `${label}: the small entries ${size.block} px after the tiles (${m.places - m.tilesBottom})`);
+      assert.deepEqual([m.label, m.icon], [size.label, size.icon], `${label}: the play tile's label and icon box`);
+      assert.deepEqual([m.small[0].height, m.smallLabel, m.smallIcon], size.small, `${label}: the small entry's height, label and icon box`);
+      assert.equal(m.hints, 0, `${label}: no key hints`);
+      assert.ok(m.scroll <= width, `${label}: no sideways scroll (${m.scroll})`);
+      assert.ok(m.build <= height, `${label}: the build label inside the window (${m.build})`);
+    };
 
-    // One mouse page, a controller connected but not yet used, resized through the desktop artboards.
-    const { page, press } = await controllerPage(browser, base);
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
-    // The previews' tiles are read with the board module's gap: until its number font has loaded the
+    // The Classic 2D preview is drawn with the board module's gap: until its number font has loaded the
     // skin has no module, and the board is laid out — steadily — with none.
     await page.evaluate(async () => {
       const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
       while (!BOARD_ART.current()) await new Promise((r) => setTimeout(r, 20));
     });
     for (const size of SIZES.filter((s) => !s.phone)) {
-      const { width, height } = size;
-      await resize(page, width, height);
+      await page.setViewportSize({ width: size.width, height: size.height });
+      await page.focus('#menu-entry-classic-2d');
+      await settle(page);
       await fit(page, size);
-      const [classic, daily] = PREVIEW[width];
-      const label = `${width} × ${height}`;
-      const c = await framed(page, 'board');
-      const ct = tileOf(16, c.width);
-      assert.equal(ct, classic, `${label}: the Classic 2D preview at ${classic} px (frame ${c.width} px)`);
-      assert.deepEqual([c.inside, c.height, c.background, Math.round(c.radius)], [true, c.width, 'rgb(255, 255, 255)', Math.round(ct * 0.3)], `${label}: the whole Intermediate board in its white frame`);
-      await page.focus('#menu-entry-daily');
-      const d = await framed(page, 'daily');
-      const dt = tileOf(30, d.width);
-      assert.ok(dt && d.inside, `${label}: the whole daily Expert board in its frame (${dt} px)`);
-      if (daily !== null) assert.deepEqual([dt, d.width], [daily, 872], `${label}: the Daily preview at ${daily} px, 872 px wide`);
+      // The Classic 2D board, near playing size, larger than its square: cropped from the middle, no edge of it showing.
+      const crop = await page.evaluate(() => {
+        const square = document.querySelector('#menu-entry-classic-2d .ui-play-tile__preview').getBoundingClientRect();
+        const board = document.querySelector('#menu-preview-classic-2d canvas').getBoundingClientRect();
+        return { inside: board.left < square.left && board.right > square.right && board.top < square.top && board.bottom > square.bottom,
+          centred: Math.abs((board.left + board.right) / 2 - (square.left + square.right) / 2) < 1 && Math.abs((board.top + board.bottom) / 2 - (square.top + square.bottom) / 2) < 1 };
+      });
+      assert.deepEqual([crop.inside, crop.centred], [true, true], `${size.width}: the Classic 2D board cropped from its middle`);
+      // Selected, a tile keeps its size and place in the grid, only moved down level with the surface.
+      const before = await page.evaluate(() => { const b = document.getElementById('menu-entry-hexagon'); return [b.offsetTop, b.offsetHeight, b.offsetWidth]; });
+      await page.focus('#menu-entry-hexagon');
+      await settle(page);
+      assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('menu-entry-hexagon'); return [b.offsetTop, b.offsetHeight, b.offsetWidth]; }), before,
+        `${size.width}: a selected tile keeps its size`);
     }
-    // The key hints follow the active device: the keyboard's arrows and Enter, then the controller's buttons.
-    const hints = () => page.evaluate(() => [...document.querySelectorAll('#menu-hints .ui-key-hint')]
-      .map((h) => [h.dataset.action, h.classList.contains('hidden'), [...h.querySelectorAll('.ui-key-hint__key')].map((k) => k.textContent).join(' '), h.textContent.replace(/\s+/g, '')]));
-    assert.deepEqual(await hints(), [['move', false, '↑ ↓', '↑↓Move'], ['select', false, 'Enter', 'EnterSelect']]);
-    await press(PAD_BTN.DOWN);
-    const pad = await hints();
-    assert.deepEqual(pad.map(([a, hidden]) => [a, hidden]), [['move', false], ['select', false]]);
-    assert.equal(pad[0][2], 'D-pad');
-    assert.notEqual(pad[1][2], 'Enter', 'the controller\'s button');
     await page.close();
 
-    // One touch page: the phone's artboard and its hints, then resized to a coarse pointer at 1366 and 1024.
+    // A touch phone: the phone's artboard; then resized to a coarse pointer at 1366 and 1024.
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
     const phone = await context.newPage();
     await phone.goto(`${base}/index.html?still-backdrop`);
     await phone.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
     await settle(phone);
     await fit(phone, SIZES.find((s) => s.phone));
-    assert.deepEqual(await phone.evaluate(() => [...document.querySelectorAll('#menu-hints .ui-key-hint')].map((h) => h.classList.contains('hidden'))), [true, true],
-      'a touch device: no key hints');
-    assert.equal(await phone.evaluate(() => document.getElementById('touch-note').classList.contains('hidden')), false, 'the touch note instead');
+    assert.equal(await phone.evaluate(() => document.getElementById('touch-note').classList.contains('hidden')), false, 'the touch note in the foot');
     for (const [width, height] of [[1366, 768], [1024, 768]]) {
-      await resize(phone, width, height);
+      await phone.setViewportSize({ width, height });
+      await settle(phone);
       const m = await phone.evaluate(() => ({
         coarse: matchMedia('(pointer: coarse)').matches,
         width: innerWidth,
-        heights: [...document.querySelectorAll('#menu-entries .ui-mode-entry')].filter((b) => b !== document.activeElement).map((b) => b.getBoundingClientRect().height),
+        heights: [...document.querySelectorAll('#menu [data-entry]')].map((b) => b.getBoundingClientRect().height),
       }));
       assert.ok(m.coarse, 'a coarse pointer');
       assert.equal(m.width, width);
       assert.equal(m.heights.length, 8);
-      assert.ok(m.heights.every((h) => h >= 44), `${width}: every unselected entry at least 44 px (${m.heights})`);
+      assert.ok(m.heights.every((h) => h >= 44), `${width}: every button at least 44 px (${m.heights})`);
     }
     await context.close();
   } finally {
@@ -966,7 +934,7 @@ test('in a browser, a window too short for the menu scrolls its window\'s body, 
         const menu = document.getElementById('menu-body');
         return {
           overflow: getComputedStyle(menu).overflowY, scrollHeight: menu.scrollHeight, clientHeight: menu.clientHeight,
-          heights: [...document.querySelectorAll('#menu-entries .ui-mode-entry')].map((b) => b.offsetHeight),
+          heights: [...document.querySelectorAll('#menu [data-entry]')].map((b) => b.offsetHeight),
           sideways: menu.scrollWidth - menu.clientWidth,
           page: document.getElementById('menu').scrollHeight - document.getElementById('menu').clientHeight,
         };
@@ -975,7 +943,7 @@ test('in a browser, a window too short for the menu scrolls its window\'s body, 
       assert.equal(m.overflow, 'auto', `${label}: the window's body scrolls`);
       assert.equal(m.page, 0, `${label}: the window stays in the page, its title bar and foot in view`);
       assert.ok(m.scrollHeight > m.clientHeight, `${label}: its content is taller than the window (${m.scrollHeight} > ${m.clientHeight})`);
-      assert.ok(m.heights.every((h) => h >= 44), `${label}: no entry squeezed below 44 px (${m.heights})`);
+      assert.ok(m.heights.every((h) => h >= 44), `${label}: no button squeezed below 44 px (${m.heights})`);
       assert.equal(m.sideways, 0, `${label}: no sideways scroll`);
       const foot = await page.evaluate(() => document.getElementById('menu-build').getBoundingClientRect().bottom);
       assert.ok(foot <= height, `${label}: the build label shows in the foot (${foot})`);
@@ -1025,7 +993,7 @@ test('in a browser, the build label is the canvas\'s mono caption and the phone\
   }
 });
 
-test('in a browser, the menu\'s scene panel: radius 30, its tag at 26 × 22, a card a veiled sky with the large badge, a locked badge keeping its highlight', async (t) => {
+test('in a browser, the main menu buttons\' look: a pastel on its pastel edge at rest, the full colour level with the surface selected, sunk pressed, no drop shadow; the previews on their grounds', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1034,42 +1002,53 @@ test('in a browser, the menu\'s scene panel: radius 30, its tag at 26 × 22, a c
     const page = await context.newPage();
     await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
-    const look = () => page.evaluate(() => {
-      const panel = document.getElementById('menu-preview');
-      const p = getComputedStyle(panel);
-      const r = panel.getBoundingClientRect();
-      const tag = document.getElementById('menu-preview-tag').getBoundingClientRect();
-      const card = panel.querySelector('[data-preview="card"]:not([hidden]) .ui-scene-panel__card');
-      const badge = card?.querySelector('.ui-scene-panel__badge');
-      const svg = badge?.querySelector('svg');
-      const note = card?.querySelector('.ui-scene-panel__note');
-      return {
-        radius: p.borderTopLeftRadius, image: p.backgroundImage, size: p.backgroundSize, tag: [Math.round(tag.left - r.left), Math.round(tag.top - r.top)],
-        card: card && {
-          gap: getComputedStyle(card).rowGap,
-          badge: [badge.getBoundingClientRect().width, badge.getBoundingClientRect().height, getComputedStyle(badge).borderTopLeftRadius, getComputedStyle(badge).boxShadow],
-          glyph: [svg.getBoundingClientRect().width, getComputedStyle(svg).strokeWidth],
-          note: note && [getComputedStyle(note).fontSize, getComputedStyle(note).fontWeight, getComputedStyle(note).color],
-        },
-        sceneInk: getComputedStyle(document.documentElement).getPropertyValue('--color-scene-ink').trim(),
-      };
-    });
-    const board = await look();
-    assert.equal(board.radius, '30px', 'the panel\'s radius');
-    assert.deepEqual(board.tag, [26, 22], 'the tag at left 26, top 22');
-    assert.doesNotMatch(board.image, /1\.4px/, 'a board preview: the sky alone');
-    await page.focus('#menu-entry-hexagon');
-    const hex = await look();
-    assert.match(hex.image, /radial-gradient\(circle, [^)]*\) 1\.4px, rgba\(0, 0, 0, 0\) 1\.6px\)/, 'a card: a veil of dots over the sky');
-    assert.match(hex.size, /^22px 22px/, 'the dots 22 px apart');
-    assert.equal(hex.card.gap, '18px', 'the card\'s parts 18 px apart');
-    assert.deepEqual(hex.card.badge.slice(0, 3), [200, 200, '44px'], 'the large badge: 200 px, radius 44');
-    assert.deepEqual(hex.card.glyph, [100, '2px'], 'its glyph half the badge, stroke 2');
-    const probe = await page.evaluate((c) => { const s = document.createElement('span'); s.style.color = c; document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return v; }, hex.sceneInk);
-    assert.deepEqual(hex.card.note, ['18px', '700', probe], 'the note 18 px bold in the scene ink');
-    await page.focus('#menu-entry-quit');
-    const quit = await look();
-    assert.match(quit.card.badge[3], /inset/, 'the locked badge keeps its inset highlight');
+    const token = (name) => page.evaluate((n) => {
+      const probe = document.createElement('span');
+      probe.style.color = getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+      document.body.append(probe);
+      const v = getComputedStyle(probe).color;
+      probe.remove();
+      return v;
+    }, name);
+    const look = (id) => page.evaluate(async (x) => {
+      const b = document.getElementById(`menu-entry-${x}`);
+      await Promise.all(b.getAnimations().map((a) => a.finished.catch(() => {})));
+      const s = getComputedStyle(b);
+      const p = b.querySelector('.ui-play-tile__preview');
+      return { background: s.backgroundColor, color: s.color, shadow: s.boxShadow, transform: s.transform, radius: s.borderTopLeftRadius,
+        preview: p && { background: getComputedStyle(p).backgroundImage === 'none' ? getComputedStyle(p).backgroundColor : 'gradient', radius: getComputedStyle(p).borderTopLeftRadius } };
+    }, id);
+    const ink = await token('--color-ink');
+    // Hexagon at rest: teal's pastel, its pastel edge 4 px below, the ink; no drop shadow.
+    const rest = await look('hexagon');
+    assert.equal(rest.background, await token('--color-teal-soft'), 'at rest, its pastel');
+    assert.equal(rest.color, ink, 'in the navy ink');
+    assert.match(rest.shadow, new RegExp(`${(await token('--color-teal-soft-edge')).replace(/[()]/g, '\\$&')} 0px 4px 0px`), 'on its pastel edge, the smaller one');
+    assert.equal(rest.shadow.match(/rgba?\(/g).length, 2, 'the highlight and the edge, no drop shadow');
+    assert.equal(rest.transform, 'none');
+    assert.equal(rest.radius, '12px');
+    assert.deepEqual(rest.preview, { background: 'gradient', radius: '12px' }, 'its preview on the dark scene');
+    // Classic 2D selected: blue, white ink, moved level with the surface, its edge gone.
+    const selected = await look('classic-2d');
+    assert.equal(selected.background, await token('--color-blue'));
+    assert.equal(selected.color, await token('--color-blue-on'));
+    assert.equal(selected.transform, 'matrix(1, 0, 0, 1, 0, 4)', 'level with the surface');
+    assert.equal(selected.shadow.match(/rgba?\(/g).length, 1, 'its edge gone');
+    // A light preview: translucent white over the colour.
+    assert.equal((await look('surface')).preview.background, 'rgba(255, 255, 255, 0.55)');
+    // Records at rest: the neutral raised surface; selected: the stronger neutral.
+    assert.equal((await look('records')).background, await token('--color-surface-raised'));
+    await page.focus('#menu-entry-records');
+    assert.equal((await look('records')).background, await token('--color-neutral-strong'), 'a small entry selected: the stronger neutral');
+    // Pressed: the full colour, sunk below the surface.
+    const daily = await page.locator('#menu-entry-daily').boundingBox();
+    await page.mouse.move(daily.x + daily.width / 2, daily.y + daily.height / 2);
+    await page.mouse.down();
+    const pressed = await look('daily');
+    await page.mouse.up();
+    await page.keyboard.press('Escape').catch(() => {});
+    assert.equal(pressed.background, await token('--color-violet'));
+    assert.equal(pressed.transform, 'matrix(1, 0, 0, 1, 0, 6)', 'sunk below the surface');
     await context.close();
   } finally {
     await browser.close();
@@ -1092,14 +1071,15 @@ test('[slow] in a browser, the backdrop orbits and draws every frame, and the ?s
     const drawn = () => ms(() => globalThis.__ms.frameStats.renders);
     const orbit = () => ms(() => globalThis.__ms.state.orbit);
 
-    // Without the hook: the demo board orbits in the menu's 3D preview, and every frame draws it.
+    // Without the hook: the menu draws no 3D scene, its 3D tile a still; behind Records the demo board orbits, every frame drawing it.
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     await frames(2);
     let renders = await drawn();
-    await frames(3);
-    assert.equal(await drawn(), renders, 'the Classic 2D preview: no 3D scene is drawn');
     await page.focus('#menu-entry-3d');
+    await frames(3);
+    assert.equal(await drawn(), renders, 'the menu, 3D selected: no 3D scene is drawn');
+    await page.click('#menu-entry-records');
     await frames(2);
     renders = await drawn();
     let angle = await orbit();
@@ -1110,7 +1090,7 @@ test('[slow] in a browser, the backdrop orbits and draws every frame, and the ?s
     // With the hook: drawn once, then still until the screen changes.
     await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
-    await page.focus('#menu-entry-3d');
+    await page.click('#menu-entry-records');
     await frames(2);
     assert.ok(await drawn() >= 1, 'the backdrop is drawn');
     assert.ok(await ms(() => globalThis.__ms.renderer.game === globalThis.__ms.state.demo), 'the demo board is the backdrop');
@@ -1119,7 +1099,8 @@ test('[slow] in a browser, the backdrop orbits and draws every frame, and the ?s
     await frames(3);
     assert.equal(await drawn(), renders, 'no frame redraws a backdrop that did not change');
     assert.equal(await orbit(), angle, 'the camera holds still');
-    await page.click('#menu-entry-records');
+    await page.keyboard.press('Escape');
+    await page.click('#menu-entry-settings');
     await frames(2);
     assert.ok(await drawn() > renders, 'a screen change draws it again');
     assert.deepEqual(errors, []);
@@ -1263,24 +1244,32 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     assert.match(bg.image, /radial-gradient/, 'the theme\'s dotted ground shows');
     assert.equal(bg.menu, 'none', 'the menu screen lays no tint of its own over it');
 
-    // The 3D entry: disabled, its reason under its label and its lock shown; the focus starts on Classic 2D.
-    assert.deepEqual(await ms(() => {
+    // The 3D tile: disabled, its reason under its label, its lock shown and its preview locked; the focus starts on Classic 2D.
+    const tile3d = () => ms(() => {
       const b = document.getElementById('menu-entry-3d');
-      return [b.getAttribute('aria-disabled'), b.querySelector('.ui-mode-entry__label').textContent, b.querySelector('.ui-mode-entry__reason').textContent,
-        getComputedStyle(b.querySelector('.ui-mode-entry__lock')).display !== 'none'];
-    }), ['true', '3D', 'Needs WebGL 2 — not available in this browser', true]);
+      const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).display !== 'none';
+      const p = b.querySelector('.ui-play-tile__preview');
+      return [b.getAttribute('aria-disabled'), b.querySelector('.ui-play-tile__label').textContent, b.querySelector('.ui-play-tile__reason').innerText.trim(),
+        shown(b.querySelector('.ui-play-tile__lock')), p.dataset.preview, p.classList.contains('ui-play-tile__preview--locked'), !!p.querySelector('img'), !!p.querySelector('svg'),
+        getComputedStyle(b).transform];
+    });
+    assert.deepEqual(await tile3d(), ['true', '3D', 'Needs WebGL 2 — not available in this browser', true, 'locked', true, false, true, 'none']);
     assert.equal(await active(), 'menu-entry-classic-2d');
-    assert.equal(await ms(() => document.getElementById('menu-preview-stage').querySelector('canvas') !== null), true, 'the Classic 2D preview draws without WebGL 2');
+    assert.equal(await ms(() => document.querySelector('#menu-preview-classic-2d canvas') !== null), true, 'the Classic 2D preview draws without WebGL 2');
     await page.click('#menu-entry-3d', { force: true }); // aria-disabled: Playwright counts it not enabled
     assert.equal(await mode(), 'menu', 'a click opens nothing');
-    assert.equal(await active(), 'menu-entry-3d', 'the disabled entry is selected');
-    assert.deepEqual(await ms(() => [document.getElementById('menu-preview-tag').textContent, document.getElementById('menu-preview').classList.contains('ui-scene-panel--live'),
-      [...document.querySelectorAll('#menu-preview [data-preview]')].filter((l) => !l.hidden).length]), ['3D', false, 0], 'its preview: the panel\'s static background');
+    assert.equal(await active(), 'menu-entry-3d', 'the disabled tile is selected');
+    await page.waitForFunction(() => document.getElementById('menu-entry-3d').getAnimations().length === 0);
+    const locked = await tile3d();
+    assert.equal(locked[8], 'none', 'and does not move');
+    assert.equal(await ms(() => getComputedStyle(document.getElementById('menu-entry-3d')).backgroundColor),
+      await ms(() => { const s = document.createElement('span'); s.style.color = getComputedStyle(document.documentElement).getPropertyValue('--color-locked-edge'); document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return v; }),
+      'a locked tile selected darkens');
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'menu', 'Enter opens nothing');
-    await page.focus('#menu-entry-surface');
+    await page.focus('#menu-entry-triangle');
     await page.keyboard.press('ArrowDown');
-    assert.equal(await active(), 'menu-entry-3d', 'the arrow keys reach the disabled entry');
+    assert.equal(await active(), 'menu-entry-3d', 'the arrow keys reach the disabled tile');
     await ms(() => globalThis.__ms.modes.openBoardChoice('3d'));
     await ms(() => globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10 }));
     assert.equal(await mode(), 'menu', 'no route opens the 3D board choice or starts a 3D game');
@@ -1365,13 +1354,11 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
 
-    // A last mode played of 3D still marks it; the focus falls to the first enabled entry.
+    // A last mode played of 3D: the focus falls to Classic 2D, the first enabled tile.
     await ms(() => localStorage.setItem('ms3d:doc:shell.lastMode', JSON.stringify({ version: 1, data: { mode: '3d' } })));
     await page.reload();
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu', null, { timeout: patience(5000) });
-    await page.waitForFunction(() => document.getElementById('menu-entry-3d').hasAttribute('data-last'), null, { timeout: patience(5000) });
-    assert.ok(await ms(() => !document.querySelector('#menu-entry-3d .ui-chip[data-last]').classList.contains('hidden')), '"Last played" shows');
-    await frames(2);
+    await frames(4);
     assert.equal(await active(), 'menu-entry-classic-2d');
     assert.equal(await ms(() => getComputedStyle(document.getElementById('scene')).display), 'none');
     assert.deepEqual(errors, []);
@@ -1438,10 +1425,18 @@ test('[slow] in a browser, a controller alone walks the menu, the 3D board choic
       const { errors, press, mode, focused, page } = await controllerPage(browser, base);
       assert.equal(await mode(), 'menu');
       assert.equal(await focused(), 'menu-entry-classic-2d');
+      await press(PAD_BTN.RIGHT);
+      assert.equal(await focused(), 'menu-entry-hexagon', 'the D-pad moves across the two columns');
       await press(PAD_BTN.DOWN);
-      assert.equal(await focused(), 'menu-entry-hexagon', 'the D-pad moves down the menu');
-      for (let i = 0; i < 3; i++) await press(PAD_BTN.DOWN);
+      assert.equal(await focused(), 'menu-entry-surface', 'and down them');
+      await press(PAD_BTN.LEFT);
+      assert.equal(await focused(), 'menu-entry-triangle');
+      await press(PAD_BTN.DOWN);
       assert.equal(await focused(), 'menu-entry-3d');
+      await press(PAD_BTN.DOWN);
+      assert.equal(await focused(), 'menu-entry-records', 'down from the last row to the small entries');
+      await press(PAD_BTN.UP);
+      assert.equal(await focused(), 'menu-entry-3d', 'and back up');
       await press(PAD_BTN.A);
       assert.equal(await mode(), 'board-choice', 'A opens the 3D board choice');
       assert.equal(await focused(), '6,6,6,20', 'the default preset, cube Beginner, takes the focus when none was played');
@@ -1478,8 +1473,7 @@ test('[slow] in a browser, a controller alone walks the menu, the 3D board choic
       const { errors, press, mode, focused, page } = await controllerPage(browser, base);
       assert.equal(await mode(), 'menu');
       await press(PAD_BTN.DOWN);
-      await press(PAD_BTN.DOWN);
-      assert.equal(await focused(), 'menu-entry-triangle');
+      assert.equal(await focused(), 'menu-entry-triangle', 'Triangle under Classic 2D');
       await press(PAD_BTN.A);
       assert.equal(await mode(), 'coming-soon', 'a mode not built yet opens the placeholder');
       assert.ok(await page.evaluate(() => !document.getElementById('coming-soon').classList.contains('hidden')));

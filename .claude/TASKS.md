@@ -1701,7 +1701,7 @@ Feature: shared-screen-layout
 
 ## 283. Main menu redesign: play tiles with their own previews
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/components.css, css/style.css, themes/joyful-tiles/theme.css, css/tokens.css, js/shell/menu.js, js/shell/menu-preview.js, js/shell/returning.js, js/main.js, js/ui/kit-catalogue.js, js/ui/components.js, dev/components.html, tests/shell-menu.test.mjs, tests/components-menu-screens.test.mjs, tests/theme-conformance.test.mjs, tests/shell-pad-walk.test.mjs
 Preconditions: 282

@@ -30,13 +30,14 @@ bind.
   non-game screens sit on a `ui-backdrop`, each in a `ui-frame`
   (`#<screen>-frame`: Back in `ui-frame__start` with its back key hint, the
   title, an optional action, a scrolling `ui-frame__body`, a foot); the
-  main menu sits on the backdrop with no frame.
-  - main menu `#menu`: `#menu-title` (a `ui-wordmark`), `#menu-entries` (a
-    `ui-mode-list` of `#menu-entry-<id>`, `data-entry`,
-    `data-block-start` on each block's first), the preview `#menu-preview`
-    (`#menu-preview-stage`, `#menu-preview-tag`), `#menu-foot` with the key
-    hints `#menu-hints`, `#touch-note` and the build label `#menu-build`
-    ([app-shell-menu.md](app-shell-menu.md));
+  main menu sits in its frame `#menu-frame` too, its title bar with no
+  Back.
+  - main menu `#menu`: `#menu-title` (the logo), `#menu-entries` (a
+    `ui-mode-list`: its tiles, a `ui-play-tile` per mode and Daily, then
+    its places, a `ui-small-entry` each for Records and Settings — each
+    `#menu-entry-<id>`, `data-entry`; the Classic 2D tile's board view in
+    `#menu-preview-classic-2d`), `#menu-foot` with `#touch-note` and the
+    build label `#menu-build` ([app-shell-menu.md](app-shell-menu.md));
   - board choices `#c2d-choice` ([classic2d.md](classic2d.md)) and
     `#board-choice` ([mode3d.md](mode3d.md)), one markup: `#…-top` holding
     the wordmark and the frame, `#…-back`, the options `#…-options`

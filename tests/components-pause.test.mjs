@@ -48,7 +48,7 @@ test('in a browser, the pause card, its confirmation and the board status card m
     return page.evaluate(() => {
       const el = document.activeElement;
       const s = getComputedStyle(el);
-      return { id: el.id, selectable: el.matches('.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
+      return { id: el.id, selectable: el.matches('.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
     });
   };
   try {

@@ -59,7 +59,8 @@ const COMPONENTS = {
   'ui-button--stop': { interactive: true, selectable: true, control: '.ui-button.ui-button--primary.ui-button--stop' },
   'ui-backdrop': { interactive: false },
   'ui-frame': { interactive: false },
-  'ui-mode-entry': { interactive: true, selectable: true, control: '.ui-mode-entry' },
+  'ui-play-tile': { interactive: true, selectable: true, control: '.ui-play-tile' },
+  'ui-small-entry': { interactive: true, selectable: true, control: '.ui-small-entry' },
   'ui-option': { interactive: true, selectable: true, control: '.ui-option' },
   'ui-section-label': { interactive: false },
   'ui-key-hint': { interactive: false },
@@ -85,7 +86,7 @@ const COMPONENTS = {
 const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns',
   'ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list', 'ui-icon'];
 // The controls whose hover and focus are one selected state.
-const SELECTABLE = '.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option';
+const SELECTABLE = '.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option';
 const STATES = ['hover', 'active', 'focus', 'disabled'];
 
 // css rules as [selector, body] pairs (top level and inside @media).
@@ -247,11 +248,11 @@ test('every interactive component has its states in the theme: buttons, menu ent
   }
 });
 
-test('buttons, menu entries and board options draw no outline: the selected state is their focus cue; the other controls ring from --color-focus-ring', () => {
+test('buttons, menu entries, main menu buttons and board options draw no outline: the selected state is their focus cue; the other controls ring from --color-focus-ring', () => {
   const focus = THEME_RULES.filter(([sel]) => /:focus/.test(sel));
   assert.ok(focus.length > 0);
   for (const [sel, body] of focus) {
-    if (/ui-button|ui-menu__item|ui-mode-entry|ui-option\b/.test(sel) && !/ui-toggle/.test(sel)) {
+    if (/ui-button|ui-menu__item|ui-play-tile|ui-small-entry|ui-option\b/.test(sel) && !/ui-toggle/.test(sel)) {
       assert.doesNotMatch(body, /outline\s*:(?!\s*none)/, `${sel} draws no outline`);
       assert.doesNotMatch(body, /--color-focus-halo/, `${sel} draws no halo`);
     }
@@ -896,11 +897,12 @@ test('the main menu, the 3D board choice and the pause card are built only from 
       for (const cls of ['ui-logo', 'ui-frame', 'ui-option', 'ui-key-hint']) assert.ok(inner.some((t) => classesOf(t).includes(cls)), `#${name} uses ${cls}`);
       assert.ok(!inner.some((t) => classesOf(t).includes('ui-card')), `#${name} holds no card`);
     } else if (name === 'menu') {
-      // The main menu sits on the page's backdrop in a screen frame, no card: the title bar, the entries, the preview, the hints.
+      // The main menu sits on the page's backdrop in a screen frame, no card: the title bar, the main menu buttons, the build label.
       assert.ok(root.attrs['aria-label'], '#menu is named');
-      for (const cls of ['ui-frame', 'ui-logo', 'ui-mode-list', 'ui-mode-entry', 'ui-scene-panel', 'ui-key-hints', 'ui-key-hint', 'ui-chip', 'ui-text']) {
+      for (const cls of ['ui-frame', 'ui-logo', 'ui-mode-list', 'ui-play-tile', 'ui-small-entry', 'ui-text']) {
         assert.ok(inner.some((t) => classesOf(t).includes(cls)), `#menu uses ${cls}`);
       }
+      for (const cls of ['ui-scene-panel', 'ui-key-hints', 'ui-chip']) assert.ok(!inner.some((t) => classesOf(t).includes(cls)), `#menu uses no ${cls}`);
       assert.ok(!inner.some((t) => classesOf(t).includes('ui-card')), '#menu holds no card');
     } else {
       const card = inner.find((t) => classesOf(t).includes('ui-card'));
@@ -1235,10 +1237,10 @@ test('one selected control: a moving mouse focuses the enabled button, menu entr
   move(toggle, 15, 70);
   move(plain, 16, 70);
   assert.equal(doc.activeElement, b, 'a disabled control, a control that never takes focus, or no control, takes none');
-  const entryOff = control({ class: 'ui-mode-entry', 'aria-disabled': 'true' });
-  entryOff.matches = (sel) => sel === '.ui-mode-entry';
+  const entryOff = control({ class: 'ui-play-tile', 'aria-disabled': 'true' });
+  entryOff.matches = (sel) => sel === '.ui-play-tile';
   move(entryOff, 17, 90);
-  assert.equal(doc.activeElement, entryOff, 'a disabled mode entry is still selected: it shows its preview and opens nothing');
+  assert.equal(doc.activeElement, entryOff, 'a disabled play tile is still selected: it shows its reason and opens nothing');
   unbind();
   assert.equal(root.listeners.mousemove.length, 0, 'unbound');
 });
@@ -2197,7 +2199,7 @@ const textOf = (html, t) => {
   }
   return '';
 };
-const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
+const PLAY_TILES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily'];
 
 test('the gallery marks the shared layout\'s components; the main menu, both board choices, the Daily screen, the placeholder, the pause card, the results, the Records screen, the Settings page, the replay viewer, the 3D ready card, the context-lost card, the Learn 3D end card, the Classic 2D game window, the fatal card and the no-JavaScript notice are the screens built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
@@ -2249,7 +2251,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   for (const cls of ['ui-section-label', 'ui-button--danger', 'ui-key-hint', 'ui-panel--muted']) assert.match(pause, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the pause card uses ${cls}`);
   const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(daily, '').replace(soon, '').replace(pause, '').replace(results, '').replace(records, '').replace(settings, '').replace(replay, '')
     .replace(ready, '').replace(ctxLost, '').replace(learnEnd, '').replace(noscript, '').replace(fatal, '').replace(game2d, '');
-  for (const cls of ['ui-frame', 'ui-logo', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
+  for (const cls of ['ui-frame', 'ui-logo', 'ui-play-tile', 'ui-small-entry']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }
   for (const [name, html] of [['Classic 2D', choice], ['3D', choice3d]]) {
@@ -2263,7 +2265,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   }
   assert.doesNotMatch(daily, /class="[^"]*\bui-card(?![\w-])/, 'the Daily screen holds no card');
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-list-row', 'ui-divider', 'ui-tabs', 'ui-checkbox',
-    'ui-table', 'ui-button--danger', 'ui-mode-entry', 'ui-scene-panel']) {
+    'ui-table', 'ui-button--danger', 'ui-play-tile', 'ui-small-entry', 'ui-scene-panel']) {
     assert.doesNotMatch(others, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `no other screen uses ${cls} yet`);
   }
 });
@@ -2475,34 +2477,55 @@ test('bindWindowButtons: with no desktop host a window button presses and does n
   assert.match(read('js/main.js'), /bindWindowButtons\(document\.body, \{ capabilities \}\);/, 'the shell binds every title bar\'s window buttons to the platform\'s flags');
 });
 
-test('mode entry: a native button with its icon, label, accent by entry, the Last played chip, and a disabled entry with its reason and lock', () => {
-  const list = within(LAYOUT_TAGS, '.ui-mode-list')[0];
-  assert.ok(list && list.attrs.role === 'group' && list.attrs['aria-label'], 'the entries sit in a named group');
-  const entries = within(inside(LAYOUT, LAYOUT_TAGS, list), '.ui-mode-entry');
-  assert.deepEqual([...new Set(entries.map((e) => e.attrs['data-entry']))].sort(), [...MODE_ENTRIES].sort(), 'every entry the menu draws, each its own accent');
-  for (const e of entries) {
+test('main menu buttons: the play tile a native button with its icon, label, lock and own preview, a disabled one with its reason and its preview locked; the small entry its icon and label; the phone row; no Last played chip', () => {
+  const list = LAYOUT_TAGS.find((t) => t.attrs.id === 'g-modes');
+  assert.ok(list && list.attrs.role === 'group' && list.attrs['aria-label'], 'the buttons sit in a named group');
+  const own = inside(LAYOUT, LAYOUT_TAGS, list);
+  const tiles = within(own, '.ui-play-tile');
+  assert.ok(tiles.length >= 6);
+  for (const e of tiles) {
     assert.equal(e.tag, 'button');
     assert.equal(e.attrs.type, 'button');
+    assert.ok(PLAY_TILES.includes(e.attrs['data-entry']), `${e.attrs['data-entry']} is a play tile's mode`);
     const parts = inside(LAYOUT, LAYOUT_TAGS, e);
-    assert.equal(within(parts, '.ui-mode-entry__icon')[0]?.attrs['aria-hidden'], 'true', 'the icon is decoration');
-    assert.ok(textOf(LAYOUT, within(parts, '.ui-mode-entry__label')[0]), 'the label names it');
-    assert.equal(within(parts, '.ui-mode-entry__lock')[0]?.attrs['aria-hidden'], 'true', 'the lock is decoration');
+    assert.equal(within(parts, '.ui-play-tile__icon')[0]?.attrs['aria-hidden'], 'true', 'the icon is decoration');
+    assert.ok(textOf(LAYOUT, within(parts, '.ui-play-tile__label')[0]), 'the label names it');
+    assert.equal(within(parts, '.ui-play-tile__lock')[0]?.attrs['aria-hidden'], 'true', 'the lock is decoration');
+    const preview = within(parts, '.ui-play-tile__preview')[0];
+    assert.equal(preview?.attrs['aria-hidden'], 'true', 'the preview is decoration');
+    assert.ok(['board', 'badge', 'still', 'icon', 'locked'].includes(preview.attrs['data-preview']), 'it names what it shows');
+    assert.equal(within(parts, '.ui-play-tile__art').length, 1, 'its art');
   }
-  const last = entries.filter((e) => within(inside(LAYOUT, LAYOUT_TAGS, e), '.ui-chip').some((c) => textOf(LAYOUT, c) === 'Last played'));
-  assert.ok(last.length >= 1, 'an entry carries the Last played chip');
-  assert.ok(!entries.some((e) => 'disabled' in e.attrs), 'no entry uses the native disabled: a disabled entry stays selectable');
-  const off = entries.filter((e) => e.attrs['aria-disabled'] === 'true');
-  assert.ok(off.length >= 1, 'a disabled entry');
+  assert.ok(!tiles.some((e) => 'disabled' in e.attrs), 'no tile uses the native disabled: a disabled tile stays selectable');
+  const off = tiles.filter((e) => e.attrs['aria-disabled'] === 'true');
+  assert.ok(off.length >= 2, 'a disabled tile and a disabled phone row');
   for (const e of off) {
-    const reason = within(inside(LAYOUT, LAYOUT_TAGS, e), '.ui-mode-entry__reason')[0];
-    assert.ok(reason && textOf(LAYOUT, reason), 'a disabled entry shows its reason line');
-    assert.match(textOf(LAYOUT, e), new RegExp(textOf(LAYOUT, reason)), 'the reason is part of its name');
+    const parts = inside(LAYOUT, LAYOUT_TAGS, e);
+    const reason = within(parts, '.ui-play-tile__reason')[0];
+    const long = inside(LAYOUT, LAYOUT_TAGS, reason).find((t) => t.attrs['data-reason'] === 'long');
+    const short = inside(LAYOUT, LAYOUT_TAGS, reason).find((t) => t.attrs['data-reason'] === 'short');
+    assert.deepEqual([textOf(LAYOUT, long), textOf(LAYOUT, short)], ['Needs WebGL 2 — not available in this browser', 'Needs WebGL 2'], 'its reason, and the phone row\'s short one');
+    const preview = within(parts, '.ui-play-tile__preview')[0];
+    assert.equal(preview.attrs['data-preview'], 'locked');
+    assert.ok(classesOf(preview).includes('ui-play-tile__preview--locked'), 'its preview locked');
   }
-  for (const e of entries.filter((x) => x.attrs['aria-disabled'] !== 'true')) {
-    assert.equal(within(inside(LAYOUT, LAYOUT_TAGS, e), '.ui-mode-entry__reason').length, 0, 'an enabled entry has no reason line');
+  for (const e of tiles.filter((x) => x.attrs['aria-disabled'] !== 'true')) {
+    assert.equal(within(inside(LAYOUT, LAYOUT_TAGS, e), '.ui-play-tile__reason').length, 0, 'an enabled tile has no reason line');
   }
-  assert.ok(entries.some((e) => e.attrs['data-force'] === 'focus') && entries.some((e) => e.attrs['data-force'] === 'active'), 'shown selected and pressed');
-  assert.doesNotMatch(LAYOUT, /data-entry="[^"]*"[^>]*data-locked|ui-mode-entry--locked/, 'no locked state for a mode entry');
+  assert.ok(tiles.some((e) => e.attrs['data-force'] === 'focus') && tiles.some((e) => e.attrs['data-force'] === 'active'), 'shown selected and pressed');
+  assert.ok(within(own, '.ui-play-tile__preview--light').length >= 1, 'a light preview');
+  const rows = tiles.filter((e) => classesOf(e).includes('ui-play-tile--row'));
+  assert.ok(rows.length >= 3 && rows.some((e) => e.attrs['data-force'] === 'focus') && rows.some((e) => e.attrs['aria-disabled'] === 'true'), 'the phone rows: at rest, selected, disabled');
+  const small = within(own, '.ui-small-entry');
+  assert.deepEqual([...new Set(small.map((e) => e.attrs['data-entry']))], ['records', 'settings'], 'the small entries');
+  for (const e of small) {
+    assert.equal(e.tag, 'button');
+    const parts = inside(LAYOUT, LAYOUT_TAGS, e);
+    assert.equal(within(parts, '.ui-small-entry__icon')[0]?.attrs['aria-hidden'], 'true');
+    assert.ok(textOf(LAYOUT, within(parts, '.ui-small-entry__label')[0]));
+  }
+  assert.ok(small.some((e) => e.attrs['data-force'] === 'focus'), 'a small entry selected');
+  assert.equal(within(own, '.ui-chip').length, 0, 'no main menu button carries a Last played chip');
 });
 
 test('board option: a native button with its name, size line, density, Last played chip beside the name, and its chosen state apart from selected', () => {
@@ -2609,29 +2632,31 @@ test('the base gives the frame, backdrop and slots their structure: the frame bo
   assert.match(body('.ui-frame__body'), /min-height:\s*0/);
   for (const part of ['.ui-frame__head', '.ui-frame__foot']) assert.match(body(part), /flex:\s*none/, `${part} stays in view`);
   assert.match(body('[data-slot]'), /display:\s*none/, 'a decoration slot is hidden unless a theme styles it into view');
-  assert.match(body('.ui-mode-entry:not([aria-disabled="true"]) .ui-mode-entry__lock'), /display:\s*none/, 'the lock shows only on a disabled entry');
+  assert.match(body('.ui-play-tile:not([aria-disabled="true"]) .ui-play-tile__lock'), /display:\s*none/, 'the lock shows only on a disabled tile');
   assert.match(body('.ui-option:not([aria-pressed="true"]) .ui-option__check > *'), /visibility:\s*hidden/, 'the check shows only on the chosen option');
 });
 
-test('the theme draws the mode entry taller when selected, the chosen board option as a fill and check apart from selected, and no hover on either', () => {
+test('the theme draws the main menu buttons a pastel at rest and their full colour selected, no button growing, the chosen board option as a fill and check apart from selected, and no hover on any', () => {
   const focusRules = (cls) => THEME_RULES.filter(([sel]) => /:focus(-visible)?,/.test(sel) && sel.includes(`.${cls}:focus`) && sel.includes(`.${cls}[data-force~="focus"]`)).map(([, b]) => b).join(';');
-  assert.match(focusRules('ui-mode-entry'), /flex-grow:\s*1\.45/, 'the selected entry takes a larger share of the list');
-  assert.match(focusRules('ui-mode-entry'), /padding:\s*10px 24px/, 'and is roomier');
-  assert.match(focusRules('ui-mode-entry'), /min-height:\s*101px/, 'and at least 101 px tall');
-  assert.match(read('css/style.css'), /#menu-entries > \.ui-mode-entry:not\(:focus, \[data-force~="focus"\]\) \{ min-height: 44px; \}/, 'the menu\'s floor leaves the selected entry\'s to the theme');
-  assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__label') && /font-size:\s*30px/.test(b)), 'with a bigger label');
-  assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__icon') && /width:\s*56px/.test(b)), 'and a bigger icon');
-  assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__icon > svg') && /width:\s*30px/.test(b)), 'and glyph');
-  const entry = rulesFor('.ui-mode-entry').filter(([sel]) => sel === '.ui-mode-entry').map(([, b]) => b).join(';');
-  assert.match(entry, /min-height:\s*70px/, 'an entry at rest at least 70 px tall');
-  assert.match(entry, /padding:\s*6px 20px/, 'padded 6 × 20 px');
+  for (const cls of ['ui-play-tile', 'ui-small-entry']) {
+    assert.match(focusRules(cls), /background:\s*var\(--f\)/, `${cls} selected: its full colour`);
+    assert.match(focusRules(cls), /transform:\s*translateY\(var\(--edge-sm\)\)/, `${cls} selected: level with the surface`);
+    assert.match(focusRules(cls), /box-shadow:\s*inset 0 3px 0 var\(--highlight\);/, `${cls} selected: its bottom edge gone`);
+    assert.doesNotMatch(focusRules(cls), /flex-grow|min-height|padding|font-size|width/, `${cls} selected keeps its size`);
+  }
+  const rest = THEME_RULES.filter(([sel]) => sel.split(',').map((x) => x.trim()).includes('.ui-play-tile')).map(([, b]) => b).join(';');
+  assert.match(rest, /background:\s*var\(--fs\)/, 'at rest the pastel');
+  assert.match(rest, /box-shadow:\s*inset 0 3px 0 var\(--highlight\), 0 var\(--edge-sm\) 0 var\(--es\);/, 'on its pastel edge, the smaller one, no drop shadow');
+  assert.doesNotMatch(rest, /elevation/, 'no drop shadow');
+  assert.ok(!THEME_RULES.some(([sel, b]) => /ui-play-tile|ui-small-entry/.test(sel) && /flex-grow|min-height/.test(b)), 'no menu button grows when selected');
   const chosen = THEME_RULES.filter(([sel]) => sel === '.ui-option[aria-pressed="true"]').map(([, b]) => b).join(';');
   assert.match(chosen, /background:\s*var\(--color-blue\)/, 'the chosen option is a blue fill');
   assert.match(focusRules('ui-option'), /transform:\s*translateY/, 'the selected option sits level with the surface');
   assert.doesNotMatch(focusRules('ui-option'), /background:/, 'selecting an option does not change its fill');
-  for (const cls of ['ui-mode-entry', 'ui-option']) assert.ok(!THEME_RULES.some(([sel]) => sel.includes(`.${cls}:hover`)), `${cls} has no hover rule`);
-  for (const entry of MODE_ENTRIES.filter((e) => !['records', 'settings', 'quit'].includes(e))) {
-    assert.ok(THEME_RULES.some(([sel, b]) => sel === `.ui-mode-entry[data-entry="${entry}"]` && /--f:\s*var\(--color-/.test(b)), `${entry} has its accent`);
+  for (const cls of ['ui-play-tile', 'ui-small-entry', 'ui-option']) assert.ok(!THEME_RULES.some(([sel]) => sel.includes(`.${cls}:hover`)), `${cls} has no hover rule`);
+  for (const entry of PLAY_TILES) {
+    const accent = THEME_RULES.filter(([sel]) => sel === `.ui-play-tile[data-entry="${entry}"]`).map(([, b]) => b).join(';');
+    assert.match(accent, /--f:\s*var\(--color-[\w-]+\);[\s\S]*?--fs:\s*var\(--color-[\w-]+-soft\);\s*--es:\s*var\(--color-[\w-]+-soft-edge\)/, `${entry} has its colour and its pastel`);
   }
   const backdrop = THEME_RULES.filter(([sel]) => sel === '.ui-backdrop').map(([, b]) => b).join(';');
   assert.match(backdrop, /radial-gradient\(circle, var\(--color-ground-dot\)/, 'the dotted paper');
@@ -2678,7 +2703,7 @@ test('bindTabs selects on click and Left / Right, skips disabled tabs, keeps one
   assert.deepEqual(seen.at(-1), ['recent', 0]);
 });
 
-test('in a browser, the shared layout\'s components: a mouse-selected mode entry loses the selection to a key, options tell chosen from selected, the frame scrolls its body, key hints follow the device', async (t) => {
+test('in a browser, the shared layout\'s components: a mouse-selected play tile loses the selection to a key, options tell chosen from selected, the frame scrolls its body, key hints follow the device', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -2696,39 +2721,42 @@ test('in a browser, the shared layout\'s components: a mouse-selected mode entry
       return { focused: document.activeElement === el, transform: c.transform, shadow: c.boxShadow, outline: c.outlineStyle, background: c.backgroundColor, height: r.height };
     }, sel);
 
-    // A mode entry the mouse moved onto is selected; a key moving focus away leaves it unselected under the resting pointer.
-    const entry = '#g-entry-classic';
-    const next = '#g-entry-hexagon';
+    // A play tile the mouse moved onto is selected; a key moving focus away leaves it unselected under the resting pointer.
+    const entry = '#g-tile-classic';
+    const next = '#g-tile-hexagon';
     await page.locator(entry).scrollIntoViewIfNeeded();
     const rest = await look(entry);
     const box = await page.locator(entry).boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await settle();
     const selected = await look(entry);
-    assert.equal(selected.focused, true, 'moving the mouse over a mode entry focuses it');
+    assert.equal(selected.focused, true, 'moving the mouse over a play tile focuses it');
     assert.notEqual(selected.transform, rest.transform, 'it shows the selected look');
+    assert.notEqual(selected.background, rest.background, 'its full colour');
     assert.equal(selected.outline, 'none', 'no outline');
+    assert.equal(selected.height, rest.height, 'and keeps its height');
     await page.keyboard.press('Tab');
     await settle();
-    assert.equal((await look(next)).focused, true, 'Tab moves the focus to the next entry');
-    // The list's layout moves as the next entry grows: let the entry's own transition finish.
+    assert.equal((await look(next)).focused, true, 'Tab moves the focus to the next tile');
     await page.waitForFunction(([s, want]) => getComputedStyle(document.querySelector(s)).transform === want, [entry, rest.transform], { timeout: patience(1500) }).catch(() => {});
     const left = await look(entry);
-    assert.equal(left.focused, false, 'the entry under the resting pointer is no longer selected');
+    assert.equal(left.focused, false, 'the tile under the resting pointer is no longer selected');
     assert.equal(left.transform, rest.transform, 'nor looks it');
-    const forced = await look('#g-modes [data-force="focus"]');
-    const atRest = await look('#g-modes .ui-mode-entry:not([data-force]):not([aria-disabled="true"])');
-    assert.ok(forced.height > atRest.height * 1.2, `the selected entry is taller (${forced.height} vs ${atRest.height})`);
 
-    // The disabled entry: still selectable, so its preview can show, drawn flat with its reason and lock.
+    // The disabled tile: still selectable, drawn locked with its reason and lock, its preview locked; no move.
     const off = await page.evaluate(() => {
-      const e = document.querySelector('#g-modes .ui-mode-entry[aria-disabled="true"]');
+      const e = document.getElementById('g-tile-3d-off');
+      const before = getComputedStyle(e).transform;
       e.focus();
       const shown = (sel) => { const x = e.querySelector(sel); return !!x && x.getBoundingClientRect().width > 0 && getComputedStyle(x).visibility !== 'hidden'; };
-      const enabledLock = document.querySelector('#g-modes .ui-mode-entry:not([aria-disabled="true"]) .ui-mode-entry__lock');
-      return { focused: document.activeElement === e, reason: shown('.ui-mode-entry__reason'), lock: shown('.ui-mode-entry__lock'), enabledLock: enabledLock.getBoundingClientRect().width };
+      const enabledLock = document.querySelector('#g-tile-classic .ui-play-tile__lock');
+      return {
+        focused: document.activeElement === e, reason: e.querySelector('.ui-play-tile__reason').innerText.trim(), lock: shown('.ui-play-tile__lock'),
+        preview: shown('.ui-play-tile__preview--locked svg'), enabledLock: enabledLock.getBoundingClientRect().width, moved: getComputedStyle(e).transform !== before,
+      };
     });
-    assert.deepEqual(off, { focused: true, reason: true, lock: true, enabledLock: 0 }, 'a disabled entry takes the selection and shows its reason and lock; an enabled one shows no lock');
+    assert.deepEqual(off, { focused: true, reason: 'Needs WebGL 2 — not available in this browser', lock: true, preview: true, enabledLock: 0, moved: false },
+      'a disabled tile takes the selection, shows its reason, its lock and its locked preview, and does not move; an enabled one shows no lock');
 
     // A chosen board option and a selected one read apart: fill and check against level with the surface.
     const option = (sel) => page.evaluate((s) => {
@@ -3856,6 +3884,9 @@ const CANVAS_PARTS = Object.freeze({
   'field-invalid': 'ui-field__input',
   'board-preview': 'ui-scene-panel',
   '3d-preview': 'ui-scene-panel',
+  'play-tile': 'ui-play-tile',
+  'small-entry': 'ui-small-entry',
+  'phone-row': 'ui-play-tile--row',
   'note-warn': 'ui-note--warn',
   'note-err': 'ui-note--err',
   'switch-row': 'ui-switchrow',

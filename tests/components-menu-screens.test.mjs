@@ -53,7 +53,7 @@ test('in a browser, the menu and the screens it opens meet the contrast contract
     return page.evaluate(() => {
       const el = document.activeElement;
       const s = getComputedStyle(el);
-      return { id: el.id, selectable: el.matches('.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
+      return { id: el.id, selectable: el.matches('.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
     });
   };
   try {
@@ -84,10 +84,11 @@ test('in a browser, the menu and the screens it opens meet the contrast contract
       assert.ok(focusShows(f), `menu control #${f.id || i} shows its focused state (${f.style} ${f.width} ${f.transform})`);
     }
 
-    // Each preview of the menu, readable: the cards' names and notes on the panel, the daily board's tag.
-    for (const id of ['hexagon', 'records', 'quit', 'daily']) {
+    // Every main menu button readable selected too: its full colour under its label.
+    for (const id of ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings']) {
       await page.focus(`#menu-entry-${id}`);
-      await check(page, '#menu-preview', `menu-preview-${id}`, 1);
+      await page.waitForFunction((x) => document.getElementById(`menu-entry-${x}`).getAnimations().every((a) => a.playState !== 'running'), id, { timeout: patience(1000) });
+      await check(page, `#menu-entry-${id}`, `menu-selected-${id}`, 1);
     }
 
     // The Settings page in its frame, readable.

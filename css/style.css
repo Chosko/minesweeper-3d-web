@@ -10,7 +10,7 @@ body {
 #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; outline: none; }
 /* Without WebGL 2 there is no 3D scene: the menu screens sit on the body's static, themed backdrop. */
 body.no-webgl2 #scene { display: none; }
-/* The main menu shows a preview other than its 3D one: the scene is not shown. */
+/* A screen that shows no 3D scene (the main menu, the board choices): the scene is not shown. */
 body.scene-off #scene { visibility: hidden; }
 /* A live scene panel inside a screen frame: the canvas, clipped to the panel, in front of the frame. */
 body.scene-front #scene { z-index: calc(var(--z-overlay) + 1); pointer-events: none; }
@@ -35,74 +35,61 @@ kbd {
   z-index: var(--z-overlay);
   overflow-y: auto;
 }
-/* The main menu, on the page's backdrop, in its window: the frame filling the page's height in each
-   window size's fixed columns (the J-Menu artboards), the title bar its head; the body holds the
-   entries (left) and the preview (right), the foot the key hints and the build label; the columns
-   centred in a window wider than the artboard, the preview narrower in one narrower. The entries
-   share the preview's height, the selected one taller (its theme's flex-grow and min-height, a
-   size's own below), a block's first entry after a spacer as well as the gap; every entry at least a
-   finger tall, the floor below which a short window scrolls the body. The preview's board layer is
-   inset to pin its tile. On a phone the window is full-bleed, the preview goes and the entries fill
-   the body. */
-#menu { padding: 36px max(96px, calc((100% - 1780px) / 2)); overflow: hidden; }
+/* The main menu, on the page's backdrop, in its window: the frame centred at each window size's fixed
+   width (the J-Menu artboards), filling the page's height, the title bar its head; the body holds the
+   main menu buttons — the play tiles two by two, all of one height, then the small entries — and the
+   foot the build label. Each size sets the tiles' preview square, its art's scale, the labels, the
+   icon boxes and the list's gap; a tile is never shorter than its preview needs, below which a short
+   window scrolls the body. On a phone the window is full-bleed, the phone rows in one column sharing
+   the body above the small entries, the foot the touch note over the build label. */
+#menu { padding: 64px max(16px, calc((100% - 980px) / 2)); overflow: hidden; }
 #menu-frame { width: 100%; height: 100%; }
-#menu-body {
-  display: grid;
-  grid-template-columns: 590px minmax(0, 964px);
-  grid-template-rows: minmax(auto, 1fr);
-  grid-template-areas: "entries preview";
-  justify-content: space-between;
-  align-items: stretch;
-  column-gap: 56px;
-  padding: 26px;
-}
-#menu-entries { grid-area: entries; }
-#menu-entries > .ui-mode-entry { flex-basis: 0; }
-#menu-entries > .ui-mode-entry:not(:focus, [data-force~="focus"]) { min-height: 44px; }
-#menu-entries > [data-block-start] { margin-top: 24px; }
-#menu-preview { grid-area: preview; min-height: 0; }
-#menu-preview .ui-scene-panel__badge { width: 200px; height: 200px; }
-#menu-preview-stage > [data-preview] { position: absolute; inset: 36px; display: grid; place-items: center; }
-#menu-preview-stage > [data-preview][hidden] { display: none; }
-#menu-foot { gap: var(--space-2) var(--space-6); }
+#menu-body { display: flex; flex-direction: column; padding: 22px 26px; }
+#menu-entries { flex: 1 1 auto; }
+#menu-foot { gap: var(--space-2) var(--space-6); justify-content: flex-end; }
 #menu-foot > p { margin: 0; }
-#menu-foot > #menu-build { margin-inline-start: auto; font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); letter-spacing: 0.15em; text-transform: uppercase; }
+#menu-foot > #menu-build { font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); letter-spacing: 0.15em; text-transform: uppercase; }
 #touch-note { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: var(--font-weight-bold); }
 #touch-note[data-icon="hand"] { white-space: nowrap; }
 #touch-note > .ui-icon { width: 20px; height: 20px; }
+/* the smaller windows: each tile's art at two thirds of the largest window's */
 @media (max-width: 1439px) {
-  #menu { padding: 24px max(56px, calc((100% - 1290px) / 2)); }
-  #menu-body { grid-template-columns: 450px minmax(0, 748px); padding: 18px; }
-  #menu-entries { gap: 10px; }
-  #menu-entries > [data-block-start] { margin-top: 20px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) { flex-grow: 1.4; min-height: 44px; }
-  #menu-entries .ui-mode-entry__icon { width: 36px; height: 36px; }
-  #menu-entries .ui-mode-entry__icon > svg { width: 20px; height: 20px; }
-  #menu-entries .ui-mode-entry__label { font-size: 22px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__icon { width: 48px; height: 48px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__icon > svg { width: 26px; height: 26px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__label { font-size: 27px; }
-  #menu-preview-stage > [data-preview] { inset: 48px; }
-}
-@media (max-width: 1199px) {
-  #menu { padding: 24px max(36px, calc((100% - 988px) / 2)); }
-  #menu-body { grid-template-columns: 390px minmax(0, 526px); column-gap: 36px; }
-  #menu-entries .ui-mode-entry__label { font-size: 20px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__icon > svg { width: 24px; height: 24px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__label { font-size: 25px; }
-  #menu-preview-stage > [data-preview] { inset: 56px; }
+  #menu { padding: 28px max(16px, calc((100% - 760px) / 2)); }
+  #menu-body { padding: 16px 22px; }
+  #menu-entries { gap: 20px; }
+  #menu-entries > .ui-mode-list__tiles, #menu-entries > .ui-mode-list__places { gap: 10px; }
+  #menu-entries .ui-play-tile { gap: 14px; padding: 10px 10px 10px 16px; }
+  #menu-entries .ui-play-tile__side { padding: 2px 0; }
+  #menu-entries .ui-play-tile__icon { width: 42px; height: 42px; }
+  #menu-entries .ui-play-tile__label { font-size: 24px; }
+  #menu-entries .ui-play-tile__preview { width: 116px; }
+  #menu-entries .ui-small-entry { min-height: 52px; padding: 6px 14px; }
+  #menu-entries .ui-small-entry__icon { width: 34px; height: 34px; }
+  #menu-entries .ui-small-entry__label { font-size: 19px; }
+  #menu-entries [data-preview="board"] > .ui-play-tile__art { width: 298px; height: 298px; }
+  #menu-entries .ui-play-tile__badge { width: 63px; height: 63px; }
+  #menu-entries .ui-play-tile__still[data-still="surface"] { width: 111px; height: 111px; translate: 0 -7px; }
+  #menu-entries .ui-play-tile__still[data-still="3d"] { width: 98px; height: 99px; }
+  #menu-entries .ui-play-tile__calendar { width: 100px; height: 88px; }
 }
 @media (max-width: 719px) {
   #menu { padding: 0; }
   #menu-frame { border-radius: 0; box-shadow: none; }
-  #menu-body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "entries"; padding: 20px; }
-  #menu-preview { display: none; }
-  #menu-entries > [data-block-start] { margin-top: 18px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) { flex-grow: 1.35; }
-  #menu-entries .ui-mode-entry__label { font-size: 19px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__label { font-size: 24px; }
-  #menu-foot { flex-direction: column; align-items: flex-start; }
-  #menu-foot > #menu-build { margin-inline-start: 0; }
+  #menu-body { padding: 16px 18px 18px; }
+  #menu-entries { gap: 16px; }
+  #menu-entries > .ui-mode-list__tiles, #menu-entries > .ui-mode-list__places { gap: 8px; }
+  #menu-entries .ui-play-tile { gap: 14px; padding: 8px 126px 8px 16px; }
+  #menu-entries .ui-play-tile__icon { width: 36px; height: 36px; }
+  #menu-entries .ui-play-tile__label { font-size: 20px; }
+  #menu-entries .ui-play-tile__preview { width: 106px; }
+  #menu-entries .ui-small-entry { min-height: 50px; padding: 6px 16px; }
+  /* each phone row's art at its strip's scale */
+  #menu-entries [data-preview="board"] > .ui-play-tile__art { width: 271px; height: 271px; }
+  #menu-entries .ui-play-tile__badge { width: 58px; height: 58px; }
+  #menu-entries .ui-play-tile__still[data-still="surface"] { width: 92px; height: 92px; translate: 0 -6px; }
+  #menu-entries .ui-play-tile__still[data-still="3d"] { width: 59px; height: 60px; }
+  #menu-entries .ui-play-tile__calendar { width: 68px; height: 60px; }
+  #menu-foot { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
 }
 /* The Records screen (#records): its window inset on the backdrop at each window step's canvas size
    (J-Records-xl, -l, -m), the title and the switch in its heading; the picker one line across

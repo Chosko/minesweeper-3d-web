@@ -92,6 +92,11 @@ const J_TOKENS = {
   '--color-violet': '#6d4ee8', '--color-violet-edge': '#4b30b8', '--color-violet-on': '#ffffff',
   '--color-green': '#5fd07e', '--color-green-edge': '#2f9a4f', '--color-green-on': '#16204a',
   '--color-orange': '#ff9a3c', '--color-orange-edge': '#c96a12', '--color-orange-on': '#16204a', '--color-ink-edge': '#0a1030',
+  // the menu entry pastels: each accent's rest fill and rest edge, and the stronger neutral
+  '--color-blue-soft': '#c6d3f4', '--color-blue-soft-edge': '#90a9ea', '--color-teal-soft': '#ccefeb', '--color-teal-soft-edge': '#9be0d8',
+  '--color-green-soft': '#d2f2db', '--color-green-soft-edge': '#a7e5b8', '--color-orange-soft': '#ffe3c8', '--color-orange-soft-edge': '#ffc794',
+  '--color-accent-soft': '#ffd6d6', '--color-accent-soft-edge': '#ffaeae', '--color-violet-soft': '#d6cdf9', '--color-violet-soft-edge': '#af9ef2',
+  '--color-yellow-soft': '#fff0c8', '--color-yellow-soft-edge': '#ffe194', '--color-neutral-strong': '#ecdcbc', '--color-neutral-strong-edge': '#c4ab7c',
   '--color-figure': '#0d7064', '--color-success': '#0d7064', '--color-success-fill': '#d9f4ef',
   '--color-danger': '#b42a2a', '--color-danger-edge': '#7d1c1c', '--color-danger-fill': '#ffe1de',
   '--color-warning': '#8a5f00', '--color-warning-fill': '#fff0c2',
@@ -135,8 +140,9 @@ test('the theme declares every token the base stylesheets and the screens read',
   const sources = ['../css/components.css', '../css/style.css', '../themes/joyful-tiles/theme.css'];
   for (const f of sources) {
     for (const [, name] of strip(read(f)).matchAll(/var\((--[\w-]+)/g)) {
-      // the menu entries' and the logo letters' own accent slots, and the logo's extrusion and outline by size step
-      if (['--f', '--e', '--o', '--logo-x', '--logo-y', '--logo-o'].includes(name)) continue;
+      // the menu buttons' and the logo letters' own accent slots (the full colour, its edge and ink, and the
+      // pastel and its edge at rest), and the logo's extrusion and outline by size step
+      if (['--f', '--e', '--o', '--fs', '--es', '--logo-x', '--logo-y', '--logo-o'].includes(name)) continue;
       assert.ok(ALL.has(name), `${f} reads undeclared ${name}`);
     }
   }

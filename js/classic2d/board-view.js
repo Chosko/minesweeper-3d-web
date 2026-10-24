@@ -11,7 +11,7 @@
 // Fit rule: the tile is the largest whole size at which the board fits the area left inside the
 // frame, at most the geometry's tile at the board scale (tileCap on the square geometry) and never
 // below its floor (MIN_TILE_SIZE on the square geometry; minTile, for a board shown and not played:
-// the main menu's preview fits whole at any tile). The board frame
+// a preview fits whole at any tile). The board frame
 // (BOARD_FRAME) pads the board by the gap on every side, counted in the fit. A board that fits
 // is centred, frame and all, and never scrolls; one that does not keeps the minimum tile, fills the
 // area inside the frame's fixed part with no gap padding — a viewport with no frame —, starts at its

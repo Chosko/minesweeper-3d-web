@@ -15,13 +15,14 @@
    scene tokens below carry the same canvas values for the screens that read
    them as tokens.
 
-   On buttons, menu entries, mode entries and board options the selected
-   state is the focused state: raised at rest, level with the surface when
-   selected (no outline, no halo), sunk with an inset shadow when pressed,
-   flat when disabled, and no hover look of their own (js/ui/components.js
-   bindSelectOnHover moves focus to the one under a moving mouse); the
-   selected mode entry is also taller, and a chosen board option is a blue
-   fill with its check. Switches, checkboxes, fields, sliders, segmented
+   On buttons, menu entries, main menu buttons and board options the
+   selected state is the focused state: raised at rest, level with the
+   surface when selected (no outline, no halo), sunk with an inset shadow
+   when pressed, flat when disabled, and no hover look of their own
+   (js/ui/components.js bindSelectOnHover moves focus to the one under a
+   moving mouse); a main menu button rests in a pastel of its colour and
+   takes the full colour selected, keeping its size, and a chosen board
+   option is a blue fill with its check. Switches, checkboxes, fields, sliders, segmented
    choices, tabs and links keep their own hover and a focus ring with a
    halo. Joyful tiles draws no window chrome: the frame's slot stays
    hidden. */
@@ -90,6 +91,24 @@
   --color-orange-edge: #c96a12;
   --color-orange-on: #16204a;
   --color-ink-edge: #0a1030;
+  /* the main menu buttons at rest: each accent's pastel and its pastel edge, and the stronger neutral
+     a small entry takes when selected */
+  --color-blue-soft: #c6d3f4;
+  --color-blue-soft-edge: #90a9ea;
+  --color-teal-soft: #ccefeb;
+  --color-teal-soft-edge: #9be0d8;
+  --color-green-soft: #d2f2db;
+  --color-green-soft-edge: #a7e5b8;
+  --color-orange-soft: #ffe3c8;
+  --color-orange-soft-edge: #ffc794;
+  --color-accent-soft: #ffd6d6;
+  --color-accent-soft-edge: #ffaeae;
+  --color-violet-soft: #d6cdf9;
+  --color-violet-soft-edge: #af9ef2;
+  --color-yellow-soft: #fff0c8;
+  --color-yellow-soft-edge: #ffe194;
+  --color-neutral-strong: #ecdcbc;
+  --color-neutral-strong-edge: #c4ab7c;
   /* the game logo's lighter blue and violet letters */
   --color-logo-blue: #6f9ff7;
   --color-logo-violet: #a084f5;
@@ -888,6 +907,9 @@
   border-top: 2px solid var(--color-line);
   background: var(--color-surface);
 }
+@media (max-width: 1439px) { :root[data-theme="joyful-tiles"] #menu-foot { padding: 8px 20px 10px; } }
+/* on a phone the touch note and the build label close the body, no line above them */
+@media (max-width: 719px) { :root[data-theme="joyful-tiles"] #menu-foot { padding: 0 18px 18px; border-top: 0; } }
 /* the white action foot of a screen's actions (board choices, Daily, results): the surface under a ruled line */
 :root[data-theme="joyful-tiles"] .ui-frame__foot--action {
   padding: 14px 24px 18px;
@@ -996,78 +1018,110 @@
   :root[data-theme="joyful-tiles"] #results-actions { min-height: 0; padding: 14px 16px 18px; box-shadow: none; }
 }
 
-/* ---------- mode entry: its accent fill (--f), drop edge (--e) and text (--o); places neutral ---------- */
-:root[data-theme="joyful-tiles"] .ui-mode-entry {
-  --f: var(--color-surface-raised);
-  --e: var(--color-edge);
+/* ---------- main menu buttons: a pastel of the colour (--fs) on its pastel edge (--es) at rest, the full colour
+   (--f, its ink --o) selected, level with the surface, its edge gone, and sunk when pressed; the small
+   entries the neutral raised surface, the stronger neutral selected; the smaller edge, no drop shadow ---------- */
+:root[data-theme="joyful-tiles"] .ui-play-tile,
+:root[data-theme="joyful-tiles"] .ui-small-entry {
+  --f: var(--color-neutral-strong);
+  --e: var(--color-neutral-strong-edge);
   --o: var(--color-ink);
-  border-radius: var(--radius-xl);
+  --fs: var(--color-surface-raised);
+  --es: var(--color-edge);
+  border-radius: var(--radius-md);
+  background: var(--fs);
+  color: var(--color-ink);
+  box-shadow: inset 0 3px 0 var(--highlight), 0 var(--edge-sm) 0 var(--es);
+  transition: transform var(--duration-fast) var(--easing-out), background-color var(--duration-fast) var(--easing-out), color var(--duration-fast) var(--easing-out);
+}
+:root[data-theme="joyful-tiles"] .ui-play-tile[data-entry="classic-2d"] { --f: var(--color-blue); --e: var(--color-blue-edge); --o: var(--color-blue-on); --fs: var(--color-blue-soft); --es: var(--color-blue-soft-edge); }
+:root[data-theme="joyful-tiles"] .ui-play-tile[data-entry="hexagon"] { --f: var(--color-teal); --e: var(--color-teal-edge); --o: var(--color-teal-on); --fs: var(--color-teal-soft); --es: var(--color-teal-soft-edge); }
+:root[data-theme="joyful-tiles"] .ui-play-tile[data-entry="triangle"] { --f: var(--color-green); --e: var(--color-green-edge); --o: var(--color-green-on); --fs: var(--color-green-soft); --es: var(--color-green-soft-edge); }
+:root[data-theme="joyful-tiles"] .ui-play-tile[data-entry="surface"] { --f: var(--color-orange); --e: var(--color-orange-edge); --o: var(--color-orange-on); --fs: var(--color-orange-soft); --es: var(--color-orange-soft-edge); }
+:root[data-theme="joyful-tiles"] .ui-play-tile[data-entry="3d"] { --f: var(--color-accent-fill); --e: var(--color-accent-edge); --o: var(--color-accent-on); --fs: var(--color-accent-soft); --es: var(--color-accent-soft-edge); }
+:root[data-theme="joyful-tiles"] .ui-play-tile[data-entry="daily"] { --f: var(--color-violet); --e: var(--color-violet-edge); --o: var(--color-violet-on); --fs: var(--color-violet-soft); --es: var(--color-violet-soft-edge); }
+:root[data-theme="joyful-tiles"] :is(.ui-play-tile__icon, .ui-small-entry__icon) { background: var(--veil); }
+:root[data-theme="joyful-tiles"] .ui-play-tile__icon { border-radius: 14px; }
+:root[data-theme="joyful-tiles"] .ui-small-entry__icon { border-radius: 11px; }
+:root[data-theme="joyful-tiles"] :is(.ui-play-tile__label, .ui-small-entry__label) { letter-spacing: -0.01em; }
+:root[data-theme="joyful-tiles"] :is(.ui-play-tile__side, .ui-play-tile__top, .ui-play-tile__text, .ui-play-tile__art, .ui-play-tile__calendar) { color: inherit; }
+:root[data-theme="joyful-tiles"] .ui-play-tile__reason { color: inherit; }
+:root[data-theme="joyful-tiles"] .ui-play-tile__lock { color: inherit; }
+/* selected — hover and keyboard focus alike — the full colour, level with the surface, its edge gone */
+:root[data-theme="joyful-tiles"] .ui-play-tile:focus,
+:root[data-theme="joyful-tiles"] .ui-play-tile:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-play-tile:focus,
+:root[data-theme="joyful-tiles"] .ui-play-tile[data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-small-entry:focus,
+:root[data-theme="joyful-tiles"] .ui-small-entry:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-small-entry:focus,
+:root[data-theme="joyful-tiles"] .ui-small-entry[data-force~="focus"] {
+  outline: none;
   background: var(--f);
   color: var(--o);
-  box-shadow: inset 0 3px 0 var(--highlight), 0 var(--edge-lg) 0 var(--e), var(--elevation-1);
-  transition: transform var(--duration-fast) var(--easing-out);
-}
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="classic-2d"] { --f: var(--color-blue); --e: var(--color-blue-edge); --o: var(--color-blue-on); }
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="hexagon"] { --f: var(--color-teal); --e: var(--color-teal-edge); --o: var(--color-teal-on); }
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="triangle"] { --f: var(--color-green); --e: var(--color-green-edge); --o: var(--color-green-on); }
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="surface"] { --f: var(--color-orange); --e: var(--color-orange-edge); --o: var(--color-orange-on); }
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="3d"] { --f: var(--color-accent-fill); --e: var(--color-accent-edge); --o: var(--color-accent-on); }
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="daily"] { --f: var(--color-violet); --e: var(--color-violet-edge); --o: var(--color-violet-on); }
-:root[data-theme="joyful-tiles"] .ui-mode-entry__icon { border-radius: var(--radius-md); background: var(--veil); }
-:root[data-theme="joyful-tiles"] .ui-mode-entry__label { letter-spacing: -0.01em; }
-:root[data-theme="joyful-tiles"] .ui-mode-entry__reason { color: inherit; }
-:root[data-theme="joyful-tiles"] .ui-mode-entry__lock { color: inherit; }
-:root[data-theme="joyful-tiles"] .ui-mode-entry .ui-chip { box-shadow: none; }
-/* selected: level with the surface, its edge gone, taller and roomier, with a bigger icon and label */
-:root[data-theme="joyful-tiles"] .ui-mode-entry:focus,
-:root[data-theme="joyful-tiles"] .ui-mode-entry:focus-visible,
-:root[data-theme="joyful-tiles"] body.pad-nav .ui-mode-entry:focus,
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-force~="focus"] {
-  outline: none;
-  flex-grow: 1.45;
-  min-height: 101px;
-  padding: 10px 24px;
-  transform: translateY(var(--edge-lg));
+  transform: translateY(var(--edge-sm));
   box-shadow: inset 0 3px 0 var(--highlight);
 }
-:root[data-theme="joyful-tiles"] .ui-mode-entry:focus .ui-mode-entry__icon,
-:root[data-theme="joyful-tiles"] .ui-mode-entry:focus-visible .ui-mode-entry__icon,
-:root[data-theme="joyful-tiles"] body.pad-nav .ui-mode-entry:focus .ui-mode-entry__icon,
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-force~="focus"] .ui-mode-entry__icon { width: 56px; height: 56px; border-radius: var(--radius-lg); }
-:root[data-theme="joyful-tiles"] .ui-mode-entry:focus .ui-mode-entry__icon > svg,
-:root[data-theme="joyful-tiles"] .ui-mode-entry:focus-visible .ui-mode-entry__icon > svg,
-:root[data-theme="joyful-tiles"] body.pad-nav .ui-mode-entry:focus .ui-mode-entry__icon > svg,
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-force~="focus"] .ui-mode-entry__icon > svg { width: 30px; height: 30px; }
-:root[data-theme="joyful-tiles"] .ui-mode-entry:focus .ui-mode-entry__label,
-:root[data-theme="joyful-tiles"] .ui-mode-entry:focus-visible .ui-mode-entry__label,
-:root[data-theme="joyful-tiles"] body.pad-nav .ui-mode-entry:focus .ui-mode-entry__label,
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-force~="focus"] .ui-mode-entry__label { font-size: 30px; }
-/* the menu's smaller windows: the icon's corners rounder for its smaller box (css/style.css sizes it) */
-@media (max-width: 1439px) {
-  :root[data-theme="joyful-tiles"] #menu .ui-mode-entry__icon { border-radius: 10px; }
-  :root[data-theme="joyful-tiles"] #menu .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__icon { border-radius: 13px; }
-}
-:root[data-theme="joyful-tiles"] .ui-mode-entry:active:not([aria-disabled="true"]),
-:root[data-theme="joyful-tiles"] .ui-mode-entry[data-force~="active"] {
+/* pressed: the full colour, sunk below the surface */
+:root[data-theme="joyful-tiles"] .ui-play-tile:active:not([aria-disabled="true"]),
+:root[data-theme="joyful-tiles"] .ui-play-tile[data-force~="active"],
+:root[data-theme="joyful-tiles"] .ui-small-entry:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-small-entry[data-force~="active"] {
   outline: none;
-  transform: translateY(calc(var(--edge-lg) + 2px));
+  background: var(--f);
+  color: var(--o);
+  transform: translateY(calc(var(--edge-sm) + 2px));
   box-shadow: inset 0 4px 0 var(--shade-press), inset 0 0 0 1px var(--shade-soft);
 }
-:root[data-theme="joyful-tiles"] .ui-mode-entry[aria-disabled="true"] {
+/* disabled or locked: the locked colours, never moving; a locked tile selected darkens to its edge */
+:root[data-theme="joyful-tiles"] .ui-play-tile[aria-disabled="true"],
+:root[data-theme="joyful-tiles"] .ui-small-entry:disabled {
   --f: var(--color-locked);
   --e: var(--color-locked-edge);
   --o: var(--color-locked-ink);
-  box-shadow: 0 var(--edge-sm) 0 var(--e);
+  background: var(--color-locked);
+  color: var(--color-locked-ink);
+  box-shadow: 0 var(--edge-sm) 0 var(--color-locked-edge);
   transform: none;
 }
-:root[data-theme="joyful-tiles"] .ui-mode-entry[aria-disabled="true"] .ui-mode-entry__icon { background: var(--color-surface-raised); }
-/* a disabled entry selected: level with the surface, still flat */
-:root[data-theme="joyful-tiles"] .ui-mode-entry[aria-disabled="true"]:focus,
-:root[data-theme="joyful-tiles"] .ui-mode-entry[aria-disabled="true"]:focus-visible,
-:root[data-theme="joyful-tiles"] body.pad-nav .ui-mode-entry[aria-disabled="true"]:focus,
-:root[data-theme="joyful-tiles"] .ui-mode-entry[aria-disabled="true"][data-force~="focus"] {
-  transform: translateY(var(--edge-sm));
-  box-shadow: none;
+:root[data-theme="joyful-tiles"] .ui-play-tile[aria-disabled="true"]:focus,
+:root[data-theme="joyful-tiles"] .ui-play-tile[aria-disabled="true"]:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-play-tile[aria-disabled="true"]:focus,
+:root[data-theme="joyful-tiles"] .ui-play-tile[aria-disabled="true"][data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-play-tile[aria-disabled="true"]:active {
+  background: var(--color-locked-edge);
+  color: var(--color-locked-ink);
+  box-shadow: 0 var(--edge-sm) 0 var(--color-locked-edge);
+  transform: none;
+}
+:root[data-theme="joyful-tiles"] .ui-play-tile[aria-disabled="true"] .ui-play-tile__icon { background: var(--color-surface-raised); }
+/* the preview: the dark scene, translucent white over the colour (--light) or the locked ground with the lock (--locked), ringed */
+:root[data-theme="joyful-tiles"] .ui-play-tile__preview {
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 55% 40%, var(--color-scene-horizon) 0%, var(--color-scene-zenith) 78%);
+}
+:root[data-theme="joyful-tiles"] .ui-play-tile__preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-ink) 16%, transparent);
+}
+:root[data-theme="joyful-tiles"] .ui-play-tile__preview--light { background: rgba(255, 255, 255, 0.55); }
+:root[data-theme="joyful-tiles"] .ui-play-tile__preview--locked { background: var(--color-locked-edge); color: var(--color-locked-ink); }
+:root[data-theme="joyful-tiles"] .ui-play-tile__badge {
+  border-radius: 25%;
+  background: var(--f);
+  color: var(--o);
+  box-shadow: inset 0 4px 0 var(--highlight), 0 6px 0 var(--e);
+}
+:root[data-theme="joyful-tiles"] .ui-play-tile__still { color: inherit; }
+/* the phone row: its smaller icon box and its strip's corners */
+:root[data-theme="joyful-tiles"] .ui-play-tile--row .ui-play-tile__icon { border-radius: 10px; }
+:root[data-theme="joyful-tiles"] .ui-play-tile--row .ui-play-tile__preview { border-radius: 9px; }
+@media (max-width: 719px) {
+  :root[data-theme="joyful-tiles"] .ui-play-tile__icon { border-radius: 10px; }
+  :root[data-theme="joyful-tiles"] .ui-play-tile__preview { border-radius: 9px; }
 }
 
 /* ---------- board option: a raised card; chosen a blue fill with its check; selected level with the surface ---------- */
@@ -1197,8 +1251,6 @@
 :root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-entry="3d"] { --f: var(--color-accent-fill); --e: var(--color-accent-edge); }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-entry="daily"] { --f: var(--color-violet); --e: var(--color-violet-edge); }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-unavailable] { --f: var(--color-locked); --e: var(--color-locked-edge); }
-/* the menu's large card */
-:root[data-theme="joyful-tiles"] #menu-preview .ui-scene-panel__badge { border-radius: 44px; }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__name { color: var(--color-ink-inverse); }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__note { color: var(--color-scene-ink); }
 /* the Daily screen's panel: a plain rounded sky, no edge and no elevation; its coming-soon card smaller */
@@ -1440,7 +1492,7 @@
 :root[data-theme="joyful-tiles"] :is(kbd.pad, kbd[data-pad-glyph]) { border-radius: var(--radius-pill); }
 
 :root[data-theme="joyful-tiles"] .hint-close:focus-visible,
-:root[data-theme="joyful-tiles"] body.pad-nav :is(button, input, summary, a, select):not(.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-tabs__tab, .ui-checkbox__input, .ui-field__input, .ui-link):focus {
+:root[data-theme="joyful-tiles"] body.pad-nav :is(button, input, summary, a, select):not(.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-tabs__tab, .ui-checkbox__input, .ui-field__input, .ui-link):focus {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
 }

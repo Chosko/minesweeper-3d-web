@@ -49,8 +49,8 @@ overlay's parts and the aimed-cell readout are
     `_centreStatus2D`, again on every `placePanel2D`); 3D `setBoardStatus3D`
     (progress by `progressLine`); on either a failure offering nothing
     shows Back alone, with the arrow icon;
-  - menu: `setLastMode` (the Last played chip), `setEntryUnavailable`,
-    `setBuild` (the build label);
+  - menu: `setEntryUnavailable` (a play tile's reason, long and short, its
+    lock and its locked preview), `setBuild` (the build label);
   - confirmations: `showConfirm({title, message, confirmLabel}, onYes, onNo)`,
     `isConfirmOpen`, `closeConfirm`, `closeResetConfirm` (→ false when none
     is open);

@@ -1,6 +1,6 @@
 // DOM menus, HUD and overlays. No game rules here.
 // Every help surface — the pause card, the Settings page's bindings panel, the H panel, the HUD strip,
-// the hint strip and the main menu's key hints — is drawn from the bindings source
+// the hint strip and the screens' key hints — is drawn from the bindings source
 // (js/settings/bindings.js) for the active mode and the active device (the controller in the
 // connected controller's glyphs).
 import {
@@ -245,34 +245,33 @@ export class UI {
   }
 
   /**
-   * Disable main menu entry `id`, which cannot open here: aria-disabled, so it stays selectable and
-   * its preview shows, its lock shown and, when `reason` is given, that line under its label; a click
-   * opens nothing.
+   * Disable main menu play tile `id`, which cannot open here: aria-disabled, so it stays selectable,
+   * its lock shown, `reason` under its label (`short` the phone row's) and its preview locked — the
+   * locked ground and the lock in place of its art; a click opens nothing.
    */
-  setEntryUnavailable(id, reason = null) {
+  setEntryUnavailable(id, reason, short = reason) {
     const b = document.querySelector(`#menu [data-entry="${id}"]`);
     if (!b) return;
     b.setAttribute('aria-disabled', 'true');
-    let line = b.querySelector('.ui-mode-entry__reason');
-    if (!reason) {
-      line?.remove();
-      return;
-    }
+    let line = b.querySelector('.ui-play-tile__reason');
     if (!line) {
       line = document.createElement('span');
-      line.className = 'ui-mode-entry__reason';
-      b.querySelector('.ui-mode-entry__label').after(line);
+      line.className = 'ui-play-tile__reason';
+      b.querySelector('.ui-play-tile__label').after(line);
     }
-    line.textContent = reason;
-  }
-
-  /** Mark the main menu entry of the last mode played with the Last played chip (null: none). */
-  setLastMode(mode) {
-    document.querySelectorAll('#menu [data-entry]').forEach((b) => {
-      const isLast = !!mode && b.dataset.entry === mode;
-      b.toggleAttribute('data-last', isLast);
-      b.querySelector('.ui-chip[data-last]')?.classList.toggle('hidden', !isLast);
-    });
+    const part = (which, text) => {
+      const s = document.createElement('span');
+      s.dataset.reason = which;
+      s.textContent = text;
+      return s;
+    };
+    line.replaceChildren(part('long', reason), part('short', short));
+    const preview = b.querySelector('.ui-play-tile__preview');
+    if (!preview) return;
+    preview.classList.remove('ui-play-tile__preview--light');
+    preview.classList.add('ui-play-tile__preview--locked');
+    preview.dataset.preview = 'locked';
+    preview.querySelector('.ui-play-tile__art').innerHTML = b.querySelector('.ui-play-tile__lock').innerHTML;
   }
 
   /** The main menu's build label. */
@@ -888,7 +887,7 @@ export class UI {
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
-    for (const id of ['menu-hints', 'c2d-choice', 'c2d', 'hud', 'board-choice', 'daily', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
+    for (const id of ['c2d-choice', 'c2d', 'hud', 'board-choice', 'daily', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
     this._renderReminder();
     this._renderHelp();
     this._renderHudStrip();

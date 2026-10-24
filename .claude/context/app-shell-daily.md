@@ -6,7 +6,7 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers `js/shell/daily.js` (the Daily screen listing every mode, its
 pre-generated boards and counted attempts), `js/shell/challenge.js` (board
 codes typed into the board choices and `#board=` links), and their wiring
-in `js/main.js`. The main menu, its preview and the board choices' wiring
+in `js/main.js`. The main menu, its play tiles' previews and the board choices' wiring
 are [app-shell-menu.md](app-shell-menu.md). The Daily screen's composition
 is the head comment of `css/components.css` (*Daily*); its ids are
 [app-shell-markup.md](app-shell-markup.md) § Screens.
@@ -27,8 +27,8 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   entry per mode of `MENU_ENTRIES` in menu order, `{mode, label, daily,
   line, title, summary, note, canPlay}`, `daily` null (*Coming soon*) for a
   mode with no daily board; `dailyPanel(entry, {missing?})` → its preview
-  (`daily`, `scene`, `still` or `badge`); `dailyPreview(now?)` → the menu's
-  Daily preview `{board, startCell, date, dateLabel, tag}`.
+  (`daily`, `scene`, `still` or `badge`); `dailyPreview(now?)` → the Daily
+  screen's Classic 2D preview `{board, startCell, date, dateLabel, tag}`.
 - `createDailyBoards({clients})` → `{prepare(records, now?), take(code),
   has(code)}`: today's unused boards pre-generated through each mode's
   client, held by code; `take` hands one over once.

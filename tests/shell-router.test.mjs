@@ -533,7 +533,7 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
       return {
         id: el?.id || el?.dataset?.size || el?.dataset?.value || '', visible: !!el?.matches(':focus-visible'),
         pad: document.body.classList.contains('pad-nav'), ring: el ? getComputedStyle(el).outlineStyle : 'none',
-        selectable: !!el?.matches('.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option'),
+        selectable: !!el?.matches('.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option'),
       };
     });
     // The focused state a button, menu entry or board option shows is its selected look, once its move settles.
@@ -553,18 +553,21 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
       assert.equal((await focus()).id, id, `${key} reaches #${id}`);
     };
 
-    // The main menu: Down walks the entries; Up walks back.
+    // The main menu: Down walks down the two columns of play tiles, Right across them; Up walks back.
     assert.equal((await focus()).id, 'menu-entry-classic-2d', 'the menu opens on its default');
     await page.keyboard.press('ArrowDown');
-    assert.equal((await focus()).id, 'menu-entry-hexagon');
+    assert.equal((await focus()).id, 'menu-entry-triangle');
+    await page.keyboard.press('ArrowRight');
+    assert.equal((await focus()).id, 'menu-entry-surface');
+    await page.keyboard.press('ArrowLeft');
     await page.keyboard.press('ArrowUp');
     assert.equal((await focus()).id, 'menu-entry-classic-2d');
     // Held down, the key repeats as the browser delivers it.
     await page.keyboard.down('ArrowDown');
     await page.keyboard.down('ArrowDown');
     await page.keyboard.up('ArrowDown');
-    assert.equal((await focus()).id, 'menu-entry-triangle', 'a repeated keydown moves again');
-    await walkTo('ArrowDown', 'menu-entry-quit');
+    assert.equal((await focus()).id, 'menu-entry-3d', 'a repeated keydown moves again');
+    await walkTo('ArrowDown', 'menu-entry-records');
     await walkTo('ArrowUp', 'menu-entry-classic-2d');
 
     // The Classic 2D board choice: arrows walk the options, Space chooses Custom, a number field keeps

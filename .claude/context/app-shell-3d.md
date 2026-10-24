@@ -76,8 +76,7 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
 - **Scene panel.** `syncScenePanel` (every router change, window resize,
   the Daily body's scroll, and a `ResizeObserver` on the panel's stage)
   hands `renderer.setTarget` the rectangle of the shown screen's live
-  scene panel (`.ui-scene-panel--live`: the menu's 3D preview, the Daily
-  screen's cube) or, on the replay viewer, a 3D replay's board area
+  scene panel (`.ui-scene-panel--live`: the Daily screen's cube) or, on the replay viewer, a 3D replay's board area
   (`#replay.replay--scene #replay-stage`; the viewer opening or a 2D
   replay has none), and null — the full window — everywhere else
   ([rendering.md](rendering.md) § Internal patterns, *Target rectangle*). The
@@ -87,8 +86,8 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
   `#replay-scene-over` (`REPLAY_OVER`) takes the same rectangle and shows
   while it does: the free-camera notice and the press rings sit on it,
   above the canvas.
-  `body.scene-off` hides the canvas where no scene shows: a menu preview
-  other than the 3D one, the board choices, the Daily screen with no 3D
+  `body.scene-off` hides the canvas where no scene shows: the main menu
+  (its 3D tile a still), the board choices, the Daily screen with no 3D
   panel in view. The menu screens behind them hold the demo board
   (`showMenuBackdrop`), orbiting.
 - **`sync3D`** (every router change) resumes the session on `playing` and

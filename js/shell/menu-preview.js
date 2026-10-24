@@ -1,17 +1,26 @@
-// The main menu's preview of the selected entry (js/shell/menu.js menuPreview gives what it shows):
-// a board drawn by the Classic 2D board view — the Intermediate demo board, or today's daily Expert
-// board closed with its marked start cell — the 3D scene drawn live into the panel by the renderer,
-// the panel's static background, or a card with the entry's badge, its name and a note.
+// The previews the menu screens draw: the main menu's play tiles' own previews, and the scene panel
+// binder the Daily screen shows its selected mode in — a board drawn by the Classic 2D board view
+// (today's daily Expert board closed with its marked start cell), the 3D scene drawn live into the
+// panel by the renderer, the panel's static background, or a card with the entry's badge, its name
+// and a note.
 //
 // demoBoard2D()       → { grid, geometry, game }: an Intermediate board (STANDARD_SIZES) with a fixed mine set,
 //                       an opening revealed and a few flags placed — a real engine game, the same on
-//                       every load.
-// demoBoard3D(random?) → the 3D game the menu's 3D preview and backdrop show: a DEMO_BOARD_3D box
+//                       every load; the Classic 2D play tile's preview.
+// demoBoard3D(random?) → the 3D game of the menu screens' backdrop: a DEMO_BOARD_3D box
 //                       with mines from `random` (Math.random by default), some cells of its outer shell
 //                       revealed until about 55 % stay closed, a few mines flagged; DEMO_SPACING_3D the
-//                       spacing it is drawn at.
+//                       spacing it is drawn at. The 3D play tile shows a still of such a board, never it.
 // dailyBoard2D(daily) → { grid, geometry, game, mark }: `daily` the shell's dailyPreview(now) (js/shell/daily.js);
 //                       the closed board awaiting its first click, its start cell the mark.
+// mountTilePreviews({ tiles, previewOf, mountBoard, boardOf }) → the board views mounted, by entry:
+//   tiles                the main menu's play tiles ([data-entry], each with its ui-play-tile__art);
+//   previewOf(entry)     its preview (js/shell/menu.js menuPreview);
+//   mountBoard, boardOf  as for bindMenuPreview below, the board view mounted unframed: the board
+//                        is cropped from its middle, no edge of it showing.
+//   Each tile whose preview is a board gets its board view at once, handed its game; a mount that
+//   throws leaves the tile's preview its plain ground (data-failed), the tile's fallback. Every other
+//   preview is the tile's own markup.
 // bindMenuPreview({ panel, stage, tag, iconOf, mountBoard, boardOf }) → { show(preview), shown }:
 //   panel, stage, tag    the ui-scene-panel, its stage and its tag;
 //   iconOf(entry)        the entry's icon, an element the card's badge takes a copy of;
@@ -95,6 +104,27 @@ export function dailyBoard2D(daily) {
   const grid = createSquareGrid(width, height);
   const game = createGame({ graph: grid.graph, profile: REFERENCE_PROFILE, mineCount: mines, dimensions: { width, height } });
   return { grid, geometry: createGeometry('square', width, height), game, mark: daily.startCell };
+}
+
+export function mountTilePreviews({ tiles, previewOf, mountBoard, boardOf }) {
+  const views = new Map();
+  for (const tile of tiles) {
+    const id = tile.dataset.entry;
+    const preview = previewOf(id);
+    if (preview?.kind !== 'board') continue;
+    const art = tile.querySelector('.ui-play-tile__art');
+    try {
+      const b = boardOf(preview.kind);
+      const view = mountBoard({ container: art, grid: b.grid, geometry: b.geometry });
+      view.setGame(b.game);
+      view.setMark(b.mark ?? -1);
+      views.set(id, view);
+    } catch {
+      art.replaceChildren();
+      tile.querySelector('.ui-play-tile__preview').dataset.failed = '';
+    }
+  }
+  return views;
 }
 
 export function bindMenuPreview({ panel, stage, tag, iconOf, mountBoard, boardOf }) {

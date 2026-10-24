@@ -286,12 +286,12 @@ export function bindPager(nav, { onPage, name = '' } = {}) {
 
 // ---------------------------------------------------------------- one selected control
 
-/** The controls whose hover and focus are one selected state: buttons, menu entries, mode entries and board options. */
-export const SELECT_ON_HOVER = '.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option';
+/** The controls whose hover and focus are one selected state: buttons, menu entries, main menu buttons and board options. */
+export const SELECT_ON_HOVER = '.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option';
 
 /**
- * Moving the mouse over an enabled button, menu entry, mode entry or board option focuses it (without
- * scrolling), and over a disabled mode entry too (aria-disabled: it stays selectable and opens nothing),
+ * Moving the mouse over an enabled button, menu entry, main menu button or board option focuses it
+ * (without scrolling), and over a disabled play tile too (aria-disabled: it stays selectable and opens nothing),
  * so the selected control is always the focused one; a control that never takes focus (data-no-focus:
  * the in-game toggles that leave the keys to the board) is left alone. One delegated listener on `root` (the document)
  * serves every such control, present and future. A mousemove that did not move the pointer (one a
@@ -307,7 +307,7 @@ export function bindSelectOnHover(root) {
     last = at;
     const el = e.target?.closest?.(SELECT_ON_HOVER);
     if (!el || el.disabled || el.hasAttribute('data-no-focus')) return;
-    if (el.getAttribute('aria-disabled') === 'true' && !el.matches?.('.ui-mode-entry')) return;
+    if (el.getAttribute('aria-disabled') === 'true' && !el.matches?.('.ui-play-tile')) return;
     if (el.ownerDocument?.activeElement === el) return;
     el.focus({ preventScroll: true });
   };

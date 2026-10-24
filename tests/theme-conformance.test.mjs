@@ -381,7 +381,7 @@ const partNames = (name) => byName(name).parts.map((p) => p.name);
 const opt = (name, part) => byName(name).parts.find((p) => p.name === part);
 
 test('the catalogue declares the shared layout\'s components, their parts, states and slots, so every theme is held to them', () => {
-  for (const name of ['ui-backdrop', 'ui-frame', 'ui-mode-entry', 'ui-option', 'ui-section-label', 'ui-key-hint', 'ui-chip', 'ui-list-row',
+  for (const name of ['ui-backdrop', 'ui-frame', 'ui-play-tile', 'ui-small-entry', 'ui-option', 'ui-section-label', 'ui-key-hint', 'ui-chip', 'ui-list-row',
     'ui-scene-panel', 'ui-button--danger', 'ui-button--go', 'ui-button--stop', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-toast']) {
     assert.equal(byName(name)?.kind, 'component', `${name} is catalogued`);
   }
@@ -389,24 +389,54 @@ test('the catalogue declares the shared layout\'s components, their parts, state
   assert.deepEqual(byName('ui-frame').slots.map((s) => [s.name, s.selector]), [['window-chrome', '.ui-frame__chrome[data-slot="window-chrome"]']]);
   for (const p of ['head', 'back', 'title', 'action', 'body', 'foot', 'status', 'summary']) assert.ok(partNames('ui-frame').includes(p), `the frame's ${p}`);
   for (const name of ['ui-button--primary', 'ui-button--secondary']) assert.deepEqual(byName(name).variants, ['ui-button--sm', 'ui-button--lg'], `${name} sizes`);
-  assert.equal(opt('ui-mode-entry', 'entry').states.disabled, '.ui-mode-entry[aria-disabled="true"]', 'a disabled mode entry stays selectable');
-  for (const p of ['entry', 'icon', 'label', 'reason', 'last', 'lock']) assert.ok(partNames('ui-mode-entry').includes(p), `the mode entry's ${p}`);
+  assert.equal(opt('ui-play-tile', 'tile').states.disabled, '.ui-play-tile[aria-disabled="true"]', 'a disabled play tile stays selectable');
+  for (const p of ['tile', 'icon', 'label', 'reason', 'preview', 'lock']) assert.ok(partNames('ui-play-tile').includes(p), `the play tile's ${p}`);
+  for (const p of ['entry', 'icon', 'label']) assert.ok(partNames('ui-small-entry').includes(p), `the small entry's ${p}`);
+  assert.deepEqual(byName('ui-play-tile').variants, ['ui-play-tile--row', 'ui-play-tile__preview--light', 'ui-play-tile__preview--locked'], 'the phone row and the preview\'s grounds');
+  assert.ok(!partNames('ui-play-tile').includes('last') && !partNames('ui-small-entry').includes('last'), 'no main menu button carries a Last played chip');
   for (const p of ['option', 'name', 'last', 'meta', 'size', 'density', 'check', 'badge']) assert.ok(partNames('ui-option').includes(p), `the board option's ${p}`);
   assert.ok(partNames('ui-stat--tile').includes('badge'), 'the stat tile\'s badge');
   assert.deepEqual(partNames('ui-toast'), ['icon', 'text'], 'the toast\'s icon and text');
   assert.ok(partNames('ui-card').includes('icon'), 'a message card\'s badge');
-  for (const [name, part] of [['ui-frame', 'status'], ['ui-frame', 'summary'], ['ui-mode-entry', 'reason'], ['ui-mode-entry', 'last'],
+  for (const [name, part] of [['ui-frame', 'status'], ['ui-frame', 'summary'], ['ui-play-tile', 'reason'], ['ui-play-tile', 'lock'],
     ['ui-option', 'size'], ['ui-option', 'density'], ['ui-option', 'badge'], ['ui-stat--tile', 'badge'], ['ui-section-label', 'aside'], ['ui-card', 'icon']]) {
     assert.equal(opt(name, part).optional, true, `${name} ${part} is optional`);
   }
-  // Mode entries and board options follow the button rule: one selected state, no hover or focus of their own.
-  assert.deepEqual(Object.keys(opt('ui-mode-entry', 'entry').states), ['default', 'selected', 'pressed', 'disabled']);
+  // Main menu buttons and board options follow the button rule: one selected state, no hover or focus of their own.
+  assert.deepEqual(Object.keys(opt('ui-play-tile', 'tile').states), ['default', 'selected', 'pressed', 'disabled']);
+  assert.deepEqual(Object.keys(opt('ui-small-entry', 'entry').states), ['default', 'selected', 'pressed', 'disabled']);
   assert.deepEqual(Object.keys(opt('ui-option', 'option').states), ['default', 'selected', 'pressed', 'disabled', 'chosen']);
   assert.equal(opt('ui-option', 'option').states.chosen, '.ui-option[aria-pressed="true"]');
-  assert.ok(!Object.hasOwn(opt('ui-mode-entry', 'entry').states, 'locked'), 'no locked state for a mode entry');
-  for (const [name, part] of [['ui-mode-entry', 'last'], ['ui-option', 'last'], ['ui-stat--tile', 'badge'], ['ui-list-row', 'outcome']]) {
+  assert.ok(!Object.hasOwn(opt('ui-play-tile', 'tile').states, 'locked'), 'no locked state for a play tile: a locked one is disabled');
+  for (const [name, part] of [['ui-option', 'last'], ['ui-stat--tile', 'badge'], ['ui-list-row', 'outcome']]) {
     assert.equal(opt(name, part).as, 'ui-chip', `${name}'s ${part} is a chip`);
   }
+});
+
+test('Joyful tiles\' main menu buttons are readable: the navy ink on every pastel and on the stronger neutral at least 4.5:1, each full colour\'s ink too, the locked label at least 3:1 as large text, at rest and selected', () => {
+  const theme = loadTheme(THEMES.find((t) => t.id === 'joyful-tiles'));
+  const tokens = declaredTokens(theme);
+  const colour = (name) => {
+    const c = parseColor(tokens.get(name) ?? '');
+    assert.ok(c, `${name} is a declared colour`);
+    return c;
+  };
+  const ratio = (ink, fill) => {
+    const ground = over(colour(fill), [255, 255, 255]);
+    return contrast(over(colour(ink), ground), ground);
+  };
+  const ACCENTS = [['classic-2d', 'blue', '--color-blue', '--color-blue-on'], ['hexagon', 'teal', '--color-teal', '--color-teal-on'],
+    ['triangle', 'green', '--color-green', '--color-green-on'], ['surface', 'orange', '--color-orange', '--color-orange-on'],
+    ['3d', 'accent', '--color-accent-fill', '--color-accent-on'], ['daily', 'violet', '--color-violet', '--color-violet-on']];
+  const rule = (sel) => theme.scoped.filter((r) => r.inner.includes(sel)).flatMap((r) => r.decls);
+  for (const [entry, soft, full, on] of ACCENTS) {
+    const decls = Object.fromEntries(rule(`.ui-play-tile[data-entry="${entry}"]`).map((d) => [d.prop, d.value]));
+    assert.deepEqual([decls['--fs'], decls['--f'], decls['--o']], [`var(--color-${soft}-soft)`, `var(${full})`, `var(${on})`], `${entry}: its pastel at rest, its full colour and ink selected`);
+    assert.ok(ratio('--color-ink', `--color-${soft}-soft`) >= 4.5, `the ink on ${soft}'s pastel: ${ratio('--color-ink', `--color-${soft}-soft`).toFixed(2)}:1`);
+    assert.ok(ratio(on, full) >= 4.5, `${on} on ${full}: ${ratio(on, full).toFixed(2)}:1`);
+  }
+  for (const fill of ['--color-neutral-strong', '--color-surface-raised']) assert.ok(ratio('--color-ink', fill) >= 4.5, `the ink on ${fill}: ${ratio('--color-ink', fill).toFixed(2)}:1`);
+  for (const fill of ['--color-locked', '--color-locked-edge']) assert.ok(ratio('--color-locked-ink', fill) >= 3, `the locked label on ${fill}: ${ratio('--color-locked-ink', fill).toFixed(2)}:1`);
 });
 
 test('the slot check passes the frame\'s window chrome and flags any other name', () => {

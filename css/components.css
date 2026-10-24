@@ -8,7 +8,7 @@
    Behaviour helpers live in js/ui/components.js (initComponents(root) binds
    every slider, segmented choice and tablist under root; bindSliderFill(input)
    keeps a slider's fill in step with its value; bindSelectOnHover(root)
-   moves focus to the button, menu entry, mode entry or board option the mouse
+   moves focus to the button, menu entry, main menu button or board option the mouse
    moves over; showKeyHints(root, keysFor) fills the key hints;
    bindFiguresLive(panel) writes a figures panel's live part;
    applyIcons(root) draws each button's and note's leading icon;
@@ -18,15 +18,15 @@
    Changing a class name or a markup pattern below is a breaking change for
    every screen using it.
 
-   States. On buttons, menu entries, mode entries and board options
-   (ui-button, ui-menu__item, ui-mode-entry, ui-option)
+   States. On buttons, menu entries, main menu buttons and board options
+   (ui-button, ui-menu__item, ui-play-tile, ui-small-entry, ui-option)
    hover and focus are one selected state: the mouse moving over one focuses
    it, so the selected control is the focused one (:focus, body.pad-nav :focus
    for the controller), and none draws a focus ring or a hover look of its
    own. A control that never takes focus (data-no-focus: the in-game toggles
    that leave the keys to the board) is not focused by the mouse. They have:
    at rest, selected, pressed (:active) and disabled (the native `disabled`
-   attribute; aria-disabled="true" on a mode entry); a board option and a
+   attribute; aria-disabled="true" on a play tile); a board option and a
    latched toggle also have chosen (aria-pressed="true"), drawn apart from
    selected, and a board option is selected by the pointer only while the
    pointer is over it (body.pointer-nav: the last input was the mouse), so
@@ -610,32 +610,54 @@
               scrolls vertically. The logo sits centred between Back and the
               window buttons.
 
-   ui-mode-entry — a main-menu entry: a mode, or a place (Records, Settings)
-     Element: <div class="ui-mode-list" role="group" aria-label="…">
-                <button type="button" class="ui-mode-entry" data-entry="classic-2d">
-                  <span class="ui-mode-entry__icon" aria-hidden="true"><svg>…</svg></span>
-                  <span class="ui-mode-entry__label">Classic 2D</span>
-                  <span class="ui-chip">Last played</span>
-                  <span class="ui-mode-entry__lock" aria-hidden="true"><svg>…</svg></span>
-                </button> …
-              </div>
-     Role:    group; each entry a button (native)
-     Name:    group: aria-label; entry: its text (label, chip, reason)
-     Accent:  data-entry names the entry (classic-2d, hexagon, triangle,
-              surface, 3d, daily, records, settings, quit); the theme gives
-              each its accent, and the places a neutral one.
-     Last:    the Last played ui-chip on the last mode played.
-     Disabled: aria-disabled="true" (not the native attribute, so the
-              entry stays selectable and its preview shows; its screen
-              opens nothing on it) and a
-              <span class="ui-mode-entry__reason">…</span> after the label
-              saying why it cannot open here where there is one to give
-              (3D without WebGL 2; Quit on the web has the lock alone); the
-              lock shows only while disabled. There is no
-              locked state: a mode not built yet is an ordinary entry.
-     Selected: the selected entry is taller than the others, with a bigger
-              icon and label. In a ui-mode-list the entries share the
-              list's height.
+   ui-play-tile — a main menu button for a mode (or Daily) with its own preview
+     Element: <button type="button" class="ui-play-tile" data-entry="classic-2d">
+                <span class="ui-play-tile__side">
+                  <span class="ui-play-tile__top">
+                    <span class="ui-play-tile__icon" aria-hidden="true"><svg>…</svg></span>
+                    <span class="ui-play-tile__lock" aria-hidden="true"><svg>…</svg></span>
+                  </span>
+                  <span class="ui-play-tile__text"><span class="ui-play-tile__label">Classic 2D</span></span>
+                </span>
+                <span class="ui-play-tile__preview" data-preview="board" aria-hidden="true">
+                  <span class="ui-play-tile__art">[the drawn preview]</span>
+                </span>
+              </button>
+     Role:    button (native)
+     Name:    its text (label, reason)
+     Accent:  data-entry names the mode (classic-2d, hexagon, triangle,
+              surface, 3d, daily); the theme gives each its colour: a pastel
+              of it with a pastel edge at rest, the full colour selected.
+     Preview: a square on its ground, its art centred and cropped from the
+              middle so no board edge shows; data-preview names what it
+              shows (board, badge, still, icon, locked). The dark scene
+              ground by default; ui-play-tile__preview--light translucent
+              white over the button's colour; ui-play-tile__preview--locked
+              the locked ground with the lock. The art: a board view (the
+              screen mounts it), a ui-play-tile__badge of the mode's icon, a
+              still image, <img class="ui-play-tile__still" alt=""> (its
+              data-still naming it), or the ui-play-tile__calendar icon.
+     Disabled: aria-disabled="true" (not the native attribute, so the tile
+              stays selectable; its screen opens nothing on it), a
+              <span class="ui-play-tile__reason"> under the label holding
+              its reason twice, <span data-reason="long"> and the phone
+              row's <span data-reason="short">, the lock shown and the
+              preview locked. A mode not built yet is an ordinary tile.
+     Selected: no tile grows: every main menu button keeps its height.
+     Row:     ui-play-tile--row is the phone row — the icon, the text and
+              the lock in a row, the preview a strip pinned inside its right
+              end that never sets its height; every play tile takes it at
+              the phone sizes.
+
+   ui-small-entry — a main menu button for a place (Records, Settings)
+     Element: <button type="button" class="ui-small-entry" data-entry="records">
+                <span class="ui-small-entry__icon" aria-hidden="true"><svg>…</svg></span>
+                <span class="ui-small-entry__label">Records</span>
+              </button>
+     Role:    button (native)
+     Name:    its label
+     Look:    smaller than a play tile, the neutral raised surface at rest,
+              the stronger neutral selected.
 
    ui-option — a board option: a preset, Custom, Insert Board Code, Learn 3D
      Element: <div class="ui-options" role="group" aria-label="…">
@@ -743,8 +765,8 @@
                   <span class="ui-scene-panel__name">Hexagon</span>
                   <span class="ui-scene-panel__note">Coming soon</span>
                 </div>
-              the badge in the accent its data-entry names, as the mode
-              entry's (the places neutral), locked grey with data-unavailable
+              the badge in the accent its data-entry names, as the play
+              tile's (the places neutral), locked grey with data-unavailable
               for an entry that cannot open here; the note optional. A
               screen may draw it as a large card, a bigger badge.
 
@@ -840,30 +862,32 @@
                        ui-screen--columns widens the screen beyond
                        ui-screen--wide at that width. Gaps come from the
                        spacing tokens.
-     ui-mode-list      a column of ui-mode-entry sharing its height.
+     ui-mode-list      the main menu buttons: its ui-mode-list__tiles, the
+                       ui-play-tile in two columns (one on a phone), every
+                       tile one height, a mode joining it with one tile;
+                       then its ui-mode-list__places, the ui-small-entry
+                       side by side (stacked on a phone).
      ui-options        a column of ui-option.
      ui-key-hints      a row of ui-key-hint.
      ui-list           the list of ui-list-row, its columns shared.
 
    Main menu (index.html #menu): on the page's own backdrop, a ui-frame
      filling the window's height whose head is the title bar with no Back
-     and whose body has no heading, the logo naming it; in its body, on the
-     left, one ui-mode-list of the
-     nine entries (Classic 2D, Hexagon, Triangle, Surface, 3D; Daily,
-     Records, Settings; Quit — three blocks, data-block-start on the first
-     entry of the second and third, no group labels; each a ui-mode-entry
-     route, data-entry naming it, the last mode played marked with the Last
-     played ui-chip, an entry that cannot open here aria-disabled with its
-     lock and any reason line), the entries together as tall as the
-     preview; on the right the
-     preview of the selected entry, a ui-scene-panel (a board drawn by its
-     board view, the 3D scene live, or a card); the foot holds the
-     ui-key-hints (move, select) and the build label, a ui-text--muted line,
-     with the touch note on a coarse-only device, a ui-text line after its
-     hand ui-icon. On a phone: the frame full-bleed, no preview, the entries
-     filling the body. Default focus: the entry last opened
-     from the menu when Back returns to it, else the last mode played's,
-     else the first available entry.
+     and whose body has no heading, the logo naming it, Quit its window
+     button and no entry; its body holds one ui-mode-list filling it: the
+     ui-play-tile of Classic 2D and Hexagon, Triangle and Surface, 3D and
+     Daily, each a route, data-entry naming it, showing its own preview at
+     once (the Classic 2D board view drawing a game in progress, the
+     Hexagon and Triangle badges, the Surface and 3D stills, the Daily
+     calendar), a tile that cannot open here aria-disabled with its reason
+     and its preview locked; then Records and Settings, each a
+     ui-small-entry route; no Last played chip and no preview panel. The
+     foot holds the build label alone, a ui-text--muted line, with the
+     touch note on a coarse-only device, a ui-text line after its hand
+     ui-icon; no key hints. On a phone: the frame full-bleed, the phone
+     rows in one column filling the body. Default focus: the entry last
+     opened from the menu when Back returns to it, else the last mode
+     played's, else the first available entry.
    3D board choice (index.html #board-choice): the Classic 2D board choice's composition
      (below), with the title "3D", its window placed as Classic 2D's. Its left ui-options: Learn
      3D first (ui-option--learn, its cube badge, no Last played ui-chip),
@@ -1820,41 +1844,112 @@
 }
 .ui-frame__status, .ui-frame__summary { margin: 0; font-size: var(--font-size-sm); }
 
-/* ---------- mode entry: icon, label (and reason), chip, lock ---------- */
+/* ---------- main menu buttons: the play tiles two by two, then the small entries ----------
+   The sizes below are the largest window's; a screen sets its own per window size. Every tile of a
+   list is one height, none growing when selected, never shorter than its content (its preview square
+   and padding). The phone row (ui-play-tile--row, and every play tile at the phone sizes) lays the
+   icon, the text and the lock in a row, its preview a strip pinned inside the row's right end that
+   never sets its height. */
 .ui-mode-list {
   display: flex;
   flex-direction: column;
+  gap: var(--space-6);
+}
+.ui-mode-list__tiles {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(min-content, 1fr);
   gap: var(--space-3);
 }
-.ui-mode-list > .ui-mode-entry { flex: 1 1 auto; }
-.ui-mode-entry {
+.ui-mode-list__places {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.ui-play-tile, .ui-small-entry {
   appearance: none;
   position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  grid-template-rows: 1fr auto auto 1fr;
-  grid-template-areas: "icon . chip lock" "icon label chip lock" "icon reason chip lock" "icon . chip lock";
+  display: flex;
   align-items: center;
-  column-gap: var(--space-4);
   box-sizing: border-box;
   width: 100%;
-  min-height: 70px;
+  min-width: 0;
   margin: 0;
-  padding: 6px 20px;
   border: 0;
   text-align: left;
   cursor: pointer;
 }
-.ui-mode-entry[aria-disabled="true"] { cursor: not-allowed; }
-.ui-mode-entry__icon { grid-area: icon; display: grid; place-items: center; width: 42px; height: 42px; }
-.ui-mode-entry__icon > svg { width: 24px; height: 24px; }
+.ui-play-tile { align-items: stretch; gap: 18px; min-height: 0; padding: 14px 14px 14px 22px; }
+.ui-play-tile[aria-disabled="true"] { cursor: not-allowed; }
+.ui-play-tile__side { display: flex; flex-direction: column; justify-content: space-between; flex: 1 1 auto; min-width: 0; padding: 6px 0; }
+.ui-play-tile__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ui-play-tile__icon { flex: none; display: grid; place-items: center; width: 52px; height: 52px; }
+.ui-play-tile__icon > svg { width: 28px; height: 28px; }
+.ui-play-tile__text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ui-play-tile__label { font-size: 30px; font-weight: var(--font-weight-heavy); line-height: 1; }
+.ui-play-tile__reason { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
+.ui-play-tile__reason > [data-reason="short"] { display: none; }
+.ui-play-tile__lock { flex: none; display: grid; }
+.ui-play-tile__lock > svg { width: 20px; height: 20px; }
+.ui-play-tile:not([aria-disabled="true"]) .ui-play-tile__lock { display: none; }
+/* the preview: a square of its ground taking no input, its art centred and cropped from the middle */
+.ui-play-tile__preview {
+  position: relative;
+  overflow: hidden;
+  flex: none;
+  align-self: center;
+  width: 175px;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.ui-play-tile__art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+}
+/* the Classic 2D board view at near playing size, the Intermediate board larger than its square */
+.ui-play-tile__preview[data-preview="board"] > .ui-play-tile__art { width: 452px; height: 452px; }
+.ui-play-tile__badge { display: grid; place-items: center; width: 96px; height: 96px; }
+.ui-play-tile__badge > svg { width: 50%; height: 50%; }
+.ui-play-tile__still { display: block; object-fit: contain; }
+.ui-play-tile__still[data-still="surface"] { width: 168px; height: 168px; translate: 0 -10px; }
+.ui-play-tile__still[data-still="3d"] { width: 148px; height: 150px; }
+.ui-play-tile__calendar { display: block; width: 152px; height: 133px; }
+.ui-play-tile__preview--locked > .ui-play-tile__art > svg { width: 34px; height: 34px; }
+.ui-small-entry { gap: 14px; min-height: 64px; padding: 10px 18px; }
+.ui-small-entry__icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; }
+.ui-small-entry__icon > svg { width: 22px; height: 22px; }
+.ui-small-entry__label { font-size: 21px; font-weight: var(--font-weight-heavy); line-height: 1; }
+/* the phone row */
+.ui-play-tile--row { align-items: center; gap: 14px; padding: 8px 126px 8px 16px; }
+.ui-play-tile--row .ui-play-tile__side, .ui-play-tile--row .ui-play-tile__top { display: contents; }
+.ui-play-tile--row .ui-play-tile__icon { width: 36px; height: 36px; }
+.ui-play-tile--row .ui-play-tile__text { flex: 1 1 auto; gap: 2px; }
+.ui-play-tile--row .ui-play-tile__label { font-size: 20px; }
+.ui-play-tile--row .ui-play-tile__lock { order: 1; }
+.ui-play-tile--row .ui-play-tile__preview { position: absolute; top: 8px; bottom: 8px; right: 8px; width: 106px; aspect-ratio: auto; align-self: stretch; }
+.ui-play-tile--row .ui-play-tile__reason > [data-reason="long"] { display: none; }
+.ui-play-tile--row .ui-play-tile__reason > [data-reason="short"] { display: inline; }
+@media (max-width: 719px) {
+  .ui-mode-list__tiles, .ui-mode-list__places { grid-template-columns: minmax(0, 1fr); }
+  .ui-play-tile { align-items: center; gap: 14px; padding: 8px 126px 8px 16px; }
+  .ui-play-tile__side, .ui-play-tile__top { display: contents; }
+  .ui-play-tile__icon { width: 36px; height: 36px; }
+  .ui-play-tile__text { flex: 1 1 auto; gap: 2px; }
+  .ui-play-tile__label { font-size: 20px; }
+  .ui-play-tile__lock { order: 1; }
+  .ui-play-tile__preview { position: absolute; top: 8px; bottom: 8px; right: 8px; width: 106px; aspect-ratio: auto; align-self: stretch; }
+  .ui-play-tile__reason > [data-reason="long"] { display: none; }
+  .ui-play-tile__reason > [data-reason="short"] { display: inline; }
+}
 .ui-option__badge > svg { width: 60%; height: 60%; }
-.ui-mode-entry__label { grid-area: label; font-size: 24px; font-weight: var(--font-weight-heavy); line-height: 1.05; }
-.ui-mode-entry__reason { grid-area: reason; margin-top: var(--space-1); font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
-.ui-mode-entry > .ui-chip { grid-area: chip; }
-.ui-mode-entry__lock { grid-area: lock; display: grid; margin-inline-start: var(--space-3); }
-.ui-mode-entry__lock > svg { width: 20px; height: 20px; }
-.ui-mode-entry:not([aria-disabled="true"]) .ui-mode-entry__lock { display: none; }
 
 /* ---------- board option: name and chip over the meta line, the check at the end ---------- */
 .ui-options {
@@ -2205,9 +2300,9 @@
 }
 
 /* ---------- focused state ----------
-   Every focusable part shows a focused state, drawn by the theme: on buttons, menu entries, mode
-   entries and board options it is their selected state, so none draws a separate focus ring here. */
-:is(.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-tabs__tab, .ui-checkbox__input, .ui-field__input, .ui-link):focus { outline: none; }
+   Every focusable part shows a focused state, drawn by the theme: on buttons, menu entries, main
+   menu buttons and board options it is their selected state, so none draws a separate focus ring here. */
+:is(.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-tabs__tab, .ui-checkbox__input, .ui-field__input, .ui-link):focus { outline: none; }
 
 /* ---------- coarse pointers ---------- */
 /* A finger's targets, on a coarse pointer only: every size above stays the fine pointer's.

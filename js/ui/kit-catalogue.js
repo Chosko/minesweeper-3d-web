@@ -11,7 +11,7 @@
 // its markup carries that component's class) }. A slot: { name, selector }, an element present in
 // the markup, marked data-slot="<name>", and hidden unless a theme styles it into view.
 //
-// States. On buttons, menu entries, mode entries and board options hover and focus are one
+// States. On buttons, menu entries, main menu buttons and board options hover and focus are one
 // `selected` state (screen-components § Scope and non-goals), so those parts carry default,
 // selected, pressed and disabled, and a board option also `chosen`, the board it holds, apart from
 // selected, as does a latched toggle while latched on. Every other control carries default, hover,
@@ -22,7 +22,7 @@ export const STATES = Object.freeze(['default', 'hover', 'pressed', 'focused', '
 
 const focus = (sel) => `${sel}:focus-visible, body.pad-nav ${sel}:focus`;
 
-// A button, menu entry, mode entry or board option: hover and focus are its selected state; `extra`
+// A button, menu entry, main menu button or board option: hover and focus are its selected state; `extra`
 // adds `chosen`.
 const selectable = (name, sel, extra = {}) => Object.freeze({
   name, selector: sel, optional: false, interactive: true,
@@ -192,16 +192,33 @@ export const KIT_CATALOGUE = Object.freeze([
     ],
     slots: [slot('window-chrome', '.ui-frame__chrome')],
   }),
-  // Each entry's accent follows its data-entry; the selected entry is taller, with a bigger icon and label.
-  // A disabled entry is aria-disabled, so it can still be selected and show its preview.
-  component('ui-mode-entry', {
+  // The main menu buttons. A play tile: a mode's colour (its data-entry) and its own preview, a
+  // square on the dark scene ground, --light on translucent white, --locked while it cannot open;
+  // ui-play-tile--row the phone row. A disabled tile is aria-disabled, so it can still be selected.
+  component('ui-play-tile', {
+    variants: ['ui-play-tile--row', 'ui-play-tile__preview--light', 'ui-play-tile__preview--locked'],
     parts: [
-      selectable('entry', '.ui-mode-entry', { disabled: '.ui-mode-entry[aria-disabled="true"]' }),
-      part('icon', '.ui-mode-entry__icon'),
-      part('label', '.ui-mode-entry__label'),
-      part('reason', '.ui-mode-entry__reason', { optional: true }),
-      part('last', '.ui-mode-entry .ui-chip', { optional: true, as: 'ui-chip' }),
-      part('lock', '.ui-mode-entry__lock', { optional: true }),
+      selectable('tile', '.ui-play-tile', { disabled: '.ui-play-tile[aria-disabled="true"]' }),
+      part('side', '.ui-play-tile__side'),
+      part('top', '.ui-play-tile__top'),
+      part('icon', '.ui-play-tile__icon'),
+      part('text', '.ui-play-tile__text'),
+      part('label', '.ui-play-tile__label'),
+      part('reason', '.ui-play-tile__reason', { optional: true }),
+      part('lock', '.ui-play-tile__lock', { optional: true }),
+      part('preview', '.ui-play-tile__preview'),
+      part('art', '.ui-play-tile__art'),
+      part('badge', '.ui-play-tile__badge', { optional: true }),
+      part('still', '.ui-play-tile__still', { optional: true }),
+      part('calendar', '.ui-play-tile__calendar', { optional: true }),
+    ],
+  }),
+  // A small entry: a place (Records, Settings), neutral.
+  component('ui-small-entry', {
+    parts: [
+      selectable('entry', '.ui-small-entry'),
+      part('icon', '.ui-small-entry__icon'),
+      part('label', '.ui-small-entry__label'),
     ],
   }),
   component('ui-option', {
@@ -347,7 +364,7 @@ export const KIT_CATALOGUE = Object.freeze([
     variants: ['ui-columns--two', 'ui-columns--pair'],
     parts: [part('column', '.ui-column'), part('span', '.ui-columns__span')],
   }),
-  composition('ui-mode-list'),
+  composition('ui-mode-list', { parts: [part('tiles', '.ui-mode-list__tiles'), part('places', '.ui-mode-list__places')] }),
   composition('ui-options'),
   composition('ui-key-hints'),
   composition('ui-list'),
