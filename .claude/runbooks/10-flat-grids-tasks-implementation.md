@@ -148,7 +148,7 @@ Context: none
 
 Done: 2026-10-24, commit `fe2b426` (14 files, +590/-21). Decision: the triangle provider names each cell's orientation `orientation(index)`, returning `'up'` or `'down'`; premise wrong: the solver needed no change.
 
-## [ ] 12. Implement task 259 — Triangle geometry
+## [x] 12. Implement task 259 — Triangle geometry
 
 Depends on: 1
 
@@ -159,6 +159,8 @@ Context:
 ```prompt
 /task-implement 259 --review
 ```
+
+Done: 2026-10-24, commit `285170f` (4 files, +527/-6). Premise wrong: triangles are spaced so every pair of facing sides is one gap apart (half a side plus 2·gap/√3 along a row), not "a half side apart plus the gap"; a press goes to the tile whose outline is nearest, not the nearest centre.
 
 ## [ ] 13. Implement task 260 — Triangle boards, limits, identity and board-code token
 
@@ -177,6 +179,7 @@ Depends on: 11, 12, 13
 
 Context:
 - 2026-10-24 (from step 11): task 258 left js/generation/solver.js unchanged (it already treats an over-budget frontier group as unconstrained) and closed the triangle-grid open question on Expert timing as settled — every one of 1000 seeds met the attempt budget (dev/measure-noguess-tri.mjs).
+- 2026-10-24 (from step 12): the triangle geometry spaces tiles so every pair of facing sides is one gap apart — rows one triangle height plus the gap apart, tiles half a side plus 2·gap/√3 apart along a row — not "a half side apart plus the gap" as the feature document says; a press goes to the tile whose outline is nearest (ties to the lower index); the centre is the centroid and the glyph box is the square around the inscribed circle (side / √3); `minTile` is 44 and `tileCap(scale)` is the square cap × √3, rounded. .claude/context/geometry.md still lists only the square and hexagon kinds — bring both in line.
 
 ```prompt
 /task-implement 261 --review
@@ -206,7 +209,8 @@ Context: none
 
 Depends on: 3, 15, 16
 
-Context: none
+Context:
+- 2026-10-24 (from step 12): the triangle geometry's centre is the triangle's centroid and its glyph box is the square around the inscribed circle (side / √3); it works out each cell's `'up'`/`'down'` orientation itself.
 
 ```prompt
 /task-implement 264 --review
