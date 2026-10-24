@@ -344,7 +344,7 @@ Context:
 
 Done: 2026-10-24, commit `26ce6a5` (10 files, +206/-43). Decision: the mode-to-grid check sits in `createBoardIdentity` (js/records/board.js), tying only Hexagon and Triangle to a grid; `RECORDS_VERSION` is 5 and `MODES` follows the menu order.
 
-## [ ] 26. Implement task 273 — Records screen's mode switch over four modes
+## [x] 26. Implement task 273 — Records screen's mode switch over four modes
 
 Depends on: 25
 
@@ -356,6 +356,8 @@ Context:
 ```prompt
 /task-implement 273 --review
 ```
+
+Done: 2026-10-24, commit `2552f3d` (16 files, +250/-91). Decision: an unknown mode opens Classic 2D rather than the last board played, and LT / RT step through the four modes, stopping at either end; premise wrong: `MODES` is defined in js/records/model.js, not board.js.
 
 ## [ ] 27. Implement task 274 — Replay format version with `hex` and `tri`, and the 2D recorder over them
 
@@ -385,6 +387,7 @@ Depends on: 25, 26, 27, 28
 
 Context:
 - 2026-10-24 (from step 25): task 272 already updated .claude/context/records.md and records-store.md — `RECORDS_VERSION` 5 (the 4→5 step reuses `upgradeRecords`), the mode-to-grid check in `createBoardIdentity`, `MODES` in menu order, boards played by mode using each grid's own standard list.
+- 2026-10-24 (from step 26): task 273 updated the Records context files; the older feature documents describing the original 2D | 3D switch (3d-results-records-screens, shared-screen-layout, leaderboard-screen) were left as they are. `EXPORT_MODES` is now `MODES` from js/records/model.js.
 
 ```prompt
 /task-implement 276 --review
