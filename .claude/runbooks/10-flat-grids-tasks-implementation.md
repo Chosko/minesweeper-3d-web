@@ -136,7 +136,7 @@ Context:
 
 Done: 2026-10-24, commit `5a17724` (10 files, +92/-40).
 
-## [ ] 11. Implement task 258 — Triangle graph provider and the `tri` generation description
+## [x] 11. Implement task 258 — Triangle graph provider and the `tri` generation description
 
 Depends on: none
 
@@ -146,12 +146,15 @@ Context: none
 /task-implement 258 --review
 ```
 
+Done: 2026-10-24, commit `fe2b426` (14 files, +590/-21). Decision: the triangle provider names each cell's orientation `orientation(index)`, returning `'up'` or `'down'`; premise wrong: the solver needed no change.
+
 ## [ ] 12. Implement task 259 — Triangle geometry
 
 Depends on: 1
 
 Context:
 - 2026-10-21 (from step 2): the board view's repaint walks only the cells between the viewport's top-left and bottom-right corners plus one row either side, so it assumes cells are numbered row by row — this geometry must number its cells the same way.
+- 2026-10-24 (from step 11): the triangle graph provider exposes each cell's orientation as `orientation(index)`, returning `'up'` or `'down'` — build the geometry on that name.
 
 ```prompt
 /task-implement 259 --review
@@ -161,7 +164,8 @@ Context:
 
 Depends on: 9, 11
 
-Context: none
+Context:
+- 2026-10-24 (from step 11): the triangle standard sizes are written out twice for now, in tests/generation-noguess.test.mjs and dev/measure-noguess-tri.mjs — point both at the Triangle board-setup module this task adds. Triangle Expert (41 × 17, 103 mines) met the attempt budget on all 1000 seeds measured.
 
 ```prompt
 /task-implement 260 --review
@@ -171,7 +175,8 @@ Context: none
 
 Depends on: 11, 12, 13
 
-Context: none
+Context:
+- 2026-10-24 (from step 11): task 258 left js/generation/solver.js unchanged (it already treats an over-budget frontier group as unconstrained) and closed the triangle-grid open question on Expert timing as settled — every one of 1000 seeds met the attempt budget (dev/measure-noguess-tri.mjs).
 
 ```prompt
 /task-implement 261 --review
