@@ -29,7 +29,7 @@ Context:
 
 Done: 2026-10-23, commit `c56346c` (26 files, +979/-395). Premise wrong: the platform layer had no capability flags; `capabilities` with `desktopHost: false` was added to `js/platform/index.js`.
 
-## [~] 3. Implement task 283 — Main menu redesign: play tiles with their own previews
+## [x] 3. Implement task 283 — Main menu redesign: play tiles with their own previews
 
 Depends on: 2
 
@@ -40,7 +40,9 @@ Context:
 /task-implement 283 --review
 ```
 
-## [ ] 4. Implement task 284 — Collapsible board choice panel, Classic 2D and 3D
+Done: 2026-10-24, commit `086eace` (41 files, +1163/-930). Decision: Quit is no longer a main menu entry — the title bar's Quit is the only one; the menu's two still images ship as PNGs under `assets/menu/`, outside the theme folder.
+
+## [~] 4. Implement task 284 — Collapsible board choice panel, Classic 2D and 3D
 
 Depends on: 2, 3
 
@@ -77,6 +79,7 @@ Depends on: 1, 2, 3, 4
 
 Context:
 - 2026-10-23 (from step 2): several `.claude/context` files still describe the old large game title (`ui-wordmark`) and the old head layout.
+- 2026-10-24 (from step 3): task 283's commit already updated the context files it made stale.
 
 ```prompt
 /task-implement 285 --review
@@ -96,7 +99,8 @@ Context: none
 
 Depends on: 3, 4, 6
 
-Context: none
+Context:
+- 2026-10-24 (from step 3): the seven menu accent pastels and the stronger neutral are already in Joyful tiles, pinned by a contrast test; the menu's still images live under `assets/menu/`, since the theme folder admits only font binaries.
 
 ```prompt
 /theme-implement https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC joyful-tiles
