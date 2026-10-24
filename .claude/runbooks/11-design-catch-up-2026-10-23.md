@@ -76,7 +76,7 @@ Context:
 
 Done: 2026-10-24, commit `249ecd5` (28 files, +448/-179). Decision: RB toggles the live figures in a Classic 2D game, listed in its controller rows; Swap clicks has no controller button.
 
-## [ ] 6. Implement task 287 — 3D game overlay without a title: floating Pause and live-figures toggle
+## [x] 6. Implement task 287 — 3D game overlay without a title: floating Pause and live-figures toggle
 
 Depends on: 5
 
@@ -95,6 +95,8 @@ Context:
 /task-implement 287 --review
 ```
 
+Done: 2026-10-24, commit `9254c1d` (36 files, +343/-287). Decision: on the board-generation and failure cards View (and B over the Classic 2D card) still cancels or goes back; `backButtons` takes a `{ card }` option for that case.
+
 ## [x] 7. Implement task 285 — Update documentation for feature shared-screen-layout
 
 Depends on: 1, 2, 3, 4
@@ -110,23 +112,25 @@ Context:
 
 Done: 2026-10-24, commit `e1cac9f` (22 files, +247/-143). The stale wording reached past the task's file list, so eight more context files were updated; the feature document's other passages still carry the old wording, left for `/architect`.
 
-## [ ] 8. Implement task 288 — Update documentation for feature in-game-layout
+## [~] 8. Implement task 288 — Update documentation for feature in-game-layout
 
 Depends on: 5, 6
 
 Context:
 - 2026-10-24 (from step 5): task 286's commit already updated several `.claude/context` files to match its code.
+- 2026-10-24 (from step 6): task 287's commit already updated `in-game-layout.md`, `game-shell.md` (Start the only pause in play; the back button means Back only off the board) and `classic-2d-square-play.md` (B never acts on the board).
 - 2026-10-24 (from step 6's unpark): the controller binding changed after task 286 — View toggles the live figures in every mode and Start is the only pause during play; the docs record that, not step 5's RB.
 
 ```prompt
 /task-implement 288 --review
 ```
 
-## [ ] 9. Update the Joyful tiles theme from its canvas
+## [~] 9. Update the Joyful tiles theme from its canvas
 
 Depends on: 3, 4, 6
 
 Context:
+- 2026-10-24 (from step 6): whether the 3D ready card matches the J-Ready artboards is still unchecked against the canvas; task 287 did not touch the card.
 - 2026-10-24 (from step 4): the kit catalogue has a `ui-drawer` component and a `panel` icon; the panel toggle is the quiet button with `aria-pressed`, not a component of its own.
 - 2026-10-24 (from step 3): the seven menu accent pastels and the stronger neutral are already in Joyful tiles, pinned by a contrast test; the menu's still images live under `assets/menu/`, since the theme folder admits only font binaries.
 
