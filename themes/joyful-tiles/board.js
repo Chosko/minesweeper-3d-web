@@ -1,6 +1,8 @@
 /* Joyful tiles board module: everything the Classic 2D tile skin and the 3D renderer draw this theme
    with, in the shape js/themes/board-module.js documents (feature themed-board-art-and-motion). Every value is the canvas's (page "Joyful
-   tiles"): the 2D tiles, their numbers and the cell motion from J-BoardSheet, the 3D cubes ("Bevel
+   tiles"): the 2D tiles, their numbers and the cell motion from J-BoardSheet, the hexagon and
+   triangle tiles' shape from J-HexSheet and J-TriSheet (kept variant "B · Sharp") and the numbers
+   9–12 from J-TriSheet, the 3D cubes ("Bevel
    5 %"), their numbers, sky, selection, start-cell tint, confetti, solved pulse and win and loss
    waves from J-3DSheet, colours and easings named by token from J-Tokens. The theme applier loads it and hands it to its subscribers. */
 
@@ -43,6 +45,7 @@ export const BOARD = freeze({
   numbers2d: [
     null, /* J-BoardSheet numbers start at 1 */
     '#1565c0', '#2b742f', '#c32727', '#1a237e', '#8d1c1c', '#00717c', '#212121', '#666666', /* J-BoardSheet numbers 1–8 (J-Tokens --color-number-1..8) */
+    '#761895', '#5b5f07', '#166187', '#a10c44', /* J-TriSheet numbers 9–12 in the 3D hues of the same numbers */
   ],
   numbers3d: [
     null, /* J-3DSheet numbers start at 1 */
@@ -63,6 +66,16 @@ export const BOARD = freeze({
       radius: 0.15, /* J-BoardSheet corner radius, tile × .15 */
       gap: 0.09, /* J-BoardSheet gap, 9 % of the tile */
       frameRadius: 0.3, /* J-BoardSheet .j-board radius, tile × .3 */
+    },
+    grids: {
+      hex: {
+        gap: 0.06, /* J-HexSheet B · Sharp gap 6 % of the tile across the flats */
+        radius: 0.05, /* J-HexSheet B · Sharp corner radius 5 % of the tile across the flats */
+      },
+      tri: {
+        gap: 0.06, /* J-TriSheet B · Sharp gap 6 % of the tile height */
+        radius: 0.06, /* J-TriSheet B · Sharp corner radius 6 % of the tile height */
+      },
     },
   },
   style3d: {

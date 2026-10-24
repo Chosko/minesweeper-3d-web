@@ -1501,7 +1501,7 @@ Feature: hex-tri-board-art
 
 ## 263. Board module per-grid shape, numbers to 12, checks, and Joyful tiles' values
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/themes/board-module.js, themes/joyful-tiles/board.js, tests/fixtures/themes/fixture-theme.js, tests/fixtures/themes/fixture-dusk, tests/fixtures/themes/fixture-fonts, tests/fixtures/themes/broken-themes.js, tests/board-module.test.mjs, tests/theme-conformance.test.mjs
 Preconditions: 255, 259, 262

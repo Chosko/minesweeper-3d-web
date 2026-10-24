@@ -374,6 +374,25 @@ for (const entry of THEMES) {
   });
 }
 
+test('a board module missing a flat grid\'s shape or its numbers fails the board conformance checks', async () => {
+  const entry = THEMES.find((t) => t.id === DEFAULT_THEME_ID);
+  const { BOARD } = await import(pathToFileURL(join(ROOT, entry.boardModule)).href);
+  for (const [grid, subject] of [['hex', 'style2d.grids.hex.gap'], ['tri', 'style2d.grids.tri.radius']]) {
+    const board = structuredClone(BOARD);
+    delete board.style2d.grids[grid];
+    assert.ok(checkBoardModule(board, { fonts: entry.fonts }).some((p) => p.check === 'style' && p.subject === subject), `without its ${grid} shape`);
+  }
+  const short = structuredClone(BOARD);
+  short.numbers2d.length = 9;
+  assert.ok(checkBoardModule(short, { fonts: entry.fonts }).some((p) => p.check === 'numbers' && p.subject === 'numbers2d[12]'), 'with the 2D numbers to 8 only');
+});
+
+test('the test-only fixture board module carries every flat grid\'s shape and the 2D numbers to 12', async () => {
+  const { BOARD } = await import(pathToFileURL(join(ROOT, 'tests/fixtures/themes/fixture-dusk/board.js')).href);
+  const problems = checkBoardModule(BOARD).filter((p) => p.check === 'style' || p.check === 'numbers');
+  assert.deepEqual(problems, []);
+});
+
 // ---------- the shared layout's components in the catalogue ----------
 
 const byName = (name) => KIT_CATALOGUE.find((c) => c.name === name);

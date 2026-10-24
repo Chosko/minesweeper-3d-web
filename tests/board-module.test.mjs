@@ -6,13 +6,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  CELL_EVENTS, MOTION_PROPERTIES, NAMED_EASINGS, FACE_ENTRIES, BOARD_ENTRIES, checkBoardModule,
+  CELL_EVENTS, MOTION_PROPERTIES, NAMED_EASINGS, FACE_ENTRIES, BOARD_ENTRIES, GRID_NUMBERS, checkBoardModule,
 } from '../js/themes/board-module.js';
 import { STYLES, mix } from '../js/tile-art.js';
 import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
 import { THEMES } from '../js/themes/registry.js';
 import { BOARD as JOYFUL } from '../themes/joyful-tiles/board.js';
 import { createCellMotion } from '../js/cell-motion.js';
+import { createGeometry } from '../js/geometry/index.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const JOYFUL_ENTRY = THEMES.find((t) => t.id === 'joyful-tiles');
@@ -56,6 +57,12 @@ const BROKEN = [
   ['only 25 3D number colours', (b) => { b.numbers3d.length = 26; }, ['numbers', 'numbers3d[26]']],
   ['a low-contrast 2D number', (b) => { b.numbers2d[2] = '#c8bfb0'; }, ['contrast', 'numbers2d[2]']],
   ['only 7 2D number colours', (b) => { b.numbers2d.length = 8; }, ['numbers', 'numbers2d[8]']],
+  ['only 11 2D number colours, short of the triangle\'s 12', (b) => { b.numbers2d.length = 12; }, ['numbers', 'numbers2d[12]']],
+  ['a low-contrast 2D number only a triangle shows', (b) => { b.numbers2d[11] = '#c8bfb0'; }, ['contrast', 'numbers2d[11]']],
+  ['a hexagon grid without its gap', (b) => { delete b.style2d.grids.hex.gap; }, ['style', 'style2d.grids.hex.gap']],
+  ['a triangle grid without its corner radius', (b) => { delete b.style2d.grids.tri.radius; }, ['style', 'style2d.grids.tri.radius']],
+  ['a negative hexagon corner radius', (b) => { b.style2d.grids.hex.radius = -0.05; }, ['style', 'style2d.grids.hex.radius']],
+  ['a 2D style with no per-grid shape', (b) => { delete b.style2d.grids; }, ['style', 'style2d.grids.tri.gap']],
   ['a 2D number too faint on the 2D revealed face', (b) => { b.palette.faces2d.revealed.face = '#5c6bc0'; }, ['contrast', 'numbers2d[1]']],
   ['a missing 2D end effect value', (b) => { delete b.end2d.win.scale; }, ['palette', 'end2d.win.scale']],
   ['a 2D end effect light the canvas cannot fill with', (b) => { b.end2d.light = 'white'; }, ['palette', 'end2d.light']],
@@ -109,7 +116,30 @@ test('the legibility check reads the shared minimum tile size', () => {
   board.style2d.params.band = 0.5 / MIN_TILE_SIZE;
   board.style2d.params.edge = 0.5 / MIN_TILE_SIZE;
   assert.ok(has(checkBoardModule(board), 'legible', 'style2d'));
-  assert.ok(!has(checkBoardModule(board, { minTileSize: MIN_TILE_SIZE * 4 }), 'legible', 'style2d'));
+  assert.ok(!has(checkBoardModule(board, { floors: { square: MIN_TILE_SIZE * 4 } }), 'legible', 'style2d'));
+});
+
+test('each flat grid shows the numbers up to its most neighbours, and the 2D list covers them all', () => {
+  assert.deepEqual({ ...GRID_NUMBERS }, { square: 8, hex: 6, tri: 12 });
+  const board = copy();
+  board.numbers2d.length = 13;
+  assert.deepEqual(checkBoardModule(board, { fonts: JOYFUL_ENTRY.fonts }), [], 'numbers 1–12 are all the 2D list needs');
+});
+
+test('the relief stays legible at each flat grid\'s own floor: the hexagon at the square\'s, the triangle at its height on its own side', () => {
+  const hexFloor = createGeometry('hex', 1, 1).minTile;
+  const triFloor = (createGeometry('tri', 1, 1).minTile * Math.sqrt(3)) / 2;
+  assert.equal(hexFloor, MIN_TILE_SIZE);
+  // A relief a pixel wide at the triangle's floor height, under one at the square's floor.
+  const board = copy();
+  board.style2d.params.band = 1 / triFloor;
+  board.style2d.params.edge = 1 / triFloor;
+  let problems = checkBoardModule(board, { fonts: JOYFUL_ENTRY.fonts });
+  assert.ok(has(problems, 'legible', 'style2d'), 'the square floor');
+  assert.ok(has(problems, 'legible', 'style2d.grids.hex'), 'the hexagon floor, across the flats');
+  assert.ok(!has(problems, 'legible', 'style2d.grids.tri'), 'the triangle floor, its height');
+  problems = checkBoardModule(board, { fonts: JOYFUL_ENTRY.fonts, floors: { tri: triFloor / 2 } });
+  assert.ok(has(problems, 'legible', 'style2d.grids.tri'), 'a floor passed in is the one read');
 });
 
 // ---------------------------------------------------------------- Joyful tiles
@@ -171,10 +201,21 @@ test('each number list is measured on its own mode\'s revealed face: the 3D list
   assert.ok(!problems.some((p) => p.subject.startsWith('numbers2d')), 'the 2D hairline holds no glyph');
 });
 
-test('Joyful tiles carries the board sheet\'s 2D numbers: the --color-number-1..8 tokens', () => {
-  assert.equal(JOYFUL.numbers2d.length, 9);
+test('Joyful tiles carries the board sheet\'s 2D numbers: the --color-number-1..8 tokens, then the triangle sheet\'s 9–12 in the 3D hues of the same numbers', () => {
+  assert.equal(JOYFUL.numbers2d.length, 13);
   assert.equal(JOYFUL.numbers2d[0], null);
-  assert.deepEqual(JOYFUL.numbers2d.slice(1), ['#1565c0', '#2b742f', '#c32727', '#1a237e', '#8d1c1c', '#00717c', '#212121', '#666666']);
+  assert.deepEqual(JOYFUL.numbers2d.slice(1, 9), ['#1565c0', '#2b742f', '#c32727', '#1a237e', '#8d1c1c', '#00717c', '#212121', '#666666']);
+  assert.deepEqual(JOYFUL.numbers2d.slice(9), ['#761895', '#5b5f07', '#166187', '#a10c44']);
+  assert.deepEqual(JOYFUL.numbers2d.slice(9), JOYFUL.numbers3d.slice(9, 13), 'a number has one colour in every mode');
+});
+
+test('Joyful tiles carries the hexagon and triangle sheets\' kept "B · Sharp" shape, and every other 2D value is the square\'s', () => {
+  const { grids, params } = JOYFUL.style2d;
+  assert.deepEqual({ ...grids.hex }, { gap: 0.06, radius: 0.05 }, 'J-HexSheet: gap 6 %, radius 5 % of the tile across the flats');
+  assert.deepEqual({ ...grids.tri }, { gap: 0.06, radius: 0.06 }, 'J-TriSheet: gap 6 %, radius 6 % of the tile height');
+  assert.deepEqual([params.gap, params.radius], [0.09, 0.15], 'the square keeps the board sheet\'s');
+  assert.deepEqual(Object.keys(JOYFUL.style2d).sort(), ['grids', 'name', 'params']);
+  assert.deepEqual(Object.keys(JOYFUL.style3d).sort(), ['name', 'params'], 'the 3D style has no per-grid shape');
 });
 
 test('Joyful tiles carries the 3D sheet\'s Classic 2D end effect: a win wave bumping and lightening each tile, a loss wave snapping it in with a flash', () => {
@@ -286,5 +327,5 @@ test('every value of Joyful tiles\' board module names the artboard it came from
   const holdsValue = (l) => /#[0-9a-f]{6}|:\s*-?\.?\d|:\s*['"[]|^\s*(null|['"])/i.test(l.replace(/\/\*.*?\*\//g, ''));
   const valued = lines.filter((l) => holdsValue(l) && !/[{[]\s*$/.test(l));
   assert.ok(valued.length > 40);
-  for (const line of valued) assert.match(line, /\/\*[^*]*\bJ-(BoardSheet|3DSheet|Tokens)\b[^*]*\*\/\s*$/, line.trim());
+  for (const line of valued) assert.match(line, /\/\*[^*]*\bJ-(BoardSheet|3DSheet|HexSheet|TriSheet|Tokens)\b[^*]*\*\/\s*$/, line.trim());
 });

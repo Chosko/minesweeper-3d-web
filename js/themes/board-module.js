@@ -18,13 +18,18 @@
 //     numberShadow  the number glyph's shadow (any CSS colour)
 //     boardGround   the Classic 2D board's ground between tiles
 //     confetti  the win confetti's colours, in both modes
-//   numbers2d   numbers2d[1..8] (index 0 unused): the Classic 2D number colours
+//   numbers2d   numbers2d[1..12] (index 0 unused): the 2D number colours, shared by the flat grids —
+//               each shows the numbers up to its GRID_NUMBERS
 //   numbers3d   numbers3d[1..26] (index 0 unused): the 3D number colours
 //   font        the number font: { family, weight }, one of the theme's self-hosted faces
 //   sky         { horizon, zenith, nadir, fog? } — the fog is the horizon when absent
 //   style2d     { name, params } — a drawing style of js/tile-art.js `STYLES` with its parameters
 //               (each in the unit the style gives it), plus `gap` (between tiles) and `frameRadius`
-//               (the board frame's corner radius), both fractions of the tile
+//               (the board frame's corner radius), both fractions of the tile; the style's `radius`
+//               and `gap` are the square grid's shape. `grids` holds the other flat grids' shape,
+//               { hex: { gap, radius }, tri: { gap, radius } }: the gap between tiles and the tile's
+//               corner radius, fractions of the hexagon's tile across the flats and of the
+//               triangle's height. Every other 2D value is shared by the three grids
 //   style3d     { name, params } — the 3D cubes' style and its parameters
 //               (a bevel side is a shade from -1 to 1 or a `#rrggbb` colour — js/tile-art.js)
 //   cursor      the Classic 2D cursor ring, drawn outside the tile: color and width in px (the ring,
@@ -64,7 +69,7 @@
 //     opacity     0 to 1
 //   A cell shows its state after the event once the animation ends.
 import { STYLES } from '../tile-art.js';
-import { MIN_TILE_SIZE } from '../classic2d/tile-skin.js';
+import { createGeometry } from '../geometry/index.js';
 
 export const CELL_EVENTS = Object.freeze(['press', 'release', 'reveal', 'flag', 'unflag', 'chordPress', 'solvedPulse']);
 export const MOTION_PROPERTIES = Object.freeze(['scale', 'offset', 'rotation', 'depth', 'brightness', 'opacity']);
@@ -100,9 +105,19 @@ export const BOARD_ENTRIES = Object.freeze([
 
 // The entries of the parameters of each style that set the closed face's relief, which the
 // revealed face does not have: closed and revealed differ by more than colour while one is above
-// zero, and stay legible while it is at least a pixel at the minimum tile size.
+// zero, and stay legible while it is at least a pixel at each flat grid's smallest tile.
 const RELIEF = Object.freeze({ bevel: ['slope'], flat: ['band', 'edge'] });
 const PARAMS_2D = Object.freeze(['gap', 'frameRadius']);
+
+// The highest number each flat grid shows: its most neighbours.
+export const GRID_NUMBERS = Object.freeze({ square: 8, hex: 6, tri: 12 });
+// The flat grids whose shape the 2D style's `grids` holds, and the entries of each.
+const GRID_SHAPES = Object.freeze(['hex', 'tri']);
+const SHAPE_ENTRIES = Object.freeze(['gap', 'radius']);
+// Each flat grid's floor in the unit its shape's fractions take: the geometry's smallest tile — a
+// triangle's measured by its side, its fractions by its height.
+const UNIT_PER_TILE = Object.freeze({ square: 1, hex: 1, tri: Math.sqrt(3) / 2 });
+const gridFloors = () => Object.fromEntries(Object.keys(GRID_NUMBERS).map((k) => [k, createGeometry(k, 1, 1).minTile * UNIT_PER_TILE[k]]));
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const COLOUR = /^(#[0-9a-f]{6}|#[0-9a-f]{8}|rgba?\([^)]*\))$/i;
@@ -142,8 +157,9 @@ function checkPalette(b) {
 // Each mode's number list: its key, its last number, the faces its glyphs sit on and the points of
 // the revealed face it is measured against — the 2D list its face and shade (the hairline round a
 // flat 2D face holds no glyph), the 3D list every point, its border included.
+// The 2D list runs to the highest number any flat grid shows, all on the one revealed face.
 const NUMBER_LISTS = Object.freeze([
-  ['numbers2d', 8, 'faces2d', ['face', 'faceShade']],
+  ['numbers2d', Math.max(...Object.values(GRID_NUMBERS)), 'faces2d', ['face', 'faceShade']],
   ['numbers3d', 26, 'faces3d', ['rim', 'edge', 'face', 'faceShade']],
 ]);
 
@@ -196,14 +212,28 @@ function checkStyle(b, key, faces, extra) {
   return out;
 }
 
-function checkRelief(b, key, minTileSize) {
+// Every flat grid's shape entries other than the square's, which are the style's own parameters.
+function checkGrids(b) {
+  const out = [];
+  for (const grid of GRID_SHAPES) {
+    for (const k of SHAPE_ENTRIES) {
+      const v = b.style2d?.grids?.[grid]?.[k];
+      if (!(isNumber(v) && v >= 0)) out.push(problem('style', `style2d.grids.${grid}.${k}`));
+    }
+  }
+  return out;
+}
+
+// The relief, and its legibility at each floor: `floors` maps a subject to the tile size the
+// widest relief must cover a pixel at.
+function checkRelief(b, key, floors) {
   const s = b[key];
   if (!isObject(s) || !RELIEF[s.name] || !isObject(s.params)) return { relief: [], legible: [] };
   const widths = RELIEF[s.name].map((p) => s.params[p]).filter(isNumber);
   const widest = Math.max(0, ...widths);
   return {
     relief: widest > 0 ? [] : [problem('relief', key)],
-    legible: widest > 0 && widest * minTileSize < 1 ? [problem('legible', key)] : [],
+    legible: widest > 0 ? Object.entries(floors).filter(([, floor]) => widest * floor < 1).map(([subject]) => problem('legible', subject)) : [],
   };
 }
 
@@ -282,17 +312,21 @@ function checkMotion(b) {
 
 // The board conformance checks: the problems `board` has, each { check, subject }, none when it
 // conforms. `fonts` is the theme's registry entry's fonts, which the number font must be one of;
-// `minTileSize` the Classic 2D minimum tile size the relief must stay legible at.
-export function checkBoardModule(board, { fonts, minTileSize = MIN_TILE_SIZE } = {}) {
+// `floors` overrides a flat grid's floor ({ square, hex, tri }, each in its shape's unit), which
+// the 2D relief must stay legible at — by default the grid's geometry's, the square's also the 3D
+// relief's.
+export function checkBoardModule(board, { fonts, floors } = {}) {
   if (!isObject(board)) return [problem('module', 'BOARD')];
-  const r2 = checkRelief(board, 'style2d', minTileSize);
-  const r3 = checkRelief(board, 'style3d', minTileSize);
+  const f = { ...gridFloors(), ...floors };
+  const r2 = checkRelief(board, 'style2d', { style2d: f.square, ...Object.fromEntries(GRID_SHAPES.map((g) => [`style2d.grids.${g}`, f[g]])) });
+  const r3 = checkRelief(board, 'style3d', { style3d: f.square });
   return [
     ...checkPalette(board),
     ...checkNumbers(board),
     ...checkFont(board, fonts),
     ...checkSky(board),
     ...checkStyle(board, 'style2d', 'faces2d', PARAMS_2D),
+    ...checkGrids(board),
     ...checkStyle(board, 'style3d', 'faces3d', []),
     ...r2.relief, ...r3.relief, ...r2.legible, ...r3.legible,
     ...checkContrast(board),
