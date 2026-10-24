@@ -284,7 +284,7 @@ Context:
 
 Done: 2026-10-24, commit `f010847` (21 files, +501/-70). Decision: the Hexagon and Triangle menu tiles open their own board choices, so browser tests that reached the Coming soon page through them go through Surface; the routes live in js/main.js's screen table, not js/shell/router.js.
 
-## [ ] 22. Implement task 269 — Play in Hexagon and Triangle
+## [x] 22. Implement task 269 — Play in Hexagon and Triangle
 
 Depends on: 17, 21
 
@@ -296,6 +296,8 @@ Context:
 ```prompt
 /task-implement 269 --review
 ```
+
+Done: 2026-10-24, commit `f9968f2` (14 files, +390/-46). Decision: Hexagon and Triangle games share Classic 2D's pause-card controls and first-use hints (dismissing the hint strip in one dismisses it in all three); until the Records screen knows these modes, Records from their results screen opens the last Classic 2D or 3D board played.
 
 ## [ ] 23. Implement task 270 — Board codes and challenge links for Hexagon and Triangle
 
@@ -318,6 +320,7 @@ Depends on: 20, 21, 22, 23
 Context:
 - 2026-10-24 (from step 20): task 267 left the Classic 2D and shell context files for this task — js/flat-modes.js (`CLASSIC_2D`, the per-mode configuration, optional everywhere and defaulting to square) and `SQUARE_SETUP` in js/classic2d/board-setup.js.
 - 2026-10-24 (from step 21): `#hex-choice` and `#tri-choice` in index.html copy `#c2d-choice` (a test holds them equal); every css/style.css and Joyful tiles rule styling Classic 2D's board choice also names its Hexagon and Triangle twins (enforced by a test); the routes are in js/main.js's screen table; task 268 already updated the menu-routing statements in .claude/context/app-shell-menu.md and INDEX.md, the rest of the context update is this task's.
+- 2026-10-24 (from step 22): js/main.js now reaches the flat game through `flat2D()` (Classic 2D, Hexagon or Triangle); the pause card and help show Classic 2D's controls for all three; first-use hints are shared (`FIRST_USE_RECORD` in js/shell/first-use.js); the window title and the results board line lead with the mode's name from `MODE_NAMES` in js/shell/challenge.js; tests/flat-modes-play.test.mjs runs on every js/main.js, index.html or css/ change.
 
 ```prompt
 /task-implement 271 --review
@@ -340,6 +343,7 @@ Depends on: 25
 
 Context:
 - 2026-10-24 (from step 21): the Hexagon and Triangle board choices' *All records* link already opens the Records screen with a mode the screen does not list yet.
+- 2026-10-24 (from step 22): js/results/flow.js guards Records from a Hexagon or Triangle results screen — it opens the last Classic 2D or 3D board played, since the screen crashed on an unknown mode; once this task adds the modes the board passes through with no further change there.
 
 ```prompt
 /task-implement 273 --review
