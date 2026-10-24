@@ -112,7 +112,7 @@ test('one pin, loaded before the first screen, is handed to both board choices',
   const main = read('js/main.js');
   assert.match(main, /const BOARD_PANEL = createBoardPanelPin\(\{ storage \}\);/);
   assert.equal(main.match(/\n  pin: BOARD_PANEL,\n\}\);/g)?.length, 2, 'the 2D and the 3D board choice');
-  assert.match(main, /await Promise\.all\(\[[^\]]*BOARD_PANEL\.load\(\)\.catch\(\(\) => \{\}\)[^\]]*\]\);\nshowMainMenu\(\);/);
+  assert.match(main, /await Promise\.all\(\[[^\]]*BOARD_PANEL\.load\(\)\.catch\(\(\) => \{\}\)[^\]]*\]\);\n(?:ui\.\w+\([^\n]*\);\n)*showMainMenu\(\);/);
 });
 
 // ---------------------------------------------------------------- no Play again, no session strip

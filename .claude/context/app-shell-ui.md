@@ -41,7 +41,7 @@ overlay's parts and the aimed-cell readout are
     `showReplay` / `hideReplay` (`body.replaying`: no HUD, view chips, tools
     strip, help, hint strip or toast shows or appears over the viewer),
     `replayRing(x, y, kind)` (a 3D replay's press ring on the layer over its scene, `#replay-scene-over`, at x, y in the board area);
-  - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`,
+  - Classic 2D: `setSwap`, `setFigures2D(open)` (the live figures panel shown or hidden by `#c2d`'s `data-figures="open"`, its toggle pressed while open), `setTapMode('reveal' | 'flag')`,
     `placePanel2D(rect, radius)` (the board frame at `rect`, its corner radius set as `--board-frame-radius`; a null `rect` hides it),
     `sizeBoard2D(extent)` (the board area `#c2d-stage` at the board's extent in the room the window's chrome leaves, measured under `#c2d.c2d--measure`; → whether it changed),
     `setBoard2D`, `updateFigures2D(input, {tick, bests})`,
@@ -80,8 +80,8 @@ overlay's parts and the aimed-cell readout are
   [app-shell-hud.md](app-shell-hud.md).
 - **Behind a card.** While the 3D ready card (not pending), the pause card
   or the results show, `#hud` is hidden — the 3D overlay, the key strip,
-  the hint strip — and the Classic 2D window keeps its board and title
-  alone; while the 3D board status card shows, `#hud` is hidden under its
+  the hint strip — and the Classic 2D window keeps its board and its
+  title bar's logo alone; while the 3D board status card shows, `#hud` is hidden under its
   scrim. `css/style.css` does it from those screens' visibility
   (`body:has(…)`); `UI` toggles nothing for it.
 - **Help surfaces, the active device and first-use hints** are

@@ -74,9 +74,12 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 /** The menu's note on a coarse-only device, where both modes play by touch. */
 export const TOUCH_MSG = 'Both modes play by touch: 3D and Classic 2D.';
 
+/** The keys that press a focused button. */
+const PRESS_KEYS = new Set(['Enter', 'NumpadEnter', 'Space']);
+
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onTapMode, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onTouchMode }
+    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleFigures, onTapMode, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onTouchMode }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       hudCounters: $('hud-counters'), hudFigures: $('hud-figures'), hudHead: $('hud-figures').querySelector('.ui-figures__head'), hudTitle: $('hud-title'),
@@ -97,7 +100,7 @@ export class UI {
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
       c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStage: $('c2d-stage'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
       c2dTitle: $('c2d-title'), c2dSize: $('c2d-size'), c2dMines: $('c2d-mines-left'), c2dTime: $('c2d-time'), c2dFigures: $('c2d-figures'),
-      c2dReminder: $('c2d-reminder'),
+      c2dReminder: $('c2d-reminder'), c2dFiguresToggle: $('c2d-figures-toggle'),
       c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
       c2dSpinner: $('c2d-spinner'), c2dWait: $('c2d-wait'), c2dProgress: $('c2d-progress'),
       m3dStatus: $('m3d-status'), m3dStatusTitle: $('m3d-status-title'), m3dStatusText: $('m3d-status-text'), m3dOffer: $('m3d-offer'),
@@ -178,9 +181,14 @@ export class UI {
       b.addEventListener('mousedown', (e) => e.preventDefault());
       b.addEventListener('click', () => cb.onTouchMode?.(b.dataset.mode));
     }
-    // The swap toggle never takes focus, so the board's cursor keys (Space, Enter) keep playing.
+    // The game window's foot controls, Swap clicks and the live-figures toggle, never take the focus
+    // from the mouse, so the board's cursor keys (Space, Enter) keep playing; the keyboard reaches them
+    // in the Tab order, and Enter or Space on one presses it and never reaches the board.
     this.el.hudSwap.addEventListener('mousedown', (e) => e.preventDefault());
     this.el.hudSwap.addEventListener('click', () => cb.onToggleSwap?.());
+    this.el.c2dFiguresToggle.addEventListener('mousedown', (e) => e.preventDefault());
+    this.el.c2dFiguresToggle.addEventListener('click', () => cb.onToggleFigures?.());
+    $('c2d-tools').addEventListener('keydown', (e) => { if (PRESS_KEYS.has(e.code)) e.stopPropagation(); });
     // The Tap choice neither: a chosen option hands its value to the shell.
     this.el.hudTap.addEventListener('mousedown', (e) => e.preventDefault());
     bindSegmented(this.el.hudTap, { horizontal: true, onChange: (value) => cb.onTapMode?.(value) });
@@ -397,9 +405,9 @@ export class UI {
     this.el.c2dChoice.classList.remove('hidden');
   }
   /**
-   * The Classic 2D game window: the head (Swap clicks, the title, Pause), the counter strip over the
-   * board in its framed panel (placePanel2D), the live figures panel and the foot line; the 3D
-   * overlay bar does not show over it.
+   * The Classic 2D game window: the title bar (Pause, the logo), the counter strip over the board in
+   * its framed panel (placePanel2D), the live figures panel while open (setFigures2D) and the foot
+   * line with Swap clicks and the live-figures toggle; the 3D overlay bar does not show over it.
    */
   showClassic2D() {
     this._hideMenus();
@@ -417,6 +425,15 @@ export class UI {
   }
   /** The Classic 2D mouse button swap's toggle: pressed while the swap is on. */
   setSwap(on) { this.el.hudSwap.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  /**
+   * The Classic 2D window's live figures panel open or closed (the stored preference,
+   * js/shell/live-figures.js), its toggle pressed while open; the shell refits the board after.
+   */
+  setFigures2D(open) {
+    if (open) this.el.c2d.dataset.figures = 'open';
+    else delete this.el.c2d.dataset.figures;
+    this.el.c2dFiguresToggle.setAttribute('aria-pressed', open ? 'true' : 'false');
+  }
   /** The Tap choice (coarse pointers only, by the stylesheet): its option for `mode`, 'reveal' or 'flag', chosen. */
   setTapMode(mode) {
     const options = [...this.el.hudTap.querySelectorAll('.ui-segmented__option')];
@@ -471,7 +488,7 @@ export class UI {
     if (over > 0) place(b.height - over);
     return stage.style.width !== before[0] || stage.style.height !== before[1];
   }
-  /** The Classic 2D board the window's title and foot line and the pause card's board line (the title and boardLine2D joined) name; { width, height, mines, noGuess, identity }. */
+  /** The Classic 2D board the window's foot line (the title, then the board) and the pause card's board line (the title and boardLine2D joined) name; { width, height, mines, noGuess, identity }. */
   setBoard2D(board) { this._board2D(board); this._sizeMines(board.mines, this.el.c2dMines); }
   _board2D(board) {
     this._boardText = `${boardTitle2D(board)} · ${boardLine2D(board)}`;

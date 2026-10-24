@@ -900,9 +900,10 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     await page.click('#c2d-pause');
     assert.equal(await mode(), 'paused');
     assert.equal(await shown('c2d-status'), false, 'the generating card does not show over the pause card');
-    assert.deepEqual(await ms(() => ['c2d-counters', 'c2d-figures', 'c2d-pause', 'c2d-size', 'hud-tools', 'hud-tap', 'c2d-title', 'c2d-board']
-      .map((id) => getComputedStyle(document.getElementById(id)).visibility)), ['hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'visible', 'visible'],
-    'behind the pause card the window shows its board and its title alone');
+    assert.deepEqual(await ms(() => ['c2d-counters', 'c2d-figures', 'c2d-pause', 'c2d-size', 'c2d-title', 'c2d-figures-toggle', 'hud-tools', 'hud-tap', 'c2d-board']
+      .map((id) => getComputedStyle(document.getElementById(id)).visibility)), ['hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'visible'],
+    'behind the pause card the window shows its board alone');
+    assert.equal(await ms(() => getComputedStyle(document.querySelector('#c2d-frame .ui-frame__logo')).visibility), 'visible', 'under the title bar\'s logo');
     await page.click('#p-resume');
     assert.equal(await mode(), 'classic-2d');
     assert.equal(await shown('c2d-status'), true);

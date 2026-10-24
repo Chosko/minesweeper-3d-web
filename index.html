@@ -104,18 +104,15 @@
     <section class="ui-frame" id="c2d-frame" aria-labelledby="c2d-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start"><button type="button" id="hud-swap" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false" data-no-focus title="Swap left and right click on closed cells"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button></div>
+        <div class="ui-frame__start"><button type="button" id="c2d-pause" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-icon="pause" aria-label="Pause game" title="Pause"></button></div>
         <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
-        <div class="ui-frame__end"><button type="button" id="c2d-pause" class="ui-button ui-button--secondary ui-button--sm" aria-label="Pause game"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pause <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
       </header>
-      <div class="ui-frame__heading">
-        <h2 class="ui-frame__title" id="c2d-title">Classic 2D</h2>
-      </div>
       <div class="ui-frame__body" id="c2d-body">
         <div id="c2d-main">
           <div class="ui-counter-strip" id="c2d-counters" role="group" aria-label="Counters">
             <div class="ui-counter" role="group" aria-label="Mines left"><svg class="ui-counter__icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h12l-3 4 3 4H5"/></svg><span id="c2d-mines-left" class="ui-counter__digits">000</span></div>
-            <button type="button" id="c2d-restart" class="ui-button ui-button--secondary ui-button--sm" data-no-focus><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Restart <span class="ui-key-hint" data-action="restart" aria-hidden="true"></span></button>
+            <button type="button" id="c2d-restart" class="ui-button ui-button--secondary ui-button--sm" data-icon="restart" aria-label="Restart" title="Restart" data-no-focus></button>
             <div class="ui-counter" role="group" aria-label="Time"><span id="c2d-time" class="ui-counter__digits">000</span><svg class="ui-counter__icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
           </div>
           <div id="c2d-stage"><div id="c2d-board"><div id="c2d-panel" class="ui-board-frame hidden" aria-hidden="true"></div></div></div>
@@ -134,7 +131,10 @@
           <p class="ui-figures__live" role="status" aria-live="polite" aria-atomic="true"></p>
         </section>
       </div>
-      <footer class="ui-frame__foot"><p class="ui-frame__status" id="c2d-size"></p></footer>
+      <footer class="ui-frame__foot">
+        <p class="ui-frame__status" id="c2d-line"><span id="c2d-title">Classic 2D</span> · <span id="c2d-size"></span></p>
+        <div class="ui-actions ui-actions--row" id="c2d-tools"><button type="button" id="hud-swap" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false" data-no-focus title="Swap left and right click on closed cells"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button><button type="button" id="c2d-figures-toggle" class="ui-button ui-button--quiet ui-button--sm" data-panel-toggle data-icon="panel" aria-pressed="false" aria-controls="c2d-figures" aria-label="Live figures" title="Live figures" data-no-focus></button></div>
+      </footer>
     </section>
   </section>
   <!-- Classic 2D board status: a slow first click's generation, or a failed board and its offer -->

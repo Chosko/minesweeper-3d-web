@@ -20,6 +20,7 @@ import { createMenu, createLastMode, createLastBoardChoice, openingEntry, menuPr
 import { VERSION } from './version.js';
 import { bindMenuPreview, mountTilePreviews, demoBoard2D, dailyBoard2D, demoBoard3D, DEMO_SPACING_3D } from './shell/menu-preview.js';
 import { boardBests, createBoardPanelPin } from './shell/returning.js';
+import { createFiguresPanel } from './shell/live-figures.js';
 import { aimReadout } from './readability.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice } from './settings/bindings.js';
@@ -407,6 +408,7 @@ const ui = new UI({
   onPause: () => pauseGame(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
   onToggleSwap: () => BUTTON_SWAP.toggle(),
+  onToggleFigures: () => toggleFigures(),
   onTapMode: (value) => { mode2d.setTapMode(value); ui.setTapMode(mode2d.tapMode); }, // the Tap choice's option: what a tap on a closed cell does
   onResetAll: () => RESET.run(),
   onDismissHint: (mode, kind) => { if (kind === 'scroll') FIRST_USE.once('scrollHint'); else FIRST_USE.dismiss(mode); refreshHints(); },
@@ -550,6 +552,8 @@ const FLOW_3D = {
 const mode3d = MODES.register('3d', (report) => create3DMode(FLOW_3D, report));
 // The board choice panel's pin, one stored view preference both board choices share.
 const BOARD_PANEL = createBoardPanelPin({ storage });
+// The live figures panel open or closed, one stored view preference beside it that every mode shares.
+const LIVE_FIGURES = createFiguresPanel({ storage });
 // The 3D board choice; the last 3D choice is a platform-storage document kept by the shell.
 const LAST_CHOICE_3D = createLastBoardChoice({ storage, doc: LAST_CHOICE_DOC_3D, version: LAST_CHOICE_VERSION_3D, normalise: normaliseChoice3D, fallback: DEFAULT_CHOICE_3D });
 /** The records identity of a 3D board as boardOf gives it. */
@@ -666,6 +670,12 @@ function sizeSoon2D() {
   if (!sizing2D) sizing2D = requestAnimationFrame(() => { sizing2D = 0; size2D(); });
 }
 new ResizeObserver(size2D).observe(document.getElementById('c2d'));
+/** The live-figures toggle: the one stored state flipped, the panel shown or hidden, the board refitted to the room left. */
+function toggleFigures() {
+  LIVE_FIGURES.setOpen(!LIVE_FIGURES.open);
+  ui.setFigures2D(LIVE_FIGURES.open);
+  size2D();
+}
 const board2d = { generating: false, failure: null, progress: null };
 /** The Classic 2D board status card as it stands; whether it shows. */
 function drawStatus2D() {
@@ -2286,7 +2296,8 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {}), RECORDS_VIEW_PREFS.load().catch(() => {}), BOARD_PANEL.load().catch(() => {})]);
+await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {}), RECORDS_VIEW_PREFS.load().catch(() => {}), BOARD_PANEL.load().catch(() => {}), LIVE_FIGURES.load().catch(() => {})]);
+ui.setFigures2D(LIVE_FIGURES.open);
 showMainMenu();
 LINKS.start(); // a #board= link: its challenge or daily over the menu, so Back leads to the menu
 window.addEventListener('hashchange', () => LINKS.hashchange());

@@ -406,22 +406,25 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 /* The window covers the 3D scene on its backdrop and hugs its content, centred in the room above the
    HUD strip: its body is the board column — the counter strip, then the board area 12 px under it,
    left-aligned and sized to the board's extent (UI.sizeBoard2D, measured with the window at its
-   largest under #c2d.c2d--measure, where the area takes the room the chrome leaves) — then a divider
-   and the flat figures column. Below the kit's 1024 px breakpoint the figures move under the board,
-   and on a phone they hide and the window is full-bleed, the board area still its board's extent.
-   The board sits in its board frame (UI.placePanel2D from the board view's layout); a board that
-   does not fit scrolls in the room it is given. The 3D game's overlay bar never shows over it. */
+   largest under #c2d.c2d--measure, where the area takes the room the chrome leaves) — and, while the
+   live figures are open (data-figures="open", UI.setFigures2D), a divider and the flat figures
+   column; closed, the window shrinks to the board column. Below the kit's 1024 px breakpoint the
+   open figures move under the board, and on a phone they hide with their toggle and the window is
+   full-bleed, the board area still its board's extent. The foot line leads with the mode and board,
+   ellipsised in the room Swap clicks and the toggle leave it, never widening the window. The board
+   sits in its board frame (UI.placePanel2D from the board view's layout); a board that does not fit
+   scrolls in the room it is given. The 3D game's overlay bar never shows over it. */
 #c2d { position: fixed; inset: 0; padding: 33px var(--space-4) 83px; }
 #c2d-frame { flex: none; }
 #c2d-body { display: grid; grid-template-columns: minmax(auto, 1fr) auto 300px; padding: 0; overflow: hidden; }
+/* Closed, no divider and no figures column: the board column alone. */
+#c2d:not([data-figures="open"]) :is(#c2d-divider, #c2d-figures) { display: none; }
+#c2d:not([data-figures="open"]) #c2d-body { grid-template-columns: minmax(auto, 1fr); }
+#c2d.c2d--measure:not([data-figures="open"]) #c2d-body { grid-template-columns: minmax(0, 1fr); }
 #c2d-main { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; min-height: 0; padding: 22px; }
-/* A title bar wider than the board and its figures widens the window: beside the figures the board column
-   keeps its board's width at the start, the room left over between it and the divider; below the kit's
-   breakpoint it fills the window over its figures. */
+/* A title bar wider than the board column widens the window: the board column keeps its board's width at
+   the start; below the kit's breakpoint it fills the window over its figures. */
 #c2d:not(.c2d--measure) #c2d-main { justify-self: start; }
-/* Its title bar's sides are unequal (Swap clicks; Pause and the window buttons): the logo takes the room
-   between them, so the title bar is no wider than its three parts. */
-#c2d-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr) auto; }
 #c2d-counters { flex: none; }
 #c2d-stage { position: relative; flex: none; align-self: flex-start; }
 #c2d-board { position: absolute; inset: 0; overflow: hidden; }
@@ -430,11 +433,10 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 #c2d-figures { min-height: 0; overflow-y: auto; contain: size; }
 #c2d-figures .ui-figures__body { padding: 22px 26px; }
 #c2d-figures .ui-figure__value { white-space: nowrap; }
-#c2d-size { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#c2d-frame > .ui-frame__foot { flex-wrap: nowrap; }
+#c2d-line { flex: 1 1 0; width: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#c2d-tools { flex: none; flex-wrap: nowrap; gap: var(--space-2); }
 #c2d.c2d--measure #c2d-frame { width: 100%; height: 100%; }
-/* The window's heading names it for assistive technology only: the canvas draws the game window with
-   none, the board under the title bar. */
-#c2d-frame > .ui-frame__heading { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
 #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr) auto 300px; }
 #c2d.c2d--measure #c2d-stage { flex: 1 1 auto; align-self: stretch; }
 #hud.hud--2d #hud-overlay { display: none; }
@@ -476,7 +478,7 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 @media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
   #c2d { padding: 0; }
   #c2d-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
-  #c2d-figures, #c2d-divider, #hud.hud--2d .hud-tools { display: none; }
+  #c2d-figures, #c2d-divider, #c2d-figures-toggle, #hud.hud--2d .hud-tools { display: none; }
   #c2d-body, #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   #c2d-main { padding: var(--space-3) var(--space-4); }
 }
@@ -486,7 +488,7 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
   #c2d-stage { grid-column: 1; grid-row: 1 / -1; }
   #c2d-counters { grid-column: 2; grid-row: 1; flex-direction: column; align-items: stretch; gap: 10px; padding: var(--space-3); }
   #c2d-counters > .ui-counter:last-child { order: 1; flex-direction: row-reverse; justify-content: flex-end; }
-  #c2d-restart { order: 2; }
+  #c2d-restart { order: 2; align-self: flex-start; }
   #hud-tap { grid-column: 2; grid-row: 2; }
 }
 /* A board status card (generating, or a failed board's offer) sits above the pause card at the canvas's

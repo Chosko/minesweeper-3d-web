@@ -64,17 +64,20 @@ shell hands in its flow and its sound sink. The area overview is
   when any changed; `flow.figures` the live figures' input (`counts()`,
   flags, mines, `elapsedMs()`) on every count change, else on the timer's
   new second (`tick`).
-- **Game window** (`#c2d`, ids in [app-shell-hud.md](app-shell-hud.md)): head
-  (Swap clicks, title, Pause), body (counter strip over the board area, the
-  Tap choice on a coarse pointer, the flat live figures column
-  with the controls reminder), foot (size, mines, no-guess). The window
-  hugs its content, centred above the HUD strip: the fit rule works in the
-  room the chrome leaves, and the board area takes the board's extent in
-  it, left-aligned under the counter strip ([app-shell-2d.md](app-shell-2d.md)
-  § Board area and panel). Too narrow for both, the panel moves under the
-  board; on a phone it hides and the window is full-bleed, the board held
-  sideways at the left edge beside a column of the counters, Restart and
-  the Tap choice (`#c2d` in `css/style.css`).
+- **Game window** (`#c2d`, ids in [app-shell-hud.md](app-shell-hud.md)): title
+  bar (Pause, the logo, the window buttons), body (counter strip with the
+  icon-only Restart over the board area, the Tap choice on a coarse
+  pointer, and while open the flat live figures column with the controls
+  reminder), foot (the mode and board, size, mines, no-guess; Swap clicks
+  and the live-figures toggle at its right). The window hugs its content,
+  centred above the HUD strip, shrinking to the board column while the
+  live figures are closed: the fit rule works in the room the chrome
+  leaves, and the board area takes the board's extent in it, left-aligned
+  under the counter strip ([app-shell-2d.md](app-shell-2d.md) § Board area
+  and panel). Too narrow for both, the open panel moves under the board;
+  on a phone it hides with its toggle and the window is full-bleed, the
+  board held sideways at the left edge beside a column of the counters,
+  Restart and the Tap choice (`#c2d` in `css/style.css`).
 - **Sound.** Every action the gate passes on — mouse, keyboard or
   controller — plays the 3D game's cue for its outcome (`cue` in
   `mode.js`), read from the engine's changed cells and the game's phase:

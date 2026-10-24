@@ -91,16 +91,17 @@
      Role:    button (native)
      Name:    its text
 
-   A latched toggle (Swap clicks, the 3D touch view modes, Show 3BV, Free
-   camera, the board choice panel toggle) is a ui-button--quiet
-   ui-button--sm carrying aria-pressed: quiet while "false", the pressed
-   look while "true" (its chosen state), never a colour; the replay's
-   Sound, a ui-button--secondary carrying aria-pressed, shows the pressed
-   look the same way.
+   A latched toggle (Swap clicks, the live-figures toggle, the 3D touch
+   view modes, Show 3BV, Free camera, the board choice panel toggle) is a
+   ui-button--quiet ui-button--sm carrying aria-pressed: quiet while
+   "false", the pressed look while "true" (its chosen state), never a
+   colour; the replay's Sound, a ui-button--secondary carrying
+   aria-pressed, shows the pressed look the same way.
      Element: <button type="button" class="ui-button ui-button--quiet
                 ui-button--sm" aria-pressed="false">
-   The panel toggle is icon-only (data-icon="panel", data-panel-toggle),
-   named by aria-label, square at its frame head's button size.
+   A panel toggle — the board choice's, the live-figures toggle — is
+   icon-only (data-icon="panel", data-panel-toggle), named by aria-label,
+   square at its frame head's button size.
 
    Sizes: ui-button--sm (a dense bar's or a frame head's actions) and
    ui-button--lg (a screen's one large action) beside the button's own
@@ -443,8 +444,12 @@
                   <span class="ui-key-hint" data-action="restart" aria-hidden="true">…</span></button>
                 <div class="ui-counter" …>…</div>
               </div>
+              or Restart icon-only, as the Classic 2D window's is:
+                <button type="button" class="ui-button ui-button--secondary ui-button--sm"
+                  data-icon="restart" aria-label="Restart" title="Restart"></button>
      Role:    group; Restart a button (native)
-     Name:    group: aria-label; Restart: its text
+     Name:    group: aria-label; Restart: its text, or its aria-label with the
+              Restart tooltip when icon-only (no text and no key label)
      Layout:  the counters at the ends, Restart between them.
 
    ui-figure — a live figure: 3BV, pace vs PB, 3BV/s, clicks, flags
@@ -572,7 +577,8 @@
                 <footer class="ui-frame__foot">…</footer>
               </section>
      Role:    region (section named by its title)
-     Name:    aria-labelledby → the title
+     Name:    aria-labelledby → the title (the Classic 2D game window's: the
+              mode and board leading its foot line)
      Head:    the game's own title bar on every desktop window: Back at the
               start as the arrow-left icon alone (a ui-button--secondary
               ui-button--sm ui-frame__back, data-icon="arrow-left", named by
@@ -584,12 +590,13 @@
               its tooltip and its accessible name. On the web they press
               like any button and do nothing (bindWindowButtons, js/ui/
               components.js: a desktop host the platform layer's capability
-              flags report attaches their actions). On a phone the head
-              holds only Back and the logo.
+              flags report attaches their actions). The Classic 2D game
+              window puts Pause in Back's place, the pause icon alone. On a
+              phone the head holds only Back (or Pause) and the logo.
      Heading: the screen's name, the title, at the top of the window's body,
               a control the screen puts beside its name at its right
               (ui-frame__action); the main menu has none, the logo naming
-              it.
+              it, nor the Classic 2D game window, its foot naming it.
      Foot:    a status line, <p class="ui-frame__status">…</p>, or a bottom
               bar: <p class="ui-frame__summary">…</p> (the selection
               summarised) beside a ui-actions ui-actions--row; a frame
@@ -1101,22 +1108,30 @@
      one row of three cells, Play pinned at the bottom in a slimmer bar.
      Default focus: the last board choice, the chosen option.
    Classic 2D game window (index.html #c2d): ui-backdrop holding a
-     ui-frame that hugs its content, centred above the HUD strip; its head
-     the title bar — Swap clicks (a latched toggle, a fine pointer only) at
-     its start, the logo, then Pause (small secondary, with its back key
-     hint) before the window buttons —, its heading the title (the mode and
-     the board), there for assistive technology only. Its body: the board
-     column — a ui-counter-strip (mines left, Restart
-     with its restart key hint, the timer) over the board area, sized to
-     the board and left-aligned under the strip, where the board sits in
-     its ui-board-frame with the first-use hint strip laid over it, and
-     under it the Tap choice (a ui-segmented Tap: Reveal | Tap: Flag) on a
-     coarse pointer — a ui-divider--vertical and the ui-figures panel of the live
-     figures (3BV with its bar, pace vs PB, 3BV/s, clicks, flags) with the
-     controls reminder at its foot, a flat column with no surface of its
-     own. The foot is a ui-frame__status line naming the board's size,
-     mines and no-guess. Below 1024 px the panel moves under the board, its
-     figures in a row; on a phone the window is full-bleed and the panel
+     ui-frame that hugs its content, centred above the HUD strip, named by
+     the mode and board that lead its foot line; its head the title bar —
+     Pause in Back's place (the pause icon alone, a ui-frame__back named
+     "Pause game"), the logo, the window buttons —, with no mode or
+     difficulty in it and no heading in the body. Its body: the board
+     column — a ui-counter-strip (mines left, the icon-only Restart, the
+     timer) over the board area, sized to the board and left-aligned under
+     the strip, where the board sits in its ui-board-frame with the
+     first-use hint strip laid over it, and under it the Tap choice (a
+     ui-segmented Tap: Reveal | Tap: Flag) on a coarse pointer — and, while
+     the live figures are open, a ui-divider--vertical and the ui-figures
+     panel of the live figures (3BV with its bar, pace vs PB, 3BV/s,
+     clicks, flags) with the controls reminder at its foot, a flat column
+     with no surface of its own; closed, the window shrinks to the board
+     column. The foot is a ui-frame__status line — the mode and difficulty,
+     then the board's size, mines and no-guess, ellipsised rather than
+     widening the window — and at its right a ui-actions--row of Swap
+     clicks (a latched toggle, a fine pointer only) and the live-figures
+     toggle (a latched quiet icon-only button, data-panel-toggle with the
+     panel icon, named "Live figures", aria-pressed while open, sunk then).
+     Neither foot control takes the focus from the mouse; the keyboard
+     reaches both in the Tab order and presses them with Enter or Space.
+     Below 1024 px the open panel moves under the board, its figures in a
+     row; on a phone the window is full-bleed and the panel and its toggle
      hidden, and held sideways the board takes the left edge and a column
      beside it holds the mines, the time, Restart and the Tap choice.
      Default focus: none (the board takes the keys).
@@ -1687,6 +1702,8 @@
   gap: var(--space-3);
   padding: var(--space-2) 14px;
 }
+/* an icon-only Restart: square, the icon alone */
+.ui-counter-strip > .ui-button[data-icon] { padding: 0; aspect-ratio: 1; }
 .ui-counter {
   display: inline-flex;
   align-items: center;
