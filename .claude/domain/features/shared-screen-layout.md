@@ -11,10 +11,9 @@ restyling it.
 
 [product-design.md § Visual design system](../product-design.md#visual-design-system)
 gives the game one shared layout that every theme styles, designed together
-with the first theme; later themes add styles, not layouts. The m1 screens
-were composed from the kit in low fidelity. This feature recomposes them in
-the shipping layout, before the Steam milestone adds its own screens, so
-those are drawn once, in the layout that ships. The in-game screen, which
+with the first theme; later themes add styles, not layouts. This feature
+composes the game's screens in that shipping layout, so the Steam
+milestone's screens are drawn in it from the start. The in-game screen, which
 carries live figures of its own, is `in-game-layout`.
 
 ## Scope and non-goals
@@ -41,9 +40,9 @@ In scope (m2b-themes):
     menu has no body heading, the logo naming it;
   - the **game logo** — the straight version at rest: the letters in the
     game colours, a white outline and a short darker extrusion;
-  - the **main menu buttons**, in place of the mode entry: the **play
-    tile** — a text side with the mode's icon and label and no subtitle,
-    and a square preview of the mode's own board —, the **small entry** for
+  - the **main menu buttons**: the **play
+    tile** — a text side with the mode's icon and label, and a square
+    preview of the mode's own board —, the **small entry** for
     Records and Settings, smaller and neutral, and on a phone the **phone
     row**, whose preview is a cropped strip inside its right end that never
     sets the row's height. Every main menu button is the same height at
@@ -57,11 +56,10 @@ In scope (m2b-themes):
     locked one darkens when selected. The buttons have no drop shadow and
     the smaller edge, as board options inside windows do. A disabled
     button gives its reason under the label (3D without WebGL 2, with a
-    locked preview; *Needs WebGL 2* on a phone row). No main menu button
-    carries a Last played chip;
+    locked preview; *Needs WebGL 2* on a phone row);
   - the **board option** — a board preset with its name, size line and
     mine density, selectable, with the chosen state (a fill and a check)
-    apart from its selected state, and no Last played chip;
+    apart from its selected state;
   - the **panel toggle** — a quiet icon button with an accessible name,
     exposing its pressed state and drawn sunk while its panel is pinned or
     open —, and the **drawer** — on a phone, a full-width raised bar that,
@@ -155,9 +153,9 @@ In scope (m2b-themes):
   their full colour when selected. Pause is always the white secondary
   button, the replay viewer's play / pause button included while it shows
   Pause. An on/off toggle is never red when on: it shows the pressed look.
-  Confirm buttons carry no *Enter* key label; *Esc* on Resume, *Space* on
-  the replay controls and the controller glyphs of the controller-hints
-  frames stay. The large confirm buttons are slimmer than the large
+  The key labels on buttons are *Esc* on Resume, *Space* on the replay
+  controls and the controller glyphs of the controller-hints frames;
+  confirm buttons carry none. The large confirm buttons are slimmer than the large
   primary button.
 - **The title bar's window buttons on the web** — Minimise, Fullscreen /
   Windowed and Quit press like any button and then do nothing: no action,
@@ -165,33 +163,29 @@ In scope (m2b-themes):
   do in the desktop build is `steam-desktop-host`'s (Minimise, Fullscreen /
   Windowed) and `leaderboards-menu-entry`'s (Quit).
 - **Main menu** — in the screen frame like every other screen, its head
-  the title bar with no Back, and no large game title above it. The
-  window, narrower than before, holds only the main menu buttons: two
-  columns of play tiles — Classic 2D and Hexagon, Triangle and Surface, 3D
-  and Daily —, then Records and Settings as a row of small entries; no
-  preview panel, and no Quit, which is the title bar's. Each play tile
+  the title bar with no Back. The window
+  holds only the main menu buttons: two columns of play tiles — Classic 2D
+  and Hexagon, Triangle and Surface, 3D and Daily —, then Records and
+  Settings as a row of small entries; Quit is the title bar's. Each play tile
   shows its own preview, cropped from the middle of its board so that no
   board edge shows: Classic 2D, Hexagon and Triangle on the dark scene
   background, Surface, 3D and Daily on translucent white over the button
   colour. Classic 2D shows a real Intermediate game in progress; Hexagon
   and Triangle their Intermediate boards (`flat-grid-menu-entries`);
   Surface the torus; 3D a still of the menu's demo board cut out on a
-  transparent background, which never orbits; Daily a generic calendar
-  icon, not a live calendar. 3D without WebGL 2 is disabled, with its
+  transparent background; Daily a generic calendar icon. 3D without WebGL 2 is disabled, with its
   reason under the label and a locked preview. The foot holds only the
   build label, in the canvas's label style with the shipped version as its
-  content — no key hints. The menu opens with the last mode played
-  selected (`game-shell`); a fresh profile without WebGL 2 opens on
-  Classic 2D. No Play again, no session strip, no bests, no tagline and no
-  credit line; the controls reference, the sound switch and the volume
-  live on the Settings page only. The window takes fixed values per window
+  content. The menu opens with the last mode played selected
+  (`game-shell`); a fresh profile without WebGL 2 opens on Classic 2D. The
+  controls reference, the sound switch and the volume live on the Settings
+  page only. The window takes fixed values per window
   size, as the menu artboards draw them, and scrolls on a window too short
   for it. On a phone: one column of phone rows, each play row's preview a
   cropped strip inside its right end, the disabled 3D row reading *Needs
   WebGL 2*, and the foot as J-Menu-p draws it.
 - **Board choice screens** — Classic 2D and 3D, one composition: a window
-  sized to its content and centred on the page, with no game title above
-  it; the mode's name is the body heading, with the **panel toggle**
+  sized to its content and centred on the page; the mode's name is the body heading, with the **panel toggle**
   (accessible name *Settings & bests*) at its right. By default the window
   shows only the Board list and the foot, and is as narrow as its content
   allows: the section label *Board*, the board options, Custom, a divider
@@ -217,9 +211,8 @@ In scope (m2b-themes):
     changes only the stored preference.
   - **The foot** holds only *Play*, on the right, disabled while there is
     nothing valid to play — for *Insert Board Code*, until a code is
-    entered. No summary and no *Records* button.
-  - The board options carry no Last played chip; the last board played is
-    still the one selected when the window opens. The no-guess switch is a
+    entered.
+  - The last board played is the one selected when the window opens. The no-guess switch is a
     switch row; the bests are plain stat tiles; refusals, reasons, the
     density hint (inside the board settings, under the switch) and the
     board code feedback are warn and err notes, and a refused field or
@@ -239,13 +232,12 @@ In scope (m2b-themes):
 - **3D presets** — the 3D board choice offers four presets in one group
   with no group label, named as results and Records name them: Cube Intro
   (6 × 6 × 6, 10 mines), Cube Beginner (6 × 6 × 6, 20), Cube Intermediate
-  (8 × 8 × 8, 40) and Cube Expert (10 × 10 × 10, 100). The First box
-  presets (4 × 4 × 3 with 4 mines, 5 × 5 × 3 with 6) are dropped: their
-  records and replays stay in the history as custom boards, by
-  `3d-play-flow`'s rule for dropped presets, and the start spacing only they
-  had goes, every 3D board starting at the camera's ordinary spacing. A
-  Learn 3D win offers *Play Cube Intro* in their place, with a line saying
-  Cube Intro is a real board with a timer and records.
+  (8 × 8 × 8, 40) and Cube Expert (10 × 10 × 10, 100). Records and replays
+  of a 4 × 4 × 3 board with 4 mines or a 5 × 5 × 3 board with 6 show as
+  custom boards, by `3d-play-flow`'s rule for dropped presets. Every 3D
+  board starts at the camera's ordinary spacing. A Learn 3D win offers
+  *Play Cube Intro*, with a line saying Cube Intro is a real board with a
+  timer and records.
 - **Daily screen** — a window sized to its content, *Daily* as its body
   heading; on the left today's date, the intro line and one
   entry per mode in menu order (`game-shell`), each mode with a daily board
@@ -266,7 +258,7 @@ In scope (m2b-themes):
   3D carries the rank at its end. The figures are plain stat tiles, the
   details a ruled table, the 3BV solved bar the kit's styled track, every
   action carries its icon, and the foot is the white action foot. The
-  details read in the canvas's wording, except that clicks keep *reveal /
+  details read in the canvas's wording, except that clicks read *reveal /
   flag* while Swap clicks is on. No first-use toast draws over the card.
   On a phone the figure tiles go two by two, the code chip stacks, *Play
   again* runs full width, then *Watch replay* and *Records* side by side,
@@ -290,8 +282,8 @@ In scope (m2b-themes):
   the backdrop that fits without scrolling on the largest window; on the
   compact windows two independent stacks; every setting row ruled; the
   Data panel's exports small buttons with download icons, *Reset all data*
-  confirmed in a confirm box and its failure an err note; no Controls
-  action, the bindings list being the page's controls reference. On a phone the bindings device choice
+  confirmed in a confirm box and its failure an err note; the bindings
+  list is the page's controls reference. On a phone the bindings device choice
   spans the full width, each option's label wrapping inside it, and the
   exports stack.
 - **Pause card, replay viewer, generating and failed-board cards, the 3D
@@ -320,9 +312,8 @@ In scope (m2b-themes):
     the files actions at the end of the tools row; one keyboard key line,
     controller glyphs only while a pad is connected; the end line (a won
     badge and the time) in the tools row; the Show 3BV tints drawn from
-    the confetti colours, replacing the replay's own 3BV palette; the
-    recorded dot pointer and trail kept, its rings in the canvas look with
-    the shipped expansion. In 3D the scene sits inside the frame's board
+    the confetti colours; the recorded dot pointer and trail, its rings in
+    the canvas look with the shipped expansion. In 3D the scene sits inside the frame's board
     area, and the canvas's free-camera notice shows. A failure keeps the
     frame's heading and the controls that still work. The phone layouts
     follow the replay artboards;
@@ -341,7 +332,7 @@ In scope (m2b-themes):
 - **The 3D scene in a panel** — the 3D renderer draws into the scene panel's
   rectangle when a screen has one (the Daily screen's cube, a 3D replay's
   board area), and full-window in a 3D game. The main menu's 3D tile shows
-  a still image, not the live scene.
+  a still image.
 - The shared layout at every window size the game supports, from the
   phone sizes to the largest desktop window the canvas draws.
 
@@ -411,9 +402,9 @@ kit are described in [app-shell.md](../../context/app-shell.md),
   bridge (`steam-desktop-host`); with no host they do nothing.
 - **Screen compositions.** The menu, board choice, Daily, pause, results,
   Records, Settings, replay viewer, cards, confirmations and messages
-  rebuilt inside the frame from kit components, keeping every element id,
-  route, default focus and controller navigation target their owners and
-  tests rely on, or moving them with their owners in the same change.
+  composed inside the frame from kit components, on the element ids,
+  routes, default focus and controller navigation targets their owners and
+  tests rely on; a change that moves one moves its owners with it.
 - **Board choice bests.** The board choice screens read the records store
   through its existing read interface and its change notification; they
   hold no records of their own.
@@ -423,8 +414,8 @@ kit are described in [app-shell.md](../../context/app-shell.md),
   panel's own box, which a `ResizeObserver` reports —, and the full window
   otherwise; it draws only there, with the panel's own
   frame and corners drawn by the theme stylesheet over it.
-- **Menu previews.** Every play tile shows its own preview at once, none
-  following the selection: Classic 2D's is the Classic 2D board view
+- **Menu previews.** Every play tile shows its own preview, whichever
+  tile is selected: Classic 2D's is the Classic 2D board view
   drawing a game in progress, cropped to the tile; 3D's a still image of
   the demo board; Daily's an icon.
 - **Main menu buttons.** The menu's play tiles are an open-ended grid of
@@ -465,7 +456,7 @@ kit are described in [app-shell.md](../../context/app-shell.md),
   `3d-game-records`; the last board choices and the last mode played stay
   with their owners.
 - Component state (focus, selection, the open Custom fields) is DOM state of
-  the hosting screen, as today.
+  the hosting screen.
 
 ## Interfaces and contracts
 
@@ -474,8 +465,7 @@ kit are described in [app-shell.md](../../context/app-shell.md),
   (parts `head`, `back`, `logo`, the window buttons `window`, `minimise`,
   `fullscreen` and `quit`, `heading`, `title`, `action`, `body`, `foot`,
   `status`, `summary`; slot `window-chrome`); the game logo `ui-logo`
-  (`word`, `letter`), in place of the large `ui-wordmark` title; the main
-  menu buttons in place of `ui-mode-entry` — the play tile `ui-play-tile`
+  (`word`, `letter`); the main menu buttons — the play tile `ui-play-tile`
   (`tile`, `side`, `top`, `icon`, `text`, `label`, `reason`, `lock`,
   `preview`, `art`, `badge`, `still`, `calendar`; the phone row as its
   variant `ui-play-tile--row`, the preview's variants
@@ -509,9 +499,9 @@ kit are described in [app-shell.md](../../context/app-shell.md),
   contracts, **Accessibility**, states it, every action is reachable by
   keyboard and controller, and the key hints follow the active input device
   from the bindings source, as every help surface does.
-- **Stable hooks** — element ids, routes and default focus targets survive
-  the recomposition, so the shell's navigation and the existing browser
-  tests keep their footing.
+- **Stable hooks** — element ids, routes and default focus targets are
+  stable across the screen compositions, so the shell's navigation and the
+  browser tests keep their footing.
 - **Window sizes** — no screen scrolls horizontally at any supported window
   size; the frame's body scrolls vertically when needed. On a narrow or
   mobile window a screen may hide its non-vital parts, such as the in-game
