@@ -90,9 +90,16 @@ for (const [size, device] of SIZES) {
         const rules = $('ready-rules'), learn = $('ready-learn');
         return {
           width: box(body).width, height: box(body).height, padding: css(body).padding,
-          back: shown($('ready-back')) ? icon('ready-back') : null, play: icon('ready-btn'), learnIcon: icon('ready-learn-btn'),
+          back: shown($('ready-back')) ? icon('ready-back') : null, play: icon('ready-btn'), playFont: css($('ready-btn')).fontSize, learnIcon: icon('ready-learn-btn'),
           board: [css($('ready-board')).fontFamily.includes('JetBrains Mono'), css($('ready-board')).fontSize, css($('ready-board')).fontWeight],
           rules: shown(rules) ? [css(rules).padding, css(rules).rowGap, [...rules.querySelectorAll('.ui-text')].map((p) => css(p).fontSize)] : null,
+          rulesEdge: shown(rules) ? (() => {
+            probe.style.boxShadow = 'inset 0 0 0 2px var(--color-border), 0 var(--edge-md) 0 var(--color-edge)';
+            document.body.append(probe);
+            const want = css(probe).boxShadow;
+            probe.remove();
+            return [css(rules).boxShadow === want, css(rules).boxShadow];
+          })() : null,
           learn: [css(learn).backgroundColor === success, css(learn).borderRadius, css(learn).padding, css(learn.querySelector('.ui-text')).fontSize, css(learn.querySelector('.ui-text')).fontWeight],
           heading: shown($('ready-heading')) ? [$('ready-heading').textContent, css($('ready-heading')).fontSize] : null,
           left: ['ready-heading', 'ready-board', 'ready-btn', 'ready-learn'].map((id) => box($(id)).right),
@@ -104,6 +111,7 @@ for (const [size, device] of SIZES) {
       assert.ok(Math.abs(card.width - width) < 1, `${size}: the card ${width} px wide (${card.width})`);
       assert.equal(card.padding, padding, `${size}: the card's padding`);
       assert.deepEqual(card.play, [touch ? 'hand' : 'mouse', 24], `${size}: the play button leads with its 24 px icon`);
+      assert.equal(card.playFont, { xl: '24px', l: '21px', m: '21px', p: '19px', ls: '19px' }[size], `${size}: the play button's label 24 px on the desktop, 21 px compact, 19 px on a phone`);
       assert.deepEqual(card.learnIcon, ['cube', 18], `${size}: Learn 3D leads with the cube`);
       assert.deepEqual(card.board, [true, '14px', '700'], `${size}: the board line in the mono face, 14 px bold`);
       assert.deepEqual(card.learn, [true, '12px', '8px 8px 8px 14px', '15px', '700'], `${size}: the Learn line a plain success box, its text 15 px bold`);
@@ -119,6 +127,7 @@ for (const [size, device] of SIZES) {
         assert.deepEqual(card.back, ['arrow-left', 18], `${size}: Back leads with the 18 px arrow`);
         assert.equal(card.heading, null, `${size}: no title above the board line`);
         assert.deepEqual(card.rules, ['12px 14px', '6px', ['15px', '15px', '15px']], `${size}: "How 3D works" at 12 / 14 px padding, 6 px apart, 15 px lines`);
+        assert.equal(card.rulesEdge[0], true, `${size}: "How 3D works" keeps the panel's 2 px border and 6 px edge (${card.rulesEdge[1]})`);
       }
       await checkCard(page, '#ready .ui-card', `ready-${size}`);
       if (!touch) {

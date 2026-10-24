@@ -653,7 +653,7 @@
   color: var(--color-ink);
   box-shadow: inset 0 0 0 2px var(--color-border), 0 var(--edge-md) 0 var(--color-edge);
 }
-:root[data-theme="joyful-tiles"] .ui-panel--muted { background: var(--color-surface-sunk); box-shadow: none; }
+:root[data-theme="joyful-tiles"] .ui-panel--muted { background: var(--color-surface-sunk); }
 /* the confirm box: the danger fill, no border and no drop; a table row of it, square */
 :root[data-theme="joyful-tiles"] .ui-confirm {
   border-radius: var(--radius-lg);
@@ -1046,6 +1046,7 @@
   :root[data-theme="joyful-tiles"] .ui-frame__heading { padding: 14px 22px 0; }
   :root[data-theme="joyful-tiles"] .ui-frame__title { font-size: 18px; }
   :root[data-theme="joyful-tiles"] .ui-frame__heading > .ui-frame__title { font-size: 26px; }
+  :root[data-theme="joyful-tiles"] .ui-button--lg { font-size: 21px; }
   :root[data-theme="joyful-tiles"] .ui-frame__foot--action { padding: 10px 20px 14px; }
   :root[data-theme="joyful-tiles"] #results-actions { padding: 14px 22px 18px; }
 }

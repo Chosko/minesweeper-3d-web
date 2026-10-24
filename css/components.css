@@ -164,10 +164,10 @@
      Element: <div class="ui-panel">…</div>
      Role:    none (presentational grouping)
      Name:    none
-     Muted:   ui-panel--muted is a sunk surface with no border and no drop,
-              its content stacked with a small gap (the Custom form, the
-              Learn 3D explanation, the Records overall block, the pause
-              card's settings); it greys its figures (values and detail
+     Muted:   ui-panel--muted is the panel on the sunk surface, its border
+              and drop kept, its content stacked with a small gap (the
+              Custom form, the Learn 3D explanation, the Records overall
+              block, the pause card's settings); it greys its figures (values and detail
               lines in muted ink, no delta colour) for content shown for
               reference only.
 

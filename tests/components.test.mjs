@@ -1377,7 +1377,7 @@ test('the stat tile\'s label is 14 px bold muted in sentence case, its note 13 p
   assert.match(head, /ui-stat__detail[^]*ui-link[^]*Watch/, 'and a note\'s inline Watch link');
 });
 
-test('the muted panel: the sunk fill, 14 × 16 padding, an 8 px gap, no border and no drop, the panel\'s radius', () => {
+test('the muted panel: the sunk fill, 14 × 16 padding, an 8 px gap, the panel\'s 2 px border, its 6 px edge and its radius', () => {
   const base = baseRule('.ui-panel--muted');
   assert.match(base, /padding:\s*14px var\(--space-4\)/);
   assert.match(base, /display:\s*flex/);
@@ -1385,7 +1385,9 @@ test('the muted panel: the sunk fill, 14 × 16 padding, an 8 px gap, no border a
   assert.match(base, /gap:\s*var\(--space-2\)/);
   const theme = themeRule('.ui-panel--muted');
   assert.match(theme, /background:\s*var\(--color-surface-sunk\)/);
-  assert.match(theme, /box-shadow:\s*none/);
+  assert.doesNotMatch(theme, /box-shadow/, 'the panel\'s border and edge kept');
+  assert.match(themeRule('.ui-panel'), /box-shadow:\s*inset 0 0 0 2px var\(--color-border\), 0 var\(--edge-md\) 0 var\(--color-edge\)/, 'the 2 px inset border and the 6 px edge');
+  assert.match(THEME_CSS, /--edge-md: 6px;/);
   assert.match(themeRule('.ui-panel'), /border-radius:\s*var\(--radius-xl\)/, '20, as the Records overall block draws it');
 });
 
@@ -3864,6 +3866,7 @@ test('the frame\'s head and foot follow the canvas\'s size steps — desktop, co
   const compact = mediaRules(THEME_CSS, COMPACT_STEP);
   assert.match(bodyOf(compact, '.ui-frame__head'), /min-height: 56px;\s*padding: 8px 14px;/, 'the compact head');
   assert.match(bodyOf(compact, '.ui-frame__title'), /font-size: 18px;/);
+  assert.match(bodyOf(compact, '.ui-button--lg'), /font-size: 21px;/, 'every large button\'s label 21 px when compact');
   const touch = mediaRules(THEME_CSS, TOUCH_QUERY);
   assert.match(bodyOf(touch, '.ui-frame__head'), /min-height: 60px;\s*padding: 8px 10px;/, 'the touch head');
   assert.match(bodyOf(touch, '.ui-frame__title'), /font-size: 17px;/);
