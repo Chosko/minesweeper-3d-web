@@ -1,8 +1,9 @@
-// Records screen for 3D (js/records/screen.js): the 2D | 3D switch above the board picker, the
+// Records screen's modes (js/records/screen.js): the mode switch above the board picker, the
 // picker listing the chosen mode's boards under their labels, the chosen mode's overall figures,
 // the open rules (mode, board key, last game played) and the mode switch from a fake records
-// store; the results screen's Records opening on a 3D game's board; the #records-mode markup and
-// its wiring; and in a browser the switch by mouse, keyboard and controller.
+// store, over Classic 2D, Hexagon, Triangle and 3D; the results screen's Records opening on a 3D,
+// Hexagon or Triangle game's board; the #records-mode markup and its wiring; and in a browser the
+// switch by mouse, keyboard and controller.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -30,6 +31,12 @@ const FORMER_EXPERT = board3D(12, 12, 8, 130);
 const FORMER_DOUBLE = board3D(8, 8, 2, 10);
 const CUBE_EXPERT_NG = board3D(10, 10, 10, 100, true);
 const CUSTOM_3D = board3D(10, 10, 10, 80);
+const hexBoard = (width, height, mines, noGuess = false) => createBoardIdentity({ mode: 'hexagon', grid: 'hex', width, height, mines, noGuess });
+const triBoard = (width, height, mines, noGuess = false) => createBoardIdentity({ mode: 'triangle', grid: 'tri', width, height, mines, noGuess });
+const HEX_BEGINNER = hexBoard(9, 9, 13);
+const HEX_CUSTOM = hexBoard(12, 10, 20);
+const TRI_EXPERT_NG = triBoard(41, 17, 103, true);
+const TRI_CUSTOM = triBoard(20, 9, 13);
 const clicks = (n) => ({ reveal: { effective: n, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } });
 let n = 0;
 const game = (b, over = {}) => {
@@ -90,12 +97,34 @@ const value = (list, key) => list.find((s) => s.key === key || s.stat === key).v
 
 // ---------------------------------------------------------------- the switch and the picker
 
-test('the switch offers Classic 2D and 3D; the content carries the chosen mode', () => {
-  assert.deepEqual(RECORDS_MODES.map((m) => [m.value, m.label]), [['classic-2d', 'Classic 2D'], ['3d', '3D']]);
+test('the switch offers Classic 2D, Hexagon, Triangle and 3D in menu order, no Surface; the content carries the chosen mode', () => {
+  assert.deepEqual(RECORDS_MODES.map((m) => [m.value, m.label, m.overallTitle]), [
+    ['classic-2d', 'Classic 2D', 'Classic 2D overall'], ['hexagon', 'Hexagon', 'Hexagon overall'],
+    ['triangle', 'Triangle', 'Triangle overall'], ['3d', '3D', '3D overall'],
+  ]);
   const c = recordsContent(fakeStore(), { mode: '3d' });
   assert.equal(c.mode, '3d');
-  assert.deepEqual(c.modes, [{ value: 'classic-2d', label: 'Classic 2D', selected: false }, { value: '3d', label: '3D', selected: true }]);
+  assert.deepEqual(c.modes, [
+    { value: 'classic-2d', label: 'Classic 2D', selected: false }, { value: 'hexagon', label: 'Hexagon', selected: false },
+    { value: 'triangle', label: 'Triangle', selected: false }, { value: '3d', label: '3D', selected: true },
+  ]);
+  assert.equal(recordsContent(fakeStore(), { mode: 'triangle' }).mode, 'triangle');
   assert.equal(recordsContent(fakeStore()).mode, 'classic-2d');
+});
+
+test('the Hexagon and Triangle pickers list their standard boards without no-guess, then with it, no Daily board, then their custom boards played', () => {
+  const store = fakeStore({ games: [game(HEX_CUSTOM), game(TRI_CUSTOM), game(BEGINNER)] });
+  const STANDARD = ['Beginner', 'Intermediate', 'Expert'];
+  const NAMED = [...STANDARD, ...STANDARD.map((l) => `${l} · no-guess`)];
+  const hex = pickerBoards(store, 'hexagon');
+  assert.deepEqual(hex.map((b) => b.label), [...NAMED, '12 × 10 · 20 mines'], 'a mode without a daily board lists none');
+  assert.ok(hex.every((b) => b.board.mode === 'hexagon' && b.board.grid === 'hex'));
+  assert.deepEqual(hex.slice(0, 3).map((b) => [b.board.width, b.board.height, b.board.mines]), [[9, 9, 13], [16, 16, 50], [30, 16, 100]]);
+  const tri = pickerBoards(store, 'triangle');
+  assert.deepEqual(tri.map((b) => b.label), [...NAMED, '20 × 9 · 13 mines']);
+  assert.ok(tri.every((b) => b.board.mode === 'triangle' && b.board.grid === 'tri'));
+  assert.deepEqual(tri.slice(0, 3).map((b) => [b.board.width, b.board.height, b.board.mines]), [[13, 7, 8], [25, 13, 36], [41, 17, 103]]);
+  assert.ok(!pickerBoards(store, 'classic-2d').some((b) => b.key === boardKey(HEX_CUSTOM)), 'never mixed into another mode');
 });
 
 test('the 3D picker lists the four presets without no-guess, then with it, then the custom 3D boards played, under their 3D labels', () => {
@@ -163,6 +192,10 @@ test('a board key alone sets the switch from its mode', () => {
   assert.equal(custom.mode, '3d');
   assert.equal(custom.boards.at(-1).key, boardKey(CUSTOM_3D), 'a 3D board asked for joins the 3D picker');
   assert.equal(recordsContent(store, { mode: 'classic-2d', boardKey: boardKey(CUBE_BEGINNER) }).mode, '3d', 'the key carries its mode');
+  const tri = recordsContent(store, { boardKey: boardKey(TRI_EXPERT_NG) });
+  assert.equal(tri.mode, 'triangle');
+  assert.equal(tri.board.label, 'Expert · no-guess');
+  assert.equal(recordsContent(store, { boardKey: boardKey(HEX_CUSTOM) }).boards.at(-1).key, boardKey(HEX_CUSTOM), 'a Hexagon board asked for joins the Hexagon picker');
 });
 
 test('a mode alone opens on its last board played, else on its first board', () => {
@@ -176,6 +209,20 @@ test('a mode alone opens on its last board played, else on its first board', () 
   assert.equal(recordsContent(fakeStore({ games: [game(BEGINNER)] }), { mode: '3d' }).board.key, boardKey(CUBE_INTRO));
   assert.equal(lastBoardPlayed(store, '3d'), boardKey(CUSTOM_3D));
   assert.equal(lastBoardPlayed(store, 'classic-2d'), boardKey(BEGINNER));
+  assert.equal(recordsContent(store, { mode: 'hexagon' }).board.key, boardKey(HEX_BEGINNER), 'nothing played: its first board');
+});
+
+test('an unknown mode opens Classic 2D', () => {
+  const store = fakeStore({ games: [game(CUSTOM_2D, { endedAt: '2026-10-07T12:00:00.000Z' }), game(CUBE_INTRO, { endedAt: '2026-10-09T12:00:00.000Z' })] });
+  for (const mode of ['surface', 'nonsense', 42]) {
+    const c = recordsContent(store, { mode });
+    assert.equal(c.mode, 'classic-2d', String(mode));
+    assert.equal(c.board.key, boardKey(CUSTOM_2D), 'on its last board played');
+  }
+  assert.equal(recordsContent(fakeStore(), { mode: 'surface' }).board.label, 'Beginner');
+  const screen = createRecordsScreen({ records: store, view: fakeView() });
+  screen.show({ mode: 'surface' });
+  assert.equal(screen.mode, 'classic-2d');
 });
 
 test('without a mode or a board the screen opens on the mode and board of the last game played', () => {
@@ -187,7 +234,11 @@ test('without a mode or a board the screen opens on the mode and board of the la
   const c = recordsContent(store);
   assert.equal(c.mode, '3d');
   assert.equal(c.board.key, boardKey(CUBE_EXPERT_NG));
-  assert.equal(lastBoardPlayed(store), boardKey(CUBE_EXPERT_NG), 'across both modes');
+  assert.equal(lastBoardPlayed(store), boardKey(CUBE_EXPERT_NG), 'across every mode');
+  store.record(game(TRI_CUSTOM, { endedAt: '2026-10-10T12:00:00.000Z' }));
+  const tri = recordsContent(store);
+  assert.equal(tri.mode, 'triangle', 'a Triangle game played last opens Triangle');
+  assert.equal(tri.board.key, boardKey(TRI_CUSTOM));
   const none = recordsContent(fakeStore());
   assert.equal(none.mode, 'classic-2d');
   assert.equal(none.board.label, 'Beginner');
@@ -225,6 +276,36 @@ test("the figures panel shows the chosen 3D board's figures and the 3D overall f
   assert.equal(value(two.overall, 'games'), '2');
 });
 
+test("a Hexagon or Triangle board gets every part: its bests, counters, history views, replays and Leaderboards tab; the overall row is its mode's alone", () => {
+  const store = fakeStore({ games: [
+    game(HEX_BEGINNER, { elapsedMs: 30000, endedAt: '2026-10-07T12:00:00.000Z' }),
+    game(HEX_BEGINNER, { outcome: 'lost', endedAt: '2026-10-08T12:00:00.000Z' }),
+    game(HEX_CUSTOM, { endedAt: '2026-10-08T13:00:00.000Z' }),
+    game(TRI_CUSTOM, { endedAt: '2026-10-08T14:00:00.000Z' }),
+    game(BEGINNER, { endedAt: '2026-10-09T12:00:00.000Z' }),
+  ] });
+  const library = fakeLibrary();
+  const c = recordsContent(store, { boardKey: boardKey(HEX_BEGINNER), replays: library, tab: 'leaderboards' });
+  assert.equal(c.mode, 'hexagon');
+  assert.equal(c.board.label, 'Beginner');
+  assert.equal(value(c.bests, 'time'), '30.000 s');
+  assert.equal(value(c.counters, 'games'), '2');
+  assert.equal(c.overallTitle, 'Hexagon overall');
+  assert.equal(value(c.overall, 'games'), '3', 'the Hexagon games only');
+  assert.match(c.overallLine, /^Games 3 · Wins 2 /);
+  assert.equal(c.games.rows.length, 2);
+  assert.equal(c.top.rows.length, 1);
+  assert.equal(c.chart.points.length, 1);
+  assert.equal(c.bestChart.steps.length, 1);
+  assert.equal(c.averages.rows[0].values[2], '30.000 s');
+  assert.equal(c.tab, 'leaderboards', 'the Leaderboards tab, its coming-soon panel the markup\'s');
+  assert.deepEqual(library.asked, [boardKey(HEX_BEGINNER)]);
+  const tri = recordsContent(store, { mode: 'triangle' });
+  assert.equal(tri.overallTitle, 'Triangle overall');
+  assert.equal(value(tri.overall, 'games'), '1');
+  assert.equal(tri.board.key, boardKey(TRI_CUSTOM));
+});
+
 // ---------------------------------------------------------------- the controller
 
 test('the mode switch shows the chosen mode on its last board played, on the first games page', () => {
@@ -256,6 +337,10 @@ test('the mode switch shows the chosen mode on its last board played, on the fir
   assert.equal(view.shown.length, shown, 'choosing the mode already shown changes nothing');
   screen.setMode('nonsense');
   assert.equal(screen.mode, 'classic-2d', 'an unknown mode is ignored');
+  screen.setMode('hexagon');
+  assert.equal(screen.mode, 'hexagon');
+  assert.equal(screen.board, boardKey(HEX_BEGINNER), 'a mode with nothing played: its first board');
+  assert.ok(view.shown.at(-1).boards.every((b) => b.key.startsWith('hexagon:hex:')));
 });
 
 test("a 3D board gets every history view: the Top 10, the averages, the best-time chart and the filters, ranking its no-guess board alone", () => {
@@ -319,6 +404,12 @@ test("the results screen's Records opens on 3D and on this game's board for a 3D
   const c = recordsContent(store, data);
   assert.equal(c.mode, '3d');
   assert.equal(c.board.label, 'Cube Expert · no-guess');
+  for (const [b, mode] of [[HEX_CUSTOM, 'hexagon'], [TRI_EXPERT_NG, 'triangle']]) {
+    flow.finished(game(b), mode);
+    flow.openRecords();
+    assert.equal(routes.at(-1).data.boardKey, boardKey(b), `a ${mode} game: its board`);
+    assert.equal(recordsContent(store, routes.at(-1).data).mode, mode);
+  }
 });
 
 // ---------------------------------------------------------------- markup and wiring
@@ -327,7 +418,7 @@ const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const RECORDS_HTML = INDEX.slice(INDEX.indexOf('<section id="records"'), INDEX.indexOf('<!-- /Records -->'));
 
-test('the 2D | 3D switch is a kit segmented choice at the right of the frame\'s heading, above the board picker', () => {
+test('the mode switch is a kit segmented choice at the right of the frame\'s heading, above the board picker', () => {
   const at = RECORDS_HTML.indexOf('id="records-mode"');
   assert.ok(at > 0, '#records-mode');
   assert.ok(at < RECORDS_HTML.indexOf('id="records-picker"'), 'above the picker');
@@ -335,13 +426,16 @@ test('the 2D | 3D switch is a kit segmented choice at the right of the frame\'s 
   assert.match(group, /<div id="records-mode" class="ui-segmented" role="radiogroup" aria-label="Mode">/);
   const options = [...group.matchAll(/<button type="button" class="ui-segmented__option" role="radio" aria-checked="(true|false)" data-value="([^"]+)">([^<]+)<\/button>/g)]
     .map((m) => [m[2], m[3], m[1]]);
-  assert.deepEqual(options, [['classic-2d', 'Classic 2D', 'true'], ['3d', '3D', 'false']]);
+  const MODES = [['classic-2d', 'Classic 2D', 'true'], ['hexagon', 'Hexagon', 'false'], ['triangle', 'Triangle', 'false'], ['3d', '3D', 'false']];
+  assert.deepEqual(options, MODES);
   const heading = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div class="ui-frame__action">'), RECORDS_HTML.indexOf('<div class="ui-frame__body"'));
   assert.ok(heading.includes('id="records-mode"'), 'the switch at the right of the heading');
   const body = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div class="ui-frame__body" id="records-body">'));
   assert.match(body, /^<div class="ui-frame__body" id="records-body">\s*<div id="records-mode-touch" class="ui-segmented" role="radiogroup" aria-label="Mode">/,
     'the phone\'s full-width bar opens the body, above the picker');
   assert.ok(body.indexOf('id="records-mode-touch"') < body.indexOf('id="records-picker"'));
+  const touch = body.slice(0, body.indexOf('</div>', body.indexOf('id="records-mode-touch"')));
+  assert.deepEqual([...touch.matchAll(/aria-checked="(true|false)" data-value="([^"]+)">([^<]+)</g)].map((m) => [m[2], m[3], m[1]]), MODES, 'the phone\'s bar offers the same four');
 });
 
 test('the shell opens the records screen with its mode and board, and the switch calls the controller', () => {
@@ -350,11 +444,16 @@ test('the shell opens the records screen with its mode and board, and the switch
   const src = read('js/records/screen.js');
   assert.match(src, /\['records-mode', 'records-mode-touch'\]\.map\(\$\)/, 'the head\'s switch and the phone\'s bar');
   assert.match(src, /for \(const group of modeGroups\) bindSegmented\(group, \{ onChange: \(mode\) => onMode\(mode\) \}\)/);
+  const pad = MAIN.slice(MAIN.indexOf('function padRecords('), MAIN.indexOf('\n}\n', MAIN.indexOf('function padRecords(')));
+  assert.match(pad, /RECORDS_PAGE\.stepMode\(/, 'LT / RT step the mode');
+  assert.match(pad, /TRIGGER_MODES\.lt/);
+  assert.match(pad, /TRIGGER_MODES\.rt/);
+  assert.doesNotMatch(pad, /setMode/);
 });
 
 test('the catalogue documents the mode switch', () => {
   const head = read('css/components.css').match(/^\/\*([\s\S]*?)\*\//)[1];
-  assert.match(head, /Records \(index\.html #records\)[\s\S]*?2D \| 3D[\s\S]*?#records-mode/);
+  assert.match(head, /Records \(index\.html #records\)[\s\S]*?mode switch[\s\S]*?#records-mode, its four options/);
 });
 
 // ---------------------------------------------------------------- browser
@@ -366,7 +465,7 @@ function removeWebGL2() {
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
 
-test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', async (t) => {
+test('in a browser, mouse, keyboard and controller operate the mode switch', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -429,9 +528,11 @@ test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', 
     // Keyboard: the arrows move the switch.
     await page.focus('#records-mode [aria-checked="true"]');
     await page.keyboard.press('ArrowRight');
-    assert.equal(await checked(), '3d');
-    assert.equal(await boardShown(), 'Cube Intro · Bests');
-    assert.equal(await ms(() => document.activeElement?.dataset.value), '3d', 'focus stays on the switch');
+    assert.equal(await checked(), 'hexagon');
+    assert.equal(await boardShown(), 'Beginner · Bests', 'Hexagon\'s first board, nothing played there');
+    assert.equal(await overallTitle(), 'Hexagon overall');
+    assert.equal(await ms(() => document.activeElement?.dataset.value), 'hexagon', 'focus stays on the switch');
+    assert.equal(await ms(() => document.querySelectorAll('#records-picker .ui-segmented__option').length), 6, 'its six standard boards, no Daily');
 
     // Controller: focus moves onto the 2D option and A chooses it.
     await tap(BTN.LEFT);

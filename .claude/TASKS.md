@@ -1601,7 +1601,7 @@ Feature: flat-grid-records-replays
 
 ## 273. Records screen's mode switch over four modes
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/screen.js, js/main.js, index.html, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs
 Preconditions: 272

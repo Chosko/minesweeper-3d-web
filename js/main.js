@@ -2152,15 +2152,16 @@ function padMenus(p, held, pressed, now) {
 }
 
 /**
- * Records: LB / RB the previous / next board of the picker, LT / RT the 2D / 3D mode, each as its
- * click does. Focus stays on its control while that still shows, else goes to the chosen board.
+ * Records: LB / RB the previous / next board of the picker, LT / RT the previous / next mode of the switch
+ * (stepMode by TRIGGER_MODES), each held at either end. Focus stays on its control while that still
+ * shows, else goes to the chosen board.
  */
 function padRecords(pressed) {
   const step = (pressed(BTN.RB) ? 1 : 0) - (pressed(BTN.LB) ? 1 : 0);
-  const mode = pressed(BTN.LT) ? TRIGGER_MODES.lt : pressed(BTN.RT) ? TRIGGER_MODES.rt : null;
-  if (!step && !mode) return false;
+  const modeStep = (pressed(BTN.RT) ? TRIGGER_MODES.rt : 0) + (pressed(BTN.LT) ? TRIGGER_MODES.lt : 0);
+  if (!step && !modeStep) return false;
   if (step) RECORDS_PAGE.stepBoard(step);
-  if (mode) RECORDS_PAGE.setMode(mode);
+  if (modeStep) RECORDS_PAGE.stepMode(modeStep);
   const layer = document.getElementById('records');
   if (!padCurrent(layer, padFocusables(layer))) padFocus(layer.querySelector('#records-picker [aria-checked="true"]'));
   return true;

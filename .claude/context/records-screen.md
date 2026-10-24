@@ -1,10 +1,10 @@
-# Records screen — 2D | 3D switch, board picker, content, filters
+# Records screen — mode switch, board picker, content, filters
 
 ## OVERVIEW
 
 The Records screen (`records-screen`) shows the personal records
-([records-store.md](records-store.md)) for Classic 2D or 3D through its 2D |
-3D switch, with the chosen board's kept replays. `js/main.js` builds
+([records-store.md](records-store.md)) for Classic 2D, Hexagon, Triangle or 3D
+through its mode switch, with the chosen board's kept replays. `js/main.js` builds
 `RECORDS_PAGE` over the records store, `REPLAYS`, the router and `#records`,
 on the shell's `records` route ([app-shell.md](app-shell.md)).
 
@@ -23,11 +23,13 @@ paging and stats (`history-chart.js`, `stats.js`) are
 
 Records screen (`js/records/screen.js`)
 - `RECORDS_SCREEN` — `'records'`; `EMPTY_TEXT`; `RECORDS_MODES` — frozen
-  `{ value, label, overallTitle }` for `classic-2d` and `3d`.
+  `{ value, label, overallTitle }` for `classic-2d`, `hexagon`, `triangle`
+  and `3d`, in menu order; `overallTitle` is "<label> overall".
 - `pickerBoards(records, mode?)` → `[{ key, label, board }]`: the mode's
-  named boards, every one without no-guess, then every one with it (for 3D
-  the four cube presets, Cube Intro to Cube Expert), its Daily board
-  (always listed, labelled `DAILY_OPTION`, "Daily"), then its custom boards
+  named boards, every one without no-guess, then every one with it (for
+  Classic 2D, Hexagon and Triangle their grid's standard boards, for 3D the
+  four cube presets, Cube Intro to Cube Expert), its Daily board (labelled
+  `DAILY_OPTION`, "Daily"; a mode without a daily board lists none), then its custom boards
   in `boardsPlayed(mode)` order; a game played on a former First box preset
   is listed there as a custom board ([records.md](records.md)). The content's
   `board.label` is always the board's `boardLabel`.
@@ -50,7 +52,8 @@ Records screen (`js/records/screen.js`)
 - `createRecordsScreen({ records, view, replays?, router?, viewPrefs?,
   exporter?, files?, now? })` → `show({ mode, boardKey }?)`, `hide()`,
   `select(key)`, `stepBoard(±1)` (the picker's previous / next board; false
-  at either end), `setMode(mode)`, `showPage(n)`, `showReplayPage(n)`,
+  at either end), `setMode(mode)`, `stepMode(±1)` (the switch's previous /
+  next mode; false at either end), `showPage(n)`, `showReplayPage(n)`,
   `setPeriod(v)`, `setOutcome(v)`, `setTab(v)`, `setTopStat(v)`,
   `exportFile(format)`, `downloadReplay(id)`, `openReplayFile()`,
   `filters`, `togglePin(id)`, `deleteReplay(id)`, `setPinnedFirst(on)`,
@@ -62,14 +65,14 @@ Records screen (`js/records/screen.js`)
 
 - **Opening mode and board.** `show({ mode, boardKey })` opens on the board
   asked for (the results screen passes its game's), whose key sets the mode;
-  else on the mode asked for and its last board played; else on the last
-  board played in either mode; a mode with nothing played opens on its first
+  else on the mode asked for (Classic 2D for an unknown one) and its last
+  board played; else on the last board played in any mode; a mode with nothing played opens on its first
   named board, and with nothing at all on Classic 2D's Beginner. A board
   asked for that is not in the picker joins it. Picker options are rebuilt
   only when the list changes, so focus stays.
 - **The mode switch.** `setMode(mode)` shows that mode's last board played,
   or its first named board, with its picker and overall figures; no figure
-  combines the two modes.
+  combines two modes.
 - **Live update.** While shown, the controller subscribes to the store's and
   the library's `onChange` and redraws both lists on the same page, each
   clamped to its last; `hide` unsubscribes. `show`, `select` and `setMode`
@@ -98,7 +101,9 @@ Records screen (`js/records/screen.js`)
 - [../domain/features/records-screen.md](../domain/features/records-screen.md)
   — content, picker, chart, recent games, live update, empty state.
 - [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
-  — the 2D | 3D switch, the 3D picker, the mode the screen opens on.
+  — the mode switch, the 3D picker, the mode the screen opens on.
+- [../domain/features/flat-grid-records-replays.md](../domain/features/flat-grid-records-replays.md)
+  — Hexagon and Triangle on the switch, the controller's LT / RT step.
 
 ## CROSS-REFERENCES
 

@@ -1,11 +1,11 @@
-// Records export: two files built from the records store's history of every board in both modes and
+// Records export: two files built from the records store's history of every board in every mode and
 // the replay library's listing of every kept replay — the history as one CSV table for a
 // spreadsheet, and everything as one JSON file. The replay files themselves are not exported.
 // Exporting reads only: it writes no document. The builders are DOM-free; the download goes
 // through a Blob and an object URL handed to an injected trigger, so tests observe the file
 // without downloading.
 //
-// exportGames(records) → every game of every board played in both modes, newest end first:
+// exportGames(records) → every game of every board played in every mode (MODES), newest end first:
 //   [{ entry, board }], entry the history entry, board its parsed board identity. A query that
 //   throws leaves its games out.
 // exportCsv({ records, replays?, now? }) → { name, type, text }: minesweeper-3d-history-<date>.csv,
@@ -33,10 +33,11 @@
 
 import { CLICK_KINDS } from '../engine/metrics.js';
 import { boardLabel, parseBoardKey } from './board.js';
+import { MODES } from './model.js';
 import { bbbvPerSecond, countedClicks, efficiency } from './summary.js';
 
 export const EXPORT_FORMAT = 1;
-export const EXPORT_MODES = Object.freeze(['classic-2d', '3d']);
+export const EXPORT_MODES = MODES;
 export const NOTHING_TO_EXPORT = 'Nothing to export yet: no game is recorded.';
 export const EXPORT_LINE = 'Save every recorded game as a spreadsheet, or the history and the list of kept replays as one file.';
 export const CSV_HEADERS = Object.freeze([

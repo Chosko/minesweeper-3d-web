@@ -83,7 +83,7 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   (`bindWindowButtons`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md);
   [platform.md](platform.md)). A phone's head holds only Back and the
   logo. The screen's name is the body heading `ui-frame__heading`, with the
-  screen's control at its right in `ui-frame__action` (Records' 2D | 3D
+  screen's control at its right in `ui-frame__action` (Records' mode
   switch, a board choice's panel toggle); the main menu has none. Then a
   body that scrolls vertically while head, heading and foot stay in view,
   and a foot — a status line, or a bar of the screen's actions; the

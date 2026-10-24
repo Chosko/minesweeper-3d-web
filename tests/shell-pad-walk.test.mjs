@@ -256,7 +256,7 @@ test('[slow] in a browser, the Records walk stops on every Watch, Download, Pin 
   }
 });
 
-test('[slow] in a browser, LB / RB step the Records board and LT / RT switch 2D and 3D, with their glyphs shown only under pad navigation', async (t) => {
+test('[slow] in a browser, LB / RB step the Records board and LT / RT step the mode, with their glyphs shown only under pad navigation', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -297,13 +297,21 @@ test('[slow] in a browser, LB / RB step the Records board and LT / RT switch 2D 
     assert.equal(await board(), order[1]);
     assert.equal(await ms(() => document.activeElement.closest('#records-picker') && document.activeElement.getAttribute('aria-checked')), 'true');
 
+    await tap(BTN.LT);
+    assert.equal(await mode(), 'classic-2d', 'LT at Classic 2D: held');
     await tap(BTN.RT);
-    assert.equal(await mode(), '3d', 'RT: 3D');
+    assert.equal(await mode(), 'hexagon', 'RT: the next mode, Hexagon');
     assert.equal(await ms(() => !!document.activeElement.closest('#records-picker')), true);
     await tap(BTN.RT);
+    assert.equal(await mode(), 'triangle');
+    await tap(BTN.RT);
     assert.equal(await mode(), '3d');
+    await tap(BTN.RT);
+    assert.equal(await mode(), '3d', 'RT at 3D: held');
     await tap(BTN.LT);
-    assert.equal(await mode(), 'classic-2d', 'LT: 2D');
+    assert.equal(await mode(), 'triangle', 'LT: the previous mode');
+    for (let i = 0; i < 3; i++) await tap(BTN.LT);
+    assert.equal(await mode(), 'classic-2d');
 
     // The glyphs: the active pad's LB / RB at the picker's ends and LT / RT at the switch's, under pad navigation only.
     const glyphs = () => ms(() => [...document.querySelectorAll('#records [data-pad-glyph]')].map((e) => [e.dataset.padGlyph, e.textContent, e.getClientRects().length > 0 ? 'shown' : 'none']));

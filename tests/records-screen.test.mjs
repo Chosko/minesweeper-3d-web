@@ -303,19 +303,27 @@ test('stepBoard walks the picker forward and back in its order, held at either e
   assert.equal(screen.page, 0, 'a new board starts on its first games page');
 });
 
-test('the triggers choose the mode through setMode: LT 2D, RT 3D', () => {
-  assert.deepEqual(TRIGGER_MODES, { lt: 'classic-2d', rt: '3d' });
+test('the triggers step the mode through stepMode in the switch\'s order, held at either end: LT the previous, RT the next', () => {
+  assert.deepEqual(TRIGGER_MODES, { lt: -1, rt: 1 });
   const store = fakeStore({ games: [game(BEGINNER)] });
   const view = fakeView();
   const screen = createRecordsScreen({ records: store, view });
   screen.show({ boardKey: boardKey(BEGINNER) });
-  screen.setMode(TRIGGER_MODES.rt);
-  assert.equal(screen.mode, '3d');
-  assert.equal(view.shown.at(-1).mode, '3d');
   const drawn = view.shown.length;
-  screen.setMode(TRIGGER_MODES.rt);
-  assert.equal(view.shown.length, drawn, 'the mode already shown: nothing');
-  screen.setMode(TRIGGER_MODES.lt);
+  assert.equal(screen.stepMode(TRIGGER_MODES.lt), false, 'LT at Classic 2D: held');
+  assert.equal(view.shown.length, drawn, 'held at the first mode: nothing redrawn');
+  const walked = [];
+  while (screen.stepMode(TRIGGER_MODES.rt)) walked.push(screen.mode);
+  assert.deepEqual(walked, ['hexagon', 'triangle', '3d'], 'RT steps through the switch\'s order');
+  assert.equal(view.shown.at(-1).mode, '3d');
+  const atEnd = view.shown.length;
+  assert.equal(screen.stepMode(TRIGGER_MODES.rt), false, 'RT at 3D: held');
+  assert.equal(view.shown.length, atEnd, 'held at the last mode: nothing redrawn');
+  assert.equal(screen.stepMode(TRIGGER_MODES.lt), true);
+  assert.equal(screen.mode, 'triangle', 'LT: the previous mode');
+  assert.equal(screen.stepMode(0), false, 'no step: nothing');
+  screen.stepMode(-1);
+  screen.stepMode(-1);
   assert.equal(screen.mode, 'classic-2d');
   assert.equal(screen.board, boardKey(BEGINNER), 'back on the mode\'s last board played');
 });
@@ -549,8 +557,8 @@ test('the records screen is the kit composition: picker, figures, overall, note 
     '<button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise">',
     '<button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen">',
     '<button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit">',
-    option('classic-2d', true), option('3d', false),
-    option('classic-2d', true), option('3d', false),
+    option('classic-2d', true), option('hexagon', false), option('triangle', false), option('3d', false),
+    option('classic-2d', true), option('hexagon', false), option('triangle', false), option('3d', false),
     '<button type="button" id="records-export-csv" class="ui-button ui-button--secondary ui-button--sm" data-icon="download">',
     '<button type="button" id="records-export-json" class="ui-button ui-button--secondary ui-button--sm" data-icon="download">',
     option('all', true), option('12m', false), option('30d', false), option('7d', false),

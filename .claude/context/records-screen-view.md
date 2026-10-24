@@ -30,7 +30,8 @@ Records view (`js/records/screen.js`)
   library tables gain a Board code column of plain text (`codeCell`), and
   a recent game or replay its outcome as a kit chip (`outcomeChip`,
   `js/records/replay-list.js`).
-- `TRIGGER_MODES` — `{lt: 'classic-2d', rt: '3d'}`, the triggers' modes.
+- `TRIGGER_MODES` — `{lt: -1, rt: 1}`, the triggers' steps along the
+  switch (`stepMode`).
 
 Export (`js/records/export.js`)
 - `createRecordsExport({ records, replays?, now?, trigger?, objectUrl? })` →
@@ -45,8 +46,8 @@ Export (`js/records/export.js`)
   places it). `#records` is a `ui-frame` inset on the backdrop at each
   window step's canvas size (J-Records-xl, -l, -m), not full height: the
   title bar's Back (its arrow alone, named "Back to Main menu" when it
-  returns to the menu, else "Back"), the heading "Records" with the 2D | 3D
-  switch at its right, the picker one line across the top of its body, scrolling sideways under a
+  returns to the menu, else "Back"), the heading "Records" with the mode
+  switch (Classic 2D, Hexagon, Triangle, 3D) at its right, the picker one line across the top of its body, scrolling sideways under a
   fade, then a `ui-columns--two` — the left column at a fixed width per
   window step, its sections on the frame under section labels (the bests
   as three `ui-stat--tile`s across at every size, each figure shrinking
@@ -72,7 +73,7 @@ Export (`js/records/export.js`)
   recorded — the screen's with `NOTHING_TO_EXPORT` in its note line, the
   Settings panel's with no line.
 - **Controller.** `padRecords` in `js/main.js` (off while a
-  confirmation is open): LT / RT choose the mode (`TRIGGER_MODES`), LB / RB
+  confirmation is open): LT / RT step the mode (`stepMode` by `TRIGGER_MODES`), LB / RB
   step the board (`stepBoard`); `[data-pad-glyph]` hints beside the switch
   and the picker show the active pad's glyphs (`UI.setPad`). The arrow keys
   do not walk Records; the D-pad walks it column by column

@@ -1,17 +1,18 @@
-// Records screen: the 2D | 3D switch, the board picker, the chosen board's figures and the chosen
+// Records screen: the mode switch, the board picker, the chosen board's figures and the chosen
 // mode's overall figures, read from the records store. recordsContent() and the screen controller
 // are DOM-free; createRecordsView() binds the #records markup handed in.
 //
-// The switch chooses a mode (RECORDS_MODES: Classic 2D, 3D) and the picker lists that mode's boards:
-// for Classic 2D, Beginner, Intermediate and Expert, for 3D the presets (PRESETS_3D order), every one
-// without no-guess, then every one with it, then its Daily board (DAILY_OPTION), then every custom
+// The switch chooses a mode (RECORDS_MODES, in menu order: Classic 2D, Hexagon, Triangle, 3D) and the
+// picker lists that mode's boards: for Classic 2D, Hexagon and Triangle their grid's Beginner,
+// Intermediate and Expert, for 3D the presets (PRESETS_3D order), every one without no-guess, then
+// every one with it, then its Daily board (DAILY_OPTION; a mode without a daily board lists none), then every custom
 // board of the mode played (boardsPlayed(mode), most recently played first), labelled by boardLabel;
 // the chosen board's own label (content.board.label) is always its boardLabel. The screen opens on
 // the board it was asked
-// for (a board key, which also sets the mode), otherwise on the mode asked for and its last board
-// played, otherwise on the last board played in either mode — the board whose latest game ended
-// last — and its mode; a mode with nothing played opens on its first board, and with no mode asked
-// and nothing played the screen opens on Classic 2D's Beginner. Times show in the results screen's
+// for (a board key, which also sets the mode), otherwise on the mode asked for (Classic 2D for an
+// unknown one) and its last board played, otherwise on the last board played in any mode — the board
+// whose latest game ended last — and its mode; a mode with nothing played opens on its first board,
+// and with no mode asked and nothing played the screen opens on Classic 2D's Beginner. Times show in the results screen's
 // format (formatTime, js/results/view.js), 3BV/s and efficiency in its formats too; a best's date is
 // "9 Oct 2026" (formatDate) and a game's or a replay's end "9 Oct 2026 14:32" (formatDateTime, local,
 // 24-hour); a win rate a whole percentage; anything missing DASH. The counters of the board and
@@ -61,14 +62,15 @@
 // the chosen mode's named boards, and never throw: the screen always shows and Back always works.
 //
 // createRecordsScreen({ records, view, replays?, router?, viewPrefs?, exporter?, files?, now? }) → { show({ mode, boardKey }?), hide(), select(key),
-// stepBoard(delta), setMode(mode), showPage(n), showReplayPage(n), setPeriod(v), setOutcome(v), setTab(v), setTopStat(v),
+// stepBoard(delta), setMode(mode), stepMode(delta), showPage(n), showReplayPage(n), setPeriod(v), setOutcome(v), setTab(v), setTopStat(v),
 // exportFile(format), downloadReplay(id), openReplayFile(), mode, board, page, filters }: show draws the content through view.show(content)
 // and subscribes to records.onChange, redrawing the chosen board on every newly recorded game (on
 // the same pages, each clamped to its last); show, select and setMode start both lists on their first page; stepBoard(±1) selects the
 // previous / next board of the picker, in its order, and returns false, changing nothing, at either end
-// (the controller's LB / RB; TRIGGER_MODES are LT's and RT's modes for setMode); setMode shows the
-// mode's last board played, or its first board, and does nothing for the mode already shown or an
-// unknown one; hide unsubscribes and calls view.hide(). The period, outcome, tab and Top 10 stat are
+// (the controller's LB / RB); setMode shows the mode's last board played, or its first board, and does
+// nothing for the mode already shown or an unknown one; stepMode(±1) shows the previous / next mode of
+// the switch, in its order, and returns false, changing nothing, at either end (the controller's LT / RT,
+// TRIGGER_MODES their steps); hide unsubscribes and calls view.hide(). The period, outcome, tab and Top 10 stat are
 // screen state: kept across board and mode changes, back to All time · All, Recent games and Time on
 // each show; setPeriod and setOutcome start the recent games on their first page. With an exporter
 // (js/records/export.js), content.exportable is its hasGames() and exportFile(format) its save(format). When records are not being saved (records.available() false) the first show of the session carries
@@ -93,8 +95,8 @@
 // createRecordsView({ root, onSelect, onBack, onPage, onMode?, onWatch?, onTogglePin?, onPinnedFirst?,
 // onReplayPage?, onDelete?, onPeriod?, onOutcome?, onTab?, onTopStat?, onExport?, onDownload?, onOpenFile?, chart?, bestChart? }) →
 // { show(content), hide(), closeConfirm(), isConfirmOpen() }: fills #records by id, the replays panel through
-// createReplayListView; the 2D | 3D switch (#records-mode in the head, #records-mode-touch the phone's
-// bar under it: kit segmented choices whose two options are in the markup) shows content.mode and calls
+// createReplayListView; the mode switch (#records-mode in the head, #records-mode-touch the phone's
+// bar under it: kit segmented choices whose four options are in the markup) shows content.mode and calls
 // onMode(mode); the section label #records-board names the board ("<board> · Bests"); a best's tile
 // shows its figure and, under it, its date with an inline Watch link (a ui-link calling onWatch(id))
 // when its watch is set, nothing for a best not set; a counter its label from the content (a Daily
@@ -116,7 +118,10 @@
 // closing the replays' Delete confirmation without moving focus; the export actions
 // (#records-export-csv, #records-export-json, bindExportActions) call onExport(format).
 
-import { MODE_3D, PRESETS_3D, STANDARD_BOARDS, boardKey, boardLabel, createBoardIdentity, parseBoardKey } from './board.js';
+import {
+  MODE_3D, MODE_HEXAGON, MODE_TRIANGLE, PRESETS_3D, STANDARD_BOARDS, STANDARD_BOARDS_HEX, STANDARD_BOARDS_TRI, boardKey, boardLabel, createBoardIdentity,
+  parseBoardKey,
+} from './board.js';
 import { DAILY_BOARDS, codeOf, dateText } from './board-code.js';
 import { daysInARow } from './model.js';
 import { DASH, NOTES, formatTime, formatRate, formatEfficiency, formatWinRate } from '../results/view.js';
@@ -136,12 +141,15 @@ const PICKER_FADE = 40;
 export const DAILY_OPTION = 'Daily';
 export const EMPTY_TEXT = 'No games on this board yet.';
 const MODE_2D = 'classic-2d';
-/** The mode each controller trigger chooses on the Records screen. */
-export const TRIGGER_MODES = Object.freeze({ lt: MODE_2D, rt: MODE_3D });
-/** The switch's modes, in order. */
+/** The step each controller trigger takes along the switch on the Records screen (stepMode). */
+export const TRIGGER_MODES = Object.freeze({ lt: -1, rt: 1 });
+const recordsMode = (value, label) => Object.freeze({ value, label, overallTitle: `${label} overall` });
+/** The switch's modes, in menu order. */
 export const RECORDS_MODES = Object.freeze([
-  Object.freeze({ value: MODE_2D, label: 'Classic 2D', overallTitle: 'Classic 2D overall' }),
-  Object.freeze({ value: MODE_3D, label: '3D', overallTitle: '3D overall' }),
+  recordsMode(MODE_2D, 'Classic 2D'),
+  recordsMode(MODE_HEXAGON, 'Hexagon'),
+  recordsMode(MODE_TRIANGLE, 'Triangle'),
+  recordsMode(MODE_3D, '3D'),
 ]);
 const isMode = (mode) => RECORDS_MODES.some((m) => m.value === mode);
 
@@ -160,16 +168,19 @@ export function formatDateTime(iso) {
 export { formatWinRate };
 
 // Each mode's named boards: every one without no-guess, then every one with it.
+const flatNamed = (mode, grid, boards) => [false, true].flatMap((noGuess) => boards.map(({ width, height, mines }) =>
+  createBoardIdentity({ mode, grid, width, height, mines, noGuess })));
 const NAMED = Object.freeze({
-  [MODE_2D]: [false, true].flatMap((noGuess) => STANDARD_BOARDS.map(({ width, height, mines }) =>
-    createBoardIdentity({ mode: MODE_2D, grid: 'square', width, height, mines, noGuess }))),
+  [MODE_2D]: flatNamed(MODE_2D, 'square', STANDARD_BOARDS),
+  [MODE_HEXAGON]: flatNamed(MODE_HEXAGON, 'hex', STANDARD_BOARDS_HEX),
+  [MODE_TRIANGLE]: flatNamed(MODE_TRIANGLE, 'tri', STANDARD_BOARDS_TRI),
   [MODE_3D]: [false, true].flatMap((noGuess) => PRESETS_3D.map(({ width, height, depth, mines }) =>
     createBoardIdentity({ mode: MODE_3D, width, height, depth, mines, noGuess }))),
 });
 
 // Each mode's Daily board (the daily boards' identities with the daily flag), listed after its
-// named boards and before its custom boards.
-const DAILY = Object.freeze(Object.fromEntries([MODE_2D, MODE_3D].map((m) => [m,
+// named boards and before its custom boards; a mode without a daily board lists none.
+const DAILY = Object.freeze(Object.fromEntries(RECORDS_MODES.map(({ value: m }) => [m,
   DAILY_BOARDS.filter((d) => d.board.mode === m).map((d) => createBoardIdentity({ ...d.board, daily: true }))])));
 
 const BESTS = Object.freeze([
@@ -319,11 +330,12 @@ function overallLine(counters, rates) {
     + ` · Current streak ${n('currentStreak')} · Longest ${n('longestStreak')} (completed ${n('longestCompletedStreak')})`;
 }
 
-/** The board and mode to show: the key asked for, else the mode's last board, else the last board played. */
-function choose(records, asked, mode) {
-  const key = (asked && keyOf(asked)) || (isMode(mode) ? lastBoardPlayed(records, mode) : lastBoardPlayed(records));
+/** The board and mode to show: the key asked for, else the mode's last board (Classic 2D's for an unknown mode), else the last board played. */
+function choose(records, asked, askedMode) {
+  const mode = askedMode === null || askedMode === undefined || isMode(askedMode) ? askedMode : MODE_2D;
+  const key = (asked && keyOf(asked)) || (mode ? lastBoardPlayed(records, mode) : lastBoardPlayed(records));
   if (key) return { key, mode: parseBoardKey(key).mode };
-  const m = isMode(mode) ? mode : MODE_2D;
+  const m = mode ?? MODE_2D;
   return { key: boardKey(NAMED[m][0]), mode: m };
 }
 
@@ -473,6 +485,13 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
       replayPage = 0;
       draw();
     },
+    stepMode(delta) {
+      const at = RECORDS_MODES.findIndex((m) => m.value === mode);
+      const next = RECORDS_MODES[at + Math.sign(delta)];
+      if (at < 0 || !delta || !next) return false;
+      this.setMode(next.value);
+      return true;
+    },
     showPage(n) { page = n; draw(); },
     setPeriod(value) { period = choiceOf(PERIODS, value); page = 0; draw(); },
     setOutcome(value) { outcome = choiceOf(OUTCOME_FILTERS, value); page = 0; draw(); },
@@ -553,7 +572,7 @@ export function createRecordsView({
     a.addEventListener('click', (e) => { e.preventDefault(); onWatch(id); });
     return a;
   };
-  // The 2D | 3D switch: in the head, and on a phone the bar under it; each shows the mode.
+  // The mode switch: in the head, and on a phone the bar under it; each shows the mode.
   const modeGroups = ['records-mode', 'records-mode-touch'].map($).filter(Boolean);
   for (const group of modeGroups) bindSegmented(group, { onChange: (mode) => onMode(mode) });
   const picker = $('records-picker');

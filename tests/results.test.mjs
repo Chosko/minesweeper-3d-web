@@ -643,6 +643,10 @@ test('the actions: Play again restarts the same choice, Records opens this board
   const hex = createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 9, height: 9, mines: 13, noGuess: false });
   flow2.finished(summary({ id: 'g3', board: hex }), 'hexagon');
   flow2.openRecords();
+  assert.deepEqual(withRecords.routes.at(-1), ['records', { boardKey: 'hexagon:hex:9x9:13:guess' }], 'a Hexagon board: the records screen lists its mode');
+  const surface = createBoardIdentity({ mode: 'surface', grid: 'square', width: 9, height: 9, mines: 10, noGuess: false });
+  flow2.finished(summary({ id: 'g4', board: surface }), 'surface');
+  flow2.openRecords();
   assert.deepEqual(withRecords.routes.at(-1), ['records', {}], 'a board of a mode the records screen does not list: the screen opens on its last board');
 });
 
