@@ -75,8 +75,13 @@ In scope (m2c-flat-grids), for each of Hexagon and Triangle:
   distance between tile centres.
 - **Results**: the shared results screen with time, 3BV, 3BV/s, efficiency
   and the three-best comparison. Its board line leads with the mode's name.
-  Play again, Watch replay, Records and Main menu work as they do after a
-  Classic 2D game.
+  Play again, Records and Main menu work as they do after a Classic 2D
+  game. These modes' replays and their place on the Records screen are
+  `flat-grid-records-replays`', which builds on this feature: until it
+  lands the replay recorder refuses the hexagon and triangle graphs and
+  its failure never interrupts play, so a game ends without a replay and
+  Watch replay is not offered, and Records opens on the last board played
+  rather than on the game's board.
 
 Non-goals:
 
@@ -107,8 +112,9 @@ Classic 2D mode and its shell wiring
 - **Flat mode configuration** — the values that differ between the three
   flat modes: mode id and display name, grid kind (graph provider and
   geometry), standard sizes and custom limits, the last-choice document,
-  and the board-code token. The Classic 2D mode, board setup and board
-  choice binder take a configuration where they assume the square grid.
+  and the board-code token. The configuration has its own module,
+  `js/flat-modes.js`. The Classic 2D mode, board setup and board choice
+  binder take a configuration where they assume the square grid.
 - **One mode instance per flat mode** — each with its own session per game,
   its own generation client (warmed when its board choice opens), and its
   own pre-generated board. They share the page's button swap and the board
@@ -120,7 +126,9 @@ Classic 2D mode and its shell wiring
 - **Game window** — the one Classic 2D window, its foot line led by the
   open mode's name. Only one flat game is open at a time.
 - **Code resolution** — the shell's resolver tells a hexagon or triangle
-  code apart by its token and routes it to its mode's forced start.
+  code apart by its token and routes it to its mode's forced start. The
+  token is read from the board-code parser's own table of the 2D modes,
+  which the configuration's token matches.
 
 ## Data and state
 
@@ -158,7 +166,6 @@ Classic 2D mode and its shell wiring
   window compositions.
 - `results-screen` — the end-of-game hand-off.
 - `game-summary` — the summary each finished game builds.
-- `flat-grid-records-replays` — where the summary and replay go.
 
 ## Open questions
 

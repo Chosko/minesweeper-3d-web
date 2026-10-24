@@ -32,7 +32,9 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   touch's under `#ready.ready--touch`); edit a binding's text in the
   source only.
   They show the mode the last screen method set (`showReady` /
-  `showPlaying` 3D, `showClassic2D` 2D, `showPause`'s `mode`) for the
+  `showPlaying` 3D, `showClassic2D` 2D, `showPause`'s `mode`, which is
+  `classic-2d` for every flat mode: Hexagon and Triangle show Classic 2D's
+  controls) for the
   device `setDevice` set (touch in either mode on a coarse-only device
   unless a controller is in use, `_bindDevice`, which every one of these
   surfaces follows — the lists, the help foot, the HUD strip, the hint strip,
@@ -54,7 +56,10 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   (`updatePadUi`); its change calls `ui.setDevice`.
 - **First-use hints.** `FIRST_USE` (`createFirstUse` over storage and
   `RECORDS`) loads once the records have, seeding a new `shell.firstUse`
-  from them. It counts a game at the host's `started` and a finished 3D game
+  from them. A Hexagon or Triangle game shares Classic 2D's record
+  (`FIRST_USE_RECORD`): its games count toward Classic 2D's, its strip and
+  dismissal are Classic 2D's, and `refreshHints` draws the active flat
+  mode's strip as Classic 2D's. It counts a game at the host's `started` and a finished 3D game
   at `finished`, a Learn 3D game toward no window and only its win as
   finished (`learnGame()`). Strip eligibility is judged as the game begins (`hint3D`
   in `startGame`; `hint2D` at the 2D `board` report, not again for the
@@ -103,8 +108,10 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
 - [platform.md](platform.md) — the `shell.firstUse` document's storage.
 - [app-shell-3d-session.md](app-shell-3d-session.md) — Learn 3D's prompts in the hint strip.
 - [input.md](input.md) — Space's tap-toggle the hints name.
-- [testing.md](testing.md) — `tests/shell-help.test.mjs`,
-  `tests/shell-first-use.test.mjs`.
+- [testing.md](testing.md) — `tests/shell-help.test.mjs` (every flat
+  mode's pause card with Classic 2D's help among them),
+  `tests/shell-first-use.test.mjs` (the shared first-use record among
+  them).
 
 ## WHEN TO READ THE SOURCE
 

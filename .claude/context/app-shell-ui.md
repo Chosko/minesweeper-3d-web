@@ -22,8 +22,9 @@ overlay's parts and the aimed-cell readout are
   1×1×1 board clamps to 0); `startGame` clamps with it.
 - `fmtDims`, `pauseLine(time, minesLeft)`, `NO_MOUSE_MSG`, `TOUCH_MSG`,
   `boardLine3D(s, {mines?})` (`"6 × 6 × 6 · 10 mines · no-guess"`);
-  Classic 2D's `boardTitle2D`
-  (`"Classic 2D · Expert"`), its size line `boardLine2D` and foot line
+  the Classic 2D window's `boardTitle2D` — the open mode's name from
+  `MODE_NAMES` ([app-shell-daily.md](app-shell-daily.md)) and the board
+  (`"Classic 2D · Expert"`, `"Hexagon · Beginner"`) —, its size line `boardLine2D` and foot line
   `boardFoot2D` (the size line with *No-guess* capitalised); 3D's
   `boardTitle3D` (`"3D · Cube Intermediate"`);
   `figuresLine` (re-exported). The pause card's board line joins a mode's
@@ -34,7 +35,9 @@ overlay's parts and the aimed-cell readout are
   `onDismissHint(mode, kind)`, `on{Retry,Standard,OfferMenu,Cancel}{2D,3D}`,
   `onStandardWait3D`, `onLearnEnd(won)`, `onLearnBack`, `onBackToStart`,
   `onResetAll`). Method groups:
-  - screens: `showMenu`, `showBoardChoice`, `showBoardChoice2D`,
+  - screens: `showMenu`, `showBoardChoice`, `showBoardChoice2D(id?)` (a
+    flat mode's board choice: `#c2d-choice` by default, `#hex-choice`,
+    `#tri-choice`),
     `showComingSoon(title)`, `showDaily`, `showRecords`, `showSettings`, `showReady(board, msg,
     {rules, blocked})`, `setReadyPending`, `showPlaying`, `showClassic2D`,
     `showPause({state, time, minesLeft, note, mode})`, `updatePause`,

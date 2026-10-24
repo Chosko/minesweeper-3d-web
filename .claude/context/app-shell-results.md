@@ -45,13 +45,20 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   `saved` false; `notSaved` marks the first results screen of a session
   whose records store is unavailable.
 - **Actions.** Play again (also `Enter`, `R`) → `RESULTS.playAgain` →
-  `PAUSE.restart`, or, once the mode was left, `MODES.start('classic-2d',
-  LAST_CHOICE_2D.current)` or `MODES.start('3d', board3dChoice)` through
-  `enterPlay3D`. Records → `openRecords` routes to `records` with this
-  board's `boardKey`; Back returns to `results`. Watch replay →
+  `PAUSE.restart`, or, once the mode was left, a flat mode's
+  `MODES.start(mode, <its last choice>.current)` (`FLAT_2D`,
+  [app-shell-2d.md](app-shell-2d.md)) or `MODES.start('3d', board3dChoice)`
+  through `enterPlay3D`. Records → `openRecords` routes to `records` with
+  this board's `boardKey` when the Records screen lists its mode
+  (`RECORDS_MODES`, [records-screen.md](records-screen.md)), else with no
+  board, the screen opening on its last board played — a Hexagon or
+  Triangle game's case until the Records screen lists those modes; Back
+  returns to `results`. Watch replay →
   `RESULTS.watch()` routes to `replay` with `{replay, returnTo: {screen:
   'results'}}` — the game's own sealed replay, so it plays whether or not
-  the library saved it. Watch best (only after a win that set no best) →
+  the library saved it; a Hexagon or Triangle game hands over no replay
+  ([classic2d-session.md](classic2d-session.md) § Recording), so Watch
+  replay is not offered after one. Watch best (only after a win that set no best) →
   `RESULTS.watchBest()` routes to `replay` with the best's `replayId`.
   Main menu and Back → `showMainMenu`. Returning to
   `results` without data shows `RESULTS.current` again.
@@ -87,7 +94,8 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   replay and Watch best open.
 - [app-shell-pause.md](app-shell-pause.md) — the hand-offs the flow attaches
   to.
-- [testing.md](testing.md) — `tests/results.test.mjs`,
+- [testing.md](testing.md) — `tests/results.test.mjs` (a flat-mode
+  game's board line and Records route among them),
   `tests/results-watch.test.mjs` (fast only; the results' browser tests,
   Watch replay's among them, are in `tests/results.test.mjs`),
   `tests/replay-handoff.test.mjs`.

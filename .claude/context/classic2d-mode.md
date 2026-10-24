@@ -2,8 +2,10 @@
 
 ## OVERVIEW
 
-`js/classic2d/mode.js` puts the Classic 2D game behind the game shell's mode
-contract: one session, board view, pointer / cursor inputs and movement
+`js/classic2d/mode.js` puts a flat mode's game — Classic 2D's, Hexagon's or
+Triangle's — behind the game shell's mode contract, one instance per flat
+mode built from its flat mode configuration
+([classic2d.md](classic2d.md) § Flat mode configuration): one session, board view, pointer / cursor inputs and movement
 sampler per game, the game window's feed, the sound cue of every action,
 pause by hiding the board, the generation client and pre-generation, and the
 end delay, which plays the end effect
@@ -15,8 +17,9 @@ shell hands in its flow and its sound sink. The area overview is
 
 `js/classic2d/mode.js`
 - `MODE_ID` (`'classic-2d'`), `END_DELAY_MS` (1000).
-- `createClassic2DMode(report, {flow, lastChoice, createClient?, mount?,
-  sound?, clock?, randomSeed?, generatingDelayMs?, place?, buttonSwap?})` →
+- `createClassic2DMode(report, {config?, flow, lastChoice, createClient?,
+  mount?, sound?, clock?, randomSeed?, generatingDelayMs?, place?,
+  buttonSwap?})` →
   the contract methods plus `warm()`, `client` (the mode's one generation
   client), `fixed` (the open game's forced start, or null), `ending`, `finishNow()`,
   `hideBoard(hidden)`, `tick()`, `pad(poll, now)`, `setScale(scale)`,
@@ -26,6 +29,13 @@ shell hands in its flow and its sound sink. The area overview is
   generated was cancelled, `loadChoice()`, `status()` → `{state, pending (the
   first click's board being generated or failed), time, minesLeft}`, `boardHidden`, `boardView` (for the debug hook); the
   contract's optional `replay(summary)` is the session's.
+- `config` is the flat mode configuration, `CLASSIC_2D` by default: every
+  game's board setup, graph, geometry and pre-generated board's start cell
+  are its grid's, and `lastChoice` is `createLastChoice` over the same
+  configuration. An instance's sessions, views, inputs, sampler,
+  generation client and pre-generated board are its own; the button swap
+  and the board scale (`flow.scale`) are the page's, shared by every
+  instance.
 - `flow` is `{openBoardChoice(choice), show(), container(), hud({seconds,
   minesLeft, clicks}), figures?(input, {tick}), board({width, height, mines,
   noGuess, identity}), generating(shown), progress?(p|null),
@@ -51,8 +61,9 @@ shell hands in its flow and its sound sink. The area overview is
 
 - **Start.** `start` normalises the choice, saves it as the last board
   choice and mounts a fresh view, inputs and sampler, the view and the
-  cursor input on the square geometry of the game's grid
-  ([geometry.md](geometry.md)), built once per game. The inputs see the
+  cursor input on the configuration's geometry for the game's size
+  (`config.createGeometry`, [geometry.md](geometry.md)), built once per
+  game. The inputs see the
   session through a gate that reads paused while the board is hidden and
   redraws what an action before the first reveal changed (the session emits
   no event then). The view opens at `flow.scale()` inside `flow.frame()`,
@@ -70,7 +81,7 @@ shell hands in its flow and its sound sink. The area overview is
   bar (Pause, the logo, the window buttons), body (counter strip with the
   icon-only Restart over the board area, the Tap choice on a coarse
   pointer, and while open the flat live figures column with the controls
-  reminder), foot (the mode and board, size, mines, no-guess; Swap clicks
+  reminder), foot (the open mode's name and board, size, mines, no-guess; Swap clicks
   and the live-figures toggle at its right). The window hugs its content,
   centred above the HUD strip, shrinking to the board column while the
   live figures are closed: the fit rule works in the room the chrome
@@ -90,9 +101,9 @@ shell hands in its flow and its sound sink. The area overview is
   ([audio.md](audio.md)). The first reveal's cue plays when its board
   arrives, not if the game was restarted or left first; a refused action
   is silent. A cue never changes or gates an action.
-- **Generation client and pre-generation.** One client (`createClient`) is
-  made on first use and kept for the page; `warm()` warms it as the board
-  choice opens. A finished no-guess game asks it for the next board of the
+- **Generation client and pre-generation.** One client per instance
+  (`createClient`) is made on first use and kept for the page; `warm()`
+  warms it as the mode's board choice opens. A finished no-guess game asks it for the next board of the
   same choice (`pregenerate`, its `startCell`, a fresh `randomSeed`); the
   next `open` with the same choice (Play again, Restart) hands it to the
   session, whose `mark` drives `view.setMark`; another choice or `leave`
@@ -125,7 +136,10 @@ shell hands in its flow and its sound sink. The area overview is
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — the replay on the mode's reports.
 - [../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md)
-  — the geometry the mode builds per game.
+  — the geometry the mode builds per game;
+  [../domain/features/flat-grid-modes.md](../domain/features/flat-grid-modes.md)
+  — one mode instance per flat mode, Hexagon and Triangle played in the
+  Classic 2D window.
 
 ## CROSS-REFERENCES
 
@@ -143,6 +157,8 @@ shell hands in its flow and its sound sink. The area overview is
   end delay plays.
 - [testing.md](testing.md) — `tests/classic2d-mode.test.mjs` the mode, end
   delay, cues, figures feed and window in a browser;
+  `tests/flat-modes.test.mjs` each instance built from its configuration;
+  `tests/flat-modes-play.test.mjs` Hexagon and Triangle games in a browser;
   `tests/replay-2d.test.mjs` the replay on the mode's reports.
 
 ## WHEN TO READ THE SOURCE

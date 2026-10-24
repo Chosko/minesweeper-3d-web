@@ -47,9 +47,9 @@ the aimed-cell readout. The `UI` methods that write them are
   place) and the logo in its title bar, no heading; `#hud-tap` under the board (the Tap choice,
   a `ui-segmented` radiogroup of "Tap: Reveal" and "Tap: Flag", only under
   `(pointer: coarse)`, its options never taking focus; its
-  chosen option's value goes through `onTapMode` to `mode2d.setTapMode`,
+  chosen option's value goes through `onTapMode` to every flat mode's `setTapMode`,
   written back with `setTapMode`); the foot line `#c2d-line` — the title
-  `#c2d-title` (the mode and board, which names the window), then the
+  `#c2d-title` (the open mode's name and board, which names the window), then the
   board line `#c2d-size` — and at its right `#c2d-tools`: `#hud-swap`
   (Swap clicks, `aria-pressed`, never under `(pointer: coarse)`) and the
   live-figures toggle `#c2d-figures-toggle` (`aria-pressed`, through

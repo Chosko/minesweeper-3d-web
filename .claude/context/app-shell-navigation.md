@@ -42,10 +42,15 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
 - **The router owns the screen.** Every screen change is `SHELL.go`;
   nothing else toggles a screen. `S.mode` is a getter over `SHELL.current`:
   `menu | board-choice | coming-soon | daily | records | classic-2d-choice |
-  settings | ready | playing | classic-2d | paused | results | replay |
-  ctxlost`. In the 3D game only `playing` moves the camera, runs the timer and
+  hexagon-choice | triangle-choice | settings | ready | playing |
+  classic-2d | paused | results | replay | ctxlost` — each flat mode's
+  board choice its own screen, every flat game on `classic-2d`
+  ([app-shell-2d.md](app-shell-2d.md) § Flat modes). In the 3D game only `playing` moves the camera, runs the timer and
   accepts actions (`hasSelection`, `Input.isActive`); the Classic 2D board
-  takes input and runs its timer on `classic-2d`. Every
+  takes input and runs its timer on `classic-2d`. A flat mode's board
+  choice screen is listed beside Classic 2D's wherever the shell lists
+  screens: `LAYER_SCREEN`, the menu backdrop's screens, `sceneOff` and
+  the layers the context-lost card makes inert. Every
   router change sets `needRender`, calls `HISTORY.sync()`, `layerChanged()`
   and `sync3D`, and refreshes the hint strip.
 - **Back stack.** `go` stacks the screen it leaves; going to a stacked
@@ -62,7 +67,8 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   [app-shell-daily.md](app-shell-daily.md)): followed once
   at boot after the main menu shows and on `hashchange`, then removed with
   `history.replaceState(history.state, …)`, so the entry keeps its stamp and
-  no entry is added. A hash entry the browser pushed carries no stamp, and
+  no entry is added — for a code of any mode, the flat modes' and 3D's
+  alike. A hash entry the browser pushed carries no stamp, and
   `HISTORY.popstate` ignores it.
 - **Session history.** `HISTORY` mirrors the back stack: the router's
   `onChange` calls `sync()`, the window's `popstate` goes to `popstate`, and
@@ -102,7 +108,8 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   (`focusMove`, `inertSections`, `tabWrap`, `pickInDirection`);
   [input.md](input.md) — `escResumes`.
 - [testing.md](testing.md) — `tests/shell-*.test.mjs` (router and its
-  session-history mirror).
+  session-history mirror; `shell-router` Hexagon's and Triangle's board
+  choice routes).
 
 ## WHEN TO READ THE SOURCE
 

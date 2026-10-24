@@ -21,14 +21,16 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
   seconds(), pauses(until?, count?), started, running, stopped, paused}` —
   `pauses` the pause spans `[{start, end}]` begun by `until`, at most
   `count`, the open one clipped to `until`.
-- `createSession({choice, client, clock?, randomSeed?, generatingDelayMs?,
-  place?, pregenerated?, fixed?})` → `{state, choice, fixed, identity, setup, game, seed,
+- `createSession({choice, config?, client, clock?, randomSeed?,
+  generatingDelayMs?, place?, pregenerated?, fixed?})` → `{state, choice, fixed, identity, setup, game, seed,
   generatorVersion, generatingShown, paused, failure, minesLeft,
   markedCell, progress, elapsedMs(), seconds(), pauses(), clicks(),
   on(type, fn) → off, reveal(c), toggleFlag(c), chord(c), retry(),
   playStandard(), cancel(), pause(), resume(), restart(), leave(),
   summary(), recording, recordSample(values), recordCursor(cell),
-  replay(summary?)}` — `client` the generation client `{request, cancel}`,
+  replay(summary?)}` — `config` the flat mode configuration the choice is
+  read in (its mode, grid, sizes and limits; Classic 2D's square board
+  setup without one, [classic2d.md](classic2d.md)); `client` the generation client `{request, cancel}`,
   asked for no-guess boards only; `place` the standard placement
   (`generate` by default); `pregenerated` a `pregenerate()` board
   ([generation.md](generation.md)); `clock` `{now, setTimeout,
@@ -81,7 +83,11 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
   generator version are added when the board arrives; a board played
   standard after a failure starts a new recording. `recording` is true
   while the game is started, unpaused and unfinished, and only then do
-  `recordSample` and `recordCursor` record.
+  `recordSample` and `recordCursor` record. The recorder's graph is the
+  board identity's grid; until replays cover the `hex` and `tri` graphs
+  ([replay.md](replay.md)) the recorder refuses them, and since recorder
+  failure never interrupts play a Hexagon or Triangle game ends with no
+  replay.
 - **Timer.** The game clock starts when the board is ready, runs through
   pauses and keeps its time once stopped; `seconds()` is whole seconds for
   the overlay, `elapsedMs()` whole milliseconds for the result. A pause is
@@ -92,7 +98,9 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
-  — the game session, timer and failure offer.
+  — the game session, timer and failure offer;
+  [../domain/features/flat-grid-modes.md](../domain/features/flat-grid-modes.md)
+  — Hexagon and Triangle played on this session.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — what the 2D session records.
 
@@ -106,7 +114,8 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
 - [records.md](records.md) — `buildSummary` and the board identity.
 - [replay.md](replay.md) — the recorder the session feeds and seals.
 - [testing.md](testing.md) — `tests/classic2d-session.test.mjs` the timer
-  and session; `tests/replay-2d.test.mjs` the session's recording.
+  and session; `tests/replay-2d.test.mjs` the session's recording;
+  `tests/flat-modes.test.mjs` a configured session on its grid.
 
 ## WHEN TO READ THE SOURCE
 

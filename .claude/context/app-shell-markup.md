@@ -40,8 +40,13 @@ bind.
     `#menu-entry-<id>`, `data-entry`; the Classic 2D tile's board view in
     `#menu-preview-classic-2d`), `#menu-foot` with `#touch-note` and the
     build label `#menu-build` ([app-shell-menu.md](app-shell-menu.md));
-  - board choices `#c2d-choice` ([classic2d.md](classic2d.md)) and
-    `#board-choice` ([mode3d.md](mode3d.md)), one markup: the frame
+  - board choices `#c2d-choice` ([classic2d.md](classic2d.md)), its copies
+    `#hex-choice` and `#tri-choice` — the same markup under the `hex` and
+    `tri` prefixes, the heading the mode's name and the options its
+    standard boards, held equal to `#c2d-choice` by a test; every
+    `css/style.css` and *Joyful tiles* rule naming a `#c2d-choice` id names
+    its `hex` and `tri` twins too —, and `#board-choice`
+    ([mode3d.md](mode3d.md)), one markup: the frame
     `#…-frame`, `#…-back`, the panel toggle (`#c2d-panel-toggle`,
     `#bc-panel-toggle`) in the heading's action, the options `#…-options`
     (`ui-option`s, `data-size` / `data-preset`; `#bc-learn` on the 3D one),

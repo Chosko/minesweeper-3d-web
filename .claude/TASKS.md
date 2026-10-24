@@ -1581,7 +1581,7 @@ Feature: flat-grid-modes
 
 ## 271. Update documentation for feature `flat-grid-modes`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/classic2d.md, .claude/context/classic2d-mode.md, .claude/context/classic2d-session.md, .claude/context/app-shell-2d.md, .claude/context/app-shell-ui.md, .claude/context/app-shell-help.md, .claude/context/app-shell-results.md, .claude/context/app-shell-navigation.md, .claude/context/app-shell-markup.md, .claude/context/app-shell-daily.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-modes.md
 Preconditions: 267, 268, 269, 270

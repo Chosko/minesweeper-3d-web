@@ -26,7 +26,8 @@ others:
 without WebGL 2; `WEBGL2`), `FlyCamera`, `Input`, `MouseActions`,
 `Controls`, `GamepadReader`, `UI`, `SETTINGS` ([settings.md](settings.md)),
 and the shell objects: `SHELL` (router), `HISTORY`, `MODES` (mode host: `'3d'`
-the 3D adapter, `'classic-2d'` the Classic 2D mode), `PAUSE`, `MENU`,
+the 3D adapter, `'classic-2d'`, `'hexagon'` and `'triangle'` the flat modes
+on the Classic 2D mode, [app-shell-2d.md](app-shell-2d.md)), `PAUSE`, `MENU`,
 `LAST_MODE`, `LAST_CHOICE_3D` / `CHOICE_3D`, `LAST_CHOICE_2D` / `CHOICE_2D`,
 `GEN_3D` (warmed as `board-choice` shows, as `mode2d.warm()` is on
 `classic-2d-choice`), `RECORDS`, `REPLAYS`, `REPLAY_VIEWER`, `REPLAY_SCENE`,
@@ -60,8 +61,8 @@ part that owns their topic; `navigation.js` is
 `window.__ms` (tests, Playwright)
 - getters `state` (`S`), `game`, `renderer`, `camera`, `controls`, `pads`,
   `fps`, `frameStats` (`{renders, skipped}`), `modes`, `pauser`, `settings`,
-  `records`, `replays`, `replayViewer`, `board2D`, `game2D` (the open Classic 2D
-  board's engine game), `daily` (the daily boards held since the menu
+  `records`, `replays`, `replayViewer`, `board2D`, `game2D` (the open flat
+  board's view and engine game — Classic 2D's, Hexagon's or Triangle's), `daily` (the daily boards held since the menu
   showed: `has(code)`, `take(code)`); `THREE`, `spawnPose(X, Y, Z)`.
 - `watch(data)` → `SHELL.go('replay', {data})`, `data` `{replay | replayId,
   returnTo}`; `start(X, Y, Z, mines, minePositions?)` →

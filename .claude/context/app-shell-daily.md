@@ -5,7 +5,7 @@
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers `js/shell/daily.js` (the Daily screen listing every mode, its
 pre-generated boards and counted attempts), `js/shell/challenge.js` (board
-codes typed into the board choices and `#board=` links), and their wiring
+codes typed into the board choices and `#board=` links, for every mode), and their wiring
 in `js/main.js`. The main menu, its play tiles' previews and the board choices' wiring
 are [app-shell-menu.md](app-shell-menu.md). The Daily screen's composition
 is the head comment of `css/components.css` (*Daily*); its ids are
@@ -41,8 +41,8 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   'challenge', …}`, a code of another mode refused with `otherMode` its
   mode; `otherModeHint(mode)`, naming the mode from `MODE_NAMES` (Classic
   2D, Hexagon, Triangle, 3D); `gameStart({board, seed,
-  startCell, daily?, pregenerated?})` → `{mode, choice}` (2D `fixed`, 3D
-  `forced`); `freeStart(board)`; `boardHash(hash)`;
+  startCell, daily?, pregenerated?})` → `{mode, choice}` in the board's own
+  mode (a flat mode's choice `fixed`, 3D `forced`); `freeStart(board)`; `boardHash(hash)`;
   `createChallengeLinks({location, history, onDaily, onChallenge,
   onRefused, started, unavailable?, toast?})` → `{start(), hashchange()}`;
   `STARTED_TOAST`.
@@ -73,15 +73,25 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   (`showDailyScene`), drawn in front of the frame through its scene panel.
   `playDaily` refuses a used attempt, takes the held board and starts
   through `startForced` (`MODES.start`, then `enterPlay3D` for 3D);
-  `playChallenge` the same from a parsed code. Both board choices' code
-  fields go through `checkCode` / `playCode` (today's daily code routes to
+  `playChallenge` the same from a parsed code. A code names its mode:
+  `parseBoardCode` reads a hexagon or triangle board from its `H` or `T`
+  token ([records-board-code.md](records-board-code.md)), so a challenge
+  starts in Classic 2D, Hexagon, Triangle or 3D through `gameStart`,
+  whether typed into its board choice or opened as a `#board=` link, and a
+  board choice refuses another mode's code with `otherModeHint`. A coded
+  no-guess board that fails generation gets the failure offer with no
+  replacement board. Every board choice's code field goes through
+  `checkCode` / `playCode` (today's daily code routes to
   `daily`; an accepted challenge's line names its board through
   `codeBoardLine` and its marked start cell or cube, that board line its
   label for the summary), and `LINKS` follows `#board=` links. A daily or challenge saves
   no last choice; the results flow's Play again after one, once its mode
   was left, starts `freeStart(summary.board)`, whose 2D choice carries
   `remember: false`, so it saves none either. A challenge route's parse has
-  no `daily`: another day's daily code is a challenge.
+  no `daily`: another day's daily code is a challenge. Hexagon and
+  Triangle have no daily board: their Daily rows stay *Coming soon*, and
+  the daily boards are prepared through Classic 2D's and 3D's clients
+  only.
 
 ## DOMAIN DEPENDENCIES
 
@@ -102,7 +112,9 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   reads.
 - [generation.md](generation.md) — the clients the daily boards are
   pre-generated through.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (daily, challenge).
+- [testing.md](testing.md) — `tests/shell-*.test.mjs` (daily — Hexagon
+  and Triangle still *Coming soon* —, challenge — a hexagon or triangle
+  code and `#board=` link among them).
 
 ## WHEN TO READ THE SOURCE
 
