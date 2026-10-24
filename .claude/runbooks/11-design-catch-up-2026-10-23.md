@@ -42,7 +42,7 @@ Context:
 
 Done: 2026-10-24, commit `086eace` (41 files, +1163/-930). Decision: Quit is no longer a main menu entry — the title bar's Quit is the only one; the menu's two still images ship as PNGs under `assets/menu/`, outside the theme folder.
 
-## [~] 4. Implement task 284 — Collapsible board choice panel, Classic 2D and 3D
+## [x] 4. Implement task 284 — Collapsible board choice panel, Classic 2D and 3D
 
 Depends on: 2, 3
 
@@ -52,11 +52,14 @@ Context: none
 /task-implement 284 --review
 ```
 
-## [ ] 5. Implement task 286 — Classic 2D game window: title bar with Pause, mode in the footer, collapsed live figures
+Done: 2026-10-24, commit `8c37909` (28 files, +812/-416). Decision: the panel behaviour is `bindChoicePanel` in `js/classic2d/board-choice.js`, which the 3D binder imports; `choiceSummary` and `LEARN_SUMMARY` are removed and `show()` no longer takes `played`.
+
+## [~] 5. Implement task 286 — Classic 2D game window: title bar with Pause, mode in the footer, collapsed live figures
 
 Depends on: 1, 2, 4
 
 Context:
+- 2026-10-24 (from step 4): the board choice panels are `#c2d-choice-panel` and `#bc-choice-panel` (`#c2d-panel` is the game window's board frame); Up from the first board option walks to the panel toggle, then the title bar's Quit.
 - 2026-10-23 (from step 2): two stopgaps for this task to remove — the in-game title bar still holds Swap clicks and Pause, so at 1366 and 1024 wide the game window takes the bar's width (board kept at the start), and the window's body heading is visually hidden.
 
 ```prompt
@@ -73,13 +76,14 @@ Context: none
 /task-implement 287 --review
 ```
 
-## [ ] 7. Implement task 285 — Update documentation for feature shared-screen-layout
+## [~] 7. Implement task 285 — Update documentation for feature shared-screen-layout
 
 Depends on: 1, 2, 3, 4
 
 Context:
 - 2026-10-23 (from step 2): several `.claude/context` files still describe the old large game title (`ui-wordmark`) and the old head layout.
 - 2026-10-24 (from step 3): task 283's commit already updated the context files it made stale.
+- 2026-10-24 (from step 4): task 284 left the context files alone; the entries for the board choices and the 3D mode still describe the old screens.
 
 ```prompt
 /task-implement 285 --review
@@ -100,6 +104,7 @@ Context: none
 Depends on: 3, 4, 6
 
 Context:
+- 2026-10-24 (from step 4): the kit catalogue has a `ui-drawer` component and a `panel` icon; the panel toggle is the quiet button with `aria-pressed`, not a component of its own.
 - 2026-10-24 (from step 3): the seven menu accent pastels and the stronger neutral are already in Joyful tiles, pinned by a contrast test; the menu's still images live under `assets/menu/`, since the theme folder admits only font binaries.
 
 ```prompt
