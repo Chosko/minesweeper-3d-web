@@ -1,11 +1,17 @@
 // Classic 2D mode: the game session (js/classic2d/session.js), the board view and its pointer, touch
-// and cursor inputs — the view, the cursor and the end effect on the square geometry of the game's
-// grid (js/geometry/index.js) — behind the game shell's mode contract (js/shell/mode-host.js).
-// DOM-free: the shell hands in its flow; the mounts default to the browser ones and are only called
-// by start().
+// and cursor inputs — the view, the cursor and the end effect on the geometry of the game's grid
+// (js/geometry/index.js) — behind the game shell's mode contract (js/shell/mode-host.js). One mode
+// instance per flat mode, each built from its flat mode configuration (js/flat-modes.js); Classic
+// 2D is the square configuration. DOM-free: the shell hands in its flow; the mounts default to the
+// browser ones and are only called by start().
 //
-// createClassic2DMode(report, { flow, lastChoice, createClient?, mount?, sound?, clock?, randomSeed?,
-//                               generatingDelayMs?, place?, buttonSwap? }) → mode
+// createClassic2DMode(report, { config?, flow, lastChoice, createClient?, mount?, sound?, clock?,
+//                               randomSeed?, generatingDelayMs?, place?, buttonSwap? }) → mode
+//   config      the flat mode configuration (js/flat-modes.js), CLASSIC_2D by default: every
+//               game's board setup, graph, geometry and pre-generated board's start cell are its
+//               grid's. The instance's session per game, view, inputs, sampler, generation client
+//               and pre-generated board are its own; the button swap and the board scale (flow.scale)
+//               are the page's, shared by every instance.
 //   flow        the shell's side:
 //                 openBoardChoice(choice)  show the board choice preselected with `choice`
 //                 show()                   show the board screen (the game window, the board in
@@ -42,7 +48,7 @@
 //                 padCue(kind)?            a controller press to answer with a rumble: 'press' (a
 //                                          trigger) or 'flag' (a flag placed or removed), from the
 //                                          cursor input's onPadCue
-//   lastChoice  createLastChoice (js/classic2d/board-setup.js): start() saves the choice played,
+//   lastChoice  createLastChoice (js/classic2d/board-setup.js) over the same configuration: start() saves the choice played,
 //               openBoardChoice() offers lastChoice.current; loadChoice() reads it from storage.
 //   createClient  () → a generation client (js/generation/client.js): called once, and the client
 //               kept for the page and shared by every game of the mode.
@@ -126,7 +132,7 @@ import { createSession, SESSION_STATE } from './session.js';
 import { CELL, PHASE } from '../engine/rules.js';
 import { normaliseChoice } from './board-setup.js';
 import { mountBoardView } from './board-view.js';
-import { createGeometry } from '../geometry/index.js';
+import { CLASSIC_2D } from '../flat-modes.js';
 import { mountPointerInput } from './pointer-input.js';
 import { mountCursorInput } from './cursor-input.js';
 import { mountTouchInput, TAP_MODES } from './touch-input.js';
@@ -162,6 +168,7 @@ function explodedNear(game, geometry, last) {
 }
 
 export function createClassic2DMode(report, {
+  config = CLASSIC_2D,
   flow,
   lastChoice,
   createClient = () => createGenerationClient(),
@@ -196,7 +203,7 @@ export function createClassic2DMode(report, {
     discardAhead();
     const { setup } = session;
     if (!setup.noGuess) return;
-    const cell = startCell({ kind: 'square', width: setup.width, height: setup.height });
+    const cell = startCell({ kind: config.grid, width: setup.width, height: setup.height });
     ahead = { choice: session.choice, board: pregenerate(clientOf(), setup.request(cell, seedOf())) };
   }
 
@@ -267,13 +274,13 @@ export function createClassic2DMode(report, {
   }
 
   function open(choice, { fixed = null, pregenerated = null } = {}) {
-    const c = normaliseChoice(choice);
+    const c = normaliseChoice(choice, config);
     if (!c) throw new RangeError(`invalid board choice: ${JSON.stringify(choice)}`);
     drop();
     const taken = fixed ? pregenerated : ahead && sameChoice(ahead.choice, c) ? ahead.board : null;
     if (fixed || !taken) discardAhead();
     ahead = null;
-    const options = { choice: c, client: clientOf(), pregenerated: taken };
+    const options = { choice: c, config, client: clientOf(), pregenerated: taken };
     if (fixed) options.fixed = fixed;
     if (clock) options.clock = clock;
     if (randomSeed) options.randomSeed = randomSeed;
@@ -286,7 +293,7 @@ export function createClassic2DMode(report, {
     flow.show();
     const { width, height, mines, noGuess } = session.setup;
     flow.board({ width, height, mines, noGuess, identity: session.identity });
-    const geometry = createGeometry('square', width, height);
+    const geometry = config.createGeometry(width, height);
     const view = mount.board({
       container: flow.container(),
       grid: session.setup.grid,

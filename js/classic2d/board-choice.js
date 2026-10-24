@@ -10,24 +10,30 @@
 // Learn 3D), closed otherwise. The panel toggle pins and unpins it; on a phone the drawer's bar does
 // the same. The pin is the shell's stored preference, handed in.
 //
+// The screen and the helpers below that read standard sizes or custom limits take a flat mode
+// configuration (js/flat-modes.js) — its standard sizes, its custom limits (validateCustom,
+// maxMines) and its board setup — Classic 2D's square values by default (board-setup.js
+// SQUARE_SETUP).
+//
 // Pure helpers:
 //   CHOICE_SIZES             the standard sizes offered as board options, in order.
 //   CUSTOM_HINT              Custom's meta line while it is not chosen: 'Width and height 1–100'.
 //   boardLine(board)         '30 × 16 · 99 mines' for { width, height, mines }, the mines pluralised.
-//   sizeLabel(size)          a standard size's board line.
+//   sizeLabel(size, config?) a standard size's board line.
 //   mineDensity(board)       '20.6 % mines': mines ÷ cells, one decimal.
-//   customStatus(custom)     { ok, field, max, text } for a custom { width, height, mines }, validated
-//                            against CUSTOM_LIMITS (js/classic2d/board-setup.js validateCustom): a
-//                            refusal's reason capitalised, with no final period, or the info line; `max` is the mine
-//                            limit for that width and height (null while the size is invalid).
-//   customInfo(custom)       the custom form's info line from its width and height: '480 cells · up to
+//   customStatus(custom, config?)  { ok, field, max, text } for a custom { width, height, mines }, validated
+//                            by the configuration's validateCustom: a refusal's reason capitalised, with
+//                            no final period, or the info line; `max` is the configuration's mine limit
+//                            for that width and height (null while a side is outside CUSTOM_LIMITS, the
+//                            sides every flat mode shares).
+//   customInfo(custom, config?)  the custom form's info line from its width and height: '480 cells · up to
 //                            99 mines', '1 cell · no room for a mine', or '' while a side is invalid.
-//   randomCustom(random?)    the Random fill: a random valid custom board, at most about one mine in
+//   randomCustom(random?, config?)  the Random fill: a random valid custom board, at most about one mine in
 //                            five cells, as the 3D form's Random (js/mode3d/board-choice.js).
-//   readChoice({ size, fields, noGuess }, fallbackCustom?)  the board choice the screen's fields
+//   readChoice({ size, fields, noGuess }, fallbackCustom?, config?)  the board choice the screen's fields
 //                            describe, or null. A standard size keeps the fields' custom board
 //                            when it is valid, else `fallbackCustom`; 'custom' needs valid fields.
-//   densityHintShown(custom, noGuess)  whether the density hint shows for a custom board: no-guess
+//   densityHintShown(custom, noGuess, config?)  whether the density hint shows for a custom board: no-guess
 //                            on and a valid board above NOGUESS_DENSITY_HINT (board-setup.js).
 //   PANEL_OPTIONS            the options that open the panel on their own: 'custom', 'code', 'learn'.
 //   panelOpen(selected, pinned)  whether the panel is open: pinned, or a PANEL_OPTIONS option chosen.
@@ -48,7 +54,7 @@
 //             none reads as unpinned.
 //   draw(selected)  redraws the panel for the chosen option and the pin as it stands.
 //
-// bindBoardChoice({ root, onStart, onBack, onRecords?, code?, bests?, pin? }) → { show, state, refresh, destroy }
+// bindBoardChoice({ root, onStart, onBack, onRecords?, code?, bests?, pin?, config? }) → { show, state, refresh, destroy }
 //   root      the screen's element: the options [data-size] (beginner, intermediate, expert, custom,
 //             code; aria-pressed marks the chosen one), Custom with its meta line
 //             [data-custom-meta]; the board choice panel (bindChoicePanel); the settings [data-settings] with the
@@ -83,10 +89,10 @@
 //   bests     (identity) → [{ stat, label, value, note }]: the board's three bests as text, read
 //             through the records' queries by the shell (js/shell/returning.js boardBests).
 //   pin       the board choice panel's stored pin, as bindChoicePanel takes it.
+//   config    the mode's flat mode configuration: the choices, identities and limits the screen
+//             reads are its.
 
-import {
-  STANDARD_SIZES, validateCustom, maxMines, normaliseChoice, aboveDensityHint, DENSITY_HINT_TEXT, boardSetup,
-} from './board-setup.js';
+import { normaliseChoice, aboveDensityHint, DENSITY_HINT_TEXT, boardSetup, SQUARE_SETUP } from './board-setup.js';
 import { CUSTOM_LIMITS } from '../engine/profiles.js';
 import { setNote } from '../ui/components.js';
 
@@ -106,50 +112,50 @@ export function boardLine({ width, height, mines }) {
   return `${width} × ${height} · ${count(mines, 'mine')}`;
 }
 
-export function sizeLabel(size) {
-  return boardLine(STANDARD_SIZES[size]);
+export function sizeLabel(size, config = SQUARE_SETUP) {
+  return boardLine(config.standardSizes[size]);
 }
 
 export function mineDensity({ width, height, mines }) {
   return `${((mines / (width * height)) * 100).toFixed(1)} % mines`;
 }
 
-export function customInfo(custom) {
+export function customInfo(custom, config = SQUARE_SETUP) {
   const { width, height } = custom ?? {};
   if (!side(width) || !side(height)) return '';
-  const max = maxMines(width, height);
+  const max = config.maxMines(width, height);
   return `${count(width * height, 'cell')} · ${max < 1 ? 'no room for a mine' : `up to ${count(max, 'mine')}`}`;
 }
 
-export function customStatus(custom) {
+export function customStatus(custom, config = SQUARE_SETUP) {
   const { width, height } = custom ?? {};
-  const v = validateCustom(custom);
-  const max = side(width) && side(height) ? maxMines(width, height) : null;
+  const v = config.validateCustom(custom);
+  const max = side(width) && side(height) ? config.maxMines(width, height) : null;
   if (!v.ok) return { ok: false, field: v.field, max, text: `${v.reason[0].toUpperCase()}${v.reason.slice(1)}` };
-  return { ok: true, field: null, max, text: customInfo(custom) };
+  return { ok: true, field: null, max, text: customInfo(custom, config) };
 }
 
-export function randomCustom(random = Math.random) {
+export function randomCustom(random = Math.random, config = SQUARE_SETUP) {
   const randInt = (lo, hi) => lo + Math.floor(random() * (hi - lo + 1)); // inclusive
   const height = randInt(1, 24);
   let width = randInt(1, 30);
   if (width * height < 2) width = 2; // a one-cell board has no room for a mine
   const cells = width * height;
-  const mines = Math.min(maxMines(width, height), randInt(1, Math.max(1, Math.floor(cells / 5) - 1)));
+  const mines = Math.min(config.maxMines(width, height), randInt(1, Math.max(1, Math.floor(cells / 5) - 1)));
   return { width, height, mines };
 }
 
 const int = (v) => (typeof v === 'number' ? v : /^\s*-?\d+\s*$/.test(String(v)) ? parseInt(v, 10) : NaN);
 
-export function readChoice({ size, fields, noGuess }, fallbackCustom = null) {
+export function readChoice({ size, fields, noGuess }, fallbackCustom = null, config = SQUARE_SETUP) {
   const custom = { width: int(fields.width), height: int(fields.height), mines: int(fields.mines) };
-  const valid = validateCustom(custom).ok;
-  if (size === 'custom') return valid ? normaliseChoice({ size, custom, noGuess: !!noGuess }) : null;
-  return normaliseChoice({ size, custom: valid ? custom : fallbackCustom ?? undefined, noGuess: !!noGuess });
+  const valid = config.validateCustom(custom).ok;
+  if (size === 'custom') return valid ? normaliseChoice({ size, custom, noGuess: !!noGuess }, config) : null;
+  return normaliseChoice({ size, custom: valid ? custom : fallbackCustom ?? undefined, noGuess: !!noGuess }, config);
 }
 
-export function densityHintShown(custom, noGuess) {
-  if (!noGuess || !validateCustom(custom).ok) return false;
+export function densityHintShown(custom, noGuess, config = SQUARE_SETUP) {
+  if (!noGuess || !config.validateCustom(custom).ok) return false;
   return aboveDensityHint(custom.mines, custom.width * custom.height);
 }
 
@@ -217,7 +223,7 @@ export function showCodeLine(line, field, r) {
   else field.removeAttribute('aria-invalid');
 }
 
-export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code = null, bests = null, pin = null }) {
+export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code = null, bests = null, pin = null, config = SQUARE_SETUP }) {
   const options = [...root.querySelectorAll('[data-size]')];
   const option = (size) => options.find((b) => b.dataset.size === size);
   const form = root.querySelector('form');
@@ -247,13 +253,13 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
   const codeText = () => String(codeInput?.value ?? '').trim();
   const codeResult = () => (code && codeText() ? code.resolve(codeText()) : null);
   /** The chosen board's choice: a preset, a valid custom board, or null (a code, a refused custom board). */
-  const chosen = () => (selected === 'code' ? null : readChoice({ size: selected, fields: fields(), noGuess: noGuess.checked }, last?.custom));
+  const chosen = () => (selected === 'code' ? null : readChoice({ size: selected, fields: fields(), noGuess: noGuess.checked }, last?.custom, config));
 
   const drawBests = () => {
     if (!bestsBox) return;
     $('[data-bests-title]').textContent = bestsTitle({ selected, custom: custom(), noGuess: noGuess.checked });
     const choice = chosen();
-    const tiles = choice && bests ? bests(boardSetup(choice).identity) : [];
+    const tiles = choice && bests ? bests(boardSetup(choice, config).identity) : [];
     for (const tile of bestsBox.querySelectorAll('[data-best]')) {
       const t = tiles.find((x) => x.stat === tile.dataset.best);
       tile.querySelector('.ui-stat__value').textContent = t?.value ?? '—';
@@ -263,10 +269,10 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
 
   const update = () => {
     const c = custom();
-    const s = customStatus(c);
+    const s = customStatus(c, config);
     const isCustom = selected === 'custom';
     const isCode = selected === 'code';
-    info.textContent = customInfo(c);
+    info.textContent = customInfo(c, config);
     info.classList.toggle('hidden', !info.textContent);
     setNote(refusal, s.ok ? '' : s.text);
     refusal.classList.toggle('hidden', s.ok);
@@ -276,7 +282,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
       if (s.field === name) inputs[i].setAttribute('aria-invalid', 'true');
       else inputs[i].removeAttribute('aria-invalid');
     }
-    hint.classList.toggle('hidden', !(isCustom && densityHintShown(c, noGuess.checked)));
+    hint.classList.toggle('hidden', !(isCustom && densityHintShown(c, noGuess.checked, config)));
     if (customMeta) {
       customMeta.textContent = isCustom && ints(c) ? (s.ok ? `${boardLine(c)} · ${mineDensity(c)}` : boardLine(c)) : CUSTOM_HINT;
     }
@@ -325,7 +331,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
   };
   const onSubmit = (event) => event.preventDefault();
   const onRandom = () => {
-    const b = randomCustom();
+    const b = randomCustom(Math.random, config);
     inputs[0].value = String(b.width);
     inputs[1].value = String(b.height);
     inputs[2].value = String(b.mines);
@@ -333,7 +339,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
   };
   const onRecordsClick = () => {
     const choice = chosen();
-    onRecords?.(choice ? boardSetup(choice).identity : null);
+    onRecords?.(choice ? boardSetup(choice, config).identity : null);
   };
   const onBackClick = () => onBack?.();
 

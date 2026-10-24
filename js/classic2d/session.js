@@ -1,7 +1,9 @@
 // Classic 2D game session: owns one game from closed board to result. DOM-free.
 //
-// createSession({ choice, client, clock?, randomSeed?, generatingDelayMs?, place?, pregenerated?, fixed? }) → session.
+// createSession({ choice, config?, client, clock?, randomSeed?, generatingDelayMs?, place?, pregenerated?, fixed? }) → session.
 //   choice      a board choice (js/classic2d/board-setup.js); an invalid one throws a RangeError.
+//   config      the flat mode configuration (js/flat-modes.js) whose board setup the choice is
+//               read in — its mode, grid and sizes; Classic 2D's square board setup without one.
 //   client      the generation client (js/generation/client.js): { request, cancel }; asked for
 //               no-guess boards only.
 //   clock       { now(), setTimeout(fn, ms), clearTimeout(h) }; defaults to performance.now and the
@@ -177,6 +179,7 @@ export function createTimer({ now }) {
 
 export function createSession({
   choice,
+  config,
   client,
   clock = defaultClock,
   randomSeed = defaultSeed,
@@ -185,7 +188,7 @@ export function createSession({
   pregenerated = null,
   fixed = null,
 }) {
-  let setup = boardSetup(choice);
+  let setup = boardSetup(choice, config);
   let forced = fixed ? Object.freeze({ ...fixed }) : null; // the forced start cell and seed, or null
   // The board the summaries name: a daily's Daily board, else the board played.
   const identity = () => (forced?.daily ? createBoardIdentity({ ...setup.identity, daily: true }) : setup.identity);
@@ -214,7 +217,7 @@ export function createSession({
   function record() {
     recorder = startRecording({
       mode: setup.identity.mode,
-      graph: { kind: 'square', width: setup.width, height: setup.height },
+      graph: { kind: setup.identity.grid, width: setup.width, height: setup.height },
       board: setup.identity,
       profile: { id: profile.id, version: profile.version },
     });
@@ -484,7 +487,7 @@ export function createSession({
       if (forced) return null;
       if (state === SESSION_STATE.GENERATING) dropPending();
       else if (state !== SESSION_STATE.FAILED) return null;
-      setup = boardSetup({ ...setup.choice, noGuess: false });
+      setup = boardSetup({ ...setup.choice, noGuess: false }, config);
       record();
       return placeNow();
     },

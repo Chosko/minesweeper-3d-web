@@ -59,6 +59,7 @@ import { createClassic2DMode } from './classic2d/mode.js';
 import { createButtonSwap } from './classic2d/button-swap.js';
 import { bindBoardChoice } from './classic2d/board-choice.js';
 import { createLastChoice } from './classic2d/board-setup.js';
+import { CLASSIC_2D } from './flat-modes.js';
 import {
   bindBoardChoice as bindBoardChoice3D, boardOf, normaliseChoice as normaliseChoice3D, DEFAULT_CHOICE as DEFAULT_CHOICE_3D,
   LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D,
@@ -635,9 +636,11 @@ function learnViews(shift, ctrl) {
   if (changed) learnChanged();
 }
 // Classic 2D: the mode drives its own board; the shell hands it the board area, the game window and
-// its screens. The last board choice is a platform-storage document; the board's bests, which the
-// live figures compare against, are read from the records store once per game.
-const LAST_CHOICE_2D = createLastChoice({ storage });
+// its screens. Its mode, board choice and last board choice are built from the square flat mode
+// configuration (js/flat-modes.js). The last board choice is a platform-storage document; the
+// board's bests, which the live figures compare against, are read from the records store once per
+// game.
+const LAST_CHOICE_2D = createLastChoice({ storage, config: CLASSIC_2D });
 let bests2D = null;
 const FLOW_2D = {
   openBoardChoice: (choice) => SHELL.go('classic-2d-choice', { data: { choice } }),
@@ -713,7 +716,7 @@ function answer2D(answer) {
   if (S.mode === 'paused') PAUSE.resume(padGesture ? 'pad' : 'pointer');
   answer();
 }
-const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { flow: FLOW_2D, lastChoice: LAST_CHOICE_2D, sound: sfx, buttonSwap: BUTTON_SWAP }));
+const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { config: CLASSIC_2D, flow: FLOW_2D, lastChoice: LAST_CHOICE_2D, sound: sfx, buttonSwap: BUTTON_SWAP }));
 /** The board choice on `choice`; back from the Records screen it opened, what the screen held then. */
 let held2D = null;
 function showChoice2D(choice, from) {
@@ -732,6 +735,7 @@ const CHOICE_2D = bindBoardChoice({
   },
   code: { resolve: (text) => checkCode(text, 'classic-2d'), onPlay: (text) => playCode(text, 'classic-2d') },
   bests: (identity) => boardBests(identity, RECORDS),
+  config: CLASSIC_2D,
   pin: BOARD_PANEL,
 });
 

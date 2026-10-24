@@ -18,6 +18,11 @@
 // No-guess is on in DEFAULT_CHOICE, the choice of a player with no last board choice stored; once a
 // game starts, the last choice remembers the switch as played. NOGUESS_HELP_TEXT is the helper line
 // under the switch on both board choice screens.
+//
+// normaliseChoice, boardSetup and createLastChoice take a flat mode configuration
+// (js/flat-modes.js) for its mode id, grid kind and graph provider, standard sizes, custom limits
+// and last-choice document; without one they read this module's square values (SQUARE_SETUP),
+// those of the configuration Classic 2D plays (CLASSIC_2D).
 
 import { CUSTOM_LIMITS } from '../engine/profiles.js';
 import { createSquareGrid } from '../engine/square-grid.js';
@@ -87,30 +92,31 @@ export function validateCustom(custom) {
   return { ok: true };
 }
 
-// A valid choice as a plain copy, or null. A missing `custom` with a standard size takes the
-// default custom board.
-export function normaliseChoice(choice) {
+// A valid choice as a plain copy, or null, under the configuration's custom limits. A missing
+// `custom` with a standard size takes the default custom board.
+export function normaliseChoice(choice, config = SQUARE_SETUP) {
   if (!choice || typeof choice !== 'object') return null;
   if (!BOARD_SIZES.includes(choice.size) || typeof choice.noGuess !== 'boolean') return null;
   const custom = choice.custom ?? (choice.size === 'custom' ? null : DEFAULT_CHOICE.custom);
-  if (!custom || !validateCustom(custom).ok) return null;
+  if (!custom || !config.validateCustom(custom).ok) return null;
   return { size: choice.size, custom: { width: custom.width, height: custom.height, mines: custom.mines }, noGuess: choice.noGuess };
 }
 
-// choice → frozen { choice, width, height, mines, noGuess, identity, grid, request(firstClick, seed) }.
-// `grid` is the square grid (its graph is the engine's), `identity` the records board identity, and
-// request() the generation request for a first click at `firstClick`. A malformed choice or an
-// invalid custom board throws a RangeError.
-export function boardSetup(choice) {
-  const c = normaliseChoice(choice);
+// (choice, config?) → frozen { choice, width, height, mines, noGuess, identity, grid,
+// request(firstClick, seed) }. `grid` is the configuration's grid (its graph is the engine's),
+// `identity` the records board identity, and request() the generation request for a first click at
+// `firstClick`. A malformed choice or an invalid custom board throws a RangeError.
+export function boardSetup(choice, config = SQUARE_SETUP) {
+  const c = normaliseChoice(choice, config);
   if (!c) {
-    const v = choice && choice.size === 'custom' ? validateCustom(choice.custom) : null;
+    const v = choice && choice.size === 'custom' ? config.validateCustom(choice.custom) : null;
     throw new RangeError(`invalid board choice${v && !v.ok ? `: ${v.reason}` : ''}: ${JSON.stringify(choice)}`);
   }
-  const { width, height, mines } = c.size === 'custom' ? c.custom : STANDARD_SIZES[c.size];
+  const { width, height, mines } = c.size === 'custom' ? c.custom : config.standardSizes[c.size];
   const noGuess = c.noGuess;
-  const identity = createBoardIdentity({ mode: MODE, grid: GRID, width, height, mines, noGuess });
-  const grid = createSquareGrid(width, height);
+  const kind = config.grid;
+  const identity = createBoardIdentity({ mode: config.id, grid: kind, width, height, mines, noGuess });
+  const grid = config.createGrid(width, height);
   return Object.freeze({
     choice: c,
     width,
@@ -120,7 +126,7 @@ export function boardSetup(choice) {
     identity,
     grid,
     request: (firstClick, seed) => ({
-      graph: { kind: GRID, width, height }, mineCount: mines, firstClick, noGuess, seed,
+      graph: { kind, width, height }, mineCount: mines, firstClick, noGuess, seed,
     }),
   });
 }
@@ -130,23 +136,35 @@ export function boardSetup(choice) {
 export const LAST_CHOICE_DOC = 'classic2d.lastChoice';
 export const LAST_CHOICE_VERSION = 1;
 
-// The last board choice as a platform-storage document. load() reads it when the mode opens
-// (DEFAULT_CHOICE when there is none or it is malformed); save(choice) records a valid choice and
-// throws a RangeError on an invalid one. Storage that does not persist never stops a game.
-export function createLastChoice({ storage }) {
-  storage.register(LAST_CHOICE_DOC, LAST_CHOICE_VERSION);
+/**
+ * The square values in a flat mode configuration's shape (js/flat-modes.js), less its name, code
+ * token and geometry: what this module's functions and the board choice read without a
+ * configuration.
+ */
+export const SQUARE_SETUP = Object.freeze({
+  id: MODE, grid: GRID, createGrid: createSquareGrid, standardSizes: STANDARD_SIZES, validateCustom, maxMines,
+  lastChoiceDoc: LAST_CHOICE_DOC,
+});
+
+// The last board choice as a platform-storage document, the configuration's lastChoiceDoc. load()
+// reads it when the mode opens (DEFAULT_CHOICE when there is none or it is malformed); save(choice)
+// records a valid choice and throws a RangeError on an invalid one. Storage that does not persist
+// never stops a game.
+export function createLastChoice({ storage, config = SQUARE_SETUP }) {
+  const doc = config.lastChoiceDoc;
+  storage.register(doc, LAST_CHOICE_VERSION);
   let current = DEFAULT_CHOICE;
   return {
     get current() { return current; },
     async load() {
-      current = normaliseChoice(await storage.load(LAST_CHOICE_DOC)) ?? DEFAULT_CHOICE;
+      current = normaliseChoice(await storage.load(doc), config) ?? DEFAULT_CHOICE;
       return current;
     },
     async save(choice) {
-      const c = normaliseChoice(choice);
+      const c = normaliseChoice(choice, config);
       if (!c) throw new RangeError(`invalid board choice: ${JSON.stringify(choice)}`);
       current = c;
-      return storage.save(LAST_CHOICE_DOC, c);
+      return storage.save(doc, c);
     },
   };
 }

@@ -1541,7 +1541,7 @@ Feature: hex-tri-board-art
 
 ## 267. Flat mode configuration, with Classic 2D as the square configuration
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/flat-modes.js, js/classic2d/mode.js, js/classic2d/board-setup.js, js/classic2d/board-choice.js, js/classic2d/session.js, js/main.js, tests/flat-modes.test.mjs, tests/classic2d-mode.test.mjs
 Preconditions: 249, 251, 252
