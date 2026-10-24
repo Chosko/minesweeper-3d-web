@@ -104,9 +104,9 @@ In scope (m2b-themes):
     the density hint, a board code from the other mode and the 3D
     pointer-lock refusal; err for a refused board code and the Settings
     reset failure;
-  - the **muted panel** — a sunk surface with no border and no drop, for
-    the Custom form, the Learn 3D explanation and the Records overall
-    block;
+  - the **muted panel** — the panel on a sunk surface, keeping the panel's
+    border and drop edge, for the Custom form, the Learn 3D explanation and
+    the Records overall block;
   - the **ruled table** — header row, a rule across each full row, figures
     right-aligned, a rank column, label over value on phones, and a
     recent-games variant without a board column, its board codes plain

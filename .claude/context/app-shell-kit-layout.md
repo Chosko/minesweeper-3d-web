@@ -54,8 +54,8 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
 - **The surfaces.** The stat tile `ui-stat--tile` is plain by default
   (white, its border, no drop) with `ui-stat--warm` the cream tile on its
   edge; `data-new-best` rings it inside in the head colour, and its note
-  may carry an inline Watch `ui-link`. `ui-panel--muted` is a sunk panel
-  with no border and no drop. The table rules each full row, sets row
+  may carry an inline Watch `ui-link`. `ui-panel--muted` is the panel on
+  the sunk fill, keeping the panel's border and drop edge. The table rules each full row, sets row
   labels bold and their values in the monospace face, and on a phone
   stacks a details table's labels (a table with no `thead`) over their values. The pager's buttons are
   lighter than the kit's buttons, the current page an ink fill. The code chip has
@@ -88,10 +88,10 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   body that scrolls vertically while head, heading and foot stay in view,
   and a foot — a status line, or a bar of the screen's actions; the
   `window-chrome` slot is hidden unless a theme draws it. The head, the
-  logo, the heading and foot, their titles and the small buttons follow the
-  window-size steps — desktop, compact for the smaller desktop windows,
-  touch for a phone upright or sideways — whose values the theme
-  stylesheet holds; the title stays on one line. A screen's bar of actions
+  logo, the heading and foot, their titles and the small and large
+  buttons follow the window-size steps — desktop, compact for the smaller
+  desktop windows, touch for a phone upright or sideways — whose values
+  the theme stylesheet holds; the title stays on one line. A screen's bar of actions
   (the board choices, Daily, results) is the white action foot
   `ui-frame__foot--action`, a bottom bar on a phone (the results' in flow
   at the card's end); the Classic 2D game window keeps the head-coloured
