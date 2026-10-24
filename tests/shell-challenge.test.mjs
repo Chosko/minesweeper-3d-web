@@ -54,6 +54,14 @@ test('a board choice refuses the other mode\'s code with a hint naming the right
   assert.equal(resolveCode(dailyGame('expert', '20261011').code, { today: '20261011', mode: '3d' }).kind, 'daily', 'today\'s daily opens the Daily screen from either form');
 });
 
+test('a board choice refuses a hexagon code as another mode\'s, as it does a 3D code', () => {
+  const hexCode = encodeBoardCode({ board: createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 9, height: 9, mines: 13, noGuess: true }), seed: 3, startCell: 40, generatorVersion: 1 });
+  for (const mode of ['classic-2d', '3d']) {
+    assert.deepEqual(resolveCode(hexCode, { today: '20261011', mode }), { kind: 'refused', reason: otherModeHint('hexagon'), otherMode: 'hexagon' }, mode);
+  }
+  assert.equal(otherModeHint('hexagon'), 'This is a Hexagon board code. Paste it in the Hexagon board choice.');
+});
+
 test('a challenge reaches its mode with its forced start and seed; a daily with its date and board; Play again is free', () => {
   const two = gameStart({ ...parseBoardCode(code2D) });
   assert.equal(two.mode, 'classic-2d');

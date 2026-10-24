@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   BOARD_KEY_FORMAT,
   STANDARD_BOARDS,
+  STANDARD_BOARDS_HEX,
   createBoardIdentity,
   boardKey,
   boardLabel,
@@ -13,6 +14,8 @@ import {
 
 const square = (width, height, mines, noGuess = false) =>
   createBoardIdentity({ mode: 'classic-2d', grid: 'square', width, height, mines, noGuess });
+const hexagon = (width, height, mines, noGuess = false) =>
+  createBoardIdentity({ mode: 'hexagon', grid: 'hex', width, height, mines, noGuess });
 
 // ---------- identity ----------
 
@@ -151,10 +154,50 @@ test('label: a custom board matching a standard board is that standard board', (
   assert.equal(standardBoard(square(30, 16, 98)), null);
 });
 
-test('label: standard sizes are recognised only on the square grid', () => {
+test('label: square standard sizes are recognised only on the square grid', () => {
   const hex = createBoardIdentity({ mode: 'classic-2d', grid: 'hex', width: 30, height: 16, mines: 99, noGuess: false });
   assert.equal(standardBoard(hex), null);
   assert.equal(boardLabel(hex), '30 × 16 · 99 mines');
+  assert.equal(standardBoard(hexagon(9, 9, 10)), null);
+  assert.equal(standardBoard(square(9, 9, 13)), null, 'a hexagon standard size is custom on the square grid');
+});
+
+// ---------- the hexagon form ----------
+
+test('hexagon: the standard boards are Beginner 9 × 9 · 13, Intermediate 16 × 16 · 50 and Expert 30 × 16 · 100', () => {
+  assert.deepEqual(STANDARD_BOARDS_HEX.map((b) => [b.name, b.width, b.height, b.mines]), [
+    ['Beginner', 9, 9, 13],
+    ['Intermediate', 16, 16, 50],
+    ['Expert', 30, 16, 100],
+  ]);
+  assert.ok(Object.isFrozen(STANDARD_BOARDS_HEX));
+  assert.ok(STANDARD_BOARDS_HEX.every(Object.isFrozen));
+});
+
+test('hexagon: the identity is the 2D form with mode hexagon and grid hex, keyed in the same format', () => {
+  const id = hexagon(30, 16, 100, true);
+  assert.deepEqual({ ...id }, { mode: 'hexagon', grid: 'hex', width: 30, height: 16, mines: 100, noGuess: true });
+  assert.equal(BOARD_KEY_FORMAT, 2);
+  assert.equal(boardKey(id), 'hexagon:hex:30x16:100:no-guess');
+  assert.equal(boardKey(hexagon(9, 9, 13)), 'hexagon:hex:9x9:13:guess');
+  assert.equal(boardKey(hexagon(20, 12, 50)), 'hexagon:hex:20x12:50:guess');
+  for (const board of [id, hexagon(9, 9, 13), hexagon(1, 2, 1, true), createBoardIdentity({ ...id, daily: true })]) {
+    assert.deepEqual(parseBoardKey(boardKey(board)), board);
+  }
+  assert.equal(boardKey(createBoardIdentity({ ...id, daily: true })), 'daily:hexagon:hex:30x16:100:no-guess');
+  assert.notEqual(boardKey(hexagon(30, 16, 99)), boardKey(square(30, 16, 99)));
+});
+
+test('hexagon: Beginner, Intermediate and Expert are recognised from exact size and mine count on the hex grid', () => {
+  assert.equal(standardBoard(hexagon(9, 9, 13)).name, 'Beginner');
+  assert.equal(standardBoard(hexagon(16, 16, 50, true)).name, 'Intermediate');
+  assert.equal(standardBoard(hexagon(30, 16, 100)).name, 'Expert');
+  assert.equal(standardBoard(hexagon(30, 16, 99)), null);
+  assert.equal(standardBoard(hexagon(16, 30, 100)), null);
+  assert.equal(boardLabel(hexagon(9, 9, 13)), 'Beginner');
+  assert.equal(boardLabel(hexagon(30, 16, 100, true)), 'Expert · no-guess');
+  assert.equal(boardLabel(hexagon(30, 16, 123)), '30 × 16 · 123 mines');
+  assert.equal(boardLabel(createBoardIdentity({ ...hexagon(30, 16, 100, true), daily: true })), 'Daily · Expert · no-guess');
 });
 
 // ---------- the daily board ----------

@@ -3,7 +3,8 @@
 // A board identity names one board, and every exact combination of its fields is its own board.
 // It takes one of two forms, chosen by its mode:
 //   2D — mode, grid, width, height, mines and noGuess. Beginner, Intermediate and Expert are
-//        recognised from their exact size and mine count on the square grid.
+//        recognised from their exact size and mine count on the square grid (STANDARD_BOARDS) and
+//        on the hex grid (STANDARD_BOARDS_HEX), a hexagon board being mode `hexagon`, grid `hex`.
 //   3D — mode `3d`, width (X), height (Y), depth (Z), mines and noGuess, with no grid. The presets,
 //        "Cube" Intro, Beginner, Intermediate and Expert, are recognised from their exact size and
 //        mine count; any other 3D board, a former preset's included, is a custom board.
@@ -17,7 +18,7 @@
 //   3D     3d:<width>x<height>x<depth>:<mines>:<guess|no-guess>
 //   Daily  daily:<the plain board's key>, e.g. `daily:classic-2d:square:30x16:99:no-guess`
 // e.g. Expert with no-guess is `classic-2d:square:30x16:99:no-guess`, a 20 × 12 custom board
-// with 50 mines `classic-2d:square:20x12:50:guess`, Cube Expert with no-guess
+// with 50 mines `classic-2d:square:20x12:50:guess`, Hexagon Expert `hexagon:hex:30x16:100:guess`, Cube Expert with no-guess
 // `3d:10x10x10:100:no-guess`. mode and grid are lowercase tokens (letters, digits, single
 // hyphens), so no field can contain the `:` separator; a 3D key has one field fewer than a 2D
 // key, so the two never coincide.
@@ -32,6 +33,14 @@ export const STANDARD_BOARDS = Object.freeze([
   Object.freeze({ name: 'Expert', width: 30, height: 16, mines: 99 }),
 ]);
 
+// The Hexagon standard boards, the sizes and mines of the Hexagon board setup
+// (js/hexagon/board-setup.js, kept equal by a test).
+export const STANDARD_BOARDS_HEX = Object.freeze([
+  Object.freeze({ name: 'Beginner', width: 9, height: 9, mines: 13 }),
+  Object.freeze({ name: 'Intermediate', width: 16, height: 16, mines: 50 }),
+  Object.freeze({ name: 'Expert', width: 30, height: 16, mines: 100 }),
+]);
+
 // The 3D presets in menu order, the sizes and mines of the 3D board choice
 // (js/mode3d/board-choice.js, kept equal by a test).
 const preset = (family, name, width, height, depth, mines) => Object.freeze({ family, name, width, height, depth, mines });
@@ -42,7 +51,7 @@ export const PRESETS_3D = Object.freeze([
   preset('Cube', 'Expert', 10, 10, 10, 100),
 ]);
 
-const STANDARD_GRID = 'square';
+const STANDARD_BY_GRID = new Map([['square', STANDARD_BOARDS], ['hex', STANDARD_BOARDS_HEX]]);
 const DIM_MAX_3D = 100;
 const TOKEN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -102,11 +111,12 @@ export function createBoardIdentity(fields) {
 
 const is3D = (id) => id.mode === MODE_3D;
 
-// The standard 2D board an identity is, or null for a custom or 3D board.
+// The standard 2D board an identity is on its grid, or null for a custom or 3D board, or a grid with
+// no standard boards.
 export function standardBoard(identity) {
   const id = createBoardIdentity(identity);
-  if (is3D(id) || id.grid !== STANDARD_GRID) return null;
-  return STANDARD_BOARDS.find((b) => b.width === id.width && b.height === id.height && b.mines === id.mines) ?? null;
+  const boards = is3D(id) ? null : STANDARD_BY_GRID.get(id.grid);
+  return boards?.find((b) => b.width === id.width && b.height === id.height && b.mines === id.mines) ?? null;
 }
 
 // The 3D preset an identity is, or null for a custom 3D board or a 2D board.

@@ -1431,7 +1431,7 @@ Feature: hexagon-grid
 
 ## 256. Hexagon boards, limits, identity and board-code token
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/hexagon/board-setup.js, js/records/board.js, js/records/board-code.js, tests/hexagon-board-setup.test.mjs, tests/records-board.test.mjs, tests/records-board-code.test.mjs, tests/generation-noguess.test.mjs, dev/measure-noguess-hex.mjs
 Preconditions: 254

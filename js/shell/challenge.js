@@ -37,7 +37,7 @@ import { parseBoardCode, dailyBoardOf, dateText } from '../records/board-code.js
 import { standardBoard, MODE_3D } from '../records/board.js';
 import { DEFAULT_CHOICE } from '../classic2d/board-setup.js';
 
-export const MODE_NAMES = Object.freeze({ 'classic-2d': 'Classic 2D', [MODE_3D]: '3D' });
+export const MODE_NAMES = Object.freeze({ 'classic-2d': 'Classic 2D', hexagon: 'Hexagon', [MODE_3D]: '3D' });
 export const STARTED_TOAST = 'Finish or leave this game to open the board link.';
 
 export const otherModeHint = (mode) => `This is a ${MODE_NAMES[mode]} board code. Paste it in the ${MODE_NAMES[mode]} board choice.`;

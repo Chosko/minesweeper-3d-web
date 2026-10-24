@@ -11,6 +11,8 @@ import { startCell } from '../js/generation/start-cell.js';
 
 const sq = (width, height, mines, noGuess = false) =>
   createBoardIdentity({ mode: 'classic-2d', grid: 'square', width, height, mines, noGuess });
+const hx = (width, height, mines, noGuess = false) =>
+  createBoardIdentity({ mode: 'hexagon', grid: 'hex', width, height, mines, noGuess });
 const box = (width, height, depth, mines, noGuess = false) =>
   createBoardIdentity({ mode: '3d', width, height, depth, mines, noGuess });
 const V = GENERATOR_VERSION;
@@ -152,6 +154,75 @@ test('board code: the code of a recorded game carries its own generator version;
   assert.equal(codeOf({ board: game.board, seed: 5, generatorVersion: V }), null);
   assert.equal(codeOf({ board: game.board, generatorVersion: V }), null);
   assert.equal(codeOf(null), null);
+});
+
+// ---------- hexagon boards ----------
+
+test('board code: a hexagon board is spelled H before the 2D token', () => {
+  assert.equal(boardToken(hx(9, 9, 13)), 'HB');
+  assert.equal(boardToken(hx(16, 16, 50, true)), 'HIN');
+  assert.equal(boardToken(hx(30, 16, 100)), 'HE');
+  assert.equal(boardToken(hx(30, 16, 100, true)), 'HEN');
+  assert.equal(boardToken(hx(20, 12, 50)), 'H20X12M50');
+  assert.equal(boardToken(hx(9, 9, 10, true)), 'H9X9M10N', 'a square standard size is a custom hexagon board');
+  assert.equal(boardToken(hx(30, 16, 99)), 'H30X16M99');
+  assert.equal(boardToken({ ...hx(30, 16, 100, true), daily: true }), 'HEN');
+  assert.equal(boardToken(sq(9, 9, 13)), '9X9M13', 'a hexagon standard size is a custom square board');
+});
+
+test('board code: a hexagon board builds the hex graph', () => {
+  assert.deepEqual(graphOf(hx(30, 16, 100)), { kind: 'hex', width: 30, height: 16 });
+  assert.deepEqual(graphOf(sq(30, 16, 99)), { kind: 'square', width: 30, height: 16 });
+});
+
+test('board code: hexagon round trips, both forms', () => {
+  for (const board of [hx(9, 9, 13), hx(16, 16, 50, true), hx(30, 16, 100, true), hx(20, 12, 50), hx(1, 2, 1), hx(100, 100, 2000, true)]) {
+    const cells = board.width * board.height;
+    for (const seed of [0, 2 ** 32 - 1]) {
+      for (const start of [0, cells - 1]) {
+        const code = encodeBoardCode({ board, seed, startCell: start, generatorVersion: V });
+        assert.ok(code.startsWith('H'), code);
+        assert.deepEqual(parseBoardCode(code), { ok: true, board, seed, startCell: start, generatorVersion: V }, code);
+        assert.deepEqual(parseBoardCode(code.toLowerCase()), parseBoardCode(code));
+      }
+    }
+    const code = encodeBoardCode({ board, generatorVersion: V, daily: '20261231' });
+    assert.deepEqual(parseBoardCode(code), {
+      ok: true, board, seed: dailySeed('20261231', boardToken(board)), startCell: startCell({ kind: 'hex', width: board.width, height: board.height }),
+      generatorVersion: V, daily: '20261231',
+    }, code);
+  }
+  assert.match(encodeBoardCode({ board: hx(30, 16, 100, true), generatorVersion: V, daily: '20261011' }), /^HEN-20261011-1[0-9A-F]{3}$/);
+});
+
+test('board code: a hexagon code is spelled canonically and checked against the hexagon custom limits', () => {
+  for (const canonical of ['H30X16M100-00000000-0', 'H9X9M13N-00000000-0', 'HH-00000000-0', 'H-00000000-0', 'HX-00000000-0', 'H09X9M11-00000000-0']) {
+    assert.deepEqual(parseBoardCode(withCheck(canonical)), { ok: false, reason: CODE_REASONS.malformed }, canonical);
+  }
+  const cases = [
+    ['H101X5M3-00000000-0', /width must be a whole number from 1 to 100/i],
+    ['H1X1M0-00000000-0', /no room for a mine/],
+    ['H9X9M0-00000000-0', /Mines must be a whole number from 1/],
+    ['H9X9M81-00000000-0', /Mines must be a whole number from 1/],
+  ];
+  for (const [canonical, reason] of cases) {
+    const r = parseBoardCode(withCheck(canonical));
+    assert.equal(r.ok, false, canonical);
+    assert.match(r.reason, reason, canonical);
+  }
+  assert.deepEqual(parseBoardCode(withCheck('HB-00000000-81')), { ok: false, reason: CODE_REASONS.start });
+  assert.equal(parseBoardCode(withCheck('H9X9M31N-00000000-80')).ok, true, 'no-guess is never refused up front');
+});
+
+test('board code: every square and 3D code keeps its meaning beside the hexagon shape', () => {
+  for (const [code, board] of [
+    [withCheck('EN-9C41D07A-247'), sq(30, 16, 99, true)], [withCheck('B-00000000-0'), sq(9, 9, 10)],
+    [withCheck('20X12M50-00000000-0'), sq(20, 12, 50)], [withCheck('8X8X8M40N-00000000-0'), box(8, 8, 8, 40, true)],
+  ]) {
+    assert.deepEqual(parseBoardCode(code).board, board, code);
+  }
+  assert.notDeepEqual(parseBoardCode(withCheck('HB-00000000-0')).board, parseBoardCode(withCheck('B-00000000-0')).board);
+  assert.equal(parseBoardCode('HEN-9C41D07A-247').reason, CODE_REASONS.incomplete);
 });
 
 // ---------- the daily boards ----------
