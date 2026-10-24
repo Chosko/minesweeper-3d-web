@@ -56,8 +56,9 @@ campaign's level order (and, in the demo, the demo's locks).
   tab of their own, the Steam global and friends leaderboards, with the
   replay attached to each entry.
 - **Settings** — controls, graphics, theme, audio, accessibility.
-- Quit is not a menu entry: in the desktop build it is a button of the
-  game's own title bar, on every screen.
+- Quit is not a menu entry: it is a button of the game's own title bar, on
+  every screen. In the desktop build it quits the game; in the web preview
+  it does nothing.
 - Every mode entry is enabled from the start: a mode not built yet opens a
   *Coming soon* page.
 - The menu opens with the last mode played selected; its board choice opens
