@@ -14,6 +14,9 @@ import {
 import { encodeBoardCode, dailyGame, CODE_REASONS, parseBoardCode } from '../js/records/board-code.js';
 import { createBoardIdentity } from '../js/records/board.js';
 import { normaliseChoice } from '../js/classic2d/board-setup.js';
+import { createSession, SESSION_STATE } from '../js/classic2d/session.js';
+import { HEXAGON, TRIANGLE } from '../js/flat-modes.js';
+import { GENERATOR_VERSION } from '../js/generation/placer.js';
 import { UNAVAILABLE_REASONS } from '../js/shell/menu.js';
 import { browserSuite } from './helpers/browser.mjs';
 
@@ -90,6 +93,77 @@ test('a challenge reaches its mode with its forced start and seed; a daily with 
   assert.equal(freeStart({ ...sq(30, 16, 99, true), daily: true }).choice.remember, false, 'Play again after one saves no last board choice');
 });
 
+// ---------------------------------------------------------------- Hexagon and Triangle codes
+
+const hexBoard = (width, height, mines, noGuess = false) => createBoardIdentity({ mode: 'hexagon', grid: 'hex', width, height, mines, noGuess });
+const triBoard = (width, height, mines, noGuess = false) => createBoardIdentity({ mode: 'triangle', grid: 'tri', width, height, mines, noGuess });
+const codeHex = encodeBoardCode({ board: hexBoard(9, 9, 13, true), seed: 3, startCell: 40, generatorVersion: 1 });
+const codeTri = encodeBoardCode({ board: triBoard(20, 12, 50), seed: 3, startCell: 45, generatorVersion: 1 });
+
+test('a hexagon or triangle code starts its board on its start cell in its own mode, from its board choice or anywhere', () => {
+  for (const [code, config, expected] of [
+    [codeHex, HEXAGON, { size: 'beginner', noGuess: true }],
+    [codeTri, TRIANGLE, { size: 'custom', custom: { width: 20, height: 12, mines: 50 }, noGuess: false }],
+  ]) {
+    const parsed = parseBoardCode(code);
+    for (const mode of [config.id, null]) {
+      const r = resolveCode(code, { today: '20261011', mode });
+      assert.deepEqual(r, { kind: 'challenge', parsed }, `${config.id} from ${mode ?? 'a link'}`);
+    }
+    const start = gameStart(parsed);
+    assert.equal(start.mode, config.id, 'its own mode, told apart by its token');
+    assert.deepEqual(start.choice.fixed, { startCell: parsed.startCell, seed: 3, challenge: true }, 'the forced start: its start cell and seed');
+    const choice = normaliseChoice(start.choice, config);
+    assert.ok(choice, 'a choice its own mode takes');
+    assert.equal(choice.size, expected.size);
+    assert.equal(choice.noGuess, expected.noGuess);
+    if (expected.custom) assert.deepEqual(choice.custom, expected.custom);
+    const free = freeStart(parsed.board);
+    assert.equal(free.mode, config.id);
+    assert.equal(free.choice.remember, false, 'Play again after one saves no last board choice');
+    assert.equal('fixed' in free.choice, false);
+  }
+});
+
+test('a code of another mode is refused with the other-mode hint, in each direction between Classic 2D, Hexagon, Triangle and 3D', () => {
+  const codes = { 'classic-2d': code2D, hexagon: codeHex, triangle: codeTri, '3d': code3D };
+  for (const [of, code] of Object.entries(codes)) {
+    for (const choice of Object.keys(codes)) {
+      const r = resolveCode(code, { today: '20261011', mode: choice });
+      if (choice === of) assert.equal(r.kind, 'challenge', `${of} in its own board choice`);
+      else assert.deepEqual(r, { kind: 'refused', reason: otherModeHint(of), otherMode: of }, `${of} in the ${choice} board choice`);
+    }
+  }
+});
+
+test('a coded hexagon or triangle no-guess board that fails generation gets the failure offer with no replacement board', async () => {
+  for (const [config, board, startCell] of [[HEXAGON, hexBoard(9, 9, 13, true), 40], [TRIANGLE, triBoard(13, 7, 8, true), 45]]) {
+    const { choice: { fixed, ...choice } } = gameStart({ board, seed: 5, startCell });
+    let answer = null;
+    const client = { request: () => new Promise((resolve) => { answer = resolve; }), cancel() {} };
+    const s = createSession({ choice, config, client, fixed, randomSeed: () => 1, generatingDelayMs: 0 });
+    const p = s.reveal(startCell);
+    answer({ ok: false, reason: 'no board in budget', seed: 5, generatorVersion: GENERATOR_VERSION, candidates: 2000 });
+    await p;
+    assert.equal(s.state, SESSION_STATE.FAILED, config.id);
+    assert.deepEqual(s.failure.offers, [], `${config.id}: never another board`);
+    assert.equal(s.playStandard(), null);
+  }
+});
+
+test('every shipped code keeps its meaning: each mode\'s codes parse to the same board, seed and start cell', () => {
+  for (const [code, board, seed, startCell] of [
+    ['B-0000004D-40-1779', sq(9, 9, 10), 77, 40],
+    ['8X8X8M40N-00000005-292-18FE', box(8, 8, 8, 40, true), 5, 292],
+    ['HBN-00000003-40-12BC', hexBoard(9, 9, 13, true), 3, 40],
+    ['T20X12M50-00000003-45-1FF6', triBoard(20, 12, 50), 3, 45],
+  ]) {
+    const p = parseBoardCode(code);
+    assert.equal(p.ok, true, code);
+    assert.deepEqual([p.board, p.seed, p.startCell], [board, seed, startCell], code);
+  }
+});
+
 // ---------------------------------------------------------------- the link
 
 test('the link hash: #board=<code>, URL-decoded; anything else is none', () => {
@@ -134,6 +208,20 @@ test('at start-up a #board= link starts its challenge, then the hash goes with n
   const none = links(fakeWindow(''));
   assert.equal(none.l.start(), false);
   assert.deepEqual(none.calls, []);
+});
+
+test('a hexagon or triangle #board= link starts its challenge in its mode, and keeps its place in history as a Classic 2D one does', () => {
+  for (const [code, mode, startCell] of [[codeHex, 'hexagon', 40], [codeTri, 'triangle', 45]]) {
+    const win = fakeWindow(`#board=${code}`);
+    const { l, calls } = links(win);
+    assert.equal(l.start(), true);
+    assert.deepEqual(calls, [['challenge', mode, 3, startCell]], mode);
+    assert.deepEqual(win.history.replaced, [[{ ms3d: 1, depth: 0 }, '/']], `${mode}: the hash goes, the entry's state kept`);
+    assert.equal(win.history.length, 1, `${mode}: no new history entry`);
+    const later = links(fakeWindow(''));
+    later.l.hashchange();
+    assert.deepEqual(later.calls, []);
+  }
 });
 
 test('a link to today\'s daily opens the Daily screen; a refused code shows its reason; a mode the browser cannot run is refused', () => {
@@ -184,12 +272,16 @@ test('a board choice\'s code says what it opens and names its board for the summ
   for (const [start, end, option, binder] of [
     ['<section id="c2d-choice"', '<!-- Classic 2D board -->', /<button type="button" class="ui-option" aria-pressed="false" data-size="code" id="c2d-code-option">/, 'js/classic2d/board-choice.js'],
     ['<section id="board-choice"', '<!-- Coming soon -->', /<button type="button" class="ui-option" aria-pressed="false" data-preset="code" id="bc-code-option">/, 'js/mode3d/board-choice.js'],
+    ['<section id="hex-choice"', '<!-- Triangle board choice -->', /<button type="button" class="ui-option" aria-pressed="false" data-size="code" id="hex-code-option">/, 'js/classic2d/board-choice.js'],
+    ['<section id="tri-choice"', '<!-- Look at the board', /<button type="button" class="ui-option" aria-pressed="false" data-size="code" id="tri-code-option">/, 'js/classic2d/board-choice.js'],
   ]) {
     const choice = index.slice(index.indexOf(start), index.indexOf(end));
     assert.match(choice, option, 'Insert Board Code is a board option');
     assert.doesNotMatch(choice, /data-code-play|Play this board/, 'no button of its own: Play plays it');
     assert.match(read(binder), /if \(r\?\.ok\) code\.onPlay\(codeText\(\)\);/, 'Play plays an accepted code only');
   }
+  const flat = MAIN.slice(MAIN.indexOf('function flatMode('), MAIN.indexOf('const HEX_MODE'));
+  assert.ok(flat.includes('code: { resolve: (text) => checkCode(text, config.id), onPlay: (text) => playCode(text, config.id) },'), 'Hexagon\'s and Triangle\'s board choices check and play codes as their own mode');
 });
 
 // ---------------------------------------------------------------- in a browser
@@ -235,6 +327,29 @@ test('in a browser, a #board= link opens its Classic 2D challenge over the menu,
     // Refused link: the menu with its reason.
     await page.evaluate(() => { location.hash = '#board=EN-20261011-1000'; });
     await page.waitForFunction(() => document.getElementById('toast').textContent.includes('Finish or leave this game'));
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, a #board= link opens its Hexagon challenge on its marked start cell, and a Triangle one its own', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await removeWebGL2(page);
+    await page.goto(`${base}/index.html#board=${codeHex}`);
+    await page.waitForFunction(() => globalThis.__ms?.modes.state.mode === 'hexagon');
+    assert.equal(await page.evaluate(() => location.hash), '', 'the hash is removed');
+    assert.equal(await page.evaluate(() => globalThis.__ms.board2D.mark), 40, 'the hexagon start cell is marked');
+    await page.evaluate((code) => { location.hash = `#board=${code}`; }, codeTri);
+    await page.waitForFunction(() => globalThis.__ms.modes.state.mode === 'triangle');
+    assert.equal(await page.evaluate(() => globalThis.__ms.board2D.mark), 45, 'the triangle start cell is marked');
+    assert.equal(await page.evaluate(() => location.hash), '');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

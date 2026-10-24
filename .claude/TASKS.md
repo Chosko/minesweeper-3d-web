@@ -1571,7 +1571,7 @@ Feature: flat-grid-modes
 
 ## 270. Board codes and challenge links for Hexagon and Triangle
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/challenge.js, js/main.js, js/classic2d/board-choice.js, tests/shell-challenge.test.mjs
 Preconditions: 268

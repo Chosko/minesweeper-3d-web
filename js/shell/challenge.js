@@ -4,7 +4,7 @@
 //
 // resolveCode(text, { today, mode?, parse? }) → what the code opens:
 //   { kind: 'refused', reason }   parseBoardCode's refusal (js/records/board-code.js), or — with
-//                                 `mode`, a board choice's own — a code of the other mode, with a
+//                                 `mode`, a board choice's own — a code of another mode, with a
 //                                 hint naming the right one (otherModeHint) and `otherMode` its mode;
 //   { kind: 'daily', id, parsed } today's code of a daily board (today YYYYMMDD): the Daily screen
 //                                 opens instead, so the counted attempt rules hold;
@@ -13,11 +13,12 @@
 //                                 challenge, never as a daily.
 // otherModeHint(mode) → "This is a 3D board code. Paste it in the 3D board choice.".
 // gameStart({ board, seed, startCell, daily?, pregenerated? }) → { mode, choice }: the mode host's
-//   start for a daily (its `daily` date) or else a challenge, forcing that start cell and seed —
-//   Classic 2D's choice carries `fixed` (js/classic2d/mode.js), the 3D board `forced`
+//   start for a daily (its `daily` date) or else a challenge in the board's own mode — Classic 2D,
+//   Hexagon or Triangle, told apart by the code's token, or 3D —, forcing that start cell and seed:
+//   a flat mode's choice carries `fixed` (js/classic2d/mode.js), the 3D board `forced`
 //   (js/shell/mode-3d.js), each with the pre-generated board when there is one.
 // freeStart(board) → { mode, choice }: a fresh free-play board of the same size, mines and no-guess
-//   setting — Play again after a daily or a challenge once its mode was left; its Classic 2D
+//   setting — Play again after a daily or a challenge once its mode was left; a flat mode's
 //   choice carries `remember: false`, so it saves no last board choice, as Play again from the
 //   results screen does not.
 // boardHash(hash) → the code a `#board=<code>` location hash carries, or null.
