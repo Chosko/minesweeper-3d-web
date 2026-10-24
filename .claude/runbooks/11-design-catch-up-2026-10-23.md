@@ -76,12 +76,19 @@ Context:
 
 Done: 2026-10-24, commit `249ecd5` (28 files, +448/-179). Decision: RB toggles the live figures in a Classic 2D game, listed in its controller rows; Swap clicks has no controller button.
 
-## [~] 6. Implement task 287 — 3D game overlay without a title: floating Pause and live-figures toggle
+## [P] 6. Implement task 287 — 3D game overlay without a title: floating Pause and live-figures toggle
 
 Depends on: 5
 
 Context:
 - 2026-10-24 (from step 5): the live figures' open state is the stored `shell.liveFigures` document, meant to be shared with the 3D overlay; RB is Classic 2D's live-figures button (listed in its controller rows), chosen so the same button can serve the 3D toggle.
+- 2026-10-24 (from step 6's parked run): that premise is wrong — in 3D play RB is held for the Space view mode (`controls.pad.space = held(BTN.RB)` in `padPlaying`). Task 287's work is parked as `755c950` on `park/task-287`; still to do after the unpark: the controller wiring and its bindings row, the context-file updates, the full suite and the review round.
+- 2026-10-24 parked: Q1. Which controller button should open and close the live figures in 3D play?
+    a. D-pad Right — free in 3D play (D-pad Up and Down step the spacing); Classic 2D keeps RB.
+    b. Right-stick click — free in 3D play, but harder to find; Classic 2D keeps RB.
+    c. RB in both modes, moving the Space view mode to another button — a wider rebinding of 3D play.
+    d. No controller button in 3D — the toggle by mouse, touch and keyboard only.
+    Recommendation: a — it needs no rebinding, sits under the thumb and adds one row to the 3D controller bindings.
 
 ```prompt
 /task-implement 287 --review
