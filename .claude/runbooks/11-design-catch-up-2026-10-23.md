@@ -76,7 +76,7 @@ Context: none
 /task-implement 287 --review
 ```
 
-## [~] 7. Implement task 285 — Update documentation for feature shared-screen-layout
+## [x] 7. Implement task 285 — Update documentation for feature shared-screen-layout
 
 Depends on: 1, 2, 3, 4
 
@@ -88,6 +88,8 @@ Context:
 ```prompt
 /task-implement 285 --review
 ```
+
+Done: 2026-10-24, commit `e1cac9f` (22 files, +247/-143). The stale wording reached past the task's file list, so eight more context files were updated; the feature document's other passages still carry the old wording, left for `/architect`.
 
 ## [ ] 8. Implement task 288 — Update documentation for feature in-game-layout
 
