@@ -120,7 +120,7 @@ Context:
 
 Done: 2026-10-24, commit `a2979de` (11 files, +307/-51). Hexagon Expert at 100 mines met the attempt budget on all 300 seeds measured; a Hexagon board code now parses, though no Hexagon mode exists yet to start from a `#board=` link.
 
-## [ ] 10. Implement task 257 — Update documentation for feature `hexagon-grid`
+## [x] 10. Implement task 257 — Update documentation for feature `hexagon-grid`
 
 Depends on: 7, 8, 9
 
@@ -133,6 +133,8 @@ Context:
 ```prompt
 /task-implement 257 --review
 ```
+
+Done: 2026-10-24, commit `5a17724` (10 files, +92/-40).
 
 ## [ ] 11. Implement task 258 — Triangle graph provider and the `tri` generation description
 
