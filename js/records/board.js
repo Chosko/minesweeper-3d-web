@@ -5,7 +5,8 @@
 //   2D — mode, grid, width, height, mines and noGuess. Beginner, Intermediate and Expert are
 //        recognised from their exact size and mine count on the square grid (STANDARD_BOARDS), on
 //        the hex grid (STANDARD_BOARDS_HEX) and on the tri grid (STANDARD_BOARDS_TRI), a hexagon
-//        board being mode `hexagon`, grid `hex`, and a triangle board mode `triangle`, grid `tri`.
+//        board being mode `hexagon`, grid `hex`, and a triangle board mode `triangle`, grid `tri`;
+//        a hexagon or triangle board on any other grid is no board.
 //   3D — mode `3d`, width (X), height (Y), depth (Z), mines and noGuess, with no grid. The presets,
 //        "Cube" Intro, Beginner, Intermediate and Expert, are recognised from their exact size and
 //        mine count; any other 3D board, a former preset's included, is a custom board.
@@ -28,6 +29,8 @@
 export const BOARD_KEY_FORMAT = 2;
 
 export const MODE_3D = '3d';
+export const MODE_HEXAGON = 'hexagon';
+export const MODE_TRIANGLE = 'triangle';
 
 export const STANDARD_BOARDS = Object.freeze([
   Object.freeze({ name: 'Beginner', width: 9, height: 9, mines: 10 }),
@@ -62,6 +65,8 @@ export const PRESETS_3D = Object.freeze([
 ]);
 
 const STANDARD_BY_GRID = new Map([['square', STANDARD_BOARDS], ['hex', STANDARD_BOARDS_HEX], ['tri', STANDARD_BOARDS_TRI]]);
+// The modes bound to one grid: their boards are on it and nowhere else.
+const GRID_OF_MODE = new Map([[MODE_HEXAGON, 'hex'], [MODE_TRIANGLE, 'tri']]);
 const DIM_MAX_3D = 100;
 const TOKEN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -113,6 +118,8 @@ export function createBoardIdentity(fields) {
     return Object.freeze({ mode, width, height, depth, mines, noGuess: flag(fields.noGuess), ...dailyFlag(fields.daily) });
   }
   const grid = token('grid', fields.grid);
+  const bound = GRID_OF_MODE.get(mode);
+  if (bound !== undefined && grid !== bound) throw new RangeError(`a ${mode} board is on the ${bound} grid, got ${grid}`);
   const width = dimension('width', fields.width);
   const height = dimension('height', fields.height);
   const mines = mineCount(fields.mines, 0, width * height);

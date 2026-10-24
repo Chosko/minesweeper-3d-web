@@ -21,7 +21,7 @@
 // Rules. A best comes from best-eligible won games only (isBestEligible, js/records/summary.js)
 // and is replaced only by a strictly better value — lower time, higher 3BV/s or efficiency — so
 // a tie keeps the earlier holder. Every game counts in its board's counters and its mode's
-// overall counters only — no figure combines Classic 2D and 3D, and a daily game counts on its
+// overall counters only — no figure combines two modes (Classic 2D, Hexagon, Triangle, 3D), and a daily game counts on its
 // Daily board (a board key `daily:…`) and in its mode's overall figures; a win extends the current
 // streak, a loss or an abandoned game ends it. A completed game is one played to a win or a loss: it counts
 // in `completed`, and a win extends the completed streak, a loss ends it, while an abandoned game
@@ -31,20 +31,31 @@
 // and recording a summary id already in the history changes nothing and returns that game's
 // original comparison, recomputed from the history before it.
 //
-// upgradeRecords(records) is the records format step from the m1 records, whose overall counters
-// held Classic 2D only: every board and every mode's counters carry over unchanged, and a mode
-// without counters starts at zero. hasCompletedCounters(records) tells whether every board's and
+// upgradeRecords(records) is the records format step that adds modes: from the m1 records, whose
+// overall counters held Classic 2D only, and from the records before Hexagon and Triangle. Every
+// board and every mode's counters carry over unchanged, and a mode without counters starts at zero. hasCompletedCounters(records) tells whether every board's and
 // mode's counters carry the completed games' figures, which records saved before them lack: the
 // records store rebuilds such records from the history. Records handed to createRecordsModel
 // without them, with no history to derive them from, take them from the reference figures:
 // completed games as games, the completed streaks as the streaks, so wins never exceed completed.
 
 import { BEST_STATS, OUTCOMES, isBestEligible, bbbvPerSecond, efficiency } from './summary.js';
-import { STANDARD_BOARDS, PRESETS_3D, MODE_3D, boardKey, parseBoardKey, standardBoard, preset3D } from './board.js';
+import {
+  STANDARD_BOARDS, STANDARD_BOARDS_HEX, STANDARD_BOARDS_TRI, PRESETS_3D, MODE_3D, MODE_HEXAGON, MODE_TRIANGLE,
+  boardKey, parseBoardKey, standardBoard, preset3D,
+} from './board.js';
 import { CLICK_KINDS } from '../engine/metrics.js';
 
 export const MODE_CLASSIC_2D = 'classic-2d';
-export const MODES = Object.freeze([MODE_CLASSIC_2D, MODE_3D]);
+export const MODES = Object.freeze([MODE_CLASSIC_2D, MODE_HEXAGON, MODE_TRIANGLE, MODE_3D]);
+
+// Each mode's named boards, in order, and the function naming a board as one of them.
+const NAMED = {
+  [MODE_CLASSIC_2D]: [standardBoard, STANDARD_BOARDS],
+  [MODE_HEXAGON]: [standardBoard, STANDARD_BOARDS_HEX],
+  [MODE_TRIANGLE]: [standardBoard, STANDARD_BOARDS_TRI],
+  [MODE_3D]: [preset3D, PRESETS_3D],
+};
 
 const STAT_VALUE = { time: (e) => e.elapsedMs, bbbvPerSecond, efficiency };
 const BETTER = { time: (a, b) => a < b, bbbvPerSecond: (a, b) => a > b, efficiency: (a, b) => a > b };
@@ -81,8 +92,8 @@ export function emptyRecords() {
   return { boards: {}, overall: Object.fromEntries(MODES.map((mode) => [mode, emptyCounters()])) };
 }
 
-// The records format step from m1: a copy of `records` with zeroed counters for every mode that
-// has none. Anything that is not records is returned as it is.
+// The records format step that adds modes: a copy of `records` with zeroed counters for every mode
+// that has none. Anything that is not records is returned as it is.
 export function upgradeRecords(records) {
   if (!records || typeof records !== 'object' || !records.overall || typeof records.overall !== 'object') return records;
   const out = clone(records);
@@ -278,17 +289,18 @@ export function createRecordsModel({ records, history } = {}) {
       return comparison;
     },
 
-    // The boards played in `mode`: its named boards first — Classic 2D's standard boards in
-    // STANDARD_BOARDS order, 3D's presets in PRESETS_3D order — each without no-guess before with
-    // it; then the mode's Daily board; then custom boards, the most recently played first.
+    // The boards played in `mode`: its named boards first — a 2D mode's standard boards in its
+    // grid's list order (STANDARD_BOARDS, STANDARD_BOARDS_HEX, STANDARD_BOARDS_TRI), 3D's presets
+    // in PRESETS_3D order — each without no-guess before with it; then the mode's Daily board;
+    // then custom boards, the most recently played first.
     boardsPlayed(mode = MODE_CLASSIC_2D) {
       const last = new Map();
       hist.forEach((e, i) => last.set(e.boardKey, i));
-      const [named, list] = mode === MODE_3D ? [preset3D, PRESETS_3D] : [standardBoard, STANDARD_BOARDS];
+      const [named, list] = NAMED[mode] ?? [() => null, []];
       const rank = (b) => {
         if (b.daily) return list.length * 2;
-        const s = named(b);
-        return s ? list.indexOf(s) * 2 + (b.noGuess ? 1 : 0) : Infinity;
+        const i = list.indexOf(named(b));
+        return i >= 0 ? i * 2 + (b.noGuess ? 1 : 0) : Infinity;
       };
       return Object.entries(recs.boards)
         .filter(([, rec]) => rec.board.mode === mode)

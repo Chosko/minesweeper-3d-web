@@ -1591,7 +1591,7 @@ Feature: flat-grid-modes
 
 ## 272. Records model and summaries for Hexagon and Triangle
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/model.js, js/records/summary.js, js/records/board.js, js/records/store.js, tests/records-model.test.mjs, tests/records-summary.test.mjs, tests/records-store.test.mjs
 Preconditions: 256, 260, 269

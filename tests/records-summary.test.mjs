@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createSquareGrid } from '../js/engine/square-grid.js';
+import { createHexGrid } from '../js/engine/hex-grid.js';
+import { createTriGrid } from '../js/engine/tri-grid.js';
 import { createGame, createGameWithMines } from '../js/engine/rules.js';
 import { REFERENCE_PROFILE } from '../js/engine/profiles.js';
 import { createBoardIdentity } from '../js/records/board.js';
@@ -264,6 +266,45 @@ test('invalid input throws a range error', () => {
   lostMid.game.reveal(lostMid.at(0, 0));
   const counts = lostMid.game.counts();
   assert.throws(() => buildSummary(base(lostMid.board, { ...counts, outcome: 'won', dimensions: { width: 5, height: 3 }, mineCount: 3 })), RangeError);
+});
+
+// ---------- hexagon and triangle boards ----------
+
+// A game on a hexagon or triangle graph, won by revealing every safe tile in index order.
+function flatWin(createGrid, mode, grid, width, height, mines) {
+  const g = createGrid(width, height);
+  const game = createGameWithMines({ graph: g.graph, profile: REFERENCE_PROFILE, mines, dimensions: { width, height } });
+  for (let i = 0; i < width * height && game.summary() === null; i++) {
+    if (!mines.includes(i) && game.cellState(i) !== 'revealed') game.reveal(i);
+  }
+  const board = createBoardIdentity({ mode, grid, width, height, mines: mines.length, noGuess: false });
+  return { engine: game.summary(), board };
+}
+
+test('hexagon and triangle: the builder takes their identities, 3BV/s, efficiency and best eligibility in the same rule', () => {
+  for (const [createGrid, mode, grid] of [[createHexGrid, 'hexagon', 'hex'], [createTriGrid, 'triangle', 'tri']]) {
+    const { engine, board } = flatWin(createGrid, mode, grid, 5, 3, [0, 7]);
+    assert.equal(engine.outcome, 'won', mode);
+    const s = buildSummary(base(board, engine));
+    assert.deepEqual(s.board, { mode, grid, width: 5, height: 3, mines: 2, noGuess: false });
+    assert.equal(s.bbbv, engine.bbbv);
+    assert.equal(s.bbbvSolved, engine.bbbv);
+    assert.equal(s.bbbvPerSecond, s.bbbvSolved / 4);
+    assert.equal(s.efficiency, (100 * s.bbbvSolved) / countedClicks(s.clicks));
+    for (const stat of BEST_STATS) assert.equal(isBestEligible(s, stat), true, `${mode} ${stat}`);
+    assert.equal(isBestEligible({ ...s, outcome: 'lost' }, 'time'), false);
+    assert.equal(isBestEligible({ ...s, challenge: true }, 'time'), false);
+    assert.equal(JSON.stringify(JSON.parse(JSON.stringify(s))), JSON.stringify(s));
+  }
+});
+
+test('hexagon and triangle: an identity whose grid does not match its mode is a range error', () => {
+  const { engine } = flatWin(createHexGrid, 'hexagon', 'hex', 5, 3, [0, 7]);
+  const fields = { width: 5, height: 3, mines: 2, noGuess: false };
+  for (const [mode, grid] of [['hexagon', 'tri'], ['hexagon', 'square'], ['triangle', 'hex'], ['triangle', 'square']]) {
+    assert.throws(() => createBoardIdentity({ mode, grid, ...fields }), RangeError, `${mode} on ${grid}`);
+    assert.throws(() => buildSummary(base({ mode, grid, ...fields }, engine)), RangeError, `${mode} on ${grid}`);
+  }
 });
 
 test('DOM-free and independent of the 3D rules engine', () => {

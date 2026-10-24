@@ -37,8 +37,9 @@ Board identity (`js/records/board.js`; its header documents the key format)
   `{ mode, grid, width, height, mines, noGuess }`; 3D `{ mode: MODE_3D,
   width, height, depth, mines, noGuess }` (no `grid`; sides `1 .. 100`).
   A hexagon board is the 2D form with mode `hexagon` and grid `hex`, a
-  triangle board the 2D form with mode `triangle` and grid `tri`.
-  `MODE_3D` — `'3d'`.
+  triangle board the 2D form with mode `triangle` and grid `tri`; either
+  mode on another grid is a `RangeError`. `MODE_3D` — `'3d'`,
+  `MODE_HEXAGON` — `'hexagon'`, `MODE_TRIANGLE` — `'triangle'`.
 - `boardKey(identity)` → `classic-2d:square:30x16:99:no-guess` /
   `hexagon:hex:30x16:100:guess` / `triangle:tri:41x17:103:guess` /
   `3d:10x10x10:100:no-guess` (a 3D key never equals a 2D key; a hexagon or

@@ -155,7 +155,7 @@ test('every mode has its own overall counters from the start, at zero', () => {
   assert.deepEqual(m.overall(MODE_3D), ZERO);
   assert.equal(m.overallWinRate(MODE_3D), null);
   assert.equal(m.overallCompletedWinRate(MODE_3D), null);
-  assert.deepEqual(emptyRecords().overall, { 'classic-2d': ZERO, [MODE_3D]: ZERO });
+  assert.deepEqual(emptyRecords().overall, { 'classic-2d': ZERO, hexagon: ZERO, triangle: ZERO, [MODE_3D]: ZERO });
 });
 
 // ---------- boards played ----------
@@ -241,17 +241,17 @@ function m1Documents() {
   return { records: { boards: old.boards, overall: { 'classic-2d': old.overall['classic-2d'] } }, history, current: records };
 }
 
-test('the records format steps up from m1, again for the completed games\' counters, then for Daily boards and challenges', () => {
-  assert.equal(RECORDS_VERSION, 4);
+test('the records format steps up from m1, again for the completed games\' counters, for Daily boards and challenges, then for Hexagon and Triangle', () => {
+  assert.equal(RECORDS_VERSION, 5);
 });
 
-test('the upgrade carries every m1 board and the Classic 2D counters over and starts 3D at zero', () => {
+test('the upgrade carries every m1 board and the Classic 2D counters over and starts every other mode at zero', () => {
   const { records } = m1Documents();
   const before = structuredClone(records);
   const up = upgradeRecords(records);
   assert.deepEqual(records, before, 'the input is not changed');
   assert.deepEqual(up.boards, before.boards);
-  assert.deepEqual(up.overall, { 'classic-2d': before.overall['classic-2d'], [MODE_3D]: ZERO });
+  assert.deepEqual(up.overall, { 'classic-2d': before.overall['classic-2d'], hexagon: ZERO, triangle: ZERO, [MODE_3D]: ZERO });
 });
 
 test('the upgrade keeps 3D counters a records document already carries', () => {

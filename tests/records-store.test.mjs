@@ -66,9 +66,9 @@ test('the three documents are registered under their own names at their versions
   const names = [];
   const storage = { register: (name, version) => names.push([name, version]), load: async () => undefined, save: async () => ({ ok: true }), available: () => true };
   createRecordsStore({ storage });
-  assert.deepEqual(names.sort(), [[HISTORY_DOC, 2], [IN_PROGRESS_DOC, 1], [RECORDS_DOC, 4]].sort());
+  assert.deepEqual(names.sort(), [[HISTORY_DOC, 2], [IN_PROGRESS_DOC, 1], [RECORDS_DOC, 5]].sort());
   assert.equal(new Set([RECORDS_DOC, HISTORY_DOC, IN_PROGRESS_DOC]).size, 3);
-  assert.deepEqual([RECORDS_VERSION, HISTORY_VERSION, IN_PROGRESS_VERSION], [4, 2, 1]);
+  assert.deepEqual([RECORDS_VERSION, HISTORY_VERSION, IN_PROGRESS_VERSION], [5, 2, 1]);
 });
 
 test('the daily and challenge format step: documents of the previous versions load unchanged, figures and keys kept', async () => {
@@ -83,6 +83,32 @@ test('the daily and challenge format step: documents of the previous versions lo
   assert.deepEqual(store.counters(BEGINNER), model.counters(BEGINNER));
   assert.deepEqual(store.bests(BEGINNER), model.bests(BEGINNER));
   assert.deepEqual(store.boardsPlayed(), model.boardsPlayed());
+});
+
+test('the Hexagon and Triangle format step: a version 4 document loads with their counters at zero, everything else carried over', async () => {
+  const model = createRecordsModel();
+  model.record(game({ ms: 9000 }));
+  model.record(game({ outcome: 'lost' }));
+  const { records, history } = model.documents();
+  const v4 = { boards: records.boards, overall: { 'classic-2d': records.overall['classic-2d'], '3d': records.overall['3d'] } };
+  const backend = createMemoryBackend({ initial: { [RECORDS_DOC]: doc(4, v4), [HISTORY_DOC]: doc(HISTORY_VERSION, history) } });
+  const { store } = open(backend);
+  await store.load();
+  assert.equal(store.available(), true);
+  assert.deepEqual(store.overall('hexagon'), C(0, 0, 0, 0, 0, 0, 0));
+  assert.deepEqual(store.overall('triangle'), C(0, 0, 0, 0, 0, 0, 0));
+  assert.deepEqual(store.overall('classic-2d'), v4.overall['classic-2d']);
+  assert.deepEqual(store.counters(BEGINNER), model.counters(BEGINNER));
+  assert.deepEqual(store.bests(BEGINNER), model.bests(BEGINNER));
+  assert.deepEqual(store.boardsPlayed(), model.boardsPlayed());
+  const hex = createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 9, height: 9, mines: 13, noGuess: false });
+  store.record({ ...game({ outcome: 'lost' }), board: { ...hex } });
+  await store.settled();
+  const saved = stored(backend, RECORDS_DOC);
+  assert.equal(saved.version, RECORDS_VERSION);
+  assert.deepEqual(saved.data.overall.hexagon, C(1, 0, 0, 0, 1, 0, 0));
+  assert.deepEqual(saved.data.overall['classic-2d'], v4.overall['classic-2d'], 'a hexagon loss never moves Classic 2D');
+  assert.deepEqual(saved.data.boards[Object.keys(records.boards)[0]], records.boards[Object.keys(records.boards)[0]]);
 });
 
 test('the daily and challenge format step: an older build refuses the new documents instead of misreading them', async () => {
