@@ -66,7 +66,7 @@ Context: none
 
 Done: 2026-10-21, commit `b86a015` (8 files, +265/-62). `boardPoint` is now `boardPoint(view, x, y, steps?)`; board units are still the layout's pitch, since the geometry contract has no board-unit member; the viewer builds its geometry from the replay header's board (`replayGeometry`), and a pointer resting in the gap past the last column or row now counts as on no cell, as live hit-testing does.
 
-## [ ] 6. Implement task 253 — Update documentation for feature `flat-grid-geometry`
+## [x] 6. Implement task 253 — Update documentation for feature `flat-grid-geometry`
 
 Depends on: 1, 2, 3, 4, 5
 
@@ -76,6 +76,8 @@ Context:
 ```prompt
 /task-implement 253 --review
 ```
+
+Done: 2026-10-24, commit `68e7eb5` (11 files, +39/-15). Premise wrong: the replay-samplers and replay-viewers context files already carried the new `boardPoint` signature.
 
 ## [x] 7. Implement task 254 — Hexagon graph provider and the `hex` generation description
 
