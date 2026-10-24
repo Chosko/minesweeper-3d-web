@@ -1729,7 +1729,7 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
           assert.match(await ms(() => getComputedStyle(document.getElementById('c2d-panel')).backgroundColor), /^rgb\(/, `${at}: the board's frame is an opaque surface`);
         }
         assert.ok(g.strip.y + g.strip.height <= g.areaTop + g.layout.viewY, `${at}: the counter strip above the board`);
-        assert.ok(g.pause.y + g.pause.height <= g.strip.y && g.pause.x + g.pause.width <= g.frame.x + g.frame.width, `${at}: Pause in the window's head`);
+        assert.ok(g.pause.y + g.pause.height <= g.strip.y && g.pause.x - g.frame.x < 30, `${at}: Pause at the start of the window's head`);
         assert.ok(g.frame.x >= 0 && g.frame.x + g.frame.width <= viewport.width && g.frame.y + g.frame.height <= viewport.height, `${at}: the window inside the screen`);
         assert.deepEqual(await ms(() => ['c2d-time', 'c2d-mines-left', 'c2d-clicks'].map((id) => document.getElementById(id).textContent)), ['000', '099', '0']);
 
@@ -1851,7 +1851,7 @@ function measurePauseCard() {
 // The pause card's font sizes with a fine pointer, which its two columns leave as they are.
 const PAUSE_FONTS_FINE = Object.freeze({ title: 34, status: 15, button: 17, slider: 16, switch: 16, heading: 13, list: 15, keyName: 15, kbd: null, statLabel: null });
 
-test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter strip keep one line each above the board; the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
+test('in a browser, at 1024 × 768 with a mouse: the window\'s head, counter strip and foot keep one line each; the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1872,12 +1872,15 @@ test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter 
         const area = document.getElementById('c2d-board').getBoundingClientRect();
         const line = (els) => { const r = els.map(rect); const top = Math.min(...r.map((x) => x.y)); return r.every((x) => x.y < top + Math.max(...r.map((y) => y.height)) - 1); };
         return {
-          head: line([document.getElementById('hud-swap'), document.querySelector('#c2d-frame .ui-frame__logo'), document.getElementById('c2d-pause'), ...document.querySelectorAll('#c2d-frame [data-window]')]),
+          head: line([document.getElementById('c2d-pause'), document.querySelector('#c2d-frame .ui-frame__logo'), ...document.querySelectorAll('#c2d-frame [data-window]')]),
           strip: line([document.getElementById('c2d-mines-left'), document.getElementById('c2d-restart'), document.getElementById('c2d-time')]),
+          foot: line([document.getElementById('c2d-line'), document.getElementById('hud-swap'), document.getElementById('c2d-figures-toggle')]),
+          footInside: (() => { const f = document.querySelector('#c2d-frame > .ui-frame__foot').getBoundingClientRect(); return [...document.querySelectorAll('#c2d-tools .ui-button')].every((b) => b.getBoundingClientRect().right <= f.right + 0.5); })(),
           stripBottom: rect(document.getElementById('c2d-counters')).bottom, boardTop: area.top + v.layout.viewY,
         };
       });
-      assert.ok(rows.head, `${at}: Swap clicks, the logo, Pause and the window buttons on one line`);
+      assert.ok(rows.head, `${at}: Pause, the logo and the window buttons on one line`);
+      assert.ok(rows.foot && rows.footInside, `${at}: the mode and board, Swap clicks and the live-figures toggle on one line inside the window`);
       assert.ok(rows.strip, `${at}: mines left, Restart and the timer on one line`);
       assert.ok(rows.stripBottom <= rows.boardTop, `${at}: the strip above the board`);
       // The first click starts the game, so a restart asks first.

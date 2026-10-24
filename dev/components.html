@@ -477,14 +477,16 @@
       <p class="ui-text ui-text--muted">The panel toggle at the right of a board choice's heading, sunk while pinned; the drawer holds the panel under the Board list on a phone, flat on its band while open.</p>
     </section>
     <section class="ui-card" aria-labelledby="g-game-toggles">
-      <h2 class="ui-card__title" id="g-game-toggles">Swap clicks and Tap toggles</h2>
+      <h2 class="ui-card__title" id="g-game-toggles">Swap clicks, live figures and Tap toggles</h2>
       <div class="states">
         <span class="state">Swap off</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false" title="Swap left and right click on closed cells" data-canvas="swap-clicks"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button></div>
         <span class="state">Swap on</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="true" title="Swap left and right click on closed cells" data-canvas="swap-clicks"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button></div>
+        <span class="state">Live figures closed</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" data-panel-toggle data-icon="panel" aria-pressed="false" aria-label="Live figures" title="Live figures"></button></div>
+        <span class="state">Live figures open</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" data-panel-toggle data-icon="panel" aria-pressed="true" aria-label="Live figures, open" title="Live figures"></button></div>
         <span class="state">Tap: Reveal</span><div class="ui-segmented tap-demo" role="radiogroup" aria-label="Tap action" data-canvas="tap-toggle"><button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="reveal">Tap: Reveal</button><button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="flag">Tap: Flag</button></div>
         <span class="state">Tap: Flag</span><div class="ui-segmented tap-demo" role="radiogroup" aria-label="Tap action, flag" data-canvas="tap-toggle"><button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="reveal">Tap: Reveal</button><button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="flag">Tap: Flag</button></div>
       </div>
-      <p class="ui-text ui-text--muted">Swap clicks in the game window's head on a fine pointer, never focused; Tap under the board on a coarse pointer.</p>
+      <p class="ui-text ui-text--muted">Swap clicks and the live-figures toggle at the right of the game window's foot on a fine pointer, never focused by the mouse, the toggle sunk while the panel is open; Tap under the board on a coarse pointer.</p>
     </section>
 
     <section class="ui-card wide" aria-labelledby="g-hud-title" id="g-hud">

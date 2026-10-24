@@ -177,6 +177,7 @@ export const BINDINGS = Object.freeze({
       ['{y} · {lt} + {rt}', 'Chord'],
       ['{start} / {b} / {back}', 'Pause'],
       ['{start} + {y}', 'Restart'],
+      ['{rb}', 'Show / hide live figures'],
     ]),
     touch: rows([
       ['Tap', 'Reveal (or flag on Tap: Flag)'],

@@ -583,27 +583,31 @@ const WINDOW_2D = INDEX.slice(INDEX.indexOf('<section id="c2d"'), INDEX.indexOf(
 const WINDOW_2D_TAGS = tags(WINDOW_2D);
 const byId2D = (id) => WINDOW_2D_TAGS.find((t) => t.attrs.id === id);
 
-test('the Classic 2D game window is built from catalogued components: head with Swap clicks, the title and Pause; the counter strip; the board; the figures panel; the foot line', () => {
+test('the Classic 2D game window is built from catalogued components: the title bar with Pause in Back\'s place and no title; the counter strip with the icon-only Restart; the board; the figures panel; the foot line led by the mode and board, Swap clicks and the live-figures toggle at its right', () => {
   const [root, ...inner] = WINDOW_2D_TAGS;
   assert.deepEqual(classesOf(root).filter((c) => c !== 'hidden'), ['ui-backdrop'], '#c2d is the window\'s backdrop');
   // Besides the kit: the shell's visibility utility and the board's themed frame drawn behind the canvas.
   const allowed = new Set(['hidden']);
   for (const t of inner) for (const c of classesOf(t)) assert.ok(c.startsWith('ui-') || allowed.has(c), `#c2d <${t.tag} class="${c}"> is not a kit class`);
   const frame = byId2D('c2d-frame');
-  assert.ok(hasClasses(frame, '.ui-frame') && frame.tag === 'section' && frame.attrs['aria-labelledby'] === 'c2d-title', 'a screen frame named by its title');
+  assert.ok(hasClasses(frame, '.ui-frame') && frame.tag === 'section' && frame.attrs['aria-labelledby'] === 'c2d-title', 'a screen frame named by the mode and board');
+  assert.equal(within(inner, '.ui-frame__heading').length, 0, 'no heading in the body');
+  assert.equal(within(inner, '.ui-frame__title').length, 0, 'no title anywhere');
   const head = within(inner, '.ui-frame__head')[0];
   const parts = inside(WINDOW_2D, WINDOW_2D_TAGS, head);
   const start = within(parts, '.ui-frame__start')[0];
-  assert.ok(inside(WINDOW_2D, WINDOW_2D_TAGS, start).some((t) => t.attrs.id === 'hud-swap'), 'Swap clicks at the head\'s start');
-  const title = byId2D('c2d-title');
-  assert.ok(hasClasses(title, '.ui-frame__title') && /^h[2-6]$/.test(title.tag), 'the mode and board title');
-  const end = within(parts, '.ui-frame__end')[0];
   const pause = byId2D('c2d-pause');
-  assert.ok(inside(WINDOW_2D, WINDOW_2D_TAGS, end).includes(pause), 'Pause at the head\'s end');
-  assert.ok(hasClasses(pause, '.ui-button.ui-button--secondary.ui-button--sm') && pause.tag === 'button' && pause.attrs.type === 'button');
-  assert.match(pause.attrs['aria-label'] ?? '', /pause/i, 'Pause is named');
-  const pauseHint = within(inside(WINDOW_2D, WINDOW_2D_TAGS, pause), '.ui-key-hint')[0];
-  assert.ok(pauseHint && pauseHint.attrs['data-action'] === 'back' && pauseHint.attrs['aria-hidden'] === 'true', 'Pause carries its key hint');
+  assert.deepEqual(inside(WINDOW_2D, WINDOW_2D_TAGS, start).filter((t) => t.tag === 'button'), [pause], 'Pause alone at the head\'s start, in Back\'s place');
+  assert.ok(hasClasses(pause, '.ui-button.ui-button--secondary.ui-button--sm.ui-frame__back') && pause.tag === 'button' && pause.attrs.type === 'button', 'the title bar\'s small secondary icon button');
+  assert.equal(pause.attrs['data-icon'], 'pause', 'the pause icon alone');
+  assert.equal(textOf(WINDOW_2D, pause), '', 'no text and no key label');
+  assert.ok(!('data-back' in pause.attrs), 'Pause pauses: it is no Back');
+  assert.equal(pause.attrs['aria-label'], 'Pause game', 'Pause is named');
+  assert.equal(pause.attrs.title, 'Pause');
+  assert.ok(within(parts, '.ui-frame__logo').length === 1, 'the logo in the centre');
+  const end = within(parts, '.ui-frame__end')[0];
+  assert.deepEqual(inside(WINDOW_2D, WINDOW_2D_TAGS, end).filter((t) => t.tag === 'button').map((b) => b.attrs['data-window']), ['minimise', 'fullscreen', 'quit'], 'only the window buttons at its end');
+  assert.ok(!parts.some((t) => t.attrs.id === 'hud-swap' || t.attrs.id === 'c2d-title'), 'no Swap clicks and no mode or difficulty in the title bar');
 
   const strip = byId2D('c2d-counters');
   assert.ok(hasClasses(strip, '.ui-counter-strip') && strip.attrs.role === 'group' && strip.attrs['aria-label'], 'the counter strip, a named group');
@@ -617,9 +621,9 @@ test('the Classic 2D game window is built from catalogued components: head with 
   assert.ok(hasClasses(byId2D('c2d-time'), '.ui-counter__digits') && inside(WINDOW_2D, WINDOW_2D_TAGS, time).includes(byId2D('c2d-time')));
   assert.equal(textOf(WINDOW_2D, byId2D('c2d-time')), '000');
   assert.ok(hasClasses(restart, '.ui-button.ui-button--secondary.ui-button--sm') && restart.attrs.type === 'button');
-  assert.match(textOf(WINDOW_2D, restart), /^Restart/);
-  const restartHint = within(inside(WINDOW_2D, WINDOW_2D_TAGS, restart), '.ui-key-hint')[0];
-  assert.ok(restartHint && restartHint.attrs['data-action'] === 'restart', 'Restart carries its key hint');
+  assert.equal(restart.attrs['data-icon'], 'restart', 'Restart is icon-only');
+  assert.equal(textOf(WINDOW_2D, restart), '', 'with no text and no F2 label');
+  assert.deepEqual([restart.attrs['aria-label'], restart.attrs.title], ['Restart', 'Restart'], 'its accessible name and tooltip');
   assert.ok('data-no-focus' in restart.attrs, 'Restart never takes the board\'s keys');
   assert.match(WINDOW_2D, /<div id="c2d-board"><div id="c2d-panel" class="ui-board-frame hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the board\'s frame');
   const tapChoice = byId2D('hud-tap');
@@ -648,9 +652,23 @@ test('the Classic 2D game window is built from catalogued components: head with 
   assert.ok(WINDOW_2D_TAGS.filter((t) => 'aria-live' in t.attrs || t.attrs.role === 'status').every((t) => t === live[0]), 'only the panel\'s live part is live');
   assert.ok(inside(WINDOW_2D, WINDOW_2D_TAGS, within(pp, '.ui-figures__foot')[0]).some((t) => t.attrs.id === 'c2d-reminder' && hasClasses(t, '.ui-key-hints')), 'the controls reminder at the panel\'s foot');
 
+  assert.equal(panel.attrs.id, 'c2d-figures');
   const foot = within(inner, '.ui-frame__foot')[0];
+  const fp = inside(WINDOW_2D, WINDOW_2D_TAGS, foot);
+  const line = byId2D('c2d-line');
+  assert.ok(fp.includes(line) && hasClasses(line, '.ui-frame__status'), 'the foot line');
+  const title = byId2D('c2d-title');
   const size = byId2D('c2d-size');
-  assert.ok(inside(WINDOW_2D, WINDOW_2D_TAGS, foot).includes(size) && hasClasses(size, '.ui-frame__status'), 'the foot line names the board');
+  assert.ok(title.tag === 'span' && size.tag === 'span' && inside(WINDOW_2D, WINDOW_2D_TAGS, line).includes(title) && title.index < size.index, 'the mode and difficulty lead it, then the board line');
+  assert.match(WINDOW_2D, /<span id="c2d-title">Classic 2D<\/span> · <span id="c2d-size"><\/span>/, 'joined by a dot');
+  const tools = byId2D('c2d-tools');
+  assert.ok(fp.includes(tools) && hasClasses(tools, '.ui-actions.ui-actions--row') && line.index < tools.index, 'its tools at its right');
+  const toolButtons = inside(WINDOW_2D, WINDOW_2D_TAGS, tools).filter((t) => t.tag === 'button');
+  assert.deepEqual(toolButtons.map((b) => b.attrs.id), ['hud-swap', 'c2d-figures-toggle'], 'Swap clicks, then the live-figures toggle');
+  const toggle = byId2D('c2d-figures-toggle');
+  assert.ok(hasClasses(toggle, '.ui-button.ui-button--quiet.ui-button--sm') && 'data-panel-toggle' in toggle.attrs && toggle.attrs['data-icon'] === 'panel', 'the latched icon-only panel toggle');
+  assert.deepEqual([toggle.attrs['aria-label'], toggle.attrs.title, toggle.attrs['aria-pressed'], toggle.attrs['aria-controls']], ['Live figures', 'Live figures', 'false', 'c2d-figures'], 'named Live figures, its pressed state exposed, closed at first');
+  assert.ok('data-no-focus' in toggle.attrs && 'data-no-focus' in byId2D('hud-swap').attrs, 'neither takes the focus from the mouse');
   assert.ok(!HUD.includes('id="c2d-'), 'the window is not part of the 3D overlay');
 });
 
@@ -1520,12 +1538,23 @@ const ruleIn = (css, query = null) => {
   return (sel) => list.filter(([x]) => x === sel).map(([, body]) => body).join(';');
 };
 
-test('the Classic 2D window hugs its content: the board column, a 2 px divider and the flat figures column 300 / 260 / 232 px wide, the board area the board\'s extent 12 px under the counter strip, measured with the window at its largest; under the board below 1024 px, hidden on a phone; Swap clicks hides only under the coarse rule', () => {
+test('the Classic 2D window hugs its content: the board column alone while the live figures are closed, a 2 px divider and the flat figures column 300 / 260 / 232 px wide while open, the board area the board\'s extent 12 px under the counter strip, measured with the window at its largest; under the board below 1024 px, hidden with its toggle on a phone; the foot line never widens the window; Swap clicks hides only under the coarse rule', () => {
   const top = ruleIn(STYLE);
   assert.match(top('#c2d'), /padding:\s*33px var\(--space-4\) 83px/, 'centred in the room above the HUD strip');
   assert.doesNotMatch(top('#c2d-frame'), /width|height/, 'no fill-the-viewport width or height, no max-width');
   assert.doesNotMatch(STYLE, /#c2d-frame \{[^}]*max-width:\s*1600px/, 'no 1600 px cap');
-  assert.match(top('#c2d-body'), /grid-template-columns:\s*minmax\(auto, 1fr\) auto 300px/, 'the board column as wide as its board (or what a wider title bar leaves it), the divider, the figures column');
+  assert.match(top('#c2d-body'), /grid-template-columns:\s*minmax\(auto, 1fr\) auto 300px/, 'open, the board column as wide as its board, the divider, the figures column');
+  assert.match(top('#c2d:not([data-figures="open"]) :is(#c2d-divider, #c2d-figures)'), /display:\s*none/, 'closed, neither the divider nor the panel');
+  assert.match(top('#c2d:not([data-figures="open"]) #c2d-body'), /grid-template-columns:\s*minmax\(auto, 1fr\);/, 'closed, the board column alone: the window shrinks to the board');
+  assert.match(top('#c2d.c2d--measure:not([data-figures="open"]) #c2d-body'), /grid-template-columns:\s*minmax\(0, 1fr\);/, 'and is measured so');
+  assert.doesNotMatch(STYLE, /#c2d-frame > \.ui-frame__head \{/, 'the title bar is the kit\'s, its sides equal');
+  assert.doesNotMatch(STYLE, /#c2d-frame > \.ui-frame__heading/, 'no heading to hide');
+  // The foot line: the mode and board ellipsised in the room its tools leave, never setting the window's width.
+  assert.match(top('#c2d-frame > .ui-frame__foot'), /flex-wrap:\s*nowrap/);
+  assert.match(top('#c2d-line'), /flex:\s*1 1 0;\s*width:\s*0;\s*min-width:\s*0/, 'no width of its own to give the window');
+  assert.match(top('#c2d-line'), /text-overflow:\s*ellipsis/);
+  assert.match(top('#c2d-tools'), /flex:\s*none/);
+  assert.match(top('#c2d-tools'), /gap:\s*var\(--space-2\)/, 'Swap clicks 8 px from the toggle');
   assert.match(top('#c2d-main'), /gap:\s*var\(--space-3\)/, 'the board 12 px under the counter strip');
   assert.match(top('#c2d-main'), /padding:\s*22px/);
   assert.match(top('#c2d-stage'), /flex:\s*none/, 'the board area is sized, never stretched');
@@ -1551,7 +1580,7 @@ test('the Classic 2D window hugs its content: the board column, a 2 px divider a
   assert.match(STYLE, /@media \(max-width: 1023px\) \{[^@]*#c2d-body, #c2d\.c2d--measure #c2d-body \{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/, 'one column below the kit\'s breakpoint: the panel under the board');
   // A phone: full-bleed, no figures; held sideways the board at the left, then mines, time, Restart and the switch.
   const phone = ruleIn(STYLE, TOUCH_QUERY);
-  assert.match(phone('#c2d-figures, #c2d-divider, #hud.hud--2d .hud-tools'), /display:\s*none/, 'a phone hides the panel so the board keeps its room');
+  assert.match(phone('#c2d-figures, #c2d-divider, #c2d-figures-toggle, #hud.hud--2d .hud-tools'), /display:\s*none/, 'a phone hides the panel and its toggle so the board keeps its room');
   assert.match(phone('#c2d-frame'), /width:\s*100%;\s*height:\s*100%/, 'full-bleed');
   assert.match(phone('#c2d-main'), /padding:\s*var\(--space-3\) var\(--space-4\)/, 'the board viewport 358 px wide at 390 px');
   const side = ruleIn(STYLE, '(max-height: 500px) and (orientation: landscape)');
@@ -1749,7 +1778,7 @@ test('the quiet button: a white surface ringed by the border, no drop edge; sele
   }
 });
 
-test('a latched toggle is a quiet small button off and shows the pressed look on: Swap clicks, the touch view modes, Show 3BV and Free camera', () => {
+test('a latched toggle is a quiet small button off and shows the pressed look on: Swap clicks, the live-figures toggle, the touch view modes, Show 3BV and Free camera', () => {
   for (const sel of ['.ui-button--quiet[aria-pressed="true"]', '.ui-button--quiet[aria-pressed="true"]:focus']) {
     const on = buttonTheme(sel);
     assert.match(on, /transform:\s*translateY\(2px\)/, `${sel}: sunk in place`);
@@ -1772,6 +1801,7 @@ test('a latched toggle is a quiet small button off and shows the pressed look on
     }
   };
   toggle((t) => t.attrs.id === 'hud-swap', 'Swap clicks');
+  toggle((t) => t.attrs.id === 'c2d-figures-toggle', 'the live-figures toggle');
   toggle((t) => t.tag === 'button' && ['shift', 'space', 'ctrl'].includes(t.attrs['data-mode']), 'the touch view modes');
   toggle((t) => t.attrs.id === 'rp-show-bbbv', 'Show 3BV');
   toggle((t) => t.attrs.id === 'rp-camera', 'Free camera');
@@ -2220,7 +2250,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   const noscript = screens.slice(screens.indexOf('<noscript>'), screens.indexOf('</noscript>'));
   const fatal = screens.slice(screens.indexOf('<template id="fatal-card">'), screens.indexOf('</template>'));
   const game2d = screens.slice(screens.indexOf('<section id="c2d"'), screens.indexOf('<section id="c2d-status"'));
-  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint', 'ui-counter-strip', 'ui-counter', 'ui-figures', 'ui-figure', 'ui-divider']) {
+  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hints', 'ui-counter-strip', 'ui-counter', 'ui-figures', 'ui-figure', 'ui-divider', 'ui-actions']) {
     assert.match(game2d, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Classic 2D game window uses ${cls}`);
   }
   for (const html of [noscript, fatal]) for (const cls of ['ui-backdrop', 'ui-card', 'ui-card__icon', 'ui-card__title']) assert.match(html, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the message cards use ${cls}`);
@@ -2355,9 +2385,9 @@ test('the title bar on every desktop window: Back as its arrow alone (none on th
   assert.equal((INDEX.match(/data-window="quit"/g) ?? []).length, Object.keys(TITLE_BARS).length, 'one Quit per title bar, none elsewhere');
 });
 
-test('every screen\'s name is the heading at the top of its window\'s body, its control at the heading\'s right; the main menu has none', () => {
+test('every screen\'s name is the heading at the top of its window\'s body, its control at the heading\'s right; the main menu and the Classic 2D game window have none', () => {
   const headings = { 'c2d-choice-frame': 'c2d-choice-title', 'board-choice-frame': 'board-choice-title', 'daily-frame': 'daily-title', 'records-frame': 'records-title',
-    'settings-frame': 'settings-title', 'replay-frame': 'replay-title', 'coming-soon-frame': 'coming-soon-title', 'c2d-frame': 'c2d-title' };
+    'settings-frame': 'settings-title', 'replay-frame': 'replay-title', 'coming-soon-frame': 'coming-soon-title' };
   for (const [id, titleId] of Object.entries(headings)) {
     const parts = frameParts(id);
     const frame = INDEX_TAGS.find((t) => t.attrs.id === id);
@@ -2377,6 +2407,7 @@ test('every screen\'s name is the heading at the top of its window\'s body, its 
   for (const id of ['c2d-choice-frame', 'board-choice-frame']) assert.ok(within(frameParts(id), '.ui-frame__action').length === 1, `#${id}: the heading's action slot`);
   assert.equal(within(frameParts('menu-frame'), '.ui-frame__heading').length, 0, 'the main menu has no heading: the logo names it');
   assert.equal(INDEX_TAGS.find((t) => t.attrs.id === 'menu-frame').attrs['aria-labelledby'], 'menu-title', 'the menu\'s window is named by its logo');
+  assert.equal(within(frameParts('c2d-frame'), '.ui-frame__heading').length, 0, 'the game window has no heading: its foot line names it');
 });
 
 test('no large game title remains: the wordmark is gone from every screen, the kit and the gallery; the logo is catalogued in its place', () => {
@@ -3322,9 +3353,16 @@ for (const [size, device, place] of WINDOW_SIZES) {
 
       await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
       await page.waitForFunction(() => globalThis.__ms.board2D);
+      assert.equal((await geometry()).panelShown, false, `${size}: the live figures closed at first`);
+      if (!touch) {
+        await page.click('#c2d-figures-toggle');
+        await frames();
+      }
       const g = await geometry();
-      assert.equal(g.title, 'Classic 2D · Expert', `${size}: the head names the mode and the board`);
-      assert.equal(g.size, '30 × 16 · 99 mines', `${size}: the foot line names the board, never a cell`);
+      assert.equal(g.title, 'Classic 2D · Expert', `${size}: the foot line opens with the mode and the board`);
+      assert.equal(g.size, '30 × 16 · 99 mines', `${size}: then the board line, never a cell`);
+      assert.equal(await ms(() => document.getElementById('c2d-line').textContent), 'Classic 2D · Expert · 30 × 16 · 99 mines', `${size}: one foot line`);
+      assert.ok(g.foot.bottom <= g.frame.bottom + 0.5, `${size}: the foot line inside the window`);
       assert.ok(g.frame.right <= device.viewport.width + 0.5 && g.frame.x >= -0.5, `${size}: the window inside the screen`);
       if (size === 'ls') assert.ok(g.strip.x >= g.board.right - 0.5, `${size}: held sideways, the counter strip beside the board`);
       else assert.ok(g.strip.bottom <= g.board.y + 0.5, `${size}: the counter strip above the board`);
@@ -3401,17 +3439,17 @@ for (const [size, device, place] of WINDOW_SIZES) {
 
 // J-Game2D-xl, -l, -m, -p and -ls: Intermediate in the game window, as the artboards draw it.
 const ARTBOARDS_2D = [
-  ['xl', { viewport: { width: 1920, height: 1080 } }, { window: [417, 1086, 964], column: 784, board: 740, figures: 300, padding: '22px 26px', digits: '34px', value: '28px', bbbv: '16px', figure: '11px' }],
-  // At 1366 × 768 the compact title bar leaves the board 27 px tiles: the artboard's 691 px window is 3 px short of
-  // its own 28 px board under that title bar.
-  ['l', { viewport: { width: 1366, height: 768 } }, { window: [286.5, 793, 661], column: 498, board: 466, figures: 260, padding: '16px 20px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
-  ['m', { viewport: { width: 1024, height: 768 } }, { window: [131.5, 761, 690], column: 527, board: 499, figures: 232, padding: '14px 18px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
+  // Each artboard's window is short of its own board under its title bar and its foot of 38 px buttons, so the
+  // fit rule leaves the board a tile step smaller: 41 px at 1920 × 1080, 27 px at 1366 and 1024 wide.
+  ['xl', { viewport: { width: 1920, height: 1080 } }, { window: [425, 1070, 964], column: 768, board: 724, tile: [41, 4], figures: 300, padding: '22px 26px', digits: '34px', value: '28px', bbbv: '16px', figure: '11px' }],
+  ['l', { viewport: { width: 1366, height: 768 } }, { window: [303, 760, 680], column: 498, board: 466, tile: [27, 2], figures: 260, padding: '16px 20px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
+  ['m', { viewport: { width: 1024, height: 768 } }, { window: [148, 728, 676], column: 494, board: 466, tile: [27, 2], figures: 232, padding: '14px 18px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
   ['narrow', { viewport: { width: 1000, height: 700 } }, { digits: '28px', under: true }],
   ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { digits: '26px' }],
   ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, { digits: '26px' }],
 ];
 for (const [size, device, want] of ARTBOARDS_2D) {
-  test(`in a browser, the Classic 2D window at ${size} (${device.viewport.width} × ${device.viewport.height}) ${want.under ? 'below the 1024 px step, no artboard' : `as J-Game2D-${size} draws it`}: Intermediate under the counter strip, the window hugging it`, async (t) => {
+  test(`in a browser, the Classic 2D window at ${size} (${device.viewport.width} × ${device.viewport.height}) ${want.under ? 'below the 1024 px step, no artboard' : `as J-Game2D-${size} and its states draw it`}: Intermediate under the counter strip, the window hugging it, the live figures closed and then open`, async (t) => {
     const env = await suite.open(t);
     if (!env) return;
     const { browser, base } = env;
@@ -3445,6 +3483,62 @@ for (const [size, device, want] of ARTBOARDS_2D) {
         await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       }
       await settle();
+      const desktop = !device.hasTouch && !want.under;
+      // The title bar's own width: its logo between its two equal sides (Pause; the window buttons), gaps and padding.
+      const headWidth = () => ms(() => {
+        const h = document.getElementById('c2d-frame').querySelector('.ui-frame__head');
+        const c = getComputedStyle(h);
+        const side = (sel) => [...h.querySelector(sel).querySelectorAll('.ui-button')].filter((e) => e.getClientRects().length > 0)
+          .reduce((sum, e, i) => sum + e.getBoundingClientRect().width + (i ? 8 : 0), 0);
+        return 2 * Math.max(side('.ui-frame__start'), side('.ui-frame__end')) + h.querySelector('.ui-frame__logo').getBoundingClientRect().width
+          + 2 * parseFloat(c.columnGap) + parseFloat(c.paddingLeft) + parseFloat(c.paddingRight);
+      });
+      const near = (a, b, slack = 1) => Math.abs(a - b) <= slack;
+      const toggle = () => ms(() => {
+        const b = document.getElementById('c2d-figures-toggle');
+        return { shown: getComputedStyle(b).display !== 'none', pressed: b.getAttribute('aria-pressed'), panel: getComputedStyle(document.getElementById('c2d-figures')).display !== 'none' };
+      });
+      // Closed, as J-Game2D draws it: no panel, the window shrunk to its board column and centred.
+      assert.deepEqual(await toggle(), { shown: !device.hasTouch, pressed: 'false', panel: false }, `${size}: the live figures closed at first, the toggle on a desktop only`);
+      if (want.window) {
+        const closed = await ms(() => ({ frame: document.getElementById('c2d-frame').getBoundingClientRect().toJSON(), main: document.getElementById('c2d-main').getBoundingClientRect().toJSON(), stage: document.getElementById('c2d-stage').getBoundingClientRect().toJSON(), tile: globalThis.__ms.board2D.layout.tile }));
+        const head = await headWidth();
+        // The compact title bar, its logo centred between Pause and the window buttons, is wider than Intermediate's board
+        // column: there the window takes the title bar's width, the board column at its start.
+        const width = Math.max(want.column, head);
+        assert.ok(near(closed.main.width, want.column) && near(closed.main.x, closed.frame.x), `${size}: closed, the board column ${want.column} px at the window's start (${closed.main.width})`);
+        assert.ok(near(closed.frame.width, width) && near(closed.frame.x, (device.viewport.width - width) / 2), `${size}: closed, the window as wide as its board column (or its title bar) and centred (${closed.frame.x}, ${closed.frame.width}, ${head})`);
+        assert.equal(closed.tile, want.tile[0], `${size}: the board's tile closed as open`);
+      }
+      if (desktop) {
+        await page.click('#c2d-figures-toggle');
+        assert.notEqual(await ms(() => document.activeElement?.id), 'c2d-figures-toggle', `${size}: the toggle leaves the keys to the board`);
+        await settle();
+        assert.deepEqual(await toggle(), { shown: true, pressed: 'true', panel: true }, `${size}: the toggle opens the panel, pressed`);
+        assert.equal(await ms(() => JSON.parse(localStorage.getItem('ms3d:doc:shell.liveFigures') ?? 'null')?.data?.open), true, `${size}: stored open`);
+        if (size === 'xl') {
+          // The keyboard reaches both foot controls in the Tab order and presses them with Enter or Space, the board taking none of those keys.
+          await ms(() => document.getElementById('hud-swap').focus());
+          await page.keyboard.press('Tab');
+          assert.equal(await ms(() => document.activeElement?.id), 'c2d-figures-toggle', `${size}: Tab from Swap clicks reaches the toggle`);
+          await page.keyboard.press('Enter');
+          assert.equal((await toggle()).pressed, 'false', `${size}: Enter closes the panel`);
+          await page.keyboard.press('Space');
+          assert.equal((await toggle()).pressed, 'true', `${size}: Space opens it again`);
+          await page.keyboard.press('Shift+Tab');
+          assert.equal(await ms(() => document.activeElement?.id), 'hud-swap', `${size}: Shift+Tab back to Swap clicks`);
+          await page.keyboard.press('Enter');
+          assert.equal(await ms(() => document.getElementById('hud-swap').getAttribute('aria-pressed')), 'true', `${size}: Enter presses Swap clicks`);
+          await page.keyboard.press('Space');
+          assert.equal(await ms(() => document.getElementById('hud-swap').getAttribute('aria-pressed')), 'false', `${size}: and Space releases it`);
+          assert.equal(await ms(() => globalThis.__ms.modes.state.started), false, `${size}: no key reached the board`);
+          await ms(() => document.activeElement.blur());
+          await settle();
+        }
+      } else if (want.under) {
+        await ms(() => document.getElementById('c2d-figures-toggle').click());
+        await settle();
+      }
       const g = await ms(() => {
         const box = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
         const $ = (id) => document.getElementById(id);
@@ -3455,16 +3549,6 @@ for (const [size, device, want] of ARTBOARDS_2D) {
           figures: box($('c2d-figures')), divider: box($('c2d-divider')), restart: box($('c2d-restart')), tap: box($('hud-tap')), foot: box($('c2d-size')),
           mines: box(counters[0]), time: box(counters[1]), clock: box(counters[1].querySelector('.ui-counter__icon')), timeDigits: box($('c2d-time')),
           layout: { ...globalThis.__ms.board2D.layout },
-          // The title bar's own width: its logo between its two sides (Swap clicks; Pause and the window
-          // buttons), gaps and padding.
-          head: (() => {
-            const h = $('c2d-frame').querySelector('.ui-frame__head');
-            const c = getComputedStyle(h);
-            const w = (sel) => h.querySelector(sel).getBoundingClientRect().width;
-            const side = (sel) => [...h.querySelector(sel).children].filter((e) => e.getClientRects().length > 0)
-              .reduce((sum, e, i) => sum + e.getBoundingClientRect().width + (i ? parseFloat(getComputedStyle(h.querySelector(sel)).columnGap) : 0), 0);
-            return side('.ui-frame__start') + side('.ui-frame__end') + w('.ui-frame__logo') + 2 * parseFloat(c.columnGap) + parseFloat(c.paddingLeft) + parseFloat(c.paddingRight);
-          })(),
           padding: style($('c2d-figures').querySelector('.ui-figures__body'), 'padding'),
           surface: [style($('c2d-figures'), 'backgroundColor'), style($('c2d-figures'), 'boxShadow')],
           line: [style($('c2d-divider'), 'backgroundColor'), getComputedStyle(document.documentElement).getPropertyValue('--color-line').trim()],
@@ -3474,13 +3558,13 @@ for (const [size, device, want] of ARTBOARDS_2D) {
           figure: style(document.querySelector('#c2d-figures [data-figure="rate"]'), 'paddingTop'),
         };
       });
-      const near = (a, b, slack = 1) => Math.abs(a - b) <= slack;
+      g.head = await headWidth();
       assert.equal(g.digits, want.digits, `${size}: the counter digits`);
       if (size !== 'ls') assert.ok(near(g.stage.y, g.strip.bottom + 12, 0.5), `${size}: the board 12 px under the counter strip (${g.stage.y}, ${g.strip.bottom})`);
       if (want.window) {
         const [left, width, height] = want.window;
-        // The window hugs its board and figures, or its title bar while that holds Swap clicks and Pause beside the
-        // window buttons and is the wider (the in-game window's own head is in-game-layout's).
+        // Open, as the states board's second frame draws it: the window hugs its board and figures, or its
+        // title bar where that is the wider.
         const hug = want.column + 2 + want.figures;
         const wide = g.head > hug + 1 ? g.head : null;
         assert.ok(wide ? near(g.frame.width, wide) && near(g.frame.x, (device.viewport.width - wide) / 2)
@@ -3496,7 +3580,7 @@ for (const [size, device, want] of ARTBOARDS_2D) {
         assert.equal(g.padding, want.padding, `${size}: the figures column's padding`);
         assert.deepEqual(g.surface, ['rgba(0, 0, 0, 0)', 'none'], `${size}: the figures column flat, no surface`);
         assert.deepEqual([g.value, g.bbbv, g.figure], [want.value, want.bbbv, want.figure], `${size}: the figures' values and spacing`);
-        assert.equal(g.restart.height, 38, `${size}: Restart at the small button's height`);
+        assert.deepEqual([g.restart.width, g.restart.height], [38, 38], `${size}: Restart a 38 px icon square`);
       } else if (want.under) {
         // Below 1024 px the figures row wraps under the board: the board column still sets the window's width.
         assert.ok(g.figures.y >= g.stage.bottom - 0.5, `${size}: the figures under the board`);
@@ -3509,7 +3593,7 @@ for (const [size, device, want] of ARTBOARDS_2D) {
         assert.ok(g.layout.scrolls && g.layout.maxScrollY === 0, `${size}: Intermediate scrolls sideways only`);
         assert.ok(near(g.tap.y, g.stage.bottom + 12, 0.5), `${size}: the Tap switch right under the board`);
         assert.ok(g.foot.y - g.tap.bottom > 60, `${size}: spare room at the bottom (${g.foot.y - g.tap.bottom})`);
-        assert.equal(g.restart.height, 44, `${size}: Restart 44 px tall`);
+        assert.deepEqual([g.restart.width, g.restart.height], [38, 38], `${size}: Restart a 38 px icon square, as J-Game2D-p draws it`);
       } else {
         assert.deepEqual([g.frame.width, g.frame.height], [844, 390], `${size}: the window full-bleed`);
         assert.ok(near(g.stage.x, 12, 0) && g.stage.width === g.layout.boardWidth && g.stage.y === g.strip.y, `${size}: the board viewport at the left edge, as wide as the board (${g.stage.x}, ${g.stage.width})`);
@@ -3517,9 +3601,9 @@ for (const [size, device, want] of ARTBOARDS_2D) {
         assert.ok(near(g.strip.x, g.stage.right + 12) && near(g.strip.right, 844 - 12) && g.strip.width > 340, `${size}: the right column fills the rest (${g.strip.width})`);
         assert.ok(g.mines.bottom <= g.time.y && g.time.bottom <= g.restart.y, `${size}: the mines, then the time, then Restart`);
         assert.ok(g.clock.right <= g.timeDigits.x, `${size}: the clock icon before the digits`);
-        assert.ok(near(g.restart.width, g.strip.width - 24), `${size}: Restart full width (${g.restart.width})`);
+        assert.ok(near(g.restart.x, g.strip.x + 12), `${size}: Restart at the column's start (${g.restart.x})`);
         assert.ok(g.tap.y >= g.strip.bottom && near(g.tap.x, g.strip.x), `${size}: the Tap switch under them`);
-        assert.equal(g.restart.height, 44, `${size}: Restart 44 px tall`);
+        assert.deepEqual([g.restart.width, g.restart.height], [38, 38], `${size}: Restart a 38 px icon square, as J-Game2D-ls draws it`);
       }
       if (!device.hasTouch) {
         // A key brings the mode's hint strip: laid over the board column, the board keeps its size, and
@@ -3533,7 +3617,7 @@ for (const [size, device, want] of ARTBOARDS_2D) {
           return { strip: box(el), parent: el.parentElement.id, stage: box(document.getElementById('c2d-stage')), main: box(document.getElementById('c2d-main')), figures: box(document.getElementById('c2d-figures')), tile: globalThis.__ms.board2D.layout.tile, gap: globalThis.__ms.board2D.layout.gap };
         });
         assert.deepEqual([h.stage.width, h.stage.height, h.tile], [g.stage.width, g.stage.height, g.layout.tile], `${size}: the board keeps its size with the strip shown`);
-        if (want.window) assert.deepEqual([h.tile, h.gap], size === 'xl' ? [42, 4] : size === 'l' ? [27, 2] : [28, 3], `${size}: the tile and gap as without the strip`);
+        if (want.window) assert.deepEqual([h.tile, h.gap], want.tile, `${size}: the tile and gap as without the strip`);
         assert.equal(h.parent, 'c2d-stage', `${size}: the strip in the board area`);
         assert.ok(near(h.stage.bottom - h.strip.bottom, 10, 0.5) && h.strip.top >= h.stage.y, `${size}: over the board, 10 px above its foot`);
         if (size === 'xl') assert.ok(near(h.main.bottom - h.strip.bottom, 32, 0.5), `${size}: 32 px off the board column's foot, as J-Game2D-states draws it`);
@@ -3828,7 +3912,7 @@ test('the message card: ink text, the canvas\'s type, and an even 14 px gap betw
   assert.match(INDEX, /<button type="button" id="ctx-lost-menu" class="ui-button ui-button--secondary">Main menu<\/button>/);
 });
 
-test('the scrim: the plain backdrop colour, no blur, the same over 2D and 3D; behind the ready card, the pause card and results only the board or the scene and the window\'s title', () => {
+test('the scrim: the plain backdrop colour, no blur, the same over 2D and 3D; behind the ready card, the pause card and results only the board or the scene and the window\'s logo', () => {
   const scrim = bodyOf(THEME_RULES, ':is(#pause, #ready, #results, #learn-end, #ctx-lost)');
   assert.match(scrim, /background: var\(--color-backdrop\);/);
   assert.doesNotMatch(THEME_CSS, /backdrop-filter/, 'no blur over any screen');
@@ -3837,7 +3921,7 @@ test('the scrim: the plain backdrop colour, no blur, the same over 2D and 3D; be
   const behind = ':is(#ready:not(.hidden):not(.ready--pending), #pause:not(.hidden), #results:not(.hidden))';
   assert.match(bodyOf(rules(STYLE), `body:has(> ${behind}) #hud`), /visibility: hidden;/, 'the HUD, the 3D overlay and its figures panel go');
   const chrome = bodyOf(rules(STYLE), `body:has(> ${behind}) #c2d-frame :is(.ui-frame__start, .ui-frame__end, #c2d-counters, #c2d-figures, #c2d-divider, .ui-frame__foot, #hud-tap)`);
-  assert.match(chrome, /visibility: hidden;/, 'the Classic 2D window keeps its board and its title alone');
+  assert.match(chrome, /visibility: hidden;/, 'the Classic 2D window keeps its board and its title bar\'s logo alone');
 });
 
 test('the board status cards: centred on the board column, the canvas\'s spinner, progress and failure line, Retry and Back with their icons, a scrim in 3D', () => {

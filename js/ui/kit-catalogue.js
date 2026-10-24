@@ -167,10 +167,10 @@ export const KIT_CATALOGUE = Object.freeze([
   // The game logo, the straight one at rest: MINESWEEPER a game colour per letter, 3D in yellow.
   component('ui-logo', { parts: [part('word', '.ui-logo__word'), part('letter', '.ui-logo__letter')] }),
   component('ui-backdrop'),
-  // The head is the game's title bar: Back as an arrow icon (none on the main menu), the game logo in
-  // the centre and the window buttons — Minimise, Fullscreen / Windowed and Quit, the stop button — at
-  // the end, each icon-only; the screen's name is the body heading, its control at the heading's
-  // right. The white action foot (ui-frame__foot--action) ends a screen's bar of actions; the game
+  // The head is the game's title bar: Back as an arrow icon (none on the main menu; Pause in its place in
+  // the Classic 2D game window), the game logo in the centre and the window buttons — Minimise,
+  // Fullscreen / Windowed and Quit, the stop button — at the end, each icon-only; the screen's name is
+  // the body heading, its control at the heading's right (the game window has none). The white action foot (ui-frame__foot--action) ends a screen's bar of actions; the game
   // window keeps the plain foot.
   component('ui-frame', {
     variants: ['ui-frame__foot--action'],

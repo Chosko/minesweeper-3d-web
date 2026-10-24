@@ -37,7 +37,7 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   `aria-label`. The helpers that draw an icon into a button are
   [app-shell-kit-helpers.md](app-shell-kit-helpers.md)'s; a button in
   `index.html` names its set icon with `data-icon`. The icons inline in
-  `index.html` (Restart, Pause, Swap clicks, the message cards' badges and
+  `index.html` (the 3D overlay's Restart and Pause, Swap clicks, the message cards' badges and
   the fatal card's Reload) are svg outside the set.
 - **The confirm box and the notes.** Every confirmation is a `ui-confirm`
   — the danger fill, an optional heading, its text, then a

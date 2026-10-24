@@ -17,7 +17,8 @@ every function.
   (the devices a mode lists), `BINDINGS[mode][device]` — frozen
   `[input, action]` rows of the full list, 3D's being Fly's. `CAMERAS`
   (`fly`, `orbit`) and `BINDINGS_3D[camera][device]` — the 3D rows per
-  Camera setting. Both modes list F2 and `{start} + {y}` as Restart; 3D's
+  Camera setting. Both modes list F2 and `{start} + {y}` as Restart;
+  Classic 2D's controller rows list `{rb}` as the live-figures toggle; 3D's
   keyboard rows list the arrow keys (look, or rotate in Orbit).
 - `HELP_BINDINGS` — the help list where it differs from the full one:
   Classic 2D's keyboard (J-Pause-xl, plus the wheel and H · M) and touch

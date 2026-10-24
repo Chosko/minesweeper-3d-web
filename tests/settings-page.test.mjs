@@ -201,6 +201,10 @@ test('both modes list F2 as Restart on the keyboard and Start + Y on the control
     assert.match(pad[1], /^Restart/);
   }
   assert.match(bindingsHtml('classic-2d', 'controller', GLYPHS.xbox), /<dt class="ui-controls__key">Menu \+ Y<\/dt><dd class="ui-controls__action">Restart<\/dd>/);
+  const figures = bindingRows('classic-2d', 'controller').find(([input]) => input === '{rb}');
+  assert.deepEqual(figures, ['{rb}', 'Show / hide live figures'], 'RB toggles the Classic 2D live figures');
+  assert.ok(helpRows('classic-2d', 'controller').some(([input]) => input === '{rb}'), 'the in-game help lists it too');
+  assert.match(bindingsHtml('classic-2d', 'controller', GLYPHS.xbox), /<dt class="ui-controls__key">RB<\/dt><dd class="ui-controls__action">Show \/ hide live figures<\/dd>/);
   for (const mode of BINDING_MODES) {
     assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: mode.id }).match(/>Esc · F2</g).length, 1, `the Settings bindings show F2 for ${mode.id}`);
   }

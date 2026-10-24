@@ -670,16 +670,18 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
 // Every visible control and readout of the Classic 2D window, its counter strip and the board's panel.
 function barGeometry() {
   const box = (el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
-  const children = ['c2d-time', 'c2d-mines-left', 'c2d-clicks', 'c2d-size', 'c2d-restart', 'hud-tap', 'c2d-pause', 'hud-swap'].map((id) => document.getElementById(id))
+  const children = ['c2d-time', 'c2d-mines-left', 'c2d-clicks', 'c2d-line', 'c2d-restart', 'hud-tap', 'c2d-pause', 'hud-swap'].map((id) => document.getElementById(id))
     .filter((el) => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0 && !el.closest('.hidden, [style*="display: none"]') && el.checkVisibility())
     .map((el) => ({ id: el.id, ...box(el) }));
   const swap = document.getElementById('hud-swap');
+  const toggle = document.getElementById('c2d-figures-toggle');
   return {
     viewport: { width: innerWidth, height: innerHeight },
     bar: box(document.getElementById('c2d-counters')),
     panel: box(document.getElementById('c2d-panel')),
     children,
     swapShown: getComputedStyle(swap).display !== 'none' && swap.getBoundingClientRect().width > 0,
+    toggleShown: getComputedStyle(toggle).display !== 'none' && toggle.getBoundingClientRect().width > 0,
   };
 }
 
@@ -737,7 +739,7 @@ test('in a browser with touch on a phone, the Classic 2D window fits the screen 
         await settled(page);
         const g = await ms(barGeometry);
         const ids = g.children.map((c) => c.id);
-        for (const id of ['c2d-time', 'c2d-mines-left', 'c2d-size', 'c2d-restart', 'hud-tap', 'c2d-pause']) {
+        for (const id of ['c2d-time', 'c2d-mines-left', 'c2d-line', 'c2d-restart', 'hud-tap', 'c2d-pause']) {
           assert.ok(ids.includes(id), `${where}: ${id} shows in the window (${ids})`);
         }
         for (const c of g.children) {
@@ -745,6 +747,7 @@ test('in a browser with touch on a phone, the Classic 2D window fits the screen 
             `${where}: ${c.id} lies inside the viewport (${JSON.stringify(c)})`);
         }
         assert.equal(g.swapShown, false, `${where}: no Swap clicks on a coarse-only device`);
+        assert.equal(g.toggleShown, false, `${where}: no live-figures toggle on a phone`);
         const tap = g.children.find((c) => c.id === 'hud-tap');
         assert.ok(tap.width >= 44 && tap.height === 48, `${where}: the Tap choice 48 px tall (${tap.width} × ${tap.height})`);
         // The touch hint strip, shown from the game's start, stays clear of the Tap choice.

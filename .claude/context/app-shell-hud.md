@@ -24,7 +24,8 @@ the aimed-cell readout. The `UI` methods that write them are
 - **Counters.** Each mode's `ui-counter-strip`: mines left
   (`formatMineCount`, `data-negative` below zero (drawn by the theme in
   the danger colour), widened past three digits by `mineCounterDigits`),
-  Restart (`#c2d-restart` / `#hud-restart`, never taking focus) and the
+  Restart (`#c2d-restart` icon-only, named and tooltipped *Restart* /
+  `#hud-restart`, never taking focus) and the
   timer (`formatOverlayTime`, stops at `999`).
   `updateHud` writes the Classic 2D window's (`#c2d-mines-left`,
   `#c2d-time`) while it shows, else the 3D overlay's (`#hud-mines`,
@@ -40,13 +41,21 @@ the aimed-cell readout. The `UI` methods that write them are
   pace and 3BV/s. Each panel's foot (`#c2d-reminder`, `#hud-reminder`) is
   the mode's `reminderKeys` for the active device.
 - **Classic 2D window** (`#c2d`; `showClassic2D` marks `#hud` `hud--2d`,
-  hiding the 3D overlay): `#hud-swap` (Swap clicks, `aria-pressed`, never
-  under `(pointer: coarse)`, never taking focus), the title `#c2d-title` and
-  Pause `#c2d-pause` in its head; `#hud-tap` under the board (the Tap choice,
+  hiding the 3D overlay): Pause `#c2d-pause` (the pause icon in Back's
+  place) and the logo in its title bar, no heading; `#hud-tap` under the board (the Tap choice,
   a `ui-segmented` radiogroup of "Tap: Reveal" and "Tap: Flag", only under
   `(pointer: coarse)`, its options never taking focus; its
   chosen option's value goes through `onTapMode` to `mode2d.setTapMode`,
-  written back with `setTapMode`); the foot line `#c2d-size`. Its layout:
+  written back with `setTapMode`); the foot line `#c2d-line` — the title
+  `#c2d-title` (the mode and board, which names the window), then the
+  board line `#c2d-size` — and at its right `#c2d-tools`: `#hud-swap`
+  (Swap clicks, `aria-pressed`, never under `(pointer: coarse)`) and the
+  live-figures toggle `#c2d-figures-toggle` (`aria-pressed`, through
+  `onToggleFigures`; none on a phone). Neither takes the focus from the
+  mouse; the keyboard reaches both by Tab, and Enter or Space on them
+  never reaches the board. The panel `#c2d-figures` shows while the
+  stored preference (`createFiguresPanel`, the `shell.liveFigures`
+  document, closed when nothing is stored) is open (`setFigures2D`). Its layout:
   [classic2d-mode.md](classic2d-mode.md) § Game window.
 - **HUD density.** The counter digits, the figures' values and spacing, the
   panel titles and the touch buttons follow the frame's size steps
@@ -67,8 +76,8 @@ the aimed-cell readout. The `UI` methods that write them are
   `css/components.css`'s head comment (*3D game overlay*).
 - **Behind a card.** While the 3D ready card (not pending), the pause card
   or the results show, `#hud` is hidden — the 3D overlay, the key strip,
-  the hint strip — and the Classic 2D window keeps its board and title
-  alone; while the 3D board status card shows, `#hud` is hidden under its
+  the hint strip — and the Classic 2D window keeps its board and its
+  title bar's logo alone; while the 3D board status card shows, `#hud` is hidden under its
   scrim. `css/style.css` does it from those screens' visibility
   (`body:has(…)`); `UI` toggles nothing for it.
 - **Aimed-cell readout** `#aim-readout` sits below and right of the

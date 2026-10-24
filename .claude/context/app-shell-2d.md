@@ -11,7 +11,7 @@ themselves are [classic2d.md](classic2d.md).
 
 - **Button swap.** `BUTTON_SWAP` (`createButtonSwap`) is the page's one
   mouse button swap, handed as `buttonSwap`: kept across games, off again on
-  reload, toggled by `onToggleSwap` (`#hud-swap` in the game window's head) and
+  reload, toggled by `onToggleSwap` (`#hud-swap` at the right of the game window's foot) and
   mirrored by `ui.setSwap`.
 - **Routes.** Board choice routes to `classic-2d-choice` with the last
   board choice (loaded at boot by `mode2d.loadChoice()`); `show` routes to
@@ -32,8 +32,13 @@ themselves are [classic2d.md](classic2d.md).
   `scrollHint` in `shell.firstUse` ([app-shell-help.md](app-shell-help.md)
   § First-use hints). A `boardScale` change reaches the open board and the
   replay viewer at once.
-- **Game window.** `board` names the board in the window's title and foot
-  line (`ui.setBoard2D`) and reads its bests once per game (`bests2D`,
+- **Live figures panel.** `LIVE_FIGURES` (`createFiguresPanel`,
+  `js/shell/live-figures.js`) is the panel's open state, loaded before the
+  first screen and handed to the window (`ui.setFigures2D`);
+  `onToggleFigures` (`toggleFigures`) flips it, stores it and refits the
+  board (`size2D`), the window shrinking to the board while closed.
+- **Game window.** `board` names the board in the window's foot line, the
+  title then the board line (`ui.setBoard2D`) and reads its bests once per game (`bests2D`,
   `RECORDS.bests(identity)`); the counters and clicks come from `hud`, the
   live figures from `figures` (`ui.updateFigures2D` against `bests2D`),
   both fed by `mode2d.tick()` every frame, which also drives the movement sampler
@@ -52,8 +57,9 @@ themselves are [classic2d.md](classic2d.md).
   is `PAUSE.toMenu()`.
 - **Controller.** On `classic-2d` polls go to `padBoard2D`: Start pauses
   through `#c2d-pause`, B/Back is `backGame('pad')`, the status card is
-  navigated as a menu, every other poll goes to `mode2d.pad` after
-  held-button suppression.
+  navigated as a menu, RB presses `#c2d-figures-toggle` while it shows
+  (never on a phone, where it is hidden), every other poll goes to
+  `mode2d.pad` after held-button suppression.
 - `F` flags in Classic 2D (fullscreen is 3D only); `M` and `H` act in both
   modes ([app-shell-help.md](app-shell-help.md)).
 
