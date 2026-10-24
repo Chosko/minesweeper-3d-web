@@ -1461,7 +1461,7 @@ Feature: triangle-grid
 
 ## 259. Triangle geometry
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/geometry/tri.js, js/geometry/index.js, tests/geometry-tri.test.mjs
 Preconditions: 248

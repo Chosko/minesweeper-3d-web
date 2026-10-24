@@ -3,15 +3,16 @@
 // replay or a summary rebuilds it from the board identity. DOM-free.
 //
 // The contract every geometry answers, in CSS pixels from the board's top-left corner, for a tile
-// size `tile` (as the grid measures it: a square's side, a hexagon across the flats) and a gap `gap`
-// between tiles in whole pixels (a layout's `gap`):
+// size `tile` (as the grid measures it: a square's side, a hexagon across the flats, a triangle's
+// side) and a gap `gap` between tiles in whole pixels (a layout's `gap`):
 //   kind, width, height, count       the grid kind, its size in cells, the cell count.
 //   extent(tile, gap)                → { width, height }: the board's extent.
 //   centre(c, tile, gap)             → { x, y }: cell c's centre, or null off the board.
 //   outline(c, tile, gap)            → { shape, orientation, x, y, width, height, points }: the
 //                                      outline the tile is drawn and hit-tested in — its shape, its
-//                                      orientation ('none' for a shape with one), bounding box and
-//                                      corners — or null off the board.
+//                                      orientation ('up' or 'down' for a triangle, 'none' for a
+//                                      shape with one), bounding box and corners — or null off
+//                                      the board.
 //   glyphBox(c, tile, gap)           → { x, y, width, height }: the box cell c's glyph is drawn in.
 //   cellAt(x, y, tile, gap)          → the cell whose slot holds the board point, or -1 outside the
 //                                      board; every point on the board belongs to exactly one slot.
@@ -24,8 +25,9 @@
 
 import { createSquareGeometry } from './square.js';
 import { createHexGeometry } from './hex.js';
+import { createTriGeometry } from './tri.js';
 
-const BUILDERS = Object.freeze({ square: createSquareGeometry, hex: createHexGeometry });
+const BUILDERS = Object.freeze({ square: createSquareGeometry, hex: createHexGeometry, tri: createTriGeometry });
 
 /** The grid kinds a geometry can be built for. */
 export const GRID_KINDS = Object.freeze(Object.keys(BUILDERS));
