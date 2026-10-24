@@ -214,7 +214,7 @@ Context: none
 
 Done: 2026-10-24, commit `49e7919` (6 files, +129/-22). Decision: the square grid keeps its gap and radius in `style2d.params`; hexagon and triangle shapes go in a new `style2d.grids: { hex, tri }`; `checkBoardModule` takes `floors: { square, hex, tri }` in place of `minTileSize`.
 
-## [ ] 17. Implement task 264 — The tile painter draws hexagon and triangle tiles
+## [x] 17. Implement task 264 — The tile painter draws hexagon and triangle tiles
 
 Depends on: 3, 15, 16
 
@@ -226,6 +226,8 @@ Context:
 ```prompt
 /task-implement 264 --review
 ```
+
+Done: 2026-10-24, commit `add9968` (7 files, +481/-145). Decision: triangle glyphs use the geometry's side / √3 box, so js/tile-art.js's `TRIANGLE_GLYPH` (0.55 of the side) and the feature document now disagree with the painter; the cursor ring and end-effect flash are still drawn around the tile's square box on hexagon and triangle boards; the tile-skin Expert fit-rule browser test is fixed.
 
 ## [ ] 18. Implement task 265 — The theme skill reads Hexagon and Triangle board sheets
 
@@ -245,6 +247,7 @@ Depends on: 15, 16, 17, 18
 Context:
 - 2026-10-24 (from step 15): the tile recipe (js/tile-art.js) takes an `outline` option on `drawFace` and exports `OUTLINES`, `outlineBox`, `outlinePoints`, `glyphBox` and `inGlyphBox`; a hexagon is sized across its flats, a triangle by its side; style fractions and corner radius are measured against the tile height; an angled bevel edge blends the shades of its two neighbouring sides.
 - 2026-10-24 (from step 16): .claude/context/app-shell-board-module.md still describes numbers 1–8 and `minTileSize` — the board module now has `style2d.grids: { hex, tri }`, numbers to 12, `GRID_NUMBERS`, and `checkBoardModule({ floors: { square, hex, tri } })`.
+- 2026-10-24 (from step 17): the painter draws triangle glyphs in the geometry's side / √3 box, while the hex-tri-board-art document and js/tile-art.js's `TRIANGLE_GLYPH` still say 0.55 of the side — settle the document on the geometry's box (via `/architect amend`) and flag `TRIANGLE_GLYPH`. classic2d-tile-skin.md and classic2d-board-view.md are stale: the "Square tile skin" title, `tileKey` now keyed by the recipe's outline name (`square`, `hexagon`, `triangle-up`, `triangle-down`), numbers past 8 (`OUTLINE_NUMBERS` in tile-skin.js, pinned to `GRID_NUMBERS`), and the gap read from `params` or `grids`; js/classic2d/motion-layer.js moves hexagon and triangle cells about their geometry centre; js/themes/board-module.js reads `GRID_UNIT` from the board view.
 
 ```prompt
 /task-implement 266 --review
@@ -277,6 +280,7 @@ Depends on: 17, 21
 
 Context:
 - 2026-10-23 (amend): task 269 was re-planned for the new in-game window (Pause in the title bar, mode in the footer, live figures hidden by default, icon-only Restart) and now waits on task 286, the m2b-themes Classic 2D window, which this runbook does not run.
+- 2026-10-24 (from step 17): on hexagon and triangle boards the cursor ring and the end effect's flash are still drawn around the tile's square box — no task's acceptance criteria cover them.
 
 ```prompt
 /task-implement 269 --review
