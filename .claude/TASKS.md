@@ -1731,7 +1731,7 @@ Feature: shared-screen-layout
 
 ## 286. Classic 2D game window: title bar with Pause, mode in the footer, collapsed live figures
 
-Status: [MISSING]
+Status: [PARKED]
 Target: claude
 Files: index.html, css/style.css, css/components.css, themes/joyful-tiles/theme.css, js/classic2d/mode.js, js/ui.js, js/ui/components.js, js/main.js, js/shell/live-figures.js, tests/classic2d-mode.test.mjs, tests/components.test.mjs, tests/live-figures.test.mjs
 Preconditions: 281, 282, 284
