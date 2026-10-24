@@ -1000,7 +1000,7 @@ test('in a browser, F2 and the controller\'s Start + Y restart a Classic 2D game
     };
 
     await page.click('#menu-entry-classic-2d');
-    if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
+    await page.evaluate((on) => { const s = document.getElementById('c2d-noguess'); if (s.checked !== on) s.click(); }, false); // the switch sits in the closed panel
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');

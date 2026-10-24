@@ -531,15 +531,24 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
     const focus = () => page.evaluate(() => {
       const el = document.activeElement;
       return {
-        id: el?.id || el?.dataset?.size || el?.dataset?.value || '', visible: !!el?.matches(':focus-visible'),
+        id: el?.id || el?.dataset?.size || el?.dataset?.value || el?.dataset?.window || '', visible: !!el?.matches(':focus-visible'),
         pad: document.body.classList.contains('pad-nav'), ring: el ? getComputedStyle(el).outlineStyle : 'none',
         selectable: !!el?.matches('.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option'),
       };
     });
-    // The focused state a button, menu entry or board option shows is its selected look, once its move settles.
+    // The focused state a button, menu entry or board option shows is its selected look, once its move
+    // settles: a lift or a sink, or for a quiet button (the board choice's panel toggle) its sunk surface in place.
     const selected = async () => {
       await page.waitForTimeout(200);
-      return page.evaluate(() => getComputedStyle(document.activeElement).transform !== 'none');
+      return page.evaluate(() => {
+        const el = document.activeElement;
+        if (!el.matches('.ui-button--quiet')) return getComputedStyle(el).transform !== 'none';
+        const probe = document.body.appendChild(document.createElement('div'));
+        probe.style.background = 'var(--color-surface-sunk)';
+        const sunk = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return getComputedStyle(el).backgroundColor === sunk;
+      });
     };
     /** Press `key` until the focus is on `id`, at most `max` times; each press must move or keep a focused state. */
     const walkTo = async (key, id, max = 30) => {
@@ -571,12 +580,12 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
     await walkTo('ArrowUp', 'menu-entry-classic-2d');
 
     // The Classic 2D board choice: arrows walk the options, Space chooses Custom, a number field keeps
-    // Left/Right, Down reaches Play and Up from the first option Back.
+    // Left/Right, Down reaches Play, Up the title bar past the panel toggle, and Left along it Back.
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'classic-2d-choice');
     await walkTo('ArrowDown', 'custom');
     await page.keyboard.press('Space');
-    assert.equal(await page.evaluate(() => document.querySelector('#c2d-choice [aria-pressed="true"]').dataset.size), 'custom');
+    assert.equal(await page.evaluate(() => document.querySelector('#c2d-choice [data-size][aria-pressed="true"]').dataset.size), 'custom');
     assert.equal(await mode(), 'classic-2d-choice', 'choosing starts nothing');
     await walkTo('ArrowRight', 'c2d-width');
     const before = await page.inputValue('#c2d-width');
@@ -587,7 +596,8 @@ test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choi
     assert.equal(await page.inputValue('#c2d-width'), before, 'and leaves its value alone');
     await walkTo('ArrowDown', 'c2d-random');
     await walkTo('ArrowDown', 'c2d-play');
-    await walkTo('ArrowUp', 'c2d-choice-back');
+    await walkTo('ArrowUp', 'quit');
+    await walkTo('ArrowLeft', 'c2d-choice-back');
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'menu');
 

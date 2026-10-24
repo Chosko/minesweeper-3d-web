@@ -488,7 +488,7 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     assert.doesNotMatch(note.text, /needs a mouse|desktop browser/);
 
     await page.tap('#menu-entry-classic-2d');
-    await page.locator('#c2d-noguess').setChecked(false);
+    await page.evaluate((on) => { const s = document.getElementById('c2d-noguess'); if (s.checked !== on) s.click(); }, false); // the switch sits in the closed panel
     await page.tap('#c2d-choice [data-size="expert"]');
     await page.tap('#c2d-play');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
@@ -725,7 +725,7 @@ test('in a browser with touch on a phone, the Classic 2D window fits the screen 
         const where = `${phone.name}, ${size}`;
         if (size !== BOARDS_2D[0]) await toMenu();
         await page.tap('#menu-entry-classic-2d');
-        await page.locator('#c2d-noguess').setChecked(true);
+        await page.evaluate((on) => { const s = document.getElementById('c2d-noguess'); if (s.checked !== on) s.click(); }, true); // the switch sits in the closed panel
         await page.tap(`#c2d-choice [data-size="${size}"]`);
         if (size === 'custom') {
           await page.fill('#c2d-width', '100');

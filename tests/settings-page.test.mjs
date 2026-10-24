@@ -1265,7 +1265,7 @@ test('in a browser, Reset all data turns a played profile back into a new player
     // A played profile: a lost Classic 2D game (records, history, a replay, the last mode and board
     // choice), Dark, a changed setting and the old carried-over keys.
     await page.click('#menu-entry-classic-2d');
-    if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
+    await page.evaluate((on) => { const s = document.getElementById('c2d-noguess'); if (s.checked !== on) s.click(); }, false); // the switch sits in the closed panel
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
     const centres = await ms(() => {

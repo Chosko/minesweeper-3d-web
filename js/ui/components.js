@@ -452,6 +452,7 @@ export const ICONS = Object.freeze({
   copy: icon(2.3, ['rect', { x: '8', y: '8', width: '12', height: '12', rx: '2' }], p('M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3')),
   link: icon(2.3, p('M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1'), p('M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1')),
   chart: icon(2.3, p('M3 3v18h18'), p('M7 15l4-5 3 3 5-7')),
+  panel: icon(2.3, ['rect', { x: '3', y: '4', width: '18', height: '16', rx: '3' }], p('M14 4v16')),
   shuffle: icon(2.3, p('M3 6h4l10 12h4M3 18h4l3-3.6M14 9.6L17 6h4M18 3l3 3-3 3M18 15l3 3-3 3')),
   grid: icon(2.3, ['rect', { x: '3', y: '3', width: '18', height: '18', rx: '2' }], p('M9 3v18M15 3v18M3 9h18M3 15h18')),
   cube: icon(2.3, p('M12 2l9 5v10l-9 5-9-5V7z'), p('M12 12l9-5M12 12v10M12 12L3 7')),

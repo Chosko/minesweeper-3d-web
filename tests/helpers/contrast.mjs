@@ -77,7 +77,7 @@ export function measureContrast() {
   }
   const focus = [...document.querySelectorAll('[data-force~="focus"]')].map((el) => {
     const s = getComputedStyle(el);
-    const f = { cls: el.className, selectable: el.matches('.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
+    const f = { cls: el.className, selectable: el.matches('.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option, .ui-drawer__bar'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
     // Restyled: its fill or its ring differs from the same control at rest.
     const look = () => `${s.backgroundColor} ${s.boxShadow}`;
     const forced = look();

@@ -1,8 +1,14 @@
 // Classic 2D board choice screen: the board options (Beginner, Intermediate, Expert, Custom and
-// Insert Board Code) on the left, what the chosen one needs on the right (the no-guess switch and
-// the board's three bests, the custom form with Random, or the board code field), and a bottom bar
-// with the choice summarised, Records and Play. Opens on the last board choice. Touches only the
+// Insert Board Code), the board choice panel to their right holding what the chosen one needs (the
+// no-guess switch, the board's three bests and All records, the custom form with Random, or the
+// board code field), and a foot holding Play alone. Opens on the last board choice. Touches only the
 // elements it is handed.
+//
+// The board choice panel, one behaviour for every mode's board choice (bindChoicePanel below, which
+// the 3D board choice and any flat mode on this binder share): open while the player has pinned it,
+// or while an option whose content lives in it is chosen (PANEL_OPTIONS: Custom, Insert Board Code,
+// Learn 3D), closed otherwise. The panel toggle pins and unpins it; on a phone the drawer's bar does
+// the same. The pin is the shell's stored preference, handed in.
 //
 // Pure helpers:
 //   CHOICE_SIZES             the standard sizes offered as board options, in order.
@@ -23,51 +29,60 @@
 //                            when it is valid, else `fallbackCustom`; 'custom' needs valid fields.
 //   densityHintShown(custom, noGuess)  whether the density hint shows for a custom board: no-guess
 //                            on and a valid board above NOGUESS_DENSITY_HINT (board-setup.js).
-//   choiceSummary({ selected, custom, noGuess, code })  the bottom bar's summary of the chosen
-//                            option: 'Intermediate · 16 × 16 · 40 mines · no-guess', 'Custom · 30 × 16
-//                            · 99 mines', 'Board code · <code.label>' for an accepted code, else
-//                            'Board code · paste a code to play'.
+//   PANEL_OPTIONS            the options that open the panel on their own: 'custom', 'code', 'learn'.
+//   panelOpen(selected, pinned)  whether the panel is open: pinned, or a PANEL_OPTIONS option chosen.
+//   panelLabel(selected)     the drawer's label: 'Board code', 'Learn 3D', else 'Board settings'.
 //   bestsTitle({ selected, custom, noGuess })  'Intermediate · no-guess · your bests', or the custom
 //                            board's line in place of the name.
 //   showCodeLine(line, field, r)  draws the code field's line for code.resolve's answer r (below),
 //                            on both board choice screens.
 //
-// bindBoardChoice({ root, onStart, onBack, onRecords?, code?, bests? }) → { show, state, refresh, destroy }
+// bindChoicePanel({ root, pin }) → { draw(selected), destroy() }
+//   root      the screen's element: the panel [data-panel] (data-open "true" while open), the rule
+//             before it [data-panel-rule] (hidden while closed), the panel toggle [data-panel-toggle]
+//             (aria-pressed while pinned) and the drawer's bar [data-drawer-bar] (aria-expanded while
+//             open) with its label [data-drawer-label]. A click on the toggle or the bar flips the
+//             pin; while an option of PANEL_OPTIONS is chosen the panel stays open, the click
+//             changing only the stored preference.
+//   pin       { pinned, setPinned(on) }: the stored pin (js/shell/returning.js createBoardPanelPin);
+//             none reads as unpinned.
+//   draw(selected)  redraws the panel for the chosen option and the pin as it stands.
+//
+// bindBoardChoice({ root, onStart, onBack, onRecords?, code?, bests?, pin? }) → { show, state, refresh, destroy }
 //   root      the screen's element: the options [data-size] (beginner, intermediate, expert, custom,
-//             code; aria-pressed marks the chosen one), each with its Last played chip [data-last]
-//             and Custom's meta line [data-custom-meta]; the settings [data-settings] with the
+//             code; aria-pressed marks the chosen one), Custom with its meta line
+//             [data-custom-meta]; the board choice panel (bindChoicePanel); the settings [data-settings] with the
 //             no-guess switch [data-noguess] and the density hint [data-density-hint]; the custom
 //             form (form) with its inputs [data-field="width|height|mines"], the info line
 //             [data-info], Random [data-random] and the refusal line [data-refusal]; the bests
 //             [data-bests], titled [data-bests-title], one tile [data-best="<stat>"] per best; the
 //             code panel [data-code-panel] with the field [data-code-field] and its line
-//             [data-code-info]; the bottom bar's summary [data-summary], Records [data-records] and
-//             Play [data-play]; Back [data-back].
+//             [data-code-info]; All records [data-records] under the bests; the foot's Play
+//             [data-play]; Back [data-back].
 //             A click (a tap, the controller's A) chooses an option; Enter plays, on an option after
 //             choosing it, and anywhere else in the screen but on another button. Play starts the
 //             chosen board: onStart(choice) for a preset or a valid custom board, code.onPlay(text)
 //             for an accepted code; it is disabled on a refused custom board and on an empty or
 //             refused code. The settings show for a preset and Custom, the form for Custom, the bests
 //             for both (for the board the fields and the switch name), the code panel alone for the
-//             code. The info line, refusal line, density hint, bests, summary and Play follow the
-//             fields and the switch live; the hint never refuses a board, and Random fills the fields
-//             with randomCustom and validates them.
-//   show(choice, { played, held })  fills the fields and the switch from `choice`, chooses its size
-//             and marks its option data-last, the screen's default focus; its Last played chip shows
-//             only when `played` (default true) — not for the default choice of a player who never
-//             played. `held` (a state() taken earlier) brings back the chosen option, fields, switch
+//             code, all in the panel. The info line, refusal line, density hint, bests and Play
+//             follow the fields and the switch live; the hint never refuses a board, and Random fills
+//             the fields with randomCustom and validates them.
+//   show(choice, { held })  fills the fields and the switch from `choice`, chooses its size and marks
+//             its option data-last, the screen's default focus, and draws the panel for the pin as
+//             stored. `held` (a state() taken earlier) brings back the chosen option, fields, switch
 //             and code text, the last board's mark staying with `choice`.
 //   state()   → { selected, fields, noGuess, code }: what the screen holds.
 //   refresh() redraws the bests (the shell's records changed).
-//   onRecords(identity) Records: the chosen board's records identity (board-setup.js boardSetup),
+//   onRecords(identity) All records: the chosen board's records identity (board-setup.js boardSetup),
 //             or null with no board chosen (a code, a refused custom board).
 //   code      { resolve, onPlay }: resolve(text) → { ok, reason?, otherMode?, text?, label? } validates
 //             the code live — its line (showCodeLine) shows CODE_PROMPT while empty, a refused code's
 //             reason (a code of the other mode's as a warn note, any other as an err note with the
-//             field invalid), an accepted one's `text`, and the summary its `label`; onPlay(text)
-//             plays it.
+//             field invalid) and an accepted one's `text`; onPlay(text) plays it.
 //   bests     (identity) → [{ stat, label, value, note }]: the board's three bests as text, read
 //             through the records' queries by the shell (js/shell/returning.js boardBests).
+//   pin       the board choice panel's stored pin, as bindChoicePanel takes it.
 
 import {
   STANDARD_SIZES, validateCustom, maxMines, normaliseChoice, aboveDensityHint, DENSITY_HINT_TEXT, boardSetup,
@@ -140,16 +155,48 @@ export function densityHintShown(custom, noGuess) {
 
 const NO_GUESS = ' · no-guess';
 
-export function choiceSummary({ selected, custom, noGuess, code = null }) {
-  if (selected === 'code') return `Board code · ${code?.ok && code.label ? code.label : 'paste a code to play'}`;
-  const ng = noGuess ? NO_GUESS : '';
-  if (selected === 'custom') return ints(custom) ? `Custom · ${boardLine(custom)}${ng}` : 'Custom';
-  return `${NAMES[selected]} · ${sizeLabel(selected)}${ng}`;
-}
-
 export function bestsTitle({ selected, custom, noGuess }) {
   const name = selected === 'custom' ? (ints(custom) ? boardLine(custom) : 'Custom') : NAMES[selected];
   return `${name}${noGuess ? NO_GUESS : ''} · your bests`;
+}
+
+export const PANEL_OPTIONS = Object.freeze(['custom', 'code', 'learn']);
+
+export const panelOpen = (selected, pinned) => !!pinned || PANEL_OPTIONS.includes(selected);
+
+export const panelLabel = (selected) => (selected === 'code' ? 'Board code' : selected === 'learn' ? 'Learn 3D' : 'Board settings');
+
+export function bindChoicePanel({ root, pin = null }) {
+  const $ = (sel) => root.querySelector(sel);
+  const panel = $('[data-panel]');
+  const rule = $('[data-panel-rule]');
+  const toggle = $('[data-panel-toggle]');
+  const bar = $('[data-drawer-bar]');
+  const label = $('[data-drawer-label]');
+  let selected = null;
+  const draw = (value = selected) => {
+    selected = value;
+    const pinned = !!pin?.pinned;
+    const open = panelOpen(selected, pinned);
+    panel?.setAttribute('data-open', String(open));
+    rule?.classList.toggle('hidden', !open);
+    toggle?.setAttribute('aria-pressed', String(pinned));
+    bar?.setAttribute('aria-expanded', String(open));
+    if (label) label.textContent = panelLabel(selected);
+  };
+  const flip = () => {
+    if (pin) Promise.resolve(pin.setPinned(!pin.pinned)).catch(() => {}); // a failed save keeps the pin for the session
+    draw();
+  };
+  toggle?.addEventListener('click', flip);
+  bar?.addEventListener('click', flip);
+  return {
+    draw,
+    destroy() {
+      toggle?.removeEventListener('click', flip);
+      bar?.removeEventListener('click', flip);
+    },
+  };
 }
 
 /**
@@ -170,7 +217,7 @@ export function showCodeLine(line, field, r) {
   else field.removeAttribute('aria-invalid');
 }
 
-export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code = null, bests = null }) {
+export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code = null, bests = null, pin = null }) {
   const options = [...root.querySelectorAll('[data-size]')];
   const option = (size) => options.find((b) => b.dataset.size === size);
   const form = root.querySelector('form');
@@ -185,12 +232,12 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
   const codePanel = $('[data-code-panel]');
   const codeInput = $('[data-code-field]');
   const codeInfo = $('[data-code-info]');
-  const summary = $('[data-summary]');
   const play = $('[data-play]');
   const records = $('[data-records]');
   const random = $('[data-random]');
   const back = $('[data-back]');
   const customMeta = $('[data-custom-meta]');
+  const panel = bindChoicePanel({ root, pin });
   setNote(hint, DENSITY_HINT_TEXT);
   let selected = 'beginner';
   let last = null;
@@ -240,7 +287,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
     bestsBox?.classList.toggle('hidden', isCode);
     codePanel?.classList.toggle('hidden', !isCode);
     for (const b of options) b.setAttribute('aria-pressed', String(b.dataset.size === selected));
-    summary.textContent = choiceSummary({ selected, custom: c, noGuess: noGuess.checked, code: r });
+    panel.draw(selected);
     play.disabled = isCode ? !r?.ok : isCustom && !s.ok;
     drawBests();
     return s;
@@ -302,7 +349,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
   back?.addEventListener('click', onBackClick);
 
   return {
-    show(choice, { played = true, held = null } = {}) {
+    show(choice, { held = null } = {}) {
       last = choice;
       const f = held?.fields ?? { width: choice.custom.width, height: choice.custom.height, mines: choice.custom.mines };
       inputs[0].value = String(f.width);
@@ -310,11 +357,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
       inputs[2].value = String(f.mines);
       noGuess.checked = held ? !!held.noGuess : !!choice.noGuess;
       if (codeInput) codeInput.value = held?.code ?? '';
-      for (const b of options) {
-        const isLast = b.dataset.size === choice.size;
-        b.toggleAttribute('data-last', isLast);
-        b.querySelector('[data-last]')?.classList.toggle('hidden', !(isLast && played));
-      }
+      for (const b of options) b.toggleAttribute('data-last', b.dataset.size === choice.size);
       selected = option(held?.selected) ? held.selected : choice.size;
       update();
     },
@@ -333,6 +376,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
       records?.removeEventListener('click', onRecordsClick);
       play.removeEventListener('click', start);
       back?.removeEventListener('click', onBackClick);
+      panel.destroy();
     },
   };
 }

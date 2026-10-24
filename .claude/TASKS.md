@@ -1711,7 +1711,7 @@ Feature: shared-screen-layout
 
 ## 284. Collapsible board choice panel, Classic 2D and 3D
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/components.css, css/style.css, themes/joyful-tiles/theme.css, js/classic2d/board-choice.js, js/mode3d/board-choice.js, js/shell/returning.js, js/main.js, js/ui/kit-catalogue.js, js/ui/components.js, dev/components.html, tests/mode3d-board-choice.test.mjs, tests/components-menu-screens.test.mjs, tests/shell-challenge.test.mjs, tests/shell-returning.test.mjs, tests/theme-conformance.test.mjs
 Preconditions: 282

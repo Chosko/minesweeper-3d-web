@@ -92,12 +92,15 @@
      Name:    its text
 
    A latched toggle (Swap clicks, the 3D touch view modes, Show 3BV, Free
-   camera) is a ui-button--quiet ui-button--sm carrying aria-pressed: quiet
-   while "false", the pressed look while "true" (its chosen state), never
-   a colour; the replay's Sound, a ui-button--secondary carrying
-   aria-pressed, shows the pressed look the same way.
+   camera, the board choice panel toggle) is a ui-button--quiet
+   ui-button--sm carrying aria-pressed: quiet while "false", the pressed
+   look while "true" (its chosen state), never a colour; the replay's
+   Sound, a ui-button--secondary carrying aria-pressed, shows the pressed
+   look the same way.
      Element: <button type="button" class="ui-button ui-button--quiet
                 ui-button--sm" aria-pressed="false">
+   The panel toggle is icon-only (data-icon="panel", data-panel-toggle),
+   named by aria-label, square at its frame head's button size.
 
    Sizes: ui-button--sm (a dense bar's or a frame head's actions) and
    ui-button--lg (a screen's one large action) beside the button's own
@@ -590,8 +593,10 @@
      Foot:    a status line, <p class="ui-frame__status">…</p>, or a bottom
               bar: <p class="ui-frame__summary">…</p> (the selection
               summarised) beside a ui-actions ui-actions--row; a frame
-              without a foot leaves it out. A screen's action bar (the
-              board choices, Daily, results) is the white action foot,
+              without a foot leaves it out; a bar may hold its actions
+              alone at its right (the board choices' Play). A screen's
+              action bar (the board choices, Daily, results) is the white
+              action foot,
               <footer class="ui-frame__foot ui-frame__foot--action">: the
               surface under a ruled line, roomier, its summary larger; on a
               phone a bottom bar with its actions on the right. The game
@@ -662,10 +667,7 @@
    ui-option — a board option: a preset, Custom, Insert Board Code, Learn 3D
      Element: <div class="ui-options" role="group" aria-label="…">
                 <button type="button" class="ui-option" aria-pressed="false" data-value="…">
-                  <span class="ui-option__line">
-                    <span class="ui-option__name">Intermediate</span>
-                    <span class="ui-chip">Last played</span>
-                  </span>
+                  <span class="ui-option__name">Intermediate</span>
                   <span class="ui-option__meta"><span class="ui-option__size">16 × 16 · 40 mines</span>
                     · <span class="ui-option__density">15.6 % mines</span></span>
                   <span class="ui-option__check" aria-hidden="true"><svg>…</svg></span>
@@ -675,15 +677,30 @@
      Name:    group: aria-label; option: its text
      Chosen:  aria-pressed="true" on the board the screen holds: a fill and
               the check, apart from the selected (focused) option.
-     Parts:   the Last played ui-chip beside the name, the two in a name
-              line (ui-option__line) where the chip wraps under the name
-              before it would reach the check; an option with no chip
-              may hold the bare name, and a chip that is no Last played
-              chip may follow the name directly; the meta line holds
+     Parts:   the name, alone or in a name line (ui-option__line) with
+              a state ui-chip (the Daily screen's) that wraps under the
+              name before it would reach the check; no Last played chip;
+              the meta line holds
               the size line and the mine density, or a one-line
               description instead (Insert Board Code); no 3BV and no best.
               ui-option--learn (Learn 3D) leads with
               <span class="ui-option__badge" aria-hidden="true"><svg>…</svg></span>.
+
+   ui-drawer — the board choice panel: on a desktop window the panel
+   itself beside the options, its bar hidden; on a phone a full-width
+   raised bar under the options that, open, lies flat on a cream band
+   ending with a line, its label naming what the panel holds
+     Element: <div class="ui-drawer" data-panel data-open="false">
+                <button type="button" class="ui-drawer__bar" aria-expanded="false"
+                    aria-controls="…">
+                  <span class="ui-section-label__text ui-drawer__label">Board settings</span>
+                  <span class="ui-drawer__chevron" aria-hidden="true"><svg>…</svg></span>
+                </button>
+                <div class="ui-column ui-drawer__body" id="…">…</div>
+              </div>
+     Role:    the bar a button (native), aria-expanded while open
+     Name:    its label
+     Chosen:  aria-expanded="true": flat on the band, the chevron turned.
 
    ui-section-label — a section's label, with an optional aside
      Element: <div class="ui-section-label">
@@ -712,7 +729,7 @@
      Row:     ui-key-hints lays hints in a row.
 
    ui-chip — a short state, rank or "Coming soon" beside a name or figure
-     Element: <span class="ui-chip">Last played</span>
+     Element: <span class="ui-chip">Not played</span>
               ui-chip--won (a won game, its time), ui-chip--lost,
               ui-chip--muted (abandoned, not played, Coming soon),
               ui-chip--best (New best).
@@ -890,11 +907,11 @@
      played's, else the first available entry.
    3D board choice (index.html #board-choice): the Classic 2D board choice's composition
      (below), with the title "3D", its window placed as Classic 2D's. Its left ui-options: Learn
-     3D first (ui-option--learn, its cube badge, no Last played ui-chip),
-     the four presets (data-preset, each named with its family — Cube
-     Beginner — its size and density meta) and Custom (its meta its board
+     3D first (ui-option--learn, its cube badge), the four presets
+     (data-preset, each named with its family — Cube Beginner — its size
+     and density meta, no chip) and Custom (its meta its board
      once chosen), one group with no group label; then the ui-divider and
-     Insert Board Code. On the right, for Learn 3D only a ui-section-label
+     Insert Board Code. In the panel, for Learn 3D only a ui-section-label
      with its "keeps no records" aside, a ui-panel--muted "How 3D works" of its
      three lines and a ui-text--muted line on the lesson; a preset shows the
      presets' no-guess ui-switchrow; Custom its own no-guess ui-switchrow, under a
@@ -902,8 +919,8 @@
      cells, or the cell-count limit) and over its density hint, a
      ui-note--warn (warning icon), and the form's four fields (width,
      height, depth, mines) in one row over its info line and Random, and
-     its refusal, a ui-note--warn (warning icon). Play on Learn 3D starts it without saving a
-     choice.
+     its refusal, a ui-note--warn (warning icon); the drawer's label on a phone is "Learn 3D" for
+     Learn 3D. Play on Learn 3D starts it without saving a choice.
      Default focus: the last board choice, the chosen option.
    Daily (index.html #daily, filled by js/shell/daily.js): the Classic 2D
      board choice's composition and placement (below), its heading
@@ -1044,22 +1061,29 @@
      Default focus: the look sensitivity slider.
    Classic 2D board choice (index.html #c2d-choice): ui-backdrop holding
      a ui-frame (the title bar's Back, named "Back to Main menu", and the
-     heading "Classic 2D", its action the slot the board choice panel's
-     toggle takes) sized to its content and centred on the page. Its body:
-     on the left a ui-section-label
+     heading "Classic 2D", its action the panel toggle — a latched
+     ui-button--quiet, icon-only, named "Settings & bests", aria-pressed
+     while the panel is pinned) sized to its content and centred on the
+     page. Its body: on the left a ui-section-label
      (Board), a ui-options of the standard sizes and Custom (data-size;
-     each a ui-option with its Last played ui-chip in its name line, the presets' size and
-     density meta, Custom's meta its board once chosen), a ui-divider and a
-     ui-options of Insert Board Code; a ui-divider--vertical; on the right
-     what the chosen option needs — for a preset the Board settings
+     each a ui-option with no chip, the presets' size and density meta,
+     Custom's meta its board once chosen), a ui-divider and a ui-options
+     of Insert Board Code; then, while open, a ui-divider--vertical and
+     the board choice panel, a ui-drawer, the window widening and staying
+     centred. The panel opens while pinned (the toggle, a stored
+     preference every board choice shares) or while Custom, Insert Board
+     Code or Learn 3D is chosen, and holds what the chosen option needs —
+     for a preset the Board settings
      ui-section-label, the no-guess ui-switchrow with its help line, then a
      ui-divider and the board's bests: a ui-section-label
      naming the board and the switch, a ui-stat-row--tiles of Time, 3BV/s
      and Efficiency as ui-stat--tile, each with its date or a dash and "no
-     best yet"; for Custom the same with, between the switch (and its
-     density hint, a ui-note--warn with the warning icon, above 25 % mines
-     with no-guess on) and the bests, a ui-panel--muted of ui-field entries
-     (width, height, mines) filling one row, under them a ui-text--muted
+     best yet", then All records (secondary, small, its chart icon) under
+     them at the right; for Custom the same with, between the switch (and
+     its density hint, a ui-note--warn with the warning icon, above 25 %
+     mines with no-guess on) and the bests, the form on the panel, in no
+     box of its own: ui-field entries (width, height, mines) filling one
+     row, under them a ui-text--muted
      info line beside a Random secondary small button with its shuffle
      icon, and the refusal, a ui-note--warn with the warning icon, its
      field marked is-invalid; for Insert Board Code only a ui-section-label, a text ui-field
@@ -1067,14 +1091,14 @@
      ui-text--success for an accepted code, a ui-note--warn (info icon)
      for a code of the other mode, a ui-note--err (warning icon) for a
      refused code, its field marked is-invalid. The
-     foot is a bottom bar: a ui-frame__summary of the chosen board, and
-     ui-actions--row of Records (secondary, its chart icon) and Play
-     (go, large, its play icon and confirm key hint), disabled on a
-     refused custom board and on an empty or refused code. On the smaller
-     desktop windows the option rows, Play and the tiles are denser. On a
-     phone: one full-bleed column, no bests and no summary, a ui-divider
-     between the options and the settings, Records and Play pinned at the
-     bottom.
+     foot holds Play alone, at the right (go, large, its play icon and
+     confirm key hint), disabled on a refused custom board and on an
+     empty or refused code. On the smaller desktop windows the option
+     rows, Play and the tiles are denser. On a phone: one full-bleed
+     column with no panel toggle, the panel the drawer under the options
+     (labelled "Board settings", or "Board code" for Insert Board Code),
+     its body without the section labels the bar's label names, the bests
+     one row of three cells, Play pinned at the bottom in a slimmer bar.
      Default focus: the last board choice, the chosen option.
    Classic 2D game window (index.html #c2d): ui-backdrop holding a
      ui-frame that hugs its content, centred above the HUD strip; its head
@@ -1985,6 +2009,23 @@
 .ui-option__check { grid-area: check; display: grid; place-items: center; width: 28px; height: 28px; margin-inline-start: 14px; }
 .ui-option__check > svg { width: 16px; height: 16px; }
 .ui-option:not([aria-pressed="true"]) .ui-option__check > * { visibility: hidden; }
+
+/* ---------- drawer: the board choice panel, a bar over its body on a phone ---------- */
+.ui-drawer { display: flex; flex-direction: column; min-width: 0; }
+.ui-drawer__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  text-align: start;
+  cursor: pointer;
+}
+.ui-drawer__chevron { display: grid; place-items: center; flex: none; }
+.ui-drawer__chevron > svg { width: 22px; height: 22px; }
+.ui-drawer__bar[aria-expanded="true"] .ui-drawer__chevron > svg { transform: rotate(180deg); }
 
 /* ---------- section label, key hints, chip ---------- */
 .ui-section-label {

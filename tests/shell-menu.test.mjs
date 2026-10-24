@@ -1280,7 +1280,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     // Classic 2D end to end: board choice, generation, play, pause, restart, results.
     await page.click('#menu-entry-classic-2d');
     assert.equal(await mode(), 'classic-2d-choice');
-    await page.uncheck('#c2d-noguess');
+    await page.evaluate(() => document.getElementById('c2d-noguess').click()); // no-guess off, its switch in the closed panel
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
@@ -1452,7 +1452,7 @@ test('[slow] in a browser, a controller alone walks the menu, the 3D board choic
 
       await press(PAD_BTN.A);
       assert.equal(await mode(), 'board-choice', 'A chooses the focused preset');
-      assert.equal(await page.evaluate(() => document.querySelector('#board-choice [aria-pressed="true"]')?.dataset.preset), chosen);
+      assert.equal(await page.evaluate(() => document.querySelector('#board-choice [data-preset][aria-pressed="true"]')?.dataset.preset), chosen);
       await page.evaluate(() => document.getElementById('bc-play').focus());
       await press(PAD_BTN.A);
       assert.equal(await mode(), 'ready', 'A on Play plays the chosen preset');

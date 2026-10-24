@@ -1,6 +1,6 @@
 // The returning player's surface: the board's bests on both board choices, over a records model built
-// here; that the main menu keeps no Play again and no session strip and the
-// board options no detail line. In a browser, the bests are the board choices' tests'
+// here, and the board choice panel's pin kept in its own document; that the main menu keeps no Play
+// again and no session strip and the board options no detail line. In a browser, the bests are the board choices' tests'
 // (tests/classic2d-mode.test.mjs, tests/mode3d-board-choice.test.mjs), the menu opening on the last mode
 // and its board choice on the last board tests/classic2d-mode.test.mjs's first.
 import { test } from 'node:test';
@@ -11,9 +11,11 @@ import { fileURLToPath } from 'node:url';
 import { createBoardIdentity } from '../js/records/board.js';
 import { buildSummary } from '../js/records/summary.js';
 import { createRecordsModel } from '../js/records/model.js';
+import { createStorage } from '../js/platform/storage.js';
+import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import * as RETURNING from '../js/shell/returning.js';
 
-const { boardBests, NO_BEST } = RETURNING;
+const { boardBests, NO_BEST, BOARD_PANEL_DOC, BOARD_PANEL_VERSION, createBoardPanelPin } = RETURNING;
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -60,10 +62,63 @@ test('the board\'s bests: time, 3BV/s and efficiency in the results formats, eac
   assert.deepEqual(rows(boardBests(CUBE_INT, cube)), none);
 });
 
+// ---------------------------------------------------------------- the board choice panel's pin
+
+const doc = (version, data) => JSON.stringify({ version, data });
+function pinSetup({ initial = {}, available = true, failWrites = false } = {}) {
+  const backend = createMemoryBackend({ initial, available });
+  if (failWrites) backend.write = async () => { throw new Error('refused'); };
+  const storage = createStorage({ backend });
+  return { backend, storage, pin: createBoardPanelPin({ storage }) };
+}
+
+test('the panel\'s pin is the shell.boardPanel document at version 1, registered by the pin', () => {
+  assert.equal(BOARD_PANEL_DOC, 'shell.boardPanel');
+  assert.equal(BOARD_PANEL_VERSION, 1);
+  const { storage } = pinSetup();
+  assert.throws(() => storage.register(BOARD_PANEL_DOC, 1), /already|registered/i, 'registered once, by the pin');
+});
+
+test('the panel is unpinned while nothing is stored; a stored pin loads, every change is saved and kept after a reload', async () => {
+  const fresh = pinSetup();
+  assert.equal(fresh.pin.pinned, false);
+  assert.equal(await fresh.pin.load(), false);
+  const { pin, backend } = pinSetup({ initial: { [BOARD_PANEL_DOC]: doc(1, { pinned: true }) } });
+  assert.equal(await pin.load(), true);
+  assert.equal(pin.pinned, true);
+  const saving = pin.setPinned(false);
+  assert.equal(pin.pinned, false, 'the pin follows at once, before the save settles');
+  await saving;
+  assert.deepEqual(JSON.parse(backend.documents.get(BOARD_PANEL_DOC)), { version: 1, data: { pinned: false } });
+  await pin.setPinned(true);
+  const again = pinSetup({ initial: Object.fromEntries(backend.documents) });
+  assert.equal(await again.pin.load(), true, 'kept across sessions');
+});
+
+test('a malformed or newer pin document reads as unpinned; a failed save keeps the pin for the session', async () => {
+  for (const text of [doc(1, { pinned: 'yes' }), doc(1, null), doc(1, [true]), 'not json', doc(2, { pinned: true })]) {
+    const { pin } = pinSetup({ initial: { [BOARD_PANEL_DOC]: text } });
+    assert.equal(await pin.load(), false, text);
+  }
+  for (const opts of [{ failWrites: true }, { available: false }]) {
+    const { pin } = pinSetup(opts);
+    await pin.load();
+    await pin.setPinned(true);
+    assert.equal(pin.pinned, true);
+  }
+});
+
+test('one pin, loaded before the first screen, is handed to both board choices', () => {
+  const main = read('js/main.js');
+  assert.match(main, /const BOARD_PANEL = createBoardPanelPin\(\{ storage \}\);/);
+  assert.equal(main.match(/\n  pin: BOARD_PANEL,\n\}\);/g)?.length, 2, 'the 2D and the 3D board choice');
+  assert.match(main, /await Promise\.all\(\[[^\]]*BOARD_PANEL\.load\(\)\.catch\(\(\) => \{\}\)[^\]]*\]\);\nshowMainMenu\(\);/);
+});
+
 // ---------------------------------------------------------------- no Play again, no session strip
 
-test('the main menu keeps no Play again and no session strip, nor a board option a detail line: returning.js has the bests alone', () => {
-  assert.deepEqual(Object.keys(RETURNING).sort(), ['NO_BEST', 'boardBests']);
+test('the main menu keeps no Play again and no session strip, nor a board option a detail line: returning.js has the bests and the pin alone', () => {
+  assert.deepEqual(Object.keys(RETURNING).sort(), ['BOARD_PANEL_DOC', 'BOARD_PANEL_VERSION', 'NO_BEST', 'boardBests', 'createBoardPanelPin']);
   const index = read('index.html');
   const menu = index.slice(index.indexOf('<section id="menu"'), index.indexOf('<!-- 3D board choice -->'));
   assert.doesNotMatch(menu, /menu-again|menu-strip|Play again/);

@@ -228,11 +228,21 @@ export const KIT_CATALOGUE = Object.freeze([
       part('badge', '.ui-option__badge', { optional: true }),
       part('line', '.ui-option__line', { optional: true }),
       part('name', '.ui-option__name'),
-      part('last', '.ui-option .ui-chip', { optional: true, as: 'ui-chip' }),
+      part('chip', '.ui-option .ui-chip', { optional: true, as: 'ui-chip' }),
       part('meta', '.ui-option__meta', { optional: true }),
       part('size', '.ui-option__size', { optional: true }),
       part('density', '.ui-option__density', { optional: true }),
       part('check', '.ui-option__check'),
+    ],
+  }),
+  // The board choice panel: beside the options on a desktop window, its bar hidden; on a phone a
+  // full-width bar over its body, `chosen` while open (aria-expanded), its label a section label's.
+  component('ui-drawer', {
+    parts: [
+      selectable('bar', '.ui-drawer__bar', { chosen: '.ui-drawer__bar[aria-expanded="true"]' }),
+      part('label', '.ui-drawer__label'),
+      part('chevron', '.ui-drawer__chevron'),
+      part('body', '.ui-drawer__body'),
     ],
   }),
   component('ui-section-label', {

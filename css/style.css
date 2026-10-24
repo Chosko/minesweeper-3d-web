@@ -693,11 +693,13 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 #help-title { margin: 0 0 6px; }
 /* The board choices, Classic 2D (#c2d-choice) and 3D (#board-choice), on the page's backdrop: the
    window sized to its content, centred on the page between two spacers, each never shorter than the
-   canvas's margin. The window holds the options (left) beside what the chosen one needs
-   (right): the no-guess switch row, the custom form's fields filling a row over its info line and
-   Random, the bests; its option rows, Play and the tiles grow denser on the smaller desktop windows.
-   On a phone: one full-bleed column, no bests and no summary, a rule between the options and the
-   settings, the bar pinned over the column's foot. The Daily
+   canvas's margin. The window holds the options and, while open, the board choice panel to their
+   right (#c2d-choice-panel, #bc-choice-panel), the window widening and staying centred: the no-guess switch row,
+   the custom form's fields filling a row over its info line and Random, the bests with All records
+   under them; its option rows, Play and the tiles grow denser on the smaller desktop windows. On a
+   phone: one full-bleed column with no panel toggle, the panel a full-width drawer under the
+   options — its bar, then its body while open —, the bests one row, the slimmer bar pinned over the
+   column's foot. The Daily
    screen (#daily) is the Classic 2D board choice's composition and placement: every mode on the
    left in a column of fixed width, the selected one's board on the right — the Classic 2D board
    framed on the body, the panel showing none of itself; the 3D scene and a coming-soon mode's card in
@@ -706,10 +708,16 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 #c2d-choice, #board-choice, #daily { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
 #c2d-choice::before, #board-choice::before, #daily::before,
 #c2d-choice::after, #board-choice::after, #daily::after { content: ""; flex: 1 1 0; min-height: 40px; }
-#c2d-choice-frame, #board-choice-frame, #daily-frame { flex: 0 1 auto; width: 1120px; }
-#c2d-choice-body, #board-choice-body { display: grid; grid-template-columns: minmax(0, 480fr) auto minmax(0, 640fr); padding: 0; }
-#c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 24px 26px; }
+#c2d-choice-frame, #board-choice-frame { flex: 0 1 auto; align-self: center; width: auto; }
+#daily-frame { flex: 0 1 auto; width: 1120px; }
+#c2d-choice-body, #board-choice-body { display: flex; padding: 0; }
+#c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; min-width: 0; padding: 16px 26px 24px; }
+#c2d-choice-options, #board-choice-options { flex: 1 0 480px; min-width: 480px; }
+#c2d-choice-panel, #bc-choice-panel { flex: 0 1 639px; width: 639px; min-width: 0; }
 #c2d-choice-detail, #board-choice-detail { gap: 18px; }
+@media (min-width: 720px) {
+  #c2d-choice-panel > .ui-drawer__bar, #c2d-choice-panel:not([data-open="true"]), #bc-choice-panel:not([data-open="true"]), #bc-choice-panel > .ui-drawer__bar { display: none; }
+}
 #c2d-choice-options .ui-divider, #board-choice-options .ui-divider { margin: var(--space-1) 0; }
 #daily-body { display: grid; grid-template-columns: 480px auto minmax(0, 1fr); padding: 0; }
 #daily-modes, #daily-detail { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 24px 26px; }
@@ -733,7 +741,7 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 #board-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel]) { display: flex; flex-direction: column; gap: var(--space-3); }
 #board-choice :where([data-preset-settings], [data-custom-settings]) { display: flex; flex-direction: column; gap: var(--space-2); }
 #bc-learn-panel > .ui-text--muted { font-size: 15px; }
-#c2d-custom, #custom { gap: 10px; }
+#c2d-custom, #custom { display: flex; flex-direction: column; gap: 10px; }
 #c2d-custom > .ui-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
 #custom > .ui-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 :is(#c2d-custom, #custom) .ui-field { gap: 6px; min-width: 0; }
@@ -745,8 +753,10 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 :is(#c2d-info, #c-info, #c2d-code-info, #bc-code-info) { font-size: 14px; }
 #c2d-choice [data-code-panel] > .ui-field, #c2d-code, #board-choice [data-code-panel] > .ui-field, #bc-code { width: 100%; box-sizing: border-box; }
 :is(#c2d-bests, #bc-bests) .ui-stat--tile { gap: 3px; padding: var(--space-3) var(--space-4); }
+:is(#c2d-bests, #bc-bests) > [data-records] { align-self: flex-end; }
+#c2d-choice-frame > .ui-frame__foot, #board-choice-frame > .ui-frame__foot { justify-content: flex-end; }
 @media (max-width: 1439px) {
-  #c2d-choice-frame, #board-choice-frame, #daily-frame { width: 1080px; }
+  #daily-frame { width: 1080px; }
   #c2d-choice::before, #board-choice::before, #daily::before,
   #c2d-choice::after, #board-choice::after, #daily::after { min-height: 24px; }
   #c2d-play, #bc-play { min-height: 54px; padding: 12px 22px; font-size: 21px; }
@@ -754,12 +764,14 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
   :is(#c2d-bests, #bc-bests) .ui-stat__value { font-size: 26px; }
 }
 @media (max-width: 1199px) {
-  #c2d-choice-frame, #board-choice-frame, #daily-frame { width: 984px; }
+  #daily-frame { width: 984px; }
   #daily-body { grid-template-columns: 420px auto minmax(0, 1fr); }
 }
 /* The denser rows of the smaller desktop windows, never a phone's. */
 @media (min-width: 720px) and (max-width: 1439px) {
-  #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { gap: 10px; padding: 18px 22px; }
+  #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { gap: 10px; padding: 12px 22px 18px; }
+  #c2d-choice-options, #board-choice-options { flex-basis: 460px; min-width: 460px; }
+  #c2d-choice-panel, #bc-choice-panel { flex-basis: 619px; width: 619px; }
   #c2d-choice-detail, #board-choice-detail { gap: 14px; }
   #c2d-choice-options > .ui-options, #board-choice-options > .ui-options { gap: var(--space-2); }
   #c2d-choice .ui-option, #board-choice .ui-option, #daily .ui-option { min-height: 46px; padding: 6px 14px; }
@@ -784,18 +796,21 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 @media (max-width: 1199px) { #coming-soon-frame { width: 760px; } }
 @media (max-width: 719px) {
   #c2d-choice, #board-choice { padding: 0; }
-  #c2d-bests, #bc-bests, #c2d-summary, #bc-summary,
+  #c2d-panel-toggle, #bc-panel-toggle, #c2d-choice-body > .ui-divider--vertical, #board-choice-body > .ui-divider--vertical,
   #c2d-choice::before, #board-choice::before, #c2d-choice::after, #board-choice::after { display: none; }
-  #c2d-choice-frame, #board-choice-frame { position: relative; flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }
-  #c2d-choice-body, #board-choice-body { display: flex; flex-direction: column; gap: 18px; padding: 16px 18px 112px; }
-  #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { gap: var(--space-3); padding: 0; }
-  #c2d-choice-detail, #board-choice-detail { gap: 18px; }
-  #c2d-choice-body > .ui-divider--vertical, #board-choice-body > .ui-divider--vertical { width: 100%; height: 1px; }
+  #c2d-choice-frame, #board-choice-frame { position: relative; flex: 1 1 auto; align-self: stretch; width: 100%; border-radius: 0; box-shadow: none; }
+  #c2d-choice-body, #board-choice-body { flex-direction: column; gap: 18px; padding: 16px 18px 84px; }
+  #c2d-choice-options, #board-choice-options { flex: none; min-width: 0; gap: var(--space-3); padding: 0; }
+  #c2d-choice-panel, #bc-choice-panel { flex: none; width: auto; margin: 0 -18px; }
+  #c2d-choice-detail, #board-choice-detail { gap: 14px; padding: 14px 18px 18px; }
+  #c2d-choice-panel:not([data-open="true"]) > .ui-drawer__body, #bc-choice-panel:not([data-open="true"]) > .ui-drawer__body,
+  #c2d-settings > .ui-section-label, #bc-settings > .ui-section-label, #c2d-code-panel > .ui-section-label, #bc-code-panel > .ui-section-label { display: none; }
   #c2d-choice-options > .ui-options, #board-choice-options > .ui-options { gap: 10px; }
   #c2d-choice .ui-option, #board-choice .ui-option { min-height: 56px; padding: 9px 14px; }
   #c2d-choice .ui-option__name, #board-choice .ui-option__name { font-size: 19px; }
   #c2d-choice .ui-option__meta, #board-choice .ui-option__meta { font-size: 14px; }
-  #c2d-choice-frame > .ui-frame__foot, #board-choice-frame > .ui-frame__foot { position: absolute; left: 0; right: 0; bottom: 0; }
+  #c2d-choice-frame > .ui-frame__foot, #board-choice-frame > .ui-frame__foot { position: absolute; left: 0; right: 0; bottom: 0; min-height: 64px; }
+  #c2d-play, #bc-play { min-height: 44px; padding: 8px 22px; font-size: 19px; }
   #daily { padding: 0; }
   #daily-preview, #daily-summary, #daily::before, #daily::after { display: none; }
   #daily-frame { position: relative; flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }

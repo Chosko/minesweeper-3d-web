@@ -382,7 +382,7 @@ const opt = (name, part) => byName(name).parts.find((p) => p.name === part);
 
 test('the catalogue declares the shared layout\'s components, their parts, states and slots, so every theme is held to them', () => {
   for (const name of ['ui-backdrop', 'ui-frame', 'ui-play-tile', 'ui-small-entry', 'ui-option', 'ui-section-label', 'ui-key-hint', 'ui-chip', 'ui-list-row',
-    'ui-scene-panel', 'ui-button--danger', 'ui-button--go', 'ui-button--stop', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-toast']) {
+    'ui-scene-panel', 'ui-button--danger', 'ui-button--go', 'ui-button--stop', 'ui-drawer', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-toast']) {
     assert.equal(byName(name)?.kind, 'component', `${name} is catalogued`);
   }
   for (const name of ['ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list']) assert.equal(byName(name)?.kind, 'composition', `${name} is catalogued`);
@@ -394,7 +394,11 @@ test('the catalogue declares the shared layout\'s components, their parts, state
   for (const p of ['entry', 'icon', 'label']) assert.ok(partNames('ui-small-entry').includes(p), `the small entry's ${p}`);
   assert.deepEqual(byName('ui-play-tile').variants, ['ui-play-tile--row', 'ui-play-tile__preview--light', 'ui-play-tile__preview--locked'], 'the phone row and the preview\'s grounds');
   assert.ok(!partNames('ui-play-tile').includes('last') && !partNames('ui-small-entry').includes('last'), 'no main menu button carries a Last played chip');
-  for (const p of ['option', 'name', 'last', 'meta', 'size', 'density', 'check', 'badge']) assert.ok(partNames('ui-option').includes(p), `the board option's ${p}`);
+  for (const p of ['option', 'name', 'chip', 'meta', 'size', 'density', 'check', 'badge']) assert.ok(partNames('ui-option').includes(p), `the board option's ${p}`);
+  assert.ok(!partNames('ui-option').includes('last'), 'no board option carries a Last played chip');
+  assert.deepEqual(partNames('ui-drawer'), ['bar', 'label', 'chevron', 'body'], 'the drawer\'s bar over its body');
+  assert.deepEqual(Object.keys(opt('ui-drawer', 'bar').states), ['default', 'selected', 'pressed', 'disabled', 'chosen']);
+  assert.equal(opt('ui-drawer', 'bar').states.chosen, '.ui-drawer__bar[aria-expanded="true"]', 'chosen while open');
   assert.ok(partNames('ui-stat--tile').includes('badge'), 'the stat tile\'s badge');
   assert.deepEqual(partNames('ui-toast'), ['icon', 'text'], 'the toast\'s icon and text');
   assert.ok(partNames('ui-card').includes('icon'), 'a message card\'s badge');
@@ -408,7 +412,7 @@ test('the catalogue declares the shared layout\'s components, their parts, state
   assert.deepEqual(Object.keys(opt('ui-option', 'option').states), ['default', 'selected', 'pressed', 'disabled', 'chosen']);
   assert.equal(opt('ui-option', 'option').states.chosen, '.ui-option[aria-pressed="true"]');
   assert.ok(!Object.hasOwn(opt('ui-play-tile', 'tile').states, 'locked'), 'no locked state for a play tile: a locked one is disabled');
-  for (const [name, part] of [['ui-option', 'last'], ['ui-stat--tile', 'badge'], ['ui-list-row', 'outcome']]) {
+  for (const [name, part] of [['ui-option', 'chip'], ['ui-stat--tile', 'badge'], ['ui-list-row', 'outcome']]) {
     assert.equal(opt(name, part).as, 'ui-chip', `${name}'s ${part} is a chip`);
   }
 });
@@ -525,7 +529,7 @@ const SHOWS = {
   selected: (t) => forced(t, 'focus'),
   disabled: off,
   checked: (t) => 'checked' in t.attrs || t.attrs['aria-checked'] === 'true' || t.attrs['aria-selected'] === 'true',
-  chosen: (t) => t.attrs['aria-pressed'] === 'true',
+  chosen: (t) => t.attrs['aria-pressed'] === 'true' || t.attrs['aria-expanded'] === 'true',
   invalid: (t) => classes(t).includes('is-invalid'),
 };
 

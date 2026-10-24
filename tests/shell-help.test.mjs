@@ -305,7 +305,7 @@ test('in a browser: the Settings bindings panel\'s Mode choice, H, M and the HUD
 
     // Classic 2D: the HUD strip with only its keys, H opens the 2D help, M toggles sound.
     await page.click('#menu-entry-classic-2d');
-    await page.uncheck('#c2d-noguess'); // a standard board: no-guess is on by default
+    await page.evaluate(() => document.getElementById('c2d-noguess').click()); // a standard board: no-guess is on by default, its switch in the closed panel
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');

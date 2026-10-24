@@ -940,7 +940,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     }, id);
 
     await page.click('#menu-entry-classic-2d');
-    if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
+    await page.evaluate((on) => { const s = document.getElementById('c2d-noguess'); if (s.checked !== on) s.click(); }, false); // the switch sits in the closed panel
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');

@@ -2255,9 +2255,10 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }
   for (const [name, html] of [['Classic 2D', choice], ['3D', choice3d]]) {
-    for (const cls of ['ui-backdrop', 'ui-logo', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-divider', 'ui-key-hint', 'ui-chip', 'ui-stat--tile']) {
+    for (const cls of ['ui-backdrop', 'ui-logo', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-divider', 'ui-key-hint', 'ui-stat--tile', 'ui-button--quiet', 'ui-drawer']) {
       assert.match(html, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the ${name} board choice uses ${cls}`);
     }
+    assert.doesNotMatch(html, /class="[^"]*\bui-chip(?![\w-])/, `the ${name} board choice carries no chip`);
   }
   assert.match(choice3d, /class="ui-option ui-option--learn"/, 'the 3D board choice uses ui-option--learn');
   for (const cls of ['ui-backdrop', 'ui-logo', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-divider', 'ui-key-hint', 'ui-chip', 'ui-scene-panel', 'ui-code']) {
@@ -2528,7 +2529,7 @@ test('main menu buttons: the play tile a native button with its icon, label, loc
   assert.equal(within(own, '.ui-chip').length, 0, 'no main menu button carries a Last played chip');
 });
 
-test('board option: a native button with its name, size line, density, Last played chip beside the name, and its chosen state apart from selected', () => {
+test('board option: a native button with its name, size line, density, no Last played chip, and its chosen state apart from selected', () => {
   const list = within(LAYOUT_TAGS, '.ui-options')[0];
   assert.ok(list && list.attrs.role === 'group' && list.attrs['aria-label'], 'the options sit in a named group');
   const options = within(inside(LAYOUT, LAYOUT_TAGS, list), '.ui-option');
@@ -2553,10 +2554,7 @@ test('board option: a native button with its name, size line, density, Last play
   const chosen = options.filter((o) => o.attrs['aria-pressed'] === 'true');
   assert.ok(chosen.some((o) => !o.attrs['data-force']) && chosen.some((o) => o.attrs['data-force'] === 'focus'), 'chosen, and chosen and selected');
   assert.ok(options.some((o) => o.attrs['aria-pressed'] === 'false' && o.attrs['data-force'] === 'focus'), 'selected but not chosen');
-  const last = options.find((o) => within(inside(LAYOUT, LAYOUT_TAGS, o), '.ui-chip').length === 1);
-  assert.ok(last, 'an option with the Last played chip');
-  const lp = inside(LAYOUT, LAYOUT_TAGS, last);
-  assert.ok(within(lp, '.ui-chip')[0].index > within(lp, '.ui-option__name')[0].index && within(lp, '.ui-chip')[0].index < within(lp, '.ui-option__meta')[0].index, 'the chip sits beside the name, before the size line');
+  assert.ok(options.every((o) => within(inside(LAYOUT, LAYOUT_TAGS, o), '.ui-chip').length === 0), 'no board option carries a Last played chip');
   const learn = options.find((o) => hasClasses(o, '.ui-option.ui-option--learn'));
   assert.ok(learn && within(inside(LAYOUT, LAYOUT_TAGS, learn), '.ui-option__badge')[0]?.attrs['aria-hidden'] === 'true', 'Learn 3D with its badge');
 });
@@ -3890,6 +3888,8 @@ const CANVAS_PARTS = Object.freeze({
   'note-warn': 'ui-note--warn',
   'note-err': 'ui-note--err',
   'switch-row': 'ui-switchrow',
+  'panel-toggle': 'ui-button--quiet',
+  'drawer': 'ui-drawer',
   'icon-set': 'icon-set',
   'theme-list': 'theme-list',
   'touch-stick': 'touch-stick',

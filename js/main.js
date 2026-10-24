@@ -19,7 +19,7 @@ import { createGenerationClient } from './generation/client.js';
 import { createMenu, createLastMode, createLastBoardChoice, openingEntry, menuPreview, entryReason, entryShortReason, buildLabel, UNAVAILABLE_REASONS } from './shell/menu.js';
 import { VERSION } from './version.js';
 import { bindMenuPreview, mountTilePreviews, demoBoard2D, dailyBoard2D, demoBoard3D, DEMO_SPACING_3D } from './shell/menu-preview.js';
-import { boardBests } from './shell/returning.js';
+import { boardBests, createBoardPanelPin } from './shell/returning.js';
 import { aimReadout } from './readability.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice } from './settings/bindings.js';
@@ -57,7 +57,7 @@ import { createReset } from './settings/reset.js';
 import { createClassic2DMode } from './classic2d/mode.js';
 import { createButtonSwap } from './classic2d/button-swap.js';
 import { bindBoardChoice } from './classic2d/board-choice.js';
-import { createLastChoice, DEFAULT_CHOICE } from './classic2d/board-setup.js';
+import { createLastChoice } from './classic2d/board-setup.js';
 import {
   bindBoardChoice as bindBoardChoice3D, boardOf, normaliseChoice as normaliseChoice3D, DEFAULT_CHOICE as DEFAULT_CHOICE_3D,
   LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D,
@@ -548,6 +548,8 @@ const FLOW_3D = {
 };
 // end of 3D flow
 const mode3d = MODES.register('3d', (report) => create3DMode(FLOW_3D, report));
+// The board choice panel's pin, one stored view preference both board choices share.
+const BOARD_PANEL = createBoardPanelPin({ storage });
 // The 3D board choice; the last 3D choice is a platform-storage document kept by the shell.
 const LAST_CHOICE_3D = createLastBoardChoice({ storage, doc: LAST_CHOICE_DOC_3D, version: LAST_CHOICE_VERSION_3D, normalise: normaliseChoice3D, fallback: DEFAULT_CHOICE_3D });
 /** The records identity of a 3D board as boardOf gives it. */
@@ -557,7 +559,7 @@ let held3D = null;
 function showChoice3D(from) {
   const held = from === 'records' ? held3D : null;
   held3D = null;
-  CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played, held });
+  CHOICE_3D.show(LAST_CHOICE_3D.current, { held });
 }
 // The bests are read through the records store's queries, and redrawn on its change notification.
 const CHOICE_3D = bindBoardChoice3D({
@@ -571,6 +573,7 @@ const CHOICE_3D = bindBoardChoice3D({
   },
   code: { resolve: (text) => checkCode(text, '3d'), onPlay: (text) => playCode(text, '3d') },
   bests: (board) => boardBests(identity3D(board), RECORDS),
+  pin: BOARD_PANEL,
 });
 // ---------- Learn 3D ----------
 // The guided board (js/mode3d/learn.js): a fixed board with a forced, marked start cell, played
@@ -700,15 +703,12 @@ function answer2D(answer) {
   answer();
 }
 const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { flow: FLOW_2D, lastChoice: LAST_CHOICE_2D, sound: sfx, buttonSwap: BUTTON_SWAP }));
-/**
- * The board choice on `choice`; the default choice of a player who never played is not "last
- * played". Back from the Records screen it opened brings back what the screen held then.
- */
+/** The board choice on `choice`; back from the Records screen it opened, what the screen held then. */
 let held2D = null;
 function showChoice2D(choice, from) {
   const held = from === 'records' ? held2D : null;
   held2D = null;
-  CHOICE_2D.show(choice, { played: choice !== DEFAULT_CHOICE, held });
+  CHOICE_2D.show(choice, { held });
 }
 // The bests are read through the records store's queries, and redrawn on its change notification.
 const CHOICE_2D = bindBoardChoice({
@@ -721,6 +721,7 @@ const CHOICE_2D = bindBoardChoice({
   },
   code: { resolve: (text) => checkCode(text, 'classic-2d'), onPlay: (text) => playCode(text, 'classic-2d') },
   bests: (identity) => boardBests(identity, RECORDS),
+  pin: BOARD_PANEL,
 });
 
 // ---------------------------------------------------------------- daily boards and board codes
@@ -2285,7 +2286,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {}), RECORDS_VIEW_PREFS.load().catch(() => {})]);
+await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {}), RECORDS_VIEW_PREFS.load().catch(() => {}), BOARD_PANEL.load().catch(() => {})]);
 showMainMenu();
 LINKS.start(); // a #board= link: its challenge or daily over the menu, so Back leads to the menu
 window.addEventListener('hashchange', () => LINKS.hashchange());

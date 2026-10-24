@@ -147,7 +147,7 @@ for (const inert of [true, false]) {
 
       // Win a fixed Beginner board.
       await page.click('#menu-entry-classic-2d');
-      if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
+      await page.evaluate((on) => { const s = document.getElementById('c2d-noguess'); if (s.checked !== on) s.click(); }, false); // the switch sits in the closed panel
       await page.click('#c2d-choice [data-size="beginner"]');
       await page.click('#c2d-play');
       const centres = await ms(() => {
