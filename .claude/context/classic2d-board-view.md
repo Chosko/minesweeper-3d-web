@@ -25,6 +25,10 @@ its own layer, the marked start cell, cell motion, the end effect — is
   `DEFAULT_BOARD_SCALE` (`100`), `TILE_CAP`, `tileCap(scale)` → the square
   geometry's largest tile at a board scale: `TILE_CAP` at 100 %, scaled up
   at 125 %, `Infinity` at Fit.
+- `GRID_UNIT` — the share of its geometry's tile a grid's shape fractions
+  (`style2d.grids`) are of: a triangle's height per side, the tile itself
+  for a grid it does not name; the board checks measure each grid's floor
+  in it ([app-shell-board-module.md](app-shell-board-module.md)).
 - `BOARD_FRAME` (`{gaps: 1}`) — the board frame every Classic 2D board sits
   in: the module's gap on every side.
 - `boardLayout({geometry, width, height, min, max, frame, gap,
@@ -53,7 +57,10 @@ its own layer, the marked start cell, cell motion, the end effect — is
 ## INTERNAL PATTERNS
 
 - **Board module.** The view reads the skin's board module (`board()`):
-  `style2d.params.gap`, `radius` and `frameRadius`, `palette.boardGround`,
+  its grid's gap and corner radius — `style2d.grids` for a hexagon or
+  triangle board, a triangle's a fraction of its height (`GRID_UNIT`), the
+  style's own `params.gap` and `radius` for the square —,
+  `style2d.params.frameRadius`, `palette.boardGround`,
   `cursor`, `end2d` and `motion`. A hand-off of a new module drops every animation, lays the
   board out again (its gap may change) and repaints it.
 - **Geometry.** Every Classic 2D board — the game, the menu's and Daily
@@ -74,7 +81,9 @@ its own layer, the marked start cell, cell motion, the end effect — is
   a pointer in a gap to a cell. The board units — the wheel's line, the
   touch zoom's board point and, through `boardPoint`, the replay's pointer
   samples ([replay-samplers.md](replay-samplers.md)) — are pitches. A tile with a
-  corner radius is laid on fresh ground when it is redrawn.
+  corner radius, and every hexagon or triangle tile, is laid on fresh ground
+  when it is redrawn — a hexagon's or triangle's in its outline, never over
+  its box, which reaches its neighbours.
 - **Fit rule.** The board fits the area less the frame at the largest whole
   tile up to the geometry's tile at the scale (`tileCap` on the square
   geometry), never below the geometry's floor (`MIN_TILE_SIZE` on the

@@ -1531,7 +1531,7 @@ Feature: hex-tri-board-art
 
 ## 266. Update documentation for feature `hex-tri-board-art`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell-board-module.md, .claude/context/app-shell-themes.md, .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-tile-motion.md, .claude/context/rendering-board-art.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/hex-tri-board-art.md
 Preconditions: 262, 263, 264, 265

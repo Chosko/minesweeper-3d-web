@@ -11,7 +11,7 @@ renderer.
 
 | File | Responsibility |
 | ---- | -------------- |
-| `js/themes/board-module.js` | the board module's shape (head comment: palette, the 2D and 3D number lists, font, sky, a drawing style per mode with the 2D gap and frame radius, cursor ring, 3D selection and start-cell tint, confetti colours, the Classic 2D end effect's waves, motion per cell event and the motion vocabulary) and the board conformance checks (DOM-free) |
+| `js/themes/board-module.js` | the board module's shape (head comment: palette, the 2D and 3D number lists, font, sky, a drawing style per mode with the 2D gap and frame radius and the other flat grids' shape, cursor ring, 3D selection and start-cell tint, confetti colours, the Classic 2D end effect's waves, motion per cell event and the motion vocabulary) and the board conformance checks (DOM-free) |
 | `js/shell/board-art.js` | the board art hand-off on the shell's side: the active board module to `BOARD_ART` ([classic2d-tile-skin.md](classic2d-tile-skin.md)) at start-up and on every theme change, once its number font has loaded |
 | `js/shell/scene-palette.js` | the 3D scene's hand-off: the module `BOARD_ART` holds to the renderer's `setBoard` |
 
@@ -19,10 +19,13 @@ renderer.
 
 `js/themes/board-module.js` — `CELL_EVENTS`, `MOTION_PROPERTIES`,
 `NAMED_EASINGS`, `FACE_ENTRIES` (each face's recipe palette entries),
-`BOARD_ENTRIES` (every entry's path), `contrast(a, b)`,
-`checkBoardModule(board, {fonts?, minTileSize?})` → problems `{check,
-subject}` (`palette`, `numbers`, `font`, `sky`, `style`, `relief`, `legible`,
-`contrast`, `motion`), none when the module conforms.
+`BOARD_ENTRIES` (every entry's path), `GRID_NUMBERS` (`{square, hex, tri}`,
+the highest number each flat grid shows: its most neighbours),
+`contrast(a, b)`, `checkBoardModule(board, {fonts?, floors?})` → problems
+`{check, subject}` (`palette`, `numbers`, `font`, `sky`, `style`, `relief`,
+`legible`, `contrast`, `motion`), none when the module conforms; `floors`
+(`{square, hex, tri}`, each in its grid's shape unit) overrides a flat
+grid's floor, by default its geometry's.
 
 `js/shell/board-art.js` — `numberFontSpec(font)` (`<weight> 1em
 "<family>"`), `bindBoardArt({applier, fonts, art?, onError?})` → hands the
@@ -54,18 +57,35 @@ returns the unsubscribe.
   theme's `board.js`. `checkBoardModule` is the board case of the
   conformance suite (`tests/theme-conformance.test.mjs`) for every
   registered theme: every palette entry, the Classic 2D end effect's values
-  (`end2d`) among them; both number lists, `numbers2d` (1–8, the Classic 2D
-  tiles') and `numbers3d` (1–26, the 3D atlas'); the number font one of the
-  theme's registered fonts; the sky; a shipped style with all its
-  parameters per mode (the 2D one with its gap and frame radius; a bevel
-  side a shade or a `#rrggbb` colour); the closed face's relief above zero
-  and at least a pixel at `MIN_TILE_SIZE`; each number at least 4.5:1
+  (`end2d`) among them; both number lists, `numbers2d` (to the highest
+  `GRID_NUMBERS` entry, the 2D tiles' on every flat grid) and `numbers3d`
+  (1–26, the 3D atlas'); the number font one of the theme's registered
+  fonts; the sky; a shipped style with all its parameters per mode (the 2D
+  one with its gap and frame radius, and the hexagon's and triangle's
+  shape; a bevel side a shade or a `#rrggbb` colour); the closed face's
+  relief above zero and at least a pixel at each flat grid's floor — the
+  geometry's smallest tile in the unit its shape takes (the board view's
+  `GRID_UNIT`, a triangle's height), each grid failing as its own subject —
+  and the 3D relief at the square's; each number at least 4.5:1
   against its own mode's revealed face — a 3D number against every point of
   it, its border included, a 2D number against the face and its shade (the
   hairline round a flat 2D face holds no glyph);
   the cursor ring and selection outline at least 3:1 against the closed and
   revealed faces; and an entry for every cell event, a motion description
   built only from the vocabulary or `null`.
+- **Per-grid shape.** `style2d.grids` holds the hexagon's and triangle's
+  shape, `{hex: {gap, radius}, tri: {gap, radius}}`: the gap between tiles
+  and the tile's corner radius, fractions of the hexagon's tile across the
+  flats and of the triangle's height. The square's shape is the style's own
+  `gap` and `radius`; every other 2D value — the style and its parameters,
+  palette, faces, numbers, font, cursor ring, marked start cell, end effect
+  and motion — is shared by the three flat grids, each grid showing the
+  numbers up to its `GRID_NUMBERS`. The tile painter draws a hexagon or
+  triangle in its grid's radius ([classic2d-tile-skin.md](classic2d-tile-skin.md))
+  and the board view lays it out on its grid's gap
+  ([classic2d-board-view.md](classic2d-board-view.md)). *Joyful tiles*
+  takes them from its Hexagon and Triangle board sheets' kept variant, and
+  its numbers past the square's from the Triangle board sheet.
 - **Motion tracks.** A cell event's description keys the vocabulary's
   tracks — offset, scale, rotation and its flip, depth, brightness and
   opacity, each as the head comment of `js/themes/board-module.js` defines
@@ -100,6 +120,9 @@ returns the unsubscribe.
 - [../domain/features/themed-board-art-and-motion.md](../domain/features/themed-board-art-and-motion.md)
   — the board module's shape, the board checks, the hand-off and the board
   frame.
+- [../domain/features/hex-tri-board-art.md](../domain/features/hex-tri-board-art.md)
+  — the per-grid shape, the 2D numbers every flat grid shows and the checks
+  per grid.
 - [../domain/features/theme-system.md](../domain/features/theme-system.md)
   — the theme contract the board module is part of.
 
@@ -121,6 +144,7 @@ returns the unsubscribe.
 
 - Adding a board module entry, a cell event or a motion property: the head
   comment of `js/themes/board-module.js`, every theme's `board.js` and
-  `checkBoardModule`.
+  `checkBoardModule`; a new flat grid also takes a `GRID_NUMBERS` entry and
+  its shape in `style2d.grids`.
 - Changing when a module reaches the boards (the font wait, an overtaken
   switch): `bindBoardArt` and `bindScenePalette`.

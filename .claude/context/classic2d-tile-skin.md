@@ -1,4 +1,4 @@
-# Classic 2D — square tile skin
+# Classic 2D — tile skin
 
 ## OVERVIEW
 
@@ -11,7 +11,8 @@ How a Classic 2D tile looks. The area overview is
   depth step), the board art hand-off `BOARD_ART`, and the shared minimum
   tile size. Every tile is drawn from the active theme's board module
   (`js/themes/board-module.js`, [app-shell-board-module.md](app-shell-board-module.md)): its
-  Classic 2D drawing style, palette and number font. It holds no palette,
+  Classic 2D drawing style, palette and number font, a hexagon or triangle
+  tile in its grid's shape (`style2d.grids`). It holds no palette,
   imports no theme and reads no stylesheet. DOM-free at import.
 
 The shared tile recipe `js/tile-art.js` it draws through — the drawing
@@ -30,15 +31,21 @@ styles and glyphs — is [tile-art.md](tile-art.md).
   raised states (closed, pressed, flagged) at, and the step nearest a
   depth (1, the face's own, for none).
 - `paintTileWith(board, ctx, x, y, size, state, number, depth = 1, cell = null)`
-  — one tile at `x, y`, `size` CSS pixels, from the board module `board`;
-  `number` (0–8) matters only for `revealed`, `depth` only for the raised
-  states; `cell`, `{outline, glyphBox}` from the board's grid geometry
-  ([classic2d-board-view.md](classic2d-board-view.md)), shapes the tile,
-  `x, y` then being its outline's box corner, and none is the square of
-  `size`.
-- `tileKey(orientation, state, number, step = 1)` — the cache's key for one
-  image: the outline orientation, the state (a revealed one with its number,
-  an unknown one the placeholder) and a raised state's depth step.
+  — one tile at `x, y` from the board module `board`, `size` CSS pixels the
+  geometry's tile (a hexagon's across the flats, a triangle's side);
+  `number` (0 to its outline's highest) matters only for `revealed`, `depth`
+  only for the raised states; `cell`, `{outline, glyphBox}` from the
+  board's grid geometry ([classic2d-board-view.md](classic2d-board-view.md)),
+  shapes the tile, `x, y` then being its outline's box corner, and none is
+  the square of `size`.
+- `OUTLINE_NUMBERS` (`{square, hexagon, triangle}`) — the highest number a
+  tile of each outline shape shows: the board module's `GRID_NUMBERS` by
+  outline rather than by grid, which a test pins to it.
+- `tileKey(outline, state, number, step = 1)` — the cache's key for one
+  image: the recipe's outline it is drawn in (`square`, `hexagon`,
+  `triangle-up`, `triangle-down`), the state (a revealed one with its
+  number; one past its outline's highest number, or an unknown state, the
+  placeholder) and a raised state's depth step.
 - `createBoardArt()` → `{current(), set(id, board), onChange(listener)}` —
   a board art hand-off: the module last handed over as `{id, board}` (null
   until the first) and its subscribers. `BOARD_ART` is the page's one, which
@@ -64,22 +71,28 @@ styles and glyphs — is [tile-art.md](tile-art.md).
   draws the marked tile for its marked cell
   ([classic2d-board-motion.md](classic2d-board-motion.md)).
 - **Outline.** A tile is drawn through its cell's outline and glyph box,
-  which the board view takes from the geometry: every shape but the square
-  clips the face to the outline's corners and sets the glyphs in a square
-  of the glyph box's smaller side, centred in it. The square outline is the
-  tile itself, painted exactly as a tile given no outline.
-- **Placeholder.** An unknown state, a number outside 0–8, or no board
-  module paints `FALLBACK_COLOR` with a black cross, clipped to the outline
-  — visibly wrong on purpose.
+  which the board view takes from the geometry. A hexagon or triangle is
+  drawn in the recipe's outline of its shape and orientation
+  ([tile-art.md](tile-art.md)), with its grid's corner radius from
+  `style2d.grids` in place of the style's, and its glyphs set in the
+  geometry's glyph box — its corner on a whole device pixel — through the
+  recipe's `inGlyphBox`. The square outline is the tile itself, painted
+  exactly as a tile given no outline, in the style's own radius.
+- **Placeholder.** An unknown state, a number outside 0 to its outline's
+  highest (`OUTLINE_NUMBERS`), or no board module paints `FALLBACK_COLOR`
+  with a black cross, clipped to the outline — visibly wrong on purpose.
 - **Tile cache.** `drawTile` keys the cache on `size|pixelRatio|theme id`
-  (`cacheKey()`) and each image in it by `tileKey` — outline orientation,
+  (`cacheKey()`) and each image in it by `tileKey` — the recipe's outline,
   state and depth step. On a key change it drops every image; the first
-  draw of an orientation renders all of that orientation's images (each
-  state, `revealed-0`…`-8`, the closed, pressed and flagged faces at every
-  depth step but 1, the placeholder) on offscreen canvases of the outline's
-  box × ratio in device pixels, so a grid with two orientations caches
-  both, and then every draw is one `drawImage`. Until a module is handed
-  over it draws and caches nothing.
+  draw of an outline renders all of that outline's images (each state,
+  `revealed-0` up to its highest number, the closed, pressed and flagged
+  faces at every depth step but 1, the placeholder) on offscreen canvases
+  of the outline's box × ratio in device pixels, so a hexagon board caches
+  one outline and a triangle board both orientations, and then every draw
+  is one `drawImage`. A hexagon's or triangle's box sits off the pixel
+  grid: its image is copied at its own size from the device pixel nearest
+  its corner, never resampled. Until a module is handed over it draws and
+  caches nothing.
 - **Depth.** A depth draws from the cached step nearest it, so the motion
   layer's depth costs a few cached images and never a draw per frame. On a
   bevel style a pressed tile's slope narrows with the depth as a closed
@@ -90,8 +103,9 @@ styles and glyphs — is [tile-art.md](tile-art.md).
 - **`MIN_TILE_SIZE`** is the readable floor of decision 10 in
   `docs/UX_REVIEW.md`: the fit rule never goes below it, and a board that
   does not fit at it scrolls. Every state and number of every board module
-  is legible at it (the browser test in `tests/tile-skin.test.mjs`, which
-  also checks Expert's fit rule in the game window at 1024 px wide).
+  is legible at it, and on a hexagon and a triangle board at each grid's
+  own floor (the browser test in `tests/tile-skin.test.mjs`, which also
+  checks Expert's fit rule in the game window at 1024 px wide).
 - **No second palette.** Neither the skin nor the recipe holds a literal
   colour: every colour, parameter and the number font are the board
   module's, which the board conformance checks hold to the contrast and
@@ -105,6 +119,9 @@ styles and glyphs — is [tile-art.md](tile-art.md).
   — the drawing styles, the board module the skin draws from, the hand-off.
 - [../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md)
   — a tile drawn through its cell's outline and glyph box.
+- [../domain/features/hex-tri-board-art.md](../domain/features/hex-tri-board-art.md)
+  — hexagon and triangle tiles in their grid's shape, the numbers each grid
+  shows and the cache by outline.
 
 ## CROSS-REFERENCES
 
@@ -120,8 +137,8 @@ styles and glyphs — is [tile-art.md](tile-art.md).
   player.
 - [tile-art.md](tile-art.md) — the recipe the painter draws through.
 - [geometry.md](geometry.md) — the outlines and glyph boxes the board view hands in.
-- [testing.md](testing.md) — `tests/tile-skin.test.mjs` the painter, cache,
-  hand-off and `MIN_TILE_SIZE`.
+- [testing.md](testing.md) — `tests/tile-skin.test.mjs` the painter on
+  every outline, cache, hand-off and `MIN_TILE_SIZE`.
 
 ## WHEN TO READ THE SOURCE
 

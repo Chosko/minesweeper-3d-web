@@ -53,8 +53,8 @@ fixture theme found by the lookup and kept out of `THEMES`.
   `--z-*` tokens.
 - ***Joyful tiles*' tokens** are its canvas's J-Tokens block, values
   included (`tests/tokens.test.mjs`): the board tokens (`--color-tile-*`,
-  `--color-board-frame`, `--color-number-1`…`-8`) hold the board module's
-  values, read only where a screen draws a board colour as a token (the 2D
+  `--color-board-frame`, `--color-number-1`…`-8`, no token for the 2D
+  numbers past the square's) hold the board module's values, read only where a screen draws a board colour as a token (the 2D
   board view's ground and cursor ring, the aimed-cell readout's cube); the
   scene tokens (`--color-scene-zenith`, `-horizon`, `-nadir`, `-ink`) are
   the board module's sky stops and the ink on them, which the scene panel
@@ -63,6 +63,19 @@ fixture theme found by the lookup and kept out of `THEMES`.
   scrolling board's marks, the replay pointer's outline, Show 3BV's tints
   and `--board-frame-radius` stay while the board view, the replay viewer
   and the board frame read them.
+- **A board module from its canvas.** Each value in a theme's `board.js`
+  carries a comment naming the canvas sheet it comes from. *Joyful tiles*'
+  2D tiles, numbers and cell motion are J-BoardSheet's, the hexagon and
+  triangle tiles' gap and corner radius J-HexSheet's and J-TriSheet's kept
+  variant "B · Sharp", the 2D numbers past the square's J-TriSheet's, in
+  the 3D hues of the same numbers, and the 3D cubes, sky and effects
+  J-3DSheet's. `/theme-implement` brings a theme in from its canvas the
+  same way: it reads the 2D, Hexagon and Triangle board sheets beside the
+  tokens, components and 3D sheets, renders the hexagon and triangle tiles
+  beside their sheets, and stops on a missing Hexagon or Triangle board
+  sheet and on a hexagon or triangle tile that differs from the 2D board
+  sheet's in anything but its gap and corner radius
+  (`.claude/skills/theme-implement/`).
 - **Head order.** `index.html` loads `css/tokens.css`,
   `css/components.css` and `css/style.css`, the gallery only the first two;
   each then runs `js/theme.js`, which appends the theme's `<link
@@ -81,6 +94,10 @@ fixture theme found by the lookup and kept out of `THEMES`.
   per theme.
 - [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
   — token names, the contrast contract.
+- [../domain/features/hex-tri-board-art.md](../domain/features/hex-tri-board-art.md)
+  — *Joyful tiles*' hexagon and triangle values;
+  [../domain/features/theme-implement-skill.md](../domain/features/theme-implement-skill.md)
+  — the sheets the theme skill reads.
 
 ## CROSS-REFERENCES
 
@@ -104,7 +121,8 @@ fixture theme found by the lookup and kept out of `THEMES`.
 
 - Adding or renaming a token: the theme's `theme.css` and
   `REQUIRED_TOKENS`.
-- Adding a theme: `THEMES`, the `STYLESHEETS` mirror in `js/theme.js` and
-  the theme's folder; the conformance suite says what is missing.
+- Adding a theme: `/theme-implement` from its canvas, or by hand `THEMES`,
+  the `STYLESHEETS` mirror in `js/theme.js` and the theme's folder; the
+  conformance suite says what is missing.
 - Changing deploy behaviour (custom domain, the not-found page, vendored
   three.js path).

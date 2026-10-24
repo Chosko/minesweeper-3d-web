@@ -39,8 +39,9 @@ time-driven extras are [rendering-effects.md](rendering-effects.md).
 - **Drawn from the board module.** The shell (`js/shell/scene-palette.js`) calls `setBoard` with the
   active theme's board module at start-up and on every theme change, once its number font has
   loaded ([app-shell-board-module.md](app-shell-board-module.md)); until then the atlas is transparent and the sky
-  black. From the module come: the atlas, every layer drawn through `js/tile-art.js` in `style3d`
-  from `palette.faces3d` (a bevel side a shade or an exact colour, the exploded mine's face with the
+  black. From the module come: the atlas, every layer drawn through `js/tile-art.js` in `style3d`,
+  in the recipe's default square outline (its hexagon and triangle outlines are the Classic 2D
+  painter's), from `palette.faces3d` (a bevel side a shade or an exact colour, the exploded mine's face with the
   style's `explodedParams`), the flag, the knobbed mine and the cross,
   `numbers3d` (two digits set at a single digit's height, narrowed to fit) and the number font —
   the glyphs the Classic 2D tiles draw, from the same recipe — the slope
@@ -57,7 +58,8 @@ time-driven extras are [rendering-effects.md](rendering-effects.md).
   game. The renderer holds no colour of its own for any of these, never reads a token, imports a
   theme or subscribes to theme changes (`tests/theme.test.mjs`, `tests/tokens.test.mjs`,
   `tests/render-3d-selection.test.mjs`). The Classic 2D tile skin draws through the same recipe from
-  the same module's 2D half ([classic2d-tile-skin.md](classic2d-tile-skin.md)).
+  the same module's 2D half, on every flat grid ([classic2d-tile-skin.md](classic2d-tile-skin.md));
+  the 3D style and `numbers3d` are the 3D atlas' alone, whatever the 2D half holds per grid.
 
 ## Domain dependencies
 

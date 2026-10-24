@@ -46,8 +46,10 @@ In scope (m2c-flat-grids):
   sheets and the kept variant "B · Sharp": hexagon gap 6 % and radius 5 %
   of the tile across the flats; triangle gap 6 % and radius 6 % of the tile
   height; numbers 9–12 in the 3D hues of the same numbers, so a number has
-  one colour in every mode. The cell motion is the Classic 2D motion,
-  unchanged, played around the tile's centre.
+  one colour in every mode. They ship in the same change as the board
+  checks, which fail the catalogue's only theme without them, rather than
+  through a `/theme-implement` run. The cell motion is the Classic 2D
+  motion, unchanged, played around the tile's centre.
 - **The theme skill** reads a theme's Hexagon and Triangle board sheets
   beside its 2D board sheet, so a later theme can supply these values from
   its canvas.
