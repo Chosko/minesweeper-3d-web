@@ -299,7 +299,7 @@ Context:
 
 Done: 2026-10-24, commit `f9968f2` (14 files, +390/-46). Decision: Hexagon and Triangle games share Classic 2D's pause-card controls and first-use hints (dismissing the hint strip in one dismisses it in all three); until the Records screen knows these modes, Records from their results screen opens the last Classic 2D or 3D board played.
 
-## [ ] 23. Implement task 270 — Board codes and challenge links for Hexagon and Triangle
+## [x] 23. Implement task 270 — Board codes and challenge links for Hexagon and Triangle
 
 Depends on: 21
 
@@ -313,6 +313,8 @@ Context:
 /task-implement 270 --review
 ```
 
+Done: 2026-10-24, commit `055bca2` (3 files, +121/-5). Premise wrong: codes already routed to Hexagon and Triangle, so the commit adds only tests and a header comment; the flat-mode configuration's `codeToken` is still unread.
+
 ## [ ] 24. Implement task 271 — Update documentation for feature `flat-grid-modes`
 
 Depends on: 20, 21, 22, 23
@@ -321,6 +323,7 @@ Context:
 - 2026-10-24 (from step 20): task 267 left the Classic 2D and shell context files for this task — js/flat-modes.js (`CLASSIC_2D`, the per-mode configuration, optional everywhere and defaulting to square) and `SQUARE_SETUP` in js/classic2d/board-setup.js.
 - 2026-10-24 (from step 21): `#hex-choice` and `#tri-choice` in index.html copy `#c2d-choice` (a test holds them equal); every css/style.css and Joyful tiles rule styling Classic 2D's board choice also names its Hexagon and Triangle twins (enforced by a test); the routes are in js/main.js's screen table; task 268 already updated the menu-routing statements in .claude/context/app-shell-menu.md and INDEX.md, the rest of the context update is this task's.
 - 2026-10-24 (from step 22): js/main.js now reaches the flat game through `flat2D()` (Classic 2D, Hexagon or Triangle); the pause card and help show Classic 2D's controls for all three; first-use hints are shared (`FIRST_USE_RECORD` in js/shell/first-use.js); the window title and the results board line lead with the mode's name from `MODE_NAMES` in js/shell/challenge.js; tests/flat-modes-play.test.mjs runs on every js/main.js, index.html or css/ change.
+- 2026-10-24 (from step 23): board codes route through js/records/board-code.js's own table (`parseBoardCode` takes the mode from the `H`/`T` token) and `#board=` links reach the flat modes through `playChallenge`; the flat-mode configuration's `codeToken` is unread.
 
 ```prompt
 /task-implement 271 --review
