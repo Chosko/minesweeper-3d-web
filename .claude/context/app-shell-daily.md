@@ -49,7 +49,7 @@ is the head comment of `css/components.css` (*Daily*); its ids are
 ## INTERNAL PATTERNS
 
 - **Layout.** The Daily screen takes the Classic 2D board choice's placement
-  and step rules in `css/style.css` (the wordmark band, the window widths,
+  and step rules in `css/style.css` (the window under the title bar, the window widths,
   the denser rows of the smaller desktop windows, the phone's full-bleed
   column with its pinned bar), with its own fixed-width mode column per
   size; the Classic 2D preview keeps the panel's proportions, the 3D scene

@@ -18,10 +18,10 @@ implementation's default `indexedDB` factory.
 | `js/platform/blob-store.js` | Blob store interface (`createBlobStore`), the fallback to memory. Header defines the blob implementation contract. |
 | `js/platform/memory-blob-store.js` | In-memory blob implementation: the contract's reference, the fallback, what tests use. |
 | `js/platform/indexeddb-blob-store.js` | The web build's blob implementation over IndexedDB. |
-| `js/platform/index.js` | The selector: builds the one `storage` and the one `blobStore`; re-exports the storage methods. |
+| `js/platform/index.js` | The selector: builds the one `storage` and the one `blobStore`; re-exports the storage methods; the host's capability flags `capabilities`. |
 
 Document owners register here: settings ([settings.md](settings.md)),
-`shell.lastMode` ([app-shell-menu.md](app-shell-menu.md)) and `shell.firstUse` ([app-shell-help.md](app-shell-help.md)), the
+`shell.lastMode` and the board choice panel's pin `shell.boardPanel` ([app-shell-menu.md](app-shell-menu.md)) and `shell.firstUse` ([app-shell-help.md](app-shell-help.md)), the
 last Classic 2D and 3D board choices ([classic2d.md](classic2d.md),
 [mode3d.md](mode3d.md)), the records store's three documents
 ([records-store.md](records-store.md)), the Records screen's `records.view`
@@ -34,7 +34,11 @@ document's browser key directly at start-up.
 
 Platform module (`js/platform/index.js`) — what callers import: `storage`
 and its methods `register`, `load`, `save`, `clear`, `available` by name;
-`blobStore`.
+`blobStore`; `capabilities`, the frozen flags of what the host the page
+runs in offers — `desktopHost`, whether a desktop host gives the title
+bar's window buttons their actions (`bindWindowButtons`,
+[app-shell-kit-helpers.md](app-shell-kit-helpers.md)). The web build has no
+host, so every flag is off.
 
 Storage interface (`js/platform/storage.js`)
 - `createStorage({ backend })` → `{ register, load, save, clear, available }`.

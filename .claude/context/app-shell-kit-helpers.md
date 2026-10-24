@@ -4,8 +4,8 @@
 
 The component kit's behaviour (`js/ui/components.js`): the counter formats,
 the binders of sliders, segmented choices, tabs, the one selected control,
-key hints, the pager, the icon set with the button's leading icon, the code
-chip and the figures panel. The catalogue
+key hints, the pager, the icon set with the button's leading icon, the game
+logo, the title bar's window buttons, the code chip and the figures panel. The catalogue
 those binders follow is [app-shell-kit.md](app-shell-kit.md).
 
 | File | Responsibility |
@@ -63,6 +63,16 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   built the Settings page; `createButton(doc, {label, icon?, variant?,
   size?, iconOnly?})` builds a kit button. How an icon and its button are
   named is [app-shell-kit-layout.md](app-shell-kit-layout.md)'s.
+- The game logo: `LOGO_WORDS` (MINESWEEPER and 3D), `drawLogo(logo)` (fills
+  a `.ui-logo` heading with one `aria-hidden` `ui-logo__word` per word, a
+  `ui-logo__letter` per letter; once), `applyLogos(root)` (every
+  `.ui-logo` under `root`).
+- The title bar's window buttons: `WINDOW_BUTTONS` (`minimise`,
+  `fullscreen`, `quit`, their order), `bindWindowButtons(root,
+  {capabilities, actions})` — one delegated listener for every
+  `[data-window]` under `root`, calling `actions[name]` only while
+  `capabilities.desktopHost` ([platform.md](platform.md)); with no host a
+  press does nothing. Returns the unbind.
 - The note: `setNote(el, text, {tone?, icon?})` writes `text` into `el`'s
   `.ui-note__text` after its leading icon (making the text part on first
   use, in place of any plain text), `tone` (`NOTE_TONES`: `'warn'`,

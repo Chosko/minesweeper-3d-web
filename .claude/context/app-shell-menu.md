@@ -6,8 +6,9 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers `js/shell/menu.js` (the main menu's entries and routes, the
 placeholder, the opening selection, the
 last mode played and each mode's last board choice),
-`js/shell/returning.js` (the board choices' bests, as text; pure, over the
-records' queries it is handed), and their wiring in `js/main.js`. The
+`js/shell/returning.js` (the board choices' bests, as text, over the
+records' queries it is handed, and the board choice panel's stored pin),
+and their wiring in `js/main.js`. The
 play tiles' previews (`menuPreview`, `js/shell/menu-preview.js`) are
 [app-shell-menu-preview.md](app-shell-menu-preview.md). The Daily
 screen and board codes (`js/shell/daily.js`, `js/shell/challenge.js`) are
@@ -52,6 +53,14 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   each noted with its date, or a dash and `NO_BEST` (`'no best yet'`); a
   board and its no-guess twin are separate boards. Both board choices'
   `bests`.
+- `BOARD_PANEL_DOC` = `'shell.boardPanel'`, `BOARD_PANEL_VERSION`;
+  `createBoardPanelPin({storage})` → `pinned`, `load()` (unpinned for a
+  missing, malformed or newer document), `setPinned(on)` (kept in memory,
+  then saved → the save's `{ok}`; a failed save keeps the pin for the
+  session). The board choice panel's pin, one view preference every mode's
+  board choice shares, in its own document as `records.view` is
+  ([records-library-view.md](records-library-view.md)); Reset all data
+  clears it with every document.
 
 ## INTERNAL PATTERNS
 
@@ -65,7 +74,7 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   tile gets `ui.setEntryUnavailable(id, entryReason(…),
   entryShortReason(…))` (aria-disabled, the lock, its reason twice — the
   long one and the phone row's — and its preview locked) and stays
-  selectable. No button carries a Last played chip.
+  selectable.
 - **Opening selection.** `menuFocusEntry()` is the menu's default focus:
   the entry last opened from the menu (`menuOpened`, kept while Back
   returns to it, forgotten when a game starts), else
@@ -86,8 +95,10 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
 - **Board choices.** `showChoice2D` / `showChoice3D` show the last board
   choice (`LAST_CHOICE_2D`, `LAST_CHOICE_3D`); each binder's `bests` is
   `boardBests` over `RECORDS`, `RECORDS.onChange` refreshes both, and
-  Records opens the Records screen on the chosen board, keeping the
-  screen's `state()` (`held2D`, `held3D`) for the way back. The binders are
+  *All records* in the panel opens the Records screen on the chosen board,
+  keeping the screen's `state()` (`held2D`, `held3D`) for the way back.
+  Both binders take the one `BOARD_PANEL` pin, loaded before the first
+  screen, so pinning the panel on one board choice pins it on every one. The binders are
   [classic2d.md](classic2d.md) and [mode3d.md](mode3d.md); their code
   fields go through [app-shell-daily.md](app-shell-daily.md)'s `checkCode`
   / `playCode`.

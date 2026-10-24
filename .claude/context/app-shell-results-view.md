@@ -44,7 +44,8 @@ screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   The screen's composition is the head comment of `css/components.css`
   (*Results screen*).
 - `RESULTS_ACTIONS` (`r-again`, `r-watch`, `r-watch-best`, `r-look`,
-  `r-records`, `r-menu`);
+  `r-records`, `r-menu`) — Play again `#r-again` the large go button with
+  the confirm key hint, the others secondary;
   `resultsEnter({focused, repeat})` → `'playAgain'` (focus on Play again or
   on no action), null (another action's own activation), `'ignore'`
   (auto-repeat).

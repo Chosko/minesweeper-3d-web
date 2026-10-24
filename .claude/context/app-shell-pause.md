@@ -63,11 +63,12 @@ head comment. Both modes' end delay and its skip are
   (`PAUSE.inProgress`), or a first click whose board is being generated or
   failed (Classic 2D's `status().pending`, the 3D session's state). During
   a game the status line is the
-  running time and mines left and Resume (with its back key hint) leads;
+  running time and mines left and Resume, the go button (with its back
+  key hint), leads, Restart and Main menu secondary;
   with no game in progress the status line is `NO_GAME_LINE` before the
   first click and `ENDED_LINE` after the end, which the running time never
   replaces,
-  Restart leads as the primary action and takes the focus, and Resume and
+  Restart leads as the go button and takes the focus, and Resume and
   "Back to start" are hidden. "Back to start" shows only for a 3D game in
   play; `#p-restart` reads Restart (with its restart key hint) or, once
   the game ended, Play again. Its Settings panel is muted and bound like

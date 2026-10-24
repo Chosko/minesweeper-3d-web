@@ -457,9 +457,10 @@ kit are described in [app-shell.md](../../context/app-shell.md),
 ## Data and state
 
 - **The board choice panel's pin** — one stored view preference shared by
-  every mode's board choice, saved through the platform layer as the
-  Records screen's view preferences are, read when a board choice opens;
-  unpinned when nothing is stored.
+  every mode's board choice, saved through the platform layer in its own
+  document `shell.boardPanel` as the Records screen's view preferences
+  are, read before the first screen; unpinned when nothing is stored, and
+  cleared by Reset all data.
 - The board choice bests are a view over `personal-records` and
   `3d-game-records`; the last board choices and the last mode played stay
   with their owners.
@@ -470,14 +471,22 @@ kit are described in [app-shell.md](../../context/app-shell.md),
 
 - **Kit catalogue additions** — the new components' names, parts and slots
   join the contract `theme-system` enforces: `ui-backdrop`; `ui-frame`
-  (parts `head`, `back`, `logo`, the window buttons, `heading`, `action`,
-  `body`, `foot`, `status`, `summary`; slot `window-chrome`); the game logo, in place
-  of the large `ui-wordmark` title; the main menu buttons in place of
-  `ui-mode-entry` — the play tile, the small entry and the phone row, with
-  their icon, label, reason, preview and lock parts; `ui-option`
-  (`option`, `badge`, `name`, `meta`, `size`, `density`, `check`; variant
-  `ui-option--learn`); the panel toggle and the drawer; the go and stop
-  button variants; `ui-section-label` (`text`, `aside`);
+  (parts `head`, `back`, `logo`, the window buttons `window`, `minimise`,
+  `fullscreen` and `quit`, `heading`, `title`, `action`, `body`, `foot`,
+  `status`, `summary`; slot `window-chrome`); the game logo `ui-logo`
+  (`word`, `letter`), in place of the large `ui-wordmark` title; the main
+  menu buttons in place of `ui-mode-entry` — the play tile `ui-play-tile`
+  (`tile`, `side`, `top`, `icon`, `text`, `label`, `reason`, `lock`,
+  `preview`, `art`, `badge`, `still`, `calendar`; the phone row as its
+  variant `ui-play-tile--row`, the preview's variants
+  `ui-play-tile__preview--light` and `ui-play-tile__preview--locked`) and
+  the small entry `ui-small-entry` (`entry`, `icon`, `label`);
+  `ui-option` (`option`, `badge`, `name`, `meta`, `size`, `density`,
+  `check`; variant `ui-option--learn`); the panel toggle, a
+  `ui-button--quiet` latched toggle in the frame's `action`, and the
+  drawer `ui-drawer` (`bar`, `label`, `chevron`, `body`); the go and stop
+  button variants `ui-button--go` and `ui-button--stop`, worn beside
+  `ui-button--primary`; `ui-section-label` (`text`, `aside`);
   `ui-key-hint` (`key`, `label`; variant `ui-key-hint--pad`); `ui-chip`
   (variants `--won`, `--lost`, `--muted`, `--best`); `ui-list-row`
   (`date`, `board`, `figure`, `outcome`); `ui-scene-panel` (`stage`,

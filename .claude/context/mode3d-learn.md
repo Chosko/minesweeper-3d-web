@@ -44,7 +44,7 @@ the stylesheets (§ Learn 3D's screens).
   skipped when its turn comes; the chord prompt is also done once L has no
   closed, unflagged neighbour, since a chord on L can then open nothing; L
   carries the start-cell tint during prompts 1 and 4, M during prompt 3. Starting it saves no choice and moves
-  no "Last played" mark; the shell's wiring is
+  no last-board mark (`data-last`); the shell's wiring is
   [app-shell-3d-session.md](app-shell-3d-session.md).
 - **Learn 3D's end.** A win offers *Play Cube Intro* — an ordinary pick of
   Cube Intro, saved as the last choice — a loss *Try again*

@@ -18,8 +18,8 @@ is the head comment of `css/components.css` (*Replay viewer*) and the
 - `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack,
   onDownload?, onOpen?, onCopy?})` → the `#replay` binder (its ids in the
   head comment): a `ui-frame` inset on the backdrop at the canvas's size
-  (`#replay-frame`; Back `#rp-back` with its arrow and the title
-  `#replay-title` in its head), whose body holds the strip across it — the
+  (`#replay-frame`; Back `#rp-back`, its arrow alone, in its title bar and
+  the title `#replay-title` its heading), whose body holds the strip across it — the
   figures inline and unlabelled with the code chip `#rp-code` (Copy and
   Copy link call `onCopy`; hidden while loading, failed or with no code) —,
   then `#replay-main`: the board area `#replay-stage`, which takes the room

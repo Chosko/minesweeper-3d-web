@@ -23,9 +23,12 @@ are [app-shell-navigation.md](app-shell-navigation.md)'s; `focusMove`,
 
 - **Focus.** Each router entry declares `defaultFocus`; the `focus`
   hand-off (`focusScreen`) resolves it inside the screen's layer, falling
-  back to its first focusable control. Defaults: menu the last mode played
-  (`[data-entry][data-last]`); 3D board choice `[data-preset][data-last]`;
-  Classic 2D board choice `[data-size][data-last]`; placeholder its Back;
+  back to its first focusable control. Defaults: menu
+  `#menu-entry-<id>` of `menuFocusEntry()`
+  ([app-shell-menu.md](app-shell-menu.md) § Opening selection); 3D board
+  choice the chosen option, `[data-preset][aria-pressed="true"]`; Classic
+  2D board choice `[data-size][aria-pressed="true"]` — the last board
+  played, chosen when the window opens; placeholder `#coming-soon-back`;
   Records the chosen board (`#records-picker [aria-checked="true"]`);
   Settings `#set-lookSensitivity`; ready `#ready-btn`; pause Cancel while
   confirming, else Resume during a game, else Restart (Play again once
@@ -62,7 +65,12 @@ are [app-shell-navigation.md](app-shell-navigation.md)'s; `focusMove`,
   columns below its widest windows, whose sections are placed one by one)
   it searches only `cur`'s column, so the walk leaves a column at its ends
   in page order. Up / Down into a radio group land on its one stop, the
-  checked option. Left / Right on a range input step its value. The arrow keys do not walk on `playing`,
+  checked option. Left / Right on a range input step its value. Inside a row
+  — a window's title bar: Back, then Minimise, Fullscreen / Windowed and
+  Quit — Right / Left step along it in page order and stop at its ends;
+  Down / Up stay spatial, and Up with nothing above enters the title bar
+  at its start (the row rule is `focusMove`'s,
+  [input-controller.md](input-controller.md)). The arrow keys do not walk on `playing`,
   `classic-2d`, `records`, the replay viewer or the look (`KEY_NAV_OFF`),
   which handle arrows of their own.
 

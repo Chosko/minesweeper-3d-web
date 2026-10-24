@@ -6,7 +6,8 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 How the catalogued components of the shared layout behave and look: the
 icon set and the button's leading-icon slot, the confirm box and the
 notes, the surfaces (stat tile, muted panel, table, pager, code chip), the
-slider's fill, the screen frame and the scene panel, the message card and
+slider's fill, the screen frame with its title bar and the game logo, the
+board choice panel and its drawer, the scene panel, the message card and
 its scrim, and the screens composed in the kit. The catalogue itself, its
 data, the gallery and the selected-state contract are
 [app-shell-kit.md](app-shell-kit.md); the helpers that build and bind these
@@ -67,20 +68,44 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   (`bindSliderFill`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md))
   sets on the input; the kit's slider binder and the Settings and pause
   controls' binder both install it.
-- **The screen frame.** Every non-game screen is a `ui-frame` on a
-  `ui-backdrop`, sized to its content and never larger than the window: a
-  head (Back with its back key hint, the title centred, an optional
-  action), a body that scrolls vertically while head and foot stay in
-  view, and a foot — a status line, or a bottom bar of the selection's
-  summary beside the screen's actions; the `window-chrome` slot is hidden
-  unless a theme draws it. The head and foot, their titles and the small
-  buttons follow the window-size steps — desktop, compact for the smaller
-  desktop windows, touch for a phone upright or sideways — whose values the
-  theme stylesheet holds; the title stays on one line. A screen's bar of
-  actions (the board choices, Daily, results) is the white action foot
+- **The screen frame.** Every non-game screen and the Classic 2D game
+  window is a `ui-frame` on a `ui-backdrop`, sized to its content and never
+  larger than the window. Its head is the game's title bar on every one but
+  the results card, which keeps a head of its own: Back at the start as
+  its arrow icon alone (none on the main menu; the game window holds its
+  own controls there, [app-shell-hud.md](app-shell-hud.md)), the game logo
+  `ui-logo` in the centre — MINESWEEPER a game colour per letter and 3D in
+  yellow, a white outline and a short darker extrusion, drawn by
+  `applyLogos` — and at the end the window buttons Minimise, Fullscreen /
+  Windowed and Quit (the stop button), each icon-only with a tooltip and
+  an accessible name. On the web they press and do nothing; a desktop host
+  the platform layer's `capabilities` report attaches their actions
+  (`bindWindowButtons`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md);
+  [platform.md](platform.md)). A phone's head holds only Back and the
+  logo. The screen's name is the body heading `ui-frame__heading`, with the
+  screen's control at its right in `ui-frame__action` (Records' 2D | 3D
+  switch, a board choice's panel toggle); the main menu has none. Then a
+  body that scrolls vertically while head, heading and foot stay in view,
+  and a foot — a status line, or a bar of the screen's actions; the
+  `window-chrome` slot is hidden unless a theme draws it. The head, the
+  logo, the heading and foot, their titles and the small buttons follow the
+  window-size steps — desktop, compact for the smaller desktop windows,
+  touch for a phone upright or sideways — whose values the theme
+  stylesheet holds; the title stays on one line. A screen's bar of actions
+  (the board choices, Daily, results) is the white action foot
   `ui-frame__foot--action`, a bottom bar on a phone (the results' in flow
-  at the card's end); the Classic 2D game
-  window keeps the head-coloured foot. A `ui-scene-panel` is a framed region a mode's
+  at the card's end); the Classic 2D game window keeps the head-coloured
+  foot.
+- **The board choice panel.** A board choice's settings, Custom form, code
+  field and bests sit in a `ui-drawer` beside the Board list, behind a
+  `ui-divider--vertical` shown only while it is open; the window widens
+  for it and stays centred. On a desktop window the drawer's bar is hidden
+  and the panel toggle in the heading pins it, drawn sunk while pinned; on
+  a phone the toggle is gone and the drawer is a full-width raised bar
+  under the Board list that, open, lies flat on a cream band ending with a
+  line, its label naming what it holds. Its behaviour is
+  [classic2d.md](classic2d.md) § Board choice panel.
+- **Scene panels.** A `ui-scene-panel` is a framed region a mode's
   own renderer draws into: a Classic 2D board view, the 3D scene through
   the renderer's target rectangle while the panel is `--live`
   ([app-shell-3d.md](app-shell-3d.md) § Scene panel), or a card with an

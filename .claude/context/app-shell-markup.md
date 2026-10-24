@@ -28,10 +28,12 @@ bind.
   order, at which window sizes, its default focus — is the head comment of
   `css/components.css`; this list names the ids the shell wires. The
   non-game screens sit on a `ui-backdrop`, each in a `ui-frame`
-  (`#<screen>-frame`: Back in `ui-frame__start` with its back key hint, the
-  title, an optional action, a scrolling `ui-frame__body`, a foot); the
-  main menu sits in its frame `#menu-frame` too, its title bar with no
-  Back.
+  (`#<screen>-frame`: the title bar `ui-frame__head` — Back in
+  `ui-frame__start` as its arrow alone, the logo `ui-frame__logo`, the
+  window buttons `[data-window]` in `ui-frame__window` —, the heading
+  `ui-frame__heading` with the title and its action `ui-frame__action`, a
+  scrolling `ui-frame__body`, a foot); the main menu sits in its frame
+  `#menu-frame` too, its title bar with no Back and no heading.
   - main menu `#menu`: `#menu-title` (the logo), `#menu-entries` (a
     `ui-mode-list`: its tiles, a `ui-play-tile` per mode and Daily, then
     its places, a `ui-small-entry` each for Records and Settings — each
@@ -39,27 +41,29 @@ bind.
     `#menu-preview-classic-2d`), `#menu-foot` with `#touch-note` and the
     build label `#menu-build` ([app-shell-menu.md](app-shell-menu.md));
   - board choices `#c2d-choice` ([classic2d.md](classic2d.md)) and
-    `#board-choice` ([mode3d.md](mode3d.md)), one markup: `#…-top` holding
-    the wordmark and the frame, `#…-back`, the options `#…-options`
+    `#board-choice` ([mode3d.md](mode3d.md)), one markup: the frame
+    `#…-frame`, `#…-back`, the panel toggle (`#c2d-panel-toggle`,
+    `#bc-panel-toggle`) in the heading's action, the options `#…-options`
     (`ui-option`s, `data-size` / `data-preset`; `#bc-learn` on the 3D one),
-    the detail column `#…-detail` (settings, the custom form with Random
+    the board choice panel, a `ui-drawer` (`#c2d-choice-panel`,
+    `#bc-choice-panel`) with its bar (`#c2d-drawer-bar`, `#bc-drawer-bar`)
+    and its body `#…-detail` (settings, the custom form with Random
     `#c2d-random` / `#c-random`, the bests `#c2d-bests` / `#bc-bests` of
-    `ui-stat--tile`s, the code panel), and the foot's summary
-    (`#c2d-summary`, `#bc-summary`), Records (`#c2d-records`,
-    `#bc-records`) and Play (`#c2d-play`, `#bc-play`); the binders read
-    their `data-*` hooks, not the ids;
+    `ui-stat--tile`s with *All records* `#c2d-records` / `#bc-records`
+    under them, the code panel), and the foot's Play (`#c2d-play`,
+    `#bc-play`); the binders read their `data-*` hooks, not the ids;
   - Daily `#daily` (the board choices' markup, `#daily-modes` of
     `#daily-entry-<mode>`, `#daily-preview`, `#daily-code`, `#daily-watch`,
     `#daily-play`; [app-shell-daily.md](app-shell-daily.md));
-  - placeholder `#coming-soon` (`#coming-soon-menu` in the head, reading
-    Back on a phone, `#coming-soon-title`, the lock badge
+  - placeholder `#coming-soon` (`#coming-soon-menu` in the title bar, its
+    arrow alone, `#coming-soon-title`, the lock badge
     `#coming-soon-badge`, `#coming-soon-back`, both Backs with the
     arrow-left icon); Records `#records` (the view
     and its ids: [records-screen-view.md](records-screen-view.md); the switch
-    `#records-mode` in the frame's head and `#records-mode-touch` the
-    phone's bar opening the body, the head's switch and the picker each in
+    `#records-mode` in the frame's heading and `#records-mode-touch` the
+    phone's bar opening the body, the heading's switch and the picker each in
     a `data-pad-hinted` row between `data-pad-glyph` hints); Settings
-    `#settings` (Back `#settings-back` in the head `#settings-actions`, the
+    `#settings` (Back `#settings-back`, its arrow alone, in the title bar's start `#settings-actions`, the
     body `#settings-body` from `settingsPageHtml()`,
     [settings-page.md](settings-page.md));
   - pause card `#pause-card` (`ui-screen--wide`, a `ui-columns--two`):

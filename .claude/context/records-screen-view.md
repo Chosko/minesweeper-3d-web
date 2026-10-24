@@ -21,8 +21,8 @@ Records view (`js/records/screen.js`)
   onOutcome?, onTab?, onTopStat?, onExport?, onDownload?, onOpenFile?,
   chart?, bestChart? })` →
   `show(content)`, `hide()`, `closeConfirm()`, `isConfirmOpen()`; the
-  switch is `#records-mode` in the head and `#records-mode-touch`, the
-  phone's bar, both bound; the charts default to `#records-chart` and
+  switch is `#records-mode` at the right of the frame's heading and
+  `#records-mode-touch`, the phone's bar, both bound; the charts default to `#records-chart` and
   `#records-best-chart`, drawn on every show; the tabs `#records-tabs` are
   a kit tablist (`bindTabs`), each showing the panel its `aria-controls`
   names; a best's Watch is an inline `ui-link` in its tile's note, a list
@@ -43,9 +43,10 @@ Export (`js/records/export.js`)
 
 - **Layout** (`css/components.css` head comment, *Records*; `css/style.css`
   places it). `#records` is a `ui-frame` inset on the backdrop at each
-  window step's canvas size (J-Records-xl, -l, -m), not full height: Back
-  ("Main menu", "Back" on a phone) and the 2D | 3D switch in its head, the
-  picker one line across the top of its body, scrolling sideways under a
+  window step's canvas size (J-Records-xl, -l, -m), not full height: the
+  title bar's Back (its arrow alone, named "Back to Main menu" when it
+  returns to the menu, else "Back"), the heading "Records" with the 2D | 3D
+  switch at its right, the picker one line across the top of its body, scrolling sideways under a
   fade, then a `ui-columns--two` — the left column at a fixed width per
   window step, its sections on the frame under section labels (the bests
   as three `ui-stat--tile`s across at every size, each figure shrinking
@@ -63,8 +64,8 @@ Export (`js/records/export.js`)
   sideways in its own box (`#records-games-scroll`, `#records-top-scroll`,
   `#records-replays-scroll`) when narrower, and shows its Board code column
   on the largest window step only. On a phone the frame is full-bleed, the
-  head holds Back and the title, `#records-mode-touch` is the full-width
-  switch under it and each averages row is a card; a time never wraps.
+  head holds Back and the logo, `#records-mode-touch` is the full-width
+  switch under the heading and each averages row is a card; a time never wraps.
 - **Export.** `js/main.js` builds one `RECORDS_EXPORT` over the store and
   the library; the screen's actions under the mode's overall figures and
   the Settings Data panel's both save through it, disabled until a game is

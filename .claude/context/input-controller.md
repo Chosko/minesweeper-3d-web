@@ -51,11 +51,13 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   while `open` is null. `tabWrap(items, cur, back)` → where Tab (Shift+Tab when `back`) goes inside
   an open overlay: the last stop to the first, the first to the last, focus outside to the first
   (last); null leaves it to the browser.
-- `focusMove(items, cur, dir, {spatial, groupOf?})` → the control a focus move lands on, or null.
-  Down / Up from inside a group (`groupOf(item)`: a table, a menu) take the next / previous item in
-  DOM order; otherwise `spatial(dir)`'s pick wins, and Down / Up landing in a group land on its first
-  / last item; with no pick, the next item in DOM order for Down and Right, the previous for Up and
-  Left; no wrap past either end.
+- `focusMove(items, cur, dir, {spatial, groupOf?, rowOf?})` → the control a focus move lands on, or
+  null. Down / Up from inside a group (`groupOf(item)`: a table, a menu) take the next / previous
+  item in DOM order; Right / Left from inside a row (`rowOf(item)`: a window's title bar) take the
+  next / previous item of the row and go nowhere past its ends; otherwise `spatial(dir)`'s pick
+  wins, and Down / Up landing in a group land on its first / last item; with no pick, the next item
+  in DOM order for Down and Right, the previous for Up and Left, Up landing in a row on its first
+  item; no wrap past either end.
 - `isBackKey(code)` — Esc is Back on every screen (Pause while playing);
   `backButtons(screen)` → `[BTN.BACK]` on `'playing'`, else `[BTN.B, BTN.BACK]`.
 - `arrowDirection(code)`; `keepsArrow(control, dir)` — range, number and text inputs and a

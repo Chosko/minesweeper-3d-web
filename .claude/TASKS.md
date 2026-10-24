@@ -1721,7 +1721,7 @@ Feature: shared-screen-layout
 
 ## 285. Update documentation for feature `shared-screen-layout`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-kit-layout.md, .claude/context/app-shell-menu.md, .claude/context/app-shell-menu-preview.md, .claude/context/app-shell-focus.md, .claude/context/app-shell-pause.md, .claude/context/app-shell-results-view.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/platform.md, .claude/context/records-screen-view.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/shared-screen-layout.md
 Preconditions: 281, 282, 283, 284
