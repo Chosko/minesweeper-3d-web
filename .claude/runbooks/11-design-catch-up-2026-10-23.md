@@ -54,13 +54,20 @@ Context: none
 
 Done: 2026-10-24, commit `8c37909` (28 files, +812/-416). Decision: the panel behaviour is `bindChoicePanel` in `js/classic2d/board-choice.js`, which the 3D binder imports; `choiceSummary` and `LEARN_SUMMARY` are removed and `show()` no longer takes `played`.
 
-## [~] 5. Implement task 286 — Classic 2D game window: title bar with Pause, mode in the footer, collapsed live figures
+## [P] 5. Implement task 286 — Classic 2D game window: title bar with Pause, mode in the footer, collapsed live figures
 
 Depends on: 1, 2, 4
 
 Context:
 - 2026-10-24 (from step 4): the board choice panels are `#c2d-choice-panel` and `#bc-choice-panel` (`#c2d-panel` is the game window's board frame); Up from the first board option walks to the panel toggle, then the title bar's Quit.
 - 2026-10-23 (from step 2): two stopgaps for this task to remove — the in-game title bar still holds Swap clicks and Pause, so at 1366 and 1024 wide the game window takes the bar's width (board kept at the start), and the window's body heading is visually hidden.
+- 2026-10-24 parked: Q1. During a Classic 2D game every controller input goes to the board: the D-pad and stick move the cursor, A/X/Y/LT/RT play, Start and B/Back pause. Nothing reaches the window's foot, so the criterion "keyboard and controller reach the toggle and Swap clicks in the footer" has no controller route yet. The keyboard reaches both by Tab, and Enter or Space presses them. How should the controller reach them?
+    a) One free controller button toggles the live figures directly (RB, say), listed in the controls lists. Swap clicks stays unreachable by controller, since it only swaps mouse buttons. The same button can serve task 287's 3D toggle.
+    b) A focus walk off the board: pushing the D-pad past the board's bottom edge leaves the cursor and walks the foot's controls (Swap clicks, the toggle), A presses, and Up goes back to the board.
+    c) A "Live figures" switch on the pause card, which the controller already walks, sets the same stored preference. The foot's controls stay mouse and keyboard only.
+    d) No controller route in this task: ship keyboard reach only and file a follow-up task for the controller.
+    Recommendation: a. It is one binding, needs no new navigation mode, and can be reused in 3D.
+- 2026-10-24 (from step 5's parked run): task 286's work is parked as `de780a6` on `park/task-286`. The step 2 stopgap holds in part: at 1366 and 1024 wide the title bar is still wider than Intermediate's board column, so the window takes its width. The taller foot makes the board one tile size smaller than the canvas draws (41 px at 1920×1080, 27 px at 1024×768).
 
 ```prompt
 /task-implement 286 --review
