@@ -74,7 +74,9 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   the results card, which keeps a head of its own: Back at the start as
   its arrow icon alone (none on the main menu; the game window holds its
   own controls there, [app-shell-hud.md](app-shell-hud.md)), the game logo
-  `ui-logo` in the centre — MINESWEEPER a game colour per letter and 3D in
+  `ui-logo` between (centred while both sides fit equal; a head fitted to
+  its width, the game window's, gives Back's side up first, then scales the
+  logo down to a floor and hides it, `fitTitleBar`) — MINESWEEPER a game colour per letter and 3D in
   yellow, a white outline and a short darker extrusion, drawn by
   `applyLogos` — and at the end the window buttons Minimise, Fullscreen /
   Windowed and Quit (the stop button), each icon-only with a tooltip and

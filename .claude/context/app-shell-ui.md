@@ -43,7 +43,8 @@ overlay's parts and the aimed-cell readout are
     `replayRing(x, y, kind)` (a 3D replay's press ring on the layer over its scene, `#replay-scene-over`, at x, y in the board area);
   - Classic 2D: `setSwap`, `setFigures2D(open)` (the live figures panel shown or hidden by `#c2d`'s `data-figures="open"`, its toggle pressed while open), `setTapMode('reveal' | 'flag')`,
     `placePanel2D(rect, radius)` (the board frame at `rect`, its corner radius set as `--board-frame-radius`; a null `rect` hides it),
-    `sizeBoard2D(extent)` (the board area `#c2d-stage` at the board's extent in the room the window's chrome leaves, measured under `#c2d.c2d--measure`; → whether it changed),
+    `sizeBoard2D(extent)` (the board area `#c2d-stage` at the board's extent in the room the window's chrome leaves, measured under `#c2d.c2d--measure`, giving back what the body or the board column then overflows, then `fitTitle2D`; → whether it changed),
+    `fitTitle2D()` (the title bar fitted to the board column, `fitTitleBar`; the frame's `min-width` its least width, so only a column narrower than Pause and the window buttons widens the window),
     `setBoard2D(board)` (the foot line: `boardTitle2D`, then `boardFoot2D`), `updateFigures2D(input, {tick, bests})`,
     `setBoardStatus` (the card centred on the board column `#c2d-main`,
     `_centreStatus2D`, again on every `placePanel2D`); 3D `setBoardStatus3D`

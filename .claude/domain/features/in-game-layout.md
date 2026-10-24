@@ -31,6 +31,11 @@ In scope (m2b-themes):
   and no-guess), with Swap clicks and the **live-figures toggle** on its
   right. The window hugs its content and centres on the page; the board
   starts just under the counter strip, left-aligned at the strip's width.
+  The title bar never widens the window: it fits the board column's width,
+  the logo scaling down between Pause and the window buttons and hiding
+  below its floor, as the title bar's rule says (`shared-screen-layout`);
+  only a board column narrower than Pause and the window buttons alone
+  widens the window to them, the board centred in it.
   On a phone, portrait and landscape alike, the head holds Pause and the
   logo, the mode and difficulty lead the foot line, and there is no
   live-figures toggle; the board sits directly under the counter strip
@@ -140,7 +145,7 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
   window's chrome reduces the space the fit rule works in, measured with
   the window at its largest, and the board area takes the board's extent
   there, so the window hugs the board and follows its size, the side
-  panel widening it only while open; the open panel moves under the
+  panel widening it only while open and the title bar never; the open panel moves under the
   board, its figures in a row, below 1024 px wide, and is hidden on a phone — narrower than 720 px, or held sideways at
   500 px high or less
   ([shared-screen-layout.md](./shared-screen-layout.md) § Interfaces and
