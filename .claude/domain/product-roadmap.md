@@ -220,11 +220,12 @@ Covers:
   replays, cloud saves, and achievements for the 2D and 3D modes. Windows
   only. No campaign or daily leaderboards, no campaign achievements.
 - product-design.md § Main menu and game shell — the leaderboards in the
-  Records screen's Leaderboards tab; the title bar's Quit button quitting
-  the game on the desktop build; and, in Settings, rebinding keys, mouse
+  Records screen's Leaderboards tab; the title bar's Quit button, which
+  quits the game on the desktop build and shows in the web preview's title
+  bar but does nothing there; and, in Settings, rebinding keys, mouse
   buttons and controller buttons for 3D and for the flat modes — Classic 2D,
-  Hexagon and Triangle, which share one set of bindings. No Quit in the web
-  preview's title bar; no Start/Continue or Campaign entries.
+  Hexagon and Triangle, which share one set of bindings. No Start/Continue
+  or Campaign entries.
 - product-design.md § Results and records — the Steam global and friends
   rank on the results screen.
 
