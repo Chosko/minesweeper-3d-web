@@ -54,7 +54,7 @@ Context: none
 
 Done: 2026-10-24, commit `8c37909` (28 files, +812/-416). Decision: the panel behaviour is `bindChoicePanel` in `js/classic2d/board-choice.js`, which the 3D binder imports; `choiceSummary` and `LEARN_SUMMARY` are removed and `show()` no longer takes `played`.
 
-## [P] 5. Implement task 286 — Classic 2D game window: title bar with Pause, mode in the footer, collapsed live figures
+## [ ] 5. Implement task 286 — Classic 2D game window: title bar with Pause, mode in the footer, collapsed live figures
 
 Depends on: 1, 2, 4
 
@@ -68,6 +68,7 @@ Context:
     d) No controller route in this task: ship keyboard reach only and file a follow-up task for the controller.
     Recommendation: a. It is one binding, needs no new navigation mode, and can be reused in 3D.
 - 2026-10-24 (from step 5's parked run): task 286's work is parked as `de780a6` on `park/task-286`. The step 2 stopgap holds in part: at 1366 and 1024 wide the title bar is still wider than Intermediate's board column, so the window takes its width. The taller foot makes the board one tile size smaller than the canvas draws (41 px at 1920×1080, 27 px at 1024×768).
+- 2026-10-24 unparked with answer: Q1a — one free controller button (RB, say) toggles the live figures directly, listed in the controls lists; Swap clicks stays unreachable by controller; the same button can serve task 287's 3D toggle.
 
 ```prompt
 /task-implement 286 --review
