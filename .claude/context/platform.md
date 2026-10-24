@@ -21,7 +21,7 @@ implementation's default `indexedDB` factory.
 | `js/platform/index.js` | The selector: builds the one `storage` and the one `blobStore`; re-exports the storage methods; the host's capability flags `capabilities`. |
 
 Document owners register here: settings ([settings.md](settings.md)),
-`shell.lastMode` and the board choice panel's pin `shell.boardPanel` ([app-shell-menu.md](app-shell-menu.md)) and `shell.firstUse` ([app-shell-help.md](app-shell-help.md)), the
+`shell.lastMode` and the board choice panel's pin `shell.boardPanel` ([app-shell-menu.md](app-shell-menu.md)), the live figures panel's open state `shell.liveFigures` ([app-shell-2d.md](app-shell-2d.md)) and `shell.firstUse` ([app-shell-help.md](app-shell-help.md)), the
 last Classic 2D and 3D board choices ([classic2d.md](classic2d.md),
 [mode3d.md](mode3d.md)), the records store's three documents
 ([records-store.md](records-store.md)), the Records screen's `records.view`

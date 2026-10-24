@@ -181,9 +181,10 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
 
 - **Live figures panel open or closed** — one stored view preference,
   shared by every mode and kept across sessions, saved through the
-  platform layer beside the board choice panel's pin
-  (`shared-screen-layout` § Data and state); closed when nothing is
-  stored.
+  platform layer in its own document `shell.liveFigures` beside the board
+  choice panel's pin (`shared-screen-layout` § Data and state), read
+  before the first screen; closed when nothing is stored, and cleared by
+  Reset all data.
 - The figures are derived per change from the live game's counts and the bests read at game start; the replay viewer derives
   them from the replay's frame and the bests as they stand.
 - The engine already exposes 3BV, 3BV solved and the click counts at any
@@ -197,7 +198,10 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
 - **Overlay** — the existing hooks the shell and tests use (the time,
   mines and clicks readouts, Pause, the board-size label) keep their ids,
   or move with their owners in the same change. The live-figures toggle
-  exposes its pressed state, and Restart keeps its accessible name.
+  is the kit's panel toggle (`shared-screen-layout` § Interfaces and
+  contracts) — a `ui-button--quiet` latched toggle, icon-only, named
+  *Live figures* — and exposes its pressed state; Restart keeps its
+  accessible name.
 - **Readability** — every readout meets the contrast contract against the
   surface it sits on, over the Classic 2D window and over any 3D sky, in
   every theme.

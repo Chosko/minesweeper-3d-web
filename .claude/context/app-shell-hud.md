@@ -14,18 +14,20 @@ the aimed-cell readout. The `UI` methods that write them are
 
 - `UI`'s HUD writes: `updateHud(time, minesLeft, clicks?)`,
   `updateFigures2D` / `updateFigures3D(input, {tick, bests})`, `setBoard`,
-  `setLearn`, `setArrow`, `setReadout`, `setSwap`, `setTapMode`
+  `setLearn`, `setArrow`, `setReadout`, `setSwap`, `setTapMode`,
+  `setFigures2D` / `setFigures3D(open)`
   ([app-shell-ui.md](app-shell-ui.md)); each touches the DOM only on change.
 - `liveFigures` (`js/shell/live-figures.js`) — the live figures model both
-  modes' panels and the replay viewer's show.
+  modes' panels and the replay viewer's show; `createFiguresPanel` there —
+  the panel's stored open state.
 
 ## INTERNAL PATTERNS
 
 - **Counters.** Each mode's `ui-counter-strip`: mines left
   (`formatMineCount`, `data-negative` below zero (drawn by the theme in
   the danger colour), widened past three digits by `mineCounterDigits`),
-  Restart (`#c2d-restart` icon-only, named and tooltipped *Restart* /
-  `#hud-restart`, never taking focus) and the
+  Restart (`#c2d-restart` / `#hud-restart`, icon-only, named and
+  tooltipped *Restart*, never taking focus) and the
   timer (`formatOverlayTime`, stops at `999`).
   `updateHud` writes the Classic 2D window's (`#c2d-mines-left`,
   `#c2d-time`) while it shows, else the 3D overlay's (`#hud-mines`,

@@ -44,7 +44,7 @@ overlay's parts and the aimed-cell readout are
   - Classic 2D: `setSwap`, `setFigures2D(open)` (the live figures panel shown or hidden by `#c2d`'s `data-figures="open"`, its toggle pressed while open), `setTapMode('reveal' | 'flag')`,
     `placePanel2D(rect, radius)` (the board frame at `rect`, its corner radius set as `--board-frame-radius`; a null `rect` hides it),
     `sizeBoard2D(extent)` (the board area `#c2d-stage` at the board's extent in the room the window's chrome leaves, measured under `#c2d.c2d--measure`; → whether it changed),
-    `setBoard2D`, `updateFigures2D(input, {tick, bests})`,
+    `setBoard2D(board)` (the foot line: `boardTitle2D`, then `boardFoot2D`), `updateFigures2D(input, {tick, bests})`,
     `setBoardStatus` (the card centred on the board column `#c2d-main`,
     `_centreStatus2D`, again on every `placePanel2D`); 3D `setBoardStatus3D`
     (progress by `progressLine`); on either a failure offering nothing
