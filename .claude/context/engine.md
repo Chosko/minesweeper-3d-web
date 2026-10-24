@@ -40,7 +40,7 @@ Cell graph, square and hexagon grids
   reading order over the 3 × 3 block (NW N NE W E SW S SE), so every list is
   ascending.
 - `createHexGrid(width, height)` → the same shape and index; W columns of H
-  flat-top hexagons, odd columns half a tile lower, a tile's neighbours the
+  flat-top hexagons, odd columns half a row lower, a tile's neighbours the
   tiles sharing a side (the row above at the sides in an even column, the
   row below in an odd one), every list ascending.
 

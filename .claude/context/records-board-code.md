@@ -17,12 +17,14 @@ Board codes (`js/records/board-code.js`; its header states the frozen
 grammar)
 - `encodeBoardCode({ board, seed, startCell, generatorVersion, daily? })` →
   the game form `EN-9C41D07A-247-1486` or, with `daily` (YYYYMMDD), the daily
-  form `EN-20261011-184A`; `parseBoardCode(text, { generatorVersion? })` →
-  `{ ok: true, board, seed, startCell, generatorVersion, daily? }` or `{ ok:
-  false, reason }` (`CODE_REASONS`, among them `incomplete` for a code cut
+  form `EN-20261011-184A`; a hexagon board's token is the 2D token after an
+  `H` (`HB`, `HI`, `HE`, `H20X12M50`, then `N` when no-guess);
+  `parseBoardCode(text, { generatorVersion? })` → `{ ok: true, board,
+  seed, startCell, generatorVersion, daily? }` or `{ ok: false, reason }` (`CODE_REASONS`, among them `incomplete` for a code cut
   off before its check), never throwing; `codeOf(game)` — a
   summary's or history entry's code, null without what one needs.
-- `boardToken`, `graphOf(identity)`, `fnv1a`, `dailySeed(date, token)`,
+- `boardToken`, `graphOf(identity)` (the `square`, `hex` or `box`
+  description), `fnv1a`, `dailySeed(date, token)`,
   `dateText(now)` (the local date), `isDateText`.
 - `DAILY_BOARDS` (`expert` EN, `cube` 8X8X8M40N), `dailyBoardOf(identity)`,
   `dailyGame(id, date)` → `{ board, seed, startCell, code, request, … }`.
@@ -31,8 +33,12 @@ grammar)
 
 - **Codes are frozen.** The grammar, FNV-1a and the daily seed never
   change meaning; a code of another `GENERATOR_VERSION` is refused, never
-  approximated. The parser validates against both modes' custom limits
-  (`js/classic2d/board-setup.js`, `js/mode3d/board-choice.js`).
+  approximated. A code starting with `H` is a hexagon board's; no other code
+  does.
+- **Each mode's own limits.** The parser validates a board against its
+  mode's custom limits: Classic 2D's (`js/classic2d/board-setup.js`),
+  Hexagon's (`js/hexagon/board-setup.js`, which re-exports Classic 2D's
+  validation) or 3D's (`js/mode3d/board-choice.js`).
 
 ## DOMAIN DEPENDENCIES
 
@@ -40,6 +46,8 @@ grammar)
   — § Architecture, "Board code".
 - [../domain/features/board-generation.md](../domain/features/board-generation.md)
   — daily boards from the date and board codes that rebuild any board.
+- [../domain/features/hexagon-grid.md](../domain/features/hexagon-grid.md)
+  — § Data and state, the hexagon board-code token.
 
 ## CROSS-REFERENCES
 

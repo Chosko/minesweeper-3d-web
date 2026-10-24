@@ -1441,7 +1441,7 @@ Feature: hexagon-grid
 
 ## 257. Update documentation for feature `hexagon-grid`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/engine.md, .claude/context/generation.md, .claude/context/records.md, .claude/context/records-board-code.md, .claude/context/classic2d.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/hexagon-grid.md
 Preconditions: 254, 255, 256

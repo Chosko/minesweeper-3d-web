@@ -13,6 +13,7 @@ board; the skin owns how a tile looks.
 | File | Responsibility | Context file |
 | --- | --- | --- |
 | `js/classic2d/board-setup.js` | Board choice → board request: standard sizes, custom limits and validation, grid and records identity of a choice, the last board choice document. DOM-free. | this file |
+| `js/hexagon/board-setup.js` | The Hexagon mode's board setup values: its standard boards and Classic 2D's custom limits, read by the board-code parser. DOM-free. | this file |
 | `js/classic2d/board-choice.js` | The board choice screen: custom info line, validation and Random, the choice its fields describe, the bests line, the board choice panel every mode's board choice shares (`bindChoicePanel`), `bindBoardChoice` (touches only the elements it is handed). | this file |
 | `js/classic2d/session.js` | The game session and timer: closed board, first click's board (standard, no-guess, pre-generated), generating state, failure offer, pause, end, restart and leave with summaries and replays, the replay recorder. DOM-free. | [classic2d-session.md](classic2d-session.md) |
 | `js/classic2d/mode.js` | The mode behind the shell's contract: one session, view, inputs and sampler per game, overlay feed, sound cues, pause by hiding the board, generation client and pre-generation, end delay. DOM-free. | [classic2d-mode.md](classic2d-mode.md) |
@@ -48,6 +49,15 @@ board; the skin owns how a tile looks.
 - `LAST_CHOICE_DOC` (`'classic2d.lastChoice'`), `LAST_CHOICE_VERSION` (1),
   `createLastChoice({storage})` → `{current, load(), save(choice)}`
   ([platform.md](platform.md)).
+
+`js/hexagon/board-setup.js`
+- `MODE` (`'hexagon'`), `GRID` (`'hex'`), `STANDARD_SIZES` (`beginner`,
+  `intermediate`, `expert`, as drawn on the Hexagon board sheet; equal to
+  the records' `STANDARD_BOARDS_HEX`, [records.md](records.md), held equal
+  by a test).
+- `BOARD_SIZES`, `maxMines`, `validateCustom` — re-exported from Classic
+  2D's board setup, so a hexagon custom board has Classic 2D's limits, mine
+  cap and refusal shape.
 
 `js/classic2d/board-choice.js` (its head comment is the contract)
 - `CHOICE_SIZES`, `CUSTOM_HINT`, `boardLine(board)`, `sizeLabel(size)`,
@@ -90,7 +100,9 @@ board; the skin owns how a tile looks.
   caps interpolated by cell count, rounded down — and cells − 1, so the
   first click is always safe. A 1 × 1 board is refused on the mines field,
   after the side checks; the smallest is 1 × 2. The records identity still
-  accepts 0 mines, so entries earned on such boards keep loading.
+  accepts 0 mines, so entries earned on such boards keep loading. The
+  Hexagon board setup takes the same limits through its re-export; only
+  its standard boards are its own.
 - **No-guess is never refused up front**, however dense the board: above
   `NOGUESS_DENSITY_HINT` the board choice shows its hint, and a failed
   no-guess request gets the session's failure offer.
@@ -130,6 +142,8 @@ board; the skin owns how a tile looks.
   boards, a deliberate difference from the reference), the game session,
   timer and failure offer, the board view, the pointer and cursor inputs,
   the sound of each action and the mode.
+- [../domain/features/hexagon-grid.md](../domain/features/hexagon-grid.md)
+  — the Hexagon standard boards and custom limits.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — what the 2D session records and the pointer and cursor sampling.
 - [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md)
@@ -149,7 +163,9 @@ board; the skin owns how a tile looks.
   [classic2d-end-effect.md](classic2d-end-effect.md),
   [classic2d-tile-motion.md](classic2d-tile-motion.md).
 - [engine.md](engine.md) — the square grid and `CUSTOM_LIMITS`.
-- [records.md](records.md) — `STANDARD_BOARDS` and the board identity.
+- [records.md](records.md) — `STANDARD_BOARDS`, `STANDARD_BOARDS_HEX` and
+  the board identity; [records-board-code.md](records-board-code.md) — the
+  board-code parser that reads both board setups' limits.
 - [generation.md](generation.md) — the board request.
 - [platform.md](platform.md) — the storage the last board choice lives in.
 - [mode3d.md](mode3d.md) — the 3D board choice, which imports the density
@@ -157,13 +173,17 @@ board; the skin owns how a tile looks.
 - [testing.md](testing.md) — `tests/classic2d-session.test.mjs` pins board
   setup and the last choice; `tests/classic2d-mode.test.mjs` board choice;
   `tests/classic2d-fidelity.test.mjs` the custom limits against the
-  fidelity observations.
+  fidelity observations; `tests/hexagon-board-setup.test.mjs` the Hexagon
+  board setup.
 
 ## WHEN TO READ THE SOURCE
 
 - Changing the custom limits or the stored choice (`customMineCap`,
   `normaliseChoice` in `board-setup.js`, `CUSTOM_LIMITS` in
-  `js/engine/profiles.js`).
+  `js/engine/profiles.js`); a change to the limits reaches Hexagon too.
+- Changing a Hexagon standard board: `STANDARD_SIZES` in
+  `js/hexagon/board-setup.js` with `STANDARD_BOARDS_HEX` in
+  `js/records/board.js`.
 - Changing the board choice screen's options, fields, info line, bests
   or panel (`customStatus`, `bindChoicePanel`, `bindBoardChoice` in
   `board-choice.js`; the `#c2d-choice` markup in `index.html`).

@@ -96,7 +96,9 @@ unchanged.
   standard board is the placer's first draw.
 - **Attempt budget.** 2000 candidates, set from a measurement of Expert
   no-guess generation recorded beside the constant and in the feature
-  document's § Attempt budget and timing.
+  document's § Attempt budget and timing. Hexagon Expert's mine count is the
+  one at which every seed `dev/measure-noguess-hex.mjs` measures meets the
+  budget, and `tests/generation-noguess.test.mjs` holds it to that.
 - **Solver soundness.** It never sees the mine set: it learns a number only
   by opening a deduced-safe cell, and runs single, subset and global stages
   in a fixed order, back to the first after every deduction (`solver.js`'s
