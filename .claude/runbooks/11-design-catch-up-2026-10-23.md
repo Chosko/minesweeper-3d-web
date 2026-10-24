@@ -76,7 +76,7 @@ Context:
 
 Done: 2026-10-24, commit `249ecd5` (28 files, +448/-179). Decision: RB toggles the live figures in a Classic 2D game, listed in its controller rows; Swap clicks has no controller button.
 
-## [P] 6. Implement task 287 — 3D game overlay without a title: floating Pause and live-figures toggle
+## [ ] 6. Implement task 287 — 3D game overlay without a title: floating Pause and live-figures toggle
 
 Depends on: 5
 
@@ -89,6 +89,7 @@ Context:
     c. RB in both modes, moving the Space view mode to another button — a wider rebinding of 3D play.
     d. No controller button in 3D — the toggle by mouse, touch and keyboard only.
     Recommendation: a — it needs no rebinding, sits under the thumb and adds one row to the 3D controller bindings.
+- 2026-10-24 unparked with answer: Q1 other — the View button (`BTN.BACK`, left of the Xbox button) shows or hides the live figures in every mode, Classic 2D and 3D alike; Classic 2D moves off RB, so RB stays the 3D Space view mode. Start is the only way to pause during play: View, and B in Classic 2D, no longer pause, and the controls lists say so. This step carries the Classic 2D rebinding too, since task 286 has landed.
 
 ```prompt
 /task-implement 287 --review
@@ -115,6 +116,7 @@ Depends on: 5, 6
 
 Context:
 - 2026-10-24 (from step 5): task 286's commit already updated several `.claude/context` files to match its code.
+- 2026-10-24 (from step 6's unpark): the controller binding changed after task 286 — View toggles the live figures in every mode and Start is the only pause during play; the docs record that, not step 5's RB.
 
 ```prompt
 /task-implement 288 --review
