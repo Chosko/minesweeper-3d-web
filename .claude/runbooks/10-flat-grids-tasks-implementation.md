@@ -190,7 +190,7 @@ Context:
 
 Done: 2026-10-24, commit `d086595` (9 files, +109/-60).
 
-## [ ] 15. Implement task 262 — Hexagon and triangle outlines in the tile recipe
+## [x] 15. Implement task 262 — Hexagon and triangle outlines in the tile recipe
 
 Depends on: none
 
@@ -199,6 +199,8 @@ Context: none
 ```prompt
 /task-implement 262 --review
 ```
+
+Done: 2026-10-24, commit `edd7209` (3 files, +595/-20). Decision: for hexagon and triangle tiles the style's fractions and corner radius are measured against the tile's height; the recipe's triangle glyph box is 0.55 of the side, while js/geometry/tri.js's `glyphBox` is side / √3.
 
 ## [ ] 16. Implement task 263 — Board module per-grid shape, numbers to 12, checks, and Joyful tiles' values
 
@@ -216,6 +218,7 @@ Depends on: 3, 15, 16
 
 Context:
 - 2026-10-24 (from step 12): the triangle geometry's centre is the triangle's centroid and its glyph box is the square around the inscribed circle (side / √3); it works out each cell's `'up'`/`'down'` orientation itself.
+- 2026-10-24 (from step 15): conflict to settle — the tile recipe's triangle glyph box (js/tile-art.js `glyphBox`) is 0.55 of the side, as the task and feature document say, but the triangle geometry's `glyphBox` (js/geometry/tri.js) is side / √3 ≈ 0.577, and the 2D painter takes its box from the geometry; with the geometry's box triangle glyphs come out about 5% larger than the document says. The recipe takes `drawFace(..., { outline })` with `square`, `hexagon`, `triangle-up` or `triangle-down`, and exports `OUTLINES`, `outlineBox`, `outlinePoints`, `glyphBox` and `inGlyphBox(ctx, box, draw)`.
 
 ```prompt
 /task-implement 264 --review
@@ -235,7 +238,8 @@ Context: none
 
 Depends on: 15, 16, 17, 18
 
-Context: none
+Context:
+- 2026-10-24 (from step 15): the tile recipe (js/tile-art.js) takes an `outline` option on `drawFace` and exports `OUTLINES`, `outlineBox`, `outlinePoints`, `glyphBox` and `inGlyphBox`; a hexagon is sized across its flats, a triangle by its side; style fractions and corner radius are measured against the tile height; an angled bevel edge blends the shades of its two neighbouring sides.
 
 ```prompt
 /task-implement 266 --review
