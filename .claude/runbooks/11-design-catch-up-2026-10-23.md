@@ -125,7 +125,7 @@ Context:
 /task-implement 288 --review
 ```
 
-## [~] 9. Update the Joyful tiles theme from its canvas
+## [x] 9. Update the Joyful tiles theme from its canvas
 
 Depends on: 3, 4, 6
 
@@ -139,3 +139,5 @@ Context:
 
 This is an update of the registered Joyful tiles theme from the "Minesweeper 3D Screens" canvas, after tasks 281–288 built the kit parts the design changelog entries of 2026-10-23 (13:13 to 18:08) added: the go and stop button variants, the title bar and game logo, the main menu buttons, the board choice panel toggle and drawer, the live-figures toggle. The values those entries left to the theme are: the main menu buttons' pastel and stronger-neutral tokens (J-Tokens, "Menu entry pastels"), their smaller edge with no drop shadow, the slimmer large confirm buttons, and the go / stop colours resting in a stronger pastel and taking the full colour when selected (J-Components). When the canvas needs a part the contract cannot express, stop as the skill says and name the task needed.
 ```
+
+Done: 2026-10-24, no commit — Joyful tiles already matched the canvas in every value the prompt lists; tasks 281–288 had written them. The 3D ready card is still unchecked against J-Ready.
