@@ -29,6 +29,7 @@ export const SHELL_SMOKE = [
   'tests/components-menu-screens.test.mjs', // the main menu and every screen it opens
   'tests/components-pause.test.mjs', // the pause card, its confirmation, the status card
   'tests/results.test.mjs', // a Classic 2D game through the shell to its results
+  'tests/flat-modes-play.test.mjs', // a Hexagon and a Triangle game through the shell to their results
   'tests/mode3d-end.test.mjs', // a 3D game through the worker to its end and its results
   'tests/replay-viewer.test.mjs', // the replay viewer
 ];

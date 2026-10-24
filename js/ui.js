@@ -16,6 +16,7 @@ import { liveFigures, figuresLine } from './shell/live-figures.js';
 import { standardBoard, preset3D, createBoardIdentity, MODE_3D } from './records/board.js';
 import { readoutText } from './readability.js';
 import { NO_GAME_LINE, ENDED_LINE } from './shell/pause.js';
+import { MODE_NAMES } from './shell/challenge.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -49,11 +50,11 @@ export function boardLine3D(s, { mines = false } = {}) {
 export const boardLine2D = (b) => `${b.width} × ${b.height} · ${b.mines} mine${b.mines === 1 ? '' : 's'}${b.noGuess ? NO_GUESS : ''}`;
 /** The Classic 2D window's foot line: the board's line with No-guess capitalised, never a cell ("16 × 16 · 40 mines · No-guess"). */
 export const boardFoot2D = (b) => `${boardLine2D({ ...b, noGuess: false })}${b.noGuess ? ' · No-guess' : ''}`;
-/** The Classic 2D window's title: the mode and the board — a standard board's name, a daily, or Custom. */
+/** The Classic 2D window's title: the open mode (Classic 2D, Hexagon or Triangle) and the board — a standard board's name, a daily, or Custom. */
 export function boardTitle2D(b) {
   const id = b.identity;
   const name = id?.daily ? 'Daily' : (id && standardBoard(id)?.name) || 'Custom';
-  return `Classic 2D · ${name}`;
+  return `${MODE_NAMES[id?.mode] ?? MODE_NAMES['classic-2d']} · ${name}`;
 }
 /**
  * The 3D overlay's title: the mode and the board — a cube preset's family and name, a daily, or

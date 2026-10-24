@@ -218,7 +218,7 @@ test('the controller\'s View button shows or hides the live figures in both mode
   const board = fn('padBoard2D');
   const view = board.indexOf('pressed(BTN.BACK)');
   assert.ok(view > 0, 'padBoard2D reads View');
-  assert.ok(view < board.indexOf('mode2d.pad('), 'before the board\'s cursor input');
+  assert.ok(view < board.indexOf('flat2D()?.pad('), 'before the board\'s cursor input');
   assert.match(board, /if \(pressed\(BTN\.BACK\)\) \{ padToggleFigures\('c2d-figures-toggle'\); return; \}/, 'the window\'s own toggle');
   assert.doesNotMatch(board, /BTN\.RB/, 'RB is no longer the Classic 2D toggle');
   assert.ok(board.indexOf('backButtons(') > board.indexOf('board2d.failure || board2d.generating'), 'Back only on the board status card');

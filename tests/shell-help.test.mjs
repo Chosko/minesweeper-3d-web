@@ -265,7 +265,8 @@ test('H and M work on the Classic 2D board; F stays the 3D fullscreen key', () =
 });
 
 test('the pause card is fed by the active mode and device; its look settings show only in 3D', () => {
-  assert.match(MAIN, /mode: MODES\.active/);
+  assert.match(MAIN, /return \{ \.\.\.flat2D\(\)\.status\(\), inProgress, note, mode: 'classic-2d' \};/, 'every flat mode\'s pause card shows Classic 2D\'s help');
+  assert.match(MAIN, /inProgress, note, mode: '3d' \};/);
   assert.match(UI, /'lookSensitivity', 'invertY'/);
 });
 

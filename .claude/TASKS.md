@@ -1561,7 +1561,7 @@ Feature: flat-grid-modes
 
 ## 269. Play in Hexagon and Triangle
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/main.js, js/classic2d/mode.js, js/classic2d/session.js, js/ui.js, js/shell/live-figures.js, js/shell/first-use.js, js/results/, tests/flat-modes-play.test.mjs, tests/results.test.mjs
 Preconditions: 264, 268, 286

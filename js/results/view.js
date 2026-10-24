@@ -14,7 +14,8 @@
 // resultsContent({ summary, comparison, saved, notSaved, watch, watchBest, rank, streak, standing, swapped }) →
 // the screen's content, top to bottom:
 //   { outcome, title,
-//     board       the mode and the board's label: "Classic 2D · Intermediate · no-guess",
+//     board       the mode's name (js/shell/challenge.js MODE_NAMES) and the board's label:
+//                 "Classic 2D · Intermediate · no-guess", "Hexagon · Beginner",
 //                 "3D · Cube Intermediate · no-guess";
 //     rank        on a ranked win the chip "#3 of 12 wins on this board", from the flow's rank
 //                 { position, of }; null on a loss, a challenge or without a rank;
@@ -82,6 +83,7 @@
 import { boardLabel, MODE_3D } from '../records/board.js';
 import { countedClicks } from '../records/summary.js';
 import { codeOf } from '../records/board-code.js';
+import { MODE_NAMES } from '../shell/challenge.js';
 import { bindCodeChip } from '../ui/components.js';
 
 export const DASH = '—';
@@ -235,7 +237,7 @@ export function resultsContent({
   return {
     outcome: summary.outcome,
     title: won ? 'You won!' : 'Game over',
-    board: `${summary.board?.mode === MODE_3D ? '3D' : 'Classic 2D'} · ${boardLabel(summary.board)}`,
+    board: `${MODE_NAMES[summary.board?.mode] ?? MODE_NAMES['classic-2d']} · ${boardLabel(summary.board)}`,
     rank: ranked ? `#${rank.position} of ${rank.of} wins on this board` : null,
     label: challenge ? CHALLENGE_LABEL : null,
     tiles,

@@ -114,6 +114,30 @@ test('a game counts toward the three when the mode reports game started; a finis
   assert.equal(docOf(backend).finished3D, true);
 });
 
+test('a Hexagon or Triangle game shares Classic 2D\'s first-use record: its games, its dismissal and its strip', async () => {
+  const backend = createMemoryBackend();
+  const first = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });
+  await first.load();
+  first.gameStarted('hexagon');
+  first.gameStarted('triangle');
+  first.gameStarted('classic-2d');
+  assert.equal(first.inFirstGames('classic-2d'), false, 'three flat games end Classic 2D\'s window');
+  assert.equal(first.inFirstGames('hexagon'), false);
+  assert.equal(first.inFirstGames('triangle'), false);
+  assert.equal(first.inFirstGames('3d'), true, 'the 3D window is its own');
+  await settle();
+  assert.equal(docOf(backend).games['classic-2d'], 3);
+  assert.deepEqual(Object.keys(docOf(backend).games).sort(), ['3d', 'classic-2d'], 'no record of their own is stored');
+  first.dismiss('triangle');
+  assert.equal(first.dismissed('classic-2d'), true, 'dismissed in one flat mode, dismissed in all');
+  assert.equal(first.dismissed('hexagon'), true);
+  assert.equal(first.dismissed('3d'), false);
+  const base = { screen: 'classic-2d', eligible: true, used: true, dismissed: false };
+  assert.equal(stripShown({ ...base, mode: 'hexagon' }), true, 'the flat modes play in the Classic 2D window');
+  assert.equal(stripShown({ ...base, mode: 'triangle', used: false, touchOnly: true }), true);
+  assert.equal(stripShown({ ...base, mode: 'hexagon', used: false }), false);
+});
+
 test('a Learn 3D game counts toward no window; its win marks the rules block seen, its loss does not', async () => {
   const backend = createMemoryBackend();
   const first = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });

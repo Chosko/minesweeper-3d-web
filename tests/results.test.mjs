@@ -123,6 +123,10 @@ test('a won game shows its outcome, board, rank chip and four figure tiles, each
   assert.equal(c.outcome, 'won');
   assert.equal(c.title, 'You won!');
   assert.equal(c.board, 'Classic 2D · Beginner');
+  const hex = createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 9, height: 9, mines: 13, noGuess: true });
+  const tri = createBoardIdentity({ mode: 'triangle', grid: 'tri', width: 12, height: 7, mines: 20, noGuess: false });
+  assert.equal(resultsContent({ summary: summary({ board: hex }), mode: 'hexagon', comparison }).board, 'Hexagon · Beginner · no-guess', 'the board line leads with the mode\'s name');
+  assert.equal(resultsContent({ summary: summary({ board: tri }), mode: 'triangle', comparison }).board, 'Triangle · 12 × 7 · 20 mines');
   assert.equal(c.rank, '#3 of 12 wins on this board');
   assert.deepEqual(c.tiles.map(tileRow), [
     ['time', 'Time', '47.380 s', 'best 45.120 s · +2.260 s', 'worse', false],
@@ -636,6 +640,10 @@ test('the actions: Play again restarts the same choice, Records opens this board
   flow2.finished(summary(), 'classic-2d');
   flow2.openRecords();
   assert.deepEqual(withRecords.routes.at(-1), ['records', { boardKey: 'classic-2d:square:9x9:10:guess' }]);
+  const hex = createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 9, height: 9, mines: 13, noGuess: false });
+  flow2.finished(summary({ id: 'g3', board: hex }), 'hexagon');
+  flow2.openRecords();
+  assert.deepEqual(withRecords.routes.at(-1), ['records', {}], 'a board of a mode the records screen does not list: the screen opens on its last board');
 });
 
 test('the flow is DOM-free', () => {

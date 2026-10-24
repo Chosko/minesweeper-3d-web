@@ -60,7 +60,9 @@
 //                             'key') or the controller ('pad'); the shell enters a 3D board with
 //                             the activation as its pointer-lock gesture.
 //   openRecords()             routes as the menu's Records entry does, with this game's board
-//                             ({ boardKey }): the records screen (js/records/screen.js), or the
+//                             ({ boardKey }) when the records screen lists its mode
+//                             (RECORDS_MODES), else with no board, the screen opening on its last
+//                             board played: the records screen (js/records/screen.js), or the
 //                             menu's placeholder on a router without it. Nothing before a
 //                             results screen has shown.
 //   watch()                   routes to REPLAY_SCREEN with { replay, returnTo: { screen:
@@ -75,6 +77,7 @@ import { boardKey } from '../records/board.js';
 import { entryRoute, MENU_ENTRIES } from '../shell/menu.js';
 import { REPLAY_SCREEN } from '../records/replay-list.js';
 import { gameRank } from '../records/stats.js';
+import { RECORDS_MODES } from '../records/screen.js';
 
 export const RESULTS_SCREEN = 'results';
 
@@ -173,7 +176,8 @@ export function createResultsFlow({ records, replays = null, router, restart, go
     openRecords() {
       if (!current) return;
       const route = entryRoute(RECORDS_ENTRY, { hasMode: () => false, hasScreen: (s) => router.has(s) });
-      router.go(route.screen, { data: { ...route.data, boardKey: boardKey(current.summary.board) } });
+      const listed = RECORDS_MODES.some((m) => m.value === current.summary.board?.mode);
+      router.go(route.screen, { data: { ...route.data, ...(listed ? { boardKey: boardKey(current.summary.board) } : {}) } });
     },
     watch() {
       if (!current?.watch) return;

@@ -208,7 +208,7 @@ function clicks3D() {
   return counts ? countedClicks(counts.clicks) : 0;
 }
 /** The mode whose game the shell is hosting (js/shell/mode-3d.js or js/classic2d/mode.js), or null. */
-function activeMode() { return MODES.active === '3d' ? mode3d : MODES.active === 'classic-2d' ? mode2d : null; }
+function activeMode() { return MODES.active === '3d' ? mode3d : flat2D(); }
 /**
  * The active game's end delay is running, in either mode: the game is over and its results screen
  * not yet shown. No board action, camera movement, view-mode key, Back or pause; a press ends it
@@ -242,7 +242,7 @@ let cancelledAt = -Infinity; // performance.now() of the last cancelled 3D gener
  * A 3D game without pointer lock or controller play goes back to the click-to-play card.
  */
 function cancelGeneration() {
-  if (MODES.active === 'classic-2d') return mode2d.cancelGeneration();
+  if (flat2D()) return flat2D().cancelGeneration();
   if (MODES.active !== '3d' || !mode3d.cancelGeneration()) return false;
   cancelledAt = performance.now();
   if (S.mode === 'playing' && !S.lockless && !document.pointerLockElement) SHELL.go('ready', { replace: true });
@@ -410,12 +410,12 @@ const ui = new UI({
   onReadyBack: () => readyBack(),
   onToggleSwap: () => BUTTON_SWAP.toggle(),
   onToggleFigures: () => toggleFigures(),
-  onTapMode: (value) => { mode2d.setTapMode(value); ui.setTapMode(mode2d.tapMode); }, // the Tap choice's option: what a tap on a closed cell does
+  onTapMode: (value) => { for (const { mode } of FLAT_2D.values()) mode.setTapMode(value); ui.setTapMode(mode2d.tapMode); }, // the Tap choice's option: what a tap on a closed cell does, one for every flat mode
   onResetAll: () => RESET.run(),
   onDismissHint: (mode, kind) => { if (kind === 'scroll') FIRST_USE.once('scrollHint'); else FIRST_USE.dismiss(mode); refreshHints(); },
-  onRetry2D: () => answer2D(() => mode2d.retry()),
-  onStandard2D: () => answer2D(() => { standard2D = true; try { mode2d.playStandard(); } finally { standard2D = false; } }),
-  onCancel2D: () => mode2d.cancelGeneration(),
+  onRetry2D: () => answer2D(() => flat2D()?.retry()),
+  onStandard2D: () => answer2D(() => { standard2D = true; try { flat2D()?.playStandard(); } finally { standard2D = false; } }),
+  onCancel2D: () => flat2D()?.cancelGeneration(),
   onOfferMenu2D: () => PAUSE.toMenu(),
   onRetry3D: () => retry3D('retry'),
   onStandard3D: () => retry3D('standard'),
@@ -669,7 +669,7 @@ const FLOW_2D = {
 // The game window hugs its board (UI.sizeBoard2D): its board area is sized as each board view
 // opens, whenever the window's room changes, and a frame after a refit, which may change the
 // board's extent (a board scale, a theme's gap) — never inside the board's own resize callback.
-const size2D = () => { const v = mode2d.boardView; if (v) ui.sizeBoard2D((width, height) => v.extent(width, height)); };
+const size2D = () => { const v = flat2D()?.boardView; if (v) ui.sizeBoard2D((width, height) => v.extent(width, height)); };
 let sizing2D = 0;
 function sizeSoon2D() {
   if (!sizing2D) sizing2D = requestAnimationFrame(() => { sizing2D = 0; size2D(); });
@@ -685,9 +685,10 @@ function toggleFigures() {
 const board2d = { generating: false, failure: null, progress: null };
 /** The Classic 2D board status card as it stands; whether it shows. */
 function drawStatus2D() {
-  const on = MODES.active === 'classic-2d';
+  const flat = flat2D();
+  const on = !!flat;
   const generating = board2d.generating && S.mode === 'classic-2d';
-  ui.setBoardStatus(on ? { generating, failure: board2d.failure, progress: board2d.progress, forced: !!mode2d.fixed } : {});
+  ui.setBoardStatus(on ? { generating, failure: board2d.failure, progress: board2d.progress, forced: !!flat.fixed } : {});
   return on && (!!board2d.failure || generating);
 }
 /**
@@ -719,6 +720,10 @@ function answer2D(answer) {
   answer();
 }
 const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { config: CLASSIC_2D, flow: FLOW_2D, lastChoice: LAST_CHOICE_2D, sound: sfx, buttonSwap: BUTTON_SWAP }));
+/** Every flat mode on the Classic 2D flow by mode id — its mode and last board choice; Hexagon and Triangle join as flatMode registers them. */
+const FLAT_2D = new Map([['classic-2d', { mode: mode2d, lastChoice: LAST_CHOICE_2D }]]);
+/** The active flat mode, whose game the Classic 2D window hosts — Classic 2D, Hexagon or Triangle —, or null. */
+function flat2D() { return FLAT_2D.get(MODES.active)?.mode ?? null; }
 /** The board choice on `choice`; back from the Records screen it opened, what the screen held then. */
 let held2D = null;
 function showChoice2D(choice, from) {
@@ -751,6 +756,7 @@ function flatMode(config, prefix) {
   const screen = `${config.id}-choice`;
   const flow = { ...FLOW_2D, openBoardChoice: (choice) => SHELL.go(screen, { data: { choice } }) };
   const mode = MODES.register(config.id, (report) => createClassic2DMode(report, { config, flow, lastChoice, sound: sfx, buttonSwap: BUTTON_SWAP }));
+  FLAT_2D.set(config.id, { mode, lastChoice });
   let held = null; // the screen as Records found it, for the way back
   const choice = bindBoardChoice({
     root: document.getElementById(`${prefix}-choice`),
@@ -955,7 +961,7 @@ function newGame2D() {
 }
 /** A key or the controller was used in this Classic 2D game. */
 function used2D() {
-  if (MODES.active !== 'classic-2d' || hint2D.used) return;
+  if (!flat2D() || hint2D.used) return;
   hint2D.used = true;
   refreshHints();
 }
@@ -974,7 +980,7 @@ function scrolled2D() {
  * hint until it is dismissed or the board is scrolled.
  */
 function refreshHints() {
-  const mode = MODES.active;
+  const mode = flat2D() ? 'classic-2d' : MODES.active; // the flat modes share Classic 2D's hints
   if (mode !== '3d' && mode !== 'classic-2d') { ui.setHintStrip(false); return; }
   if (mode === '3d' && S.learn) { ui.setHintStrip(S.mode === 'playing', { learn: LEARN_HINTS[S.learn.current] }); return; } // the Learn 3D prompt line
   if (mode === 'classic-2d' && S.mode === 'classic-2d' && hint2D.clipped && !FIRST_USE.shown('scrollHint')) {
@@ -1178,7 +1184,7 @@ const REPLAY_VIEWER = createReplayViewer({
   viewers: WEBGL2 ? { square: mountReplay2D, box: mountReplay3D } : { square: mountReplay2D }, // a 3D replay then says why it cannot play
 });
 // The board scale setting reaches an open Classic 2D board and the replay viewer's 2D board at once.
-SETTINGS.onChange('boardScale', (scale) => { mode2d.setScale(scale); REPLAY_VIEWER.setScale(scale); });
+SETTINGS.onChange('boardScale', (scale) => { flat2D()?.setScale(scale); REPLAY_VIEWER.setScale(scale); });
 
 // ---------- results ----------
 // A finished game is recorded, then the results screen shows over the finished Classic 2D board,
@@ -1198,7 +1204,7 @@ const RESULTS = createResultsFlow({
   restart: (source, { mode, summary }) => {
     if (MODES.active) PAUSE.restart(source);
     else if (summary?.daily || summary?.challenge) { const free = freeStart(summary.board); startForced(free, source); } // never the same seed
-    else if (mode === 'classic-2d') MODES.start(mode, LAST_CHOICE_2D.current);
+    else if (FLAT_2D.has(mode)) MODES.start(mode, FLAT_2D.get(mode).lastChoice.current);
     else if (mode === '3d' && WEBGL2 && board3dChoice) { MODES.start(mode, board3dChoice); enterPlay3D(source); }
   },
   goMenu: () => showMainMenu(),
@@ -1587,11 +1593,11 @@ function showPauseCard(note = '') {
 function setBoardHidden(on) {
   canvas.style.visibility = on ? 'hidden' : '';
   if (on) renderer?.dropMotion();
-  if (MODES.active === 'classic-2d') mode2d.hideBoard(on);
+  flat2D()?.hideBoard(on);
 }
 /** Whether the active game is over (Back on the pause card then goes to the menu). */
 function gameOver() {
-  if (MODES.active === 'classic-2d') return mode2d.status()?.state !== 'playing';
+  if (flat2D()) return flat2D().status()?.state !== 'playing';
   return !!S.game && S.game.state !== 'playing';
 }
 function stopPlayInput() {
@@ -1609,12 +1615,12 @@ function stopPlayInput() {
  */
 function gameInProgress() {
   if (PAUSE.inProgress) return true;
-  if (MODES.active === 'classic-2d') return !!mode2d.status()?.pending;
+  if (flat2D()) return !!flat2D().status()?.pending;
   return ['generating', 'failed'].includes(S.play?.state);
 }
 function pauseInfo(note = '') {
   const inProgress = gameInProgress();
-  if (MODES.active === 'classic-2d') return { ...mode2d.status(), inProgress, note, mode: MODES.active };
+  if (flat2D()) return { ...flat2D().status(), inProgress, note, mode: 'classic-2d' }; // the flat modes' help is Classic 2D's
   const g = S.game;
   const e = S.endState;
   return { state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft, inProgress, note, mode: '3d' };
@@ -2091,7 +2097,7 @@ function padBoard2D(p, held, pressed, now) {
     return;
   }
   if (pressed(BTN.BACK)) { padToggleFigures('c2d-figures-toggle'); return; }
-  mode2d.pad({ ...p, held: p.held.map((_, b) => held(b)) }, now);
+  flat2D()?.pad({ ...p, held: p.held.map((_, b) => held(b)) }, now);
 }
 
 /** The replay viewer: Start / Y play and pause, LB / RB step, LT / RT change speed; the rest is menu navigation. On a free 3D camera the sticks fly it. */
@@ -2251,7 +2257,7 @@ function shouldRender(now, synced) {
 
 /** The running time on the pause card while it shows. */
 function showPauseTime() {
-  if (S.mode === 'paused' && (MODES.active === 'classic-2d' ? mode2d.status() : S.game)) ui.updatePause(pauseInfo());
+  if (S.mode === 'paused' && (flat2D() ? flat2D().status() : S.game)) ui.updatePause(pauseInfo());
 }
 
 function frame(now) {
@@ -2264,7 +2270,7 @@ function frame(now) {
   const pad = pads.poll();
   if (pad.pad && padUsed(pad)) DEVICE.input('pad');
   if (pad.pad || pad.active) handlePad(pad, dt, now);
-  if (MODES.active === 'classic-2d') mode2d.tick();
+  flat2D()?.tick();
   // A 3D replay moved since the last frame by something other than its playback (the seek bar, a step,
   // Home / End) was seeked: the renderer takes that without pulses.
   const replayed = S.mode === REPLAY_SCREEN && replay3d.view !== null;
@@ -2443,10 +2449,10 @@ window.__ms = {
   get replayViewer() { return REPLAY_VIEWER; },
   /** The replay library: load/add/pin/unpin/forBoard/entries/settled. */
   get replays() { return REPLAYS; },
-  /** The open Classic 2D board view (js/classic2d/board-view.js): its layout, scroll, cursor and scale. */
-  get board2D() { return mode2d.boardView; },
-  /** The open Classic 2D board's engine game: cellState, cellNumber, snapshot. */
-  get game2D() { return mode2d.boardGame; },
+  /** The open flat board view (js/classic2d/board-view.js) — Classic 2D's, Hexagon's or Triangle's: its layout, scroll, cursor and scale. */
+  get board2D() { return (flat2D() ?? mode2d).boardView; },
+  /** The open flat board's engine game: cellState, cellNumber, snapshot. */
+  get game2D() { return (flat2D() ?? mode2d).boardGame; },
   /** Opens the replay viewer: `data` is its route's { replay | replayId, returnTo }. */
   watch: (data) => SHELL.go(REPLAY_SCREEN, { data }),
   /** The daily boards pre-generated when the menu shows (js/shell/daily.js): has(code), take(code). */

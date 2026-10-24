@@ -1298,9 +1298,9 @@ test('index.html holds the Classic 2D board layer with its generating and failur
 });
 
 test('the shell cancels a 2D generation from its Cancel and Back, and shows the offer above the pause card', () => {
-  assert.match(MAIN, /onCancel2D: \(\) => mode2d\.cancelGeneration\(\)/, 'Cancel cancels through the mode');
+  assert.match(MAIN, /onCancel2D: \(\) => flat2D\(\)\?\.cancelGeneration\(\)/, 'Cancel cancels through the active flat mode');
   assert.match(MAIN, /onOfferMenu2D: \(\) => /, 'Main menu on the offer');
-  assert.match(MAIN, /if \(MODES\.active === 'classic-2d'\) return mode2d\.cancelGeneration\(\);/, 'Back cancels through the active mode');
+  assert.match(MAIN, /if \(flat2D\(\)\) return flat2D\(\)\.cancelGeneration\(\);/, 'Back cancels through the active mode');
 });
 
 test('the shell registers the mode, routes its screens and reaches the board with the controller', () => {
@@ -1310,8 +1310,9 @@ test('the shell registers the mode, routes its screens and reaches the board wit
   assert.match(MAIN, /MODES\.register\('classic-2d', \(report\) => createClassic2DMode\(report, /);
   assert.match(MAIN, /c2d: 'classic-2d'/, 'the board layer is a controller layer');
   assert.match(MAIN, /'c2d-choice': 'classic-2d-choice'/, 'the controller reaches the board choice');
-  assert.match(MAIN, /mode2d\.pad\(/, 'the shell\'s controller poll reaches the cursor input');
-  assert.match(MAIN, /mode2d\.tick\(\)/, 'the overlay feed runs every frame');
+  assert.match(MAIN, /flat2D\(\)\?\.pad\(/, 'the shell\'s controller poll reaches the active flat mode\'s cursor input');
+  assert.match(MAIN, /flat2D\(\)\?\.tick\(\)/, 'the overlay feed runs every frame');
+  assert.match(MAIN, /FLAT_2D\.set\(config\.id, \{ mode, lastChoice \}\)/, 'Hexagon and Triangle join the flat modes the window hosts');
   assert.match(MAIN, /mode2d\.loadChoice\(\)/, 'the last board choice is loaded at start-up');
 });
 
@@ -1326,7 +1327,7 @@ test('the shell hands the board its scale, frame and panel, keeps the scale live
   assert.match(flow, /figures: \(input, \{ tick \}\) => ui\.updateFigures2D\(input, \{ tick, bests: bests2D \}\)/, 'the live figures, with the bests read at the game\'s start');
   assert.match(MAIN, /bests2D = RECORDS\.bests\(b\.identity\)/, 'the board\'s bests read once per game from the records store');
   assert.match(flow, /scrolled: \(\) => scrolled2D\(\)/);
-  assert.match(MAIN, /SETTINGS\.onChange\('boardScale', \(scale\) => \{ mode2d\.setScale\(scale\); REPLAY_VIEWER\.setScale\(scale\); \}\)/, 'a change applies at once, in play and in the viewer');
+  assert.match(MAIN, /SETTINGS\.onChange\('boardScale', \(scale\) => \{ flat2D\(\)\?\.setScale\(scale\); REPLAY_VIEWER\.setScale\(scale\); \}\)/, 'a change applies at once, in play and in the viewer');
   assert.match(MAIN, /function scrolled2D\(\) \{\n  if \(FIRST_USE\.once\('scrollHint'\)\) refreshHints\(\);/, 'a scroll ends the hint for good');
   assert.match(MAIN, /hint2D\.clipped && !FIRST_USE\.shown\('scrollHint'\)/, 'shown on a clipped board until seen');
   assert.match(MAIN, /if \(kind === 'scroll'\) FIRST_USE\.once\('scrollHint'\)/, 'dismissed for good');
