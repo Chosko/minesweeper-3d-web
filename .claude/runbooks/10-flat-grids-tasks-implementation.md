@@ -242,7 +242,7 @@ Context:
 
 Done: 2026-10-24, commit `5a4b431` (7 files, +50/-24). Decision: a canvas missing a Hexagon or Triangle board sheet, or a Triangle sheet without numbers 9–12, stops the skill rather than asking — no rule derives a grid's gap and radius.
 
-## [ ] 19. Implement task 266 — Update documentation for feature `hex-tri-board-art`
+## [x] 19. Implement task 266 — Update documentation for feature `hex-tri-board-art`
 
 Depends on: 15, 16, 17, 18
 
@@ -255,6 +255,8 @@ Context:
 ```prompt
 /task-implement 266 --review
 ```
+
+Done: 2026-10-24, commit `0eb1fbe` (12 files, +191/-78). The triangle glyph box was not settled: the hex-tri-board-art document and `TRIANGLE_GLYPH` in js/tile-art.js still say 0.55 of the side, while the painter uses the geometry's box.
 
 ## [ ] 20. Implement task 267 — Flat mode configuration, with Classic 2D as the square configuration
 
