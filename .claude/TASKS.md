@@ -1511,7 +1511,7 @@ Feature: hex-tri-board-art
 
 ## 264. The tile painter draws hexagon and triangle tiles
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/tile-skin.js, js/classic2d/board-view.js, tests/classic2d-view.test.mjs, tests/tile-art.test.mjs
 Preconditions: 250, 262, 263

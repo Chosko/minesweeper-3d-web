@@ -117,7 +117,7 @@
 import { MIN_TILE_SIZE, createTileSkin } from './tile-skin.js';
 import { createMotionLayer, changeEvent } from './motion-layer.js';
 import { token as readerToken } from '../tokens.js';
-import { roundRect, drawMarkRing } from '../tile-art.js';
+import { roundRect, drawMarkRing, inGlyphBox } from '../tile-art.js';
 import { CELL, PHASE } from '../engine/rules.js';
 import { createGeometry } from '../geometry/index.js';
 import {
@@ -161,6 +161,10 @@ const MARKED = 'marked';
 const LINE = 1;
 const PAGE = 2;
 const NO_FRAME = Object.freeze({ top: 0, right: 0, bottom: 0, left: 0, minWidth: 0, gaps: 0 });
+// The share of its geometry's tile a grid's shape fractions (style2d.grids) are of: a triangle's
+// height, √3 / 2 of the side the triangle geometry measures; the tile itself for the others. The
+// board checks measure each grid's floor in it (js/themes/board-module.js).
+export const GRID_UNIT = Object.freeze({ tri: Math.sqrt(3) / 2 });
 
 /** The board frame (the kit's ui-board-frame) every Classic 2D board sits in: the module's gap on every side. */
 export const BOARD_FRAME = Object.freeze({ gaps: 1 });
@@ -351,9 +355,12 @@ export function createBoardView({
   const measure = typeof frame === 'function' ? frame : () => frame;
   let f = frameOf(measure());
   // The board module the skin draws from (null for a skin without one), and what the view reads of
-  // it: the gap and corner radius as fractions of the tile, the ground and the cursor ring.
+  // it: the grid's gap and corner radius as fractions of the tile — the hexagon's and triangle's
+  // from `style2d.grids`, a triangle's of its height, which is GRID_UNIT of the side the geometry
+  // measures its tile by; the square's the style's own —, the ground and the cursor ring.
   const boardOf = () => skin?.board?.() ?? null;
-  const gapOf = () => boardOf()?.style2d?.params?.gap ?? 0;
+  const shapeOf2d = () => { const s = boardOf()?.style2d; return s?.grids?.[geometry.kind] ?? s?.params ?? null; };
+  const gapOf = () => (shapeOf2d()?.gap ?? 0) * (GRID_UNIT[geometry.kind] ?? 1);
   const frameRadiusOf = () => boardOf()?.style2d?.params?.frameRadius ?? 0;
   // The zoom range for an area: the geometry's floor to the tile at which the whole board fits in its frame, either way round.
   const rangeOf = (width, height) => {
@@ -424,7 +431,7 @@ export function createBoardView({
     place: (c) => {
       if (!inView(c)) return null;
       const centre = geometry.centre(c, layout.tile, layout.gap);
-      return { ...cellRect(c), cx: layout.offsetX + centre.x - scroll.x, cy: layout.offsetY + centre.y - scroll.y };
+      return { ...tileBox(c), size: layout.tile, cx: layout.offsetX + centre.x - scroll.x, cy: layout.offsetY + centre.y - scroll.y };
     },
     paint: (lctx, c, face, x, y, size, depth) => skin.drawTile(lctx, x, y, size, face, game?.cellNumber(c) ?? 0, ratio, depth, shapeOf(c)),
     clip: () => (layout.scrolls ? { x: layout.viewX, y: layout.viewY, width: layout.viewWidth, height: layout.viewHeight } : null),
@@ -538,11 +545,21 @@ export function createBoardView({
     if (effect) state = shownState(effect, c, state, effectT);
     else if (game.phase === PHASE.WON) state = wonState(state);
     const moving = motion?.has(c);
-    // A rounded tile leaves its corners to the ground: lay it again under the tile it replaces. An
-    // animating cell's slot is the ground alone, the layer drawing the cell.
-    if (moving || boardOf()?.style2d?.params?.radius > 0) {
+    const o = outline(c);
+    const shaped = o.shape !== 'square';
+    // A rounded or shaped tile leaves its corners to the ground: lay it again under the tile it
+    // replaces — in a hexagon's or triangle's outline, whose box reaches its neighbours. An animating
+    // cell's slot is the ground alone, the layer drawing the cell.
+    if (moving || shaped || shapeOf2d()?.radius > 0) {
       ctx.fillStyle = ground();
-      ctx.fillRect(x, y, t, t);
+      if (shaped) {
+        ctx.beginPath();
+        o.points.forEach(([px, py], i) => (i ? ctx.lineTo(x - o.x + px, y - o.y + py) : ctx.moveTo(x - o.x + px, y - o.y + py)));
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillRect(x, y, t, t);
+      }
     }
     if (!moving) {
       let shown = state;
@@ -555,7 +572,12 @@ export function createBoardView({
       if (shown === MARKED && markPulse && ring) {
         ctx.save();
         ctx.translate(x, y);
-        drawMarkRing(ctx, t, { color: ring, width: 4 });
+        if (shaped) {
+          const g = shapeOf(c).glyphBox;
+          inGlyphBox(ctx, { x: g.x - o.x, y: g.y - o.y, width: g.width, height: g.height }, (S) => drawMarkRing(ctx, S, { color: ring, width: 4 }));
+        } else {
+          drawMarkRing(ctx, t, { color: ring, width: 4 });
+        }
         ctx.restore();
       }
     }

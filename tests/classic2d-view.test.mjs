@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import {
   fitTileSize, gapPx, boardLayout, cellAtLayout, createBoardView, PAN_MODIFIER, BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR,
   BOARD_SCALES, DEFAULT_BOARD_SCALE, TILE_CAP, tileCap, panelRect, clipMarks, SCROLLBAR, CURSOR_RING, MARK_PULSE_STEPS, MARK_PULSE_MS,
-  MOTION_LAYER_CLASS, RING_LAYER_CLASS, BOARD_FRAME, boardExtent,
+  MOTION_LAYER_CLASS, RING_LAYER_CLASS, BOARD_FRAME, boardExtent, GRID_UNIT,
 } from '../js/classic2d/board-view.js';
 import { SCHEMA } from '../js/settings/schema.js';
 import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
@@ -1160,6 +1160,117 @@ test('the ground is the module\'s, and a rounded tile is laid on fresh ground wh
   square.canvas.ctx.calls.length = 0;
   square.view.update([grid.index(3, 3)]);
   assert.equal(square.canvas.ctx.calls.filter((c) => c.op === 'fillRect').length, 0, 'a square tile covers its old self: no ground under it');
+});
+
+// ---------- hexagon and triangle boards: each grid's gap, ground and motion centre ----------
+
+// A board module whose square, hexagon and triangle gaps all differ, with a reveal motion.
+const SHAPED_MODULE = Object.freeze({
+  style2d: { name: 'flat', params: { radius: 0.15, gap: 0.09, frameRadius: 0 }, grids: { hex: { gap: 0.2, radius: 0.05 }, tri: { gap: 0.25, radius: 0.06 } } },
+  palette: { boardGround: '#fefefe', faces2d: { marked: { ring: '#123456' } } },
+  cursor: { color: '#0a0a0a', inner: '#f0f0f0', width: 3, innerWidth: 2, radius: { tile: 0.15, px: 3 } },
+  motion: { reveal: { duration: 100, easing: 'linear', tracks: [{ property: 'brightness', keyframes: [{ at: 0, value: 1.5 }, { at: 100, value: 1 }] }] } },
+});
+
+// A 4 × 3 view of a `kind` geometry drawing SHAPED_MODULE, with a motion layer whose frames run by
+// hand; the skin records each tile with the canvas it went to and the cell shape it was handed.
+function shapedView(kind) {
+  const grid = createSquareGrid(4, 3);
+  const geometry = createGeometry(kind, 4, 3);
+  const canvas = fakeCanvas();
+  const layer = fakeCanvas();
+  const draws = [];
+  let tick = null;
+  const createSkin = () => ({
+    drawTile(ctx, x, y, size, state, number, ratio, depth, cell) { draws.push({ layer: ctx === layer.ctx, x, y, size, state, cell }); },
+    board: () => SHAPED_MODULE,
+    dispose() {},
+  });
+  const view = createBoardView({
+    canvas, grid, geometry, createSkin, scale: '100', layer, overlay: fakeCanvas(), token: tokenMap({}),
+    frames: { request: (fn) => { tick = fn; return 1; }, cancel: () => { tick = null; } }, now: () => 0,
+  });
+  view.resize(600, 500, 1);
+  const game = createGameWithMines({ graph: grid.graph, ...REF, mines: [grid.index(0, 1)], dimensions: { width: 4, height: 3 } });
+  view.setGame(game);
+  return { grid, geometry, canvas, layer, draws, view, game, frame: () => tick?.() };
+}
+
+test('a grid\'s shape fractions are of its tile\'s height: GRID_UNIT is each geometry\'s outline height per tile, and the board checks read their floors in it', () => {
+  for (const kind of ['square', 'hex', 'tri']) {
+    const o = createGeometry(kind, 2, 1).outline(0, 40, 0);
+    assert.ok(Math.abs((GRID_UNIT[kind] ?? 1) - o.height / 40) < 1e-12, `${kind}: its unit is its height per tile`);
+  }
+  const src = readFileSync(join(ROOT, 'js/themes/board-module.js'), 'utf8').replace(/^\s*\/\/.*$/gm, '');
+  assert.match(src, /import \{ GRID_UNIT \} from '\.\.\/classic2d\/board-view\.js'/, 'the board checks take the unit from the view');
+  assert.doesNotMatch(src, /Math\.sqrt\(3\)/, 'and hold no copy of it');
+});
+
+test('a hexagon or triangle board lays its tiles out with that grid\'s gap, a triangle\'s a fraction of its height; the square keeps its own', () => {
+  const hex = shapedView('hex').view.layout;
+  assert.equal(hex.gap, gapPx(hex.tile, SHAPED_MODULE.style2d.grids.hex.gap), 'the hexagon grid\'s gap, of the tile across the flats');
+  const tri = shapedView('tri').view.layout;
+  assert.equal(tri.gap, gapPx(tri.tile, (SHAPED_MODULE.style2d.grids.tri.gap * Math.sqrt(3)) / 2), 'the triangle grid\'s gap, of the tile\'s height');
+  const square = shapedView('square').view.layout;
+  assert.equal(square.gap, gapPx(square.tile, SHAPED_MODULE.style2d.params.gap), 'the square\'s gap is the style\'s own');
+});
+
+test('a hexagon or triangle tile redrawn is laid on fresh ground in its outline, never over its box, which reaches its neighbours', () => {
+  for (const kind of ['hex', 'tri']) {
+    const { view, canvas, geometry, grid } = shapedView(kind);
+    const l = view.layout;
+    const c = grid.index(1, 1);
+    canvas.ctx.calls.length = 0;
+    view.update([c], { motion: false });
+    const calls = canvas.ctx.calls;
+    assert.equal(calls.filter((call) => call.op === 'fillRect').length, 0, `${kind}: no rectangle of ground over the tile's box`);
+    const fills = calls.filter((call) => call.op === 'fill');
+    assert.deepEqual(fills.map((call) => call.fill), ['#fefefe'], `${kind}: the ground laid once`);
+    const path = calls.slice(0, calls.indexOf(fills[0])).filter((call) => call.op === 'moveTo' || call.op === 'lineTo').map((call) => call.args);
+    const want = geometry.outline(c, l.tile, l.gap).points.map(([x, y]) => [l.offsetX + x, l.offsetY + y]);
+    assert.deepEqual(path, want, `${kind}: the ground fills the cell's outline`);
+  }
+});
+
+test('a hexagon or triangle cell moves about its tile\'s centre: drawn on the layer at its box\'s corner from the geometry\'s centre, its brightness over the whole box', () => {
+  for (const kind of ['hex', 'tri']) {
+    const { view, layer, draws, geometry, game, frame } = shapedView(kind);
+    const l = view.layout;
+    for (const c of [0, 1]) {
+      draws.length = 0;
+      layer.ctx.calls.length = 0;
+      view.update(game.reveal(c).changed.filter((x) => x === c));
+      frame();
+      const o = geometry.outline(c, l.tile, l.gap);
+      const centre = geometry.centre(c, l.tile, l.gap);
+      // Cell 0 still animates when cell 1 starts (the clock stands still), and is drawn first.
+      const drawn = draws.filter((d) => d.layer && d.cell.outline.x === o.x && d.cell.outline.y === o.y);
+      assert.equal(drawn.length, 1, `${kind} ${c}: the cell drawn on the layer`);
+      assert.ok(Math.abs(drawn[0].x - (o.x - centre.x)) < 1e-9 && Math.abs(drawn[0].y - (o.y - centre.y)) < 1e-9, `${kind} ${c}: its box placed from the centre (${drawn[0].x}, ${drawn[0].y})`);
+      const set = layer.ctx.calls.filter((call) => call.op === 'setTransform').at(-1).args;
+      assert.deepEqual(set.slice(4), [l.offsetX + centre.x, l.offsetY + centre.y], `${kind} ${c}: turned about the geometry's centre`);
+      const lift = layer.ctx.calls.filter((call) => call.op === 'fillRect').at(-1).args;
+      assert.deepEqual(lift.map((v) => Math.round(v * 1e6) / 1e6), [o.x - centre.x, o.y - centre.y, o.width, o.height].map((v) => Math.round(v * 1e6) / 1e6), `${kind} ${c}: the brightness covers the tile's box`);
+    }
+  }
+});
+
+test('the marked start cell\'s pulse on a hexagon or triangle board draws its ring in the cell\'s glyph box', () => {
+  for (const kind of ['hex', 'tri']) {
+    const { view, canvas, geometry } = shapedView(kind);
+    const l = view.layout;
+    const c = 5;
+    view.setMark(c);
+    canvas.ctx.calls.length = 0;
+    view.pulseMark();
+    const g = geometry.glyphBox(c, l.tile, l.gap);
+    const S = Math.min(g.width, g.height);
+    const arc = canvas.ctx.calls.find((call) => call.op === 'arc');
+    const moves = canvas.ctx.calls.filter((call) => call.op === 'translate').map((call) => call.args);
+    const at = moves.reduce((p, [x, y]) => [p[0] + x, p[1] + y], [0, 0]);
+    assert.ok(Math.abs(at[0] + arc.args[0] - (l.offsetX + g.x + g.width / 2)) < 1e-6 && Math.abs(at[1] + arc.args[1] - (l.offsetY + g.y + g.height / 2)) < 1e-6, `${kind}: the ring centred in the glyph box`);
+    assert.ok(arc.args[2] < S / 2, `${kind}: the ring inside the glyph box`);
+  }
 });
 
 test('the cursor ring is the module\'s, outside the tile: the ring 3-6 px out round a white band 1-3 px out, its corner the tile\'s plus 3 px, none of the face covered', () => {

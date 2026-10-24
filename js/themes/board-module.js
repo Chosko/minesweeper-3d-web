@@ -70,6 +70,7 @@
 //   A cell shows its state after the event once the animation ends.
 import { STYLES } from '../tile-art.js';
 import { createGeometry } from '../geometry/index.js';
+import { GRID_UNIT } from '../classic2d/board-view.js';
 
 export const CELL_EVENTS = Object.freeze(['press', 'release', 'reveal', 'flag', 'unflag', 'chordPress', 'solvedPulse']);
 export const MOTION_PROPERTIES = Object.freeze(['scale', 'offset', 'rotation', 'depth', 'brightness', 'opacity']);
@@ -114,10 +115,9 @@ export const GRID_NUMBERS = Object.freeze({ square: 8, hex: 6, tri: 12 });
 // The flat grids whose shape the 2D style's `grids` holds, and the entries of each.
 const GRID_SHAPES = Object.freeze(['hex', 'tri']);
 const SHAPE_ENTRIES = Object.freeze(['gap', 'radius']);
-// Each flat grid's floor in the unit its shape's fractions take: the geometry's smallest tile — a
-// triangle's measured by its side, its fractions by its height.
-const UNIT_PER_TILE = Object.freeze({ square: 1, hex: 1, tri: Math.sqrt(3) / 2 });
-const gridFloors = () => Object.fromEntries(Object.keys(GRID_NUMBERS).map((k) => [k, createGeometry(k, 1, 1).minTile * UNIT_PER_TILE[k]]));
+// Each flat grid's floor in the unit its shape's fractions take: the geometry's smallest tile times
+// the board view's GRID_UNIT — a triangle's measured by its side, its fractions by its height.
+const gridFloors = () => Object.fromEntries(Object.keys(GRID_NUMBERS).map((k) => [k, createGeometry(k, 1, 1).minTile * (GRID_UNIT[k] ?? 1)]));
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const COLOUR = /^(#[0-9a-f]{6}|#[0-9a-f]{8}|rgba?\([^)]*\))$/i;

@@ -434,23 +434,20 @@ test('the page\'s board art hand-off keeps the last module handed to it and tell
 
 // ---------------------------------------------------------------- the geometry's outline
 
-// A cell of the square geometry: its outline and glyph box at `tile`, as the board view hands them.
-async function squareCell(c, tile, gap = 0) {
+// A cell of a flat grid's geometry (a 4 × 3 board of `kind`): its outline and glyph box at `tile`
+// and `gap`, as the board view hands them.
+async function gridCell(kind, c, tile, gap = 0) {
   const { createGeometry } = await import('../js/geometry/index.js');
-  const geometry = createGeometry('square', 4, 3);
+  const geometry = createGeometry(kind, 4, 3);
   return { outline: geometry.outline(c, tile, gap), glyphBox: geometry.glyphBox(c, tile, gap) };
 }
+const squareCell = (c, tile, gap = 0) => gridCell('square', c, tile, gap);
 
-// A triangle cell pointing `orientation` ('up' or 'down') with its box at x, y, `tile` wide and
-// tall, its glyph box the lower or upper middle of the box.
-function triangleCell(orientation, x, y, tile) {
-  const up = orientation === 'up';
-  const points = up ? [[x + tile / 2, y], [x + tile, y + tile], [x, y + tile]] : [[x, y], [x + tile, y], [x + tile / 2, y + tile]];
-  return {
-    outline: { shape: 'triangle', orientation, x, y, width: tile, height: tile, points },
-    glyphBox: { x: x + tile / 4, y: y + (up ? tile / 2 : 0), width: tile / 2, height: tile / 2 },
-  };
-}
+// The hexagon and triangle cells the painter is tested on: the grid's geometry kind, a cell, the
+// recipe's outline it is drawn in and the board module's grid it takes its shape from — on the 4 × 3
+// triangle board cell 0 points up and cell 1 down.
+const SHAPED = [['hex', 5, 'hexagon'], ['tri', 0, 'triangle-up'], ['tri', 1, 'triangle-down']];
+const GRID_MAX = { square: 8, hex: 6, tri: 12 };
 
 test('the painter takes a cell\'s outline and glyph box: the square outline paints exactly what the tile alone paints, in every state and theme', async () => {
   const { paintTileWith, TILE_STATES } = await skinModule();
@@ -467,59 +464,139 @@ test('the painter takes a cell\'s outline and glyph box: the square outline pain
   }
 });
 
-test('a cell\'s outline clips the face and its glyph is set in its glyph box; the placeholder still shows on any outline', async () => {
+test('on a hexagon or triangle cell each state is the recipe\'s face in the grid\'s outline with that grid\'s corner radius, and its glyphs are set in the geometry\'s glyph box', async () => {
   const { paintTileWith } = await skinModule();
-  const cell = triangleCell('up', 40, 80, 32);
-  const ctx = fakeContext();
-  paintTileWith(JOYFUL, ctx, 0, 0, 32, 'revealed', 3, 1, cell);
-  const clip = ctx.calls.findIndex((c) => c.op === 'clip');
-  assert.ok(clip >= 0, 'the face is clipped to the outline');
-  const path = ctx.calls.slice(0, clip).filter((c) => c.op === 'moveTo' || c.op === 'lineTo').map((c) => c.args.join());
-  assert.deepEqual(path, ['16,0', '32,32', '0,32'], 'the clip path is the outline\'s corners, from the tile\'s own corner');
-  const translates = ctx.calls.filter((c) => c.op === 'translate').map((c) => c.args.join());
-  assert.ok(translates.includes('8,16'), 'the glyph is drawn from its glyph box\'s corner');
-  assert.ok(ctx.calls.some((c) => c.op === 'fillText' && String(c.args[0]) === '3'), 'the number is drawn');
-  for (const [board, state, number] of [[JOYFUL, 'bogus', 0], [JOYFUL, 'revealed', 9], [null, 'closed', 0]]) {
-    const wrong = fakeContext();
-    paintTileWith(board, wrong, 0, 0, 32, state, number, 1, cell);
-    assert.ok(filledWith(wrong).has(FALLBACK_COLOR), `${String(state)}/${number} on a triangle paints the placeholder colour`);
+  const art = await artModule();
+  for (const [name, b] of Object.entries(BOARDS)) {
+    const { faces2d: f, flag, mine, cross, numberShadow } = b.palette;
+    for (const [kind, c, outline] of SHAPED) {
+      const tile = kind === 'tri' ? 44 : 40;
+      const cell = await gridCell(kind, c, tile, 3);
+      const o = cell.outline;
+      // The glyph box from the tile's corner, its own corner on a whole device pixel.
+      const boxAt = (px) => ({ x: Math.round((cell.glyphBox.x - o.x) / px) * px, y: Math.round((cell.glyphBox.y - o.y) / px) * px, width: cell.glyphBox.width, height: cell.glyphBox.height });
+      const params = { ...b.style2d.params, radius: b.style2d.grids[kind].radius };
+      const face = (ctx, px, which, palette, p = params) => art.drawFace(ctx, tile, which, { style: b.style2d.name, params: p, palette, px, depth: 1, outline });
+      const glyph = (ctx, draw) => art.inGlyphBox(ctx, boxAt(1 / ctx.getTransform().a), draw);
+      const recipes = {
+        closed: (ctx, px) => face(ctx, px, 'closed', f.closed),
+        pressed: (ctx, px) => face(ctx, px, 'sunk', f.sunk),
+        flagged: (ctx, px) => { face(ctx, px, 'closed', f.closed); glyph(ctx, (S) => art.drawFlagGlyph(ctx, S, flag)); },
+        mine: (ctx, px) => { face(ctx, px, 'revealed', f.revealed); glyph(ctx, (S) => art.drawMineGlyph(ctx, S, mine)); },
+        exploded: (ctx, px) => { face(ctx, px, 'revealed', f.exploded, art.explodedParams(params)); glyph(ctx, (S) => art.drawMineGlyph(ctx, S, mine)); },
+        marked: (ctx, px) => { face(ctx, px, 'closed', f.marked); glyph(ctx, (S) => art.drawMarkRing(ctx, S, { color: f.marked.ring })); },
+        'wrong-flag': (ctx, px) => {
+          face(ctx, px, 'revealed', f.revealed);
+          glyph(ctx, (S) => { art.drawFlagGlyph(ctx, S, flag); art.drawCross(ctx, S, cross); });
+        },
+      };
+      for (let n = 0; n <= GRID_MAX[kind]; n++) {
+        recipes[`revealed-${n}`] = (ctx, px) => {
+          face(ctx, px, 'revealed', f.revealed);
+          if (n > 0) glyph(ctx, (S) => art.drawNumberGlyph(ctx, S, n, { color: b.numbers2d[n], shadow: numberShadow, font: b.font }));
+        };
+      }
+      for (const ratio of [1, 2]) {
+        for (const [key, recipe] of Object.entries(recipes)) {
+          const [state, number] = key.startsWith('revealed-') ? ['revealed', Number(key.slice(9))] : [key, 0];
+          const skin = fakeContext();
+          skin.setTransform(ratio, 0, 0, ratio, 0, 0);
+          paintTileWith(b, skin, 7, 9, tile, state, number, 1, cell);
+          const direct = fakeContext();
+          direct.setTransform(ratio, 0, 0, ratio, 0, 0);
+          direct.save();
+          direct.translate(7, 9);
+          recipe(direct, 1 / ratio);
+          direct.restore();
+          assert.deepEqual(trace(skin), trace(direct), `${name} ${outline} at ratio ${ratio}: ${key} is the recipe in its outline, the grid's radius and the geometry's glyph box`);
+        }
+      }
+    }
   }
 });
 
-test('the cache key\'s orientation part: each image is keyed by its outline orientation as well as its state, number and depth', async () => {
-  const { tileKey } = await skinModule();
-  assert.equal(tileKey('none', 'closed', 0), 'none:closed');
-  assert.equal(tileKey('up', 'revealed', 3), 'up:revealed-3');
-  assert.equal(tileKey('down', 'revealed', 3), 'down:revealed-3');
-  assert.equal(tileKey('down', 'flagged', 0, 0.5), 'down:flagged@0.5');
-  assert.equal(tileKey('up', 'revealed', 9), 'up:placeholder', 'a number outside 0–8 is the placeholder');
-  assert.equal(tileKey('up', 'bogus', 0), 'up:placeholder', 'an unknown state is the placeholder');
-  assert.notEqual(tileKey('up', 'closed', 0), tileKey('down', 'closed', 0), 'two orientations, two images');
+test('a number outside its grid\'s range, an unknown state or no board module paints the placeholder on any outline, clipped to it', async () => {
+  const { paintTileWith } = await skinModule();
+  for (const [kind, c] of [['square', 5], ...SHAPED]) {
+    const cell = await gridCell(kind, c, 44, 3);
+    const max = GRID_MAX[kind];
+    for (const [board, state, number] of [[JOYFUL, 'bogus', 0], [JOYFUL, 'revealed', max + 1], [JOYFUL, 'revealed', -1], [null, 'closed', 0]]) {
+      const wrong = fakeContext();
+      paintTileWith(board, wrong, 0, 0, 44, state, number, 1, cell);
+      assert.ok(filledWith(wrong).has(FALLBACK_COLOR), `${kind}: ${String(state)}/${number} paints the placeholder colour`);
+      if (kind !== 'square') assert.ok(wrong.calls.some((call) => call.op === 'clip'), `${kind}: the placeholder is clipped to the outline`);
+    }
+    const right = fakeContext();
+    paintTileWith(JOYFUL, right, 0, 0, 44, 'revealed', max, 1, cell);
+    assert.ok(!filledWith(right).has(FALLBACK_COLOR), `${kind}: ${max}, its highest number, is drawn`);
+    assert.ok(right.calls.some((call) => call.op === 'fillText' && String(call.args[0]) === String(max)), `${kind}: ${max}'s glyph`);
+  }
 });
 
-test('the cache holds one image per state and outline orientation, so a grid with two orientations caches both', async () => {
+test('the highest number a tile shows by outline is the board module\'s highest number of the grid drawing that outline', async () => {
+  const { OUTLINE_NUMBERS } = await skinModule();
+  const { GRID_NUMBERS } = await import('../js/themes/board-module.js');
+  const { createGeometry } = await import('../js/geometry/index.js');
+  for (const kind of Object.keys(GRID_NUMBERS)) {
+    const { shape } = createGeometry(kind, 2, 1).outline(0, 40, 0);
+    assert.equal(OUTLINE_NUMBERS[shape], GRID_NUMBERS[kind], `${kind}: its ${shape} outline shows 0–${GRID_NUMBERS[kind]}`);
+    assert.equal(GRID_MAX[kind], GRID_NUMBERS[kind], `${kind}: these tests' range is the grid's`);
+  }
+  assert.equal(Object.keys(OUTLINE_NUMBERS).length, Object.keys(GRID_NUMBERS).length, 'one outline shape per grid');
+});
+
+test('the cache key\'s outline part: each image is keyed by the outline it is drawn in as well as its state, number and depth, a number past its grid\'s highest the placeholder', async () => {
+  const { tileKey } = await skinModule();
+  assert.equal(tileKey('square', 'closed', 0), 'square:closed');
+  assert.equal(tileKey('square', 'revealed', 8), 'square:revealed-8');
+  assert.equal(tileKey('square', 'revealed', 9), 'square:placeholder', 'a square shows 0–8');
+  assert.equal(tileKey('hexagon', 'revealed', 6), 'hexagon:revealed-6');
+  assert.equal(tileKey('hexagon', 'revealed', 7), 'hexagon:placeholder', 'a hexagon shows 0–6');
+  assert.equal(tileKey('triangle-up', 'revealed', 12), 'triangle-up:revealed-12');
+  assert.equal(tileKey('triangle-down', 'revealed', 13), 'triangle-down:placeholder', 'a triangle shows 0–12');
+  assert.equal(tileKey('triangle-down', 'flagged', 0, 0.5), 'triangle-down:flagged@0.5');
+  assert.equal(tileKey('triangle-up', 'bogus', 0), 'triangle-up:placeholder', 'an unknown state is the placeholder');
+  assert.notEqual(tileKey('triangle-up', 'closed', 0), tileKey('triangle-down', 'closed', 0), 'two orientations, two images');
+  assert.notEqual(tileKey('square', 'closed', 0), tileKey('hexagon', 'closed', 0), 'two outlines, two images');
+});
+
+test('the cache holds a hexagon board\'s tiles and both orientations of a triangle board\'s, each image the outline\'s box in device pixels', async () => {
   const mod = await skinModule();
   const { skin, canvases } = await makeSkin(mod);
   const board = fakeContext();
-  skin.drawTile(board, 0, 0, 30, 'closed', 0, 1, null, triangleCell('up', 0, 0, 30));
-  const per = canvases.made.length;
-  assert.equal(per, mod.TILE_STATES.length - 1 + 9 + 1 + 3 * (mod.DEPTH_STEPS.length - 1), 'one orientation: every image once');
-  assert.equal(skin.cacheKey(), '30|1|joyful-tiles', 'the orientation is not a rebuild of the cache');
-  skin.drawTile(board, 15, 0, 30, 'closed', 0, 1, null, triangleCell('down', 15, 0, 30));
-  assert.equal(canvases.made.length, 2 * per, 'the second orientation adds its own images');
-  for (const o of ['up', 'down']) {
-    for (const state of mod.TILE_STATES) skin.drawTile(board, 0, 0, 30, state, 2, 1, 0.5, triangleCell(o, 0, 0, 30));
+  const depths = 3 * (mod.DEPTH_STEPS.length - 1);
+  const images = (kind) => mod.TILE_STATES.length - 1 + GRID_MAX[kind] + 1 + 1 + depths;
+  const hex = await gridCell('hex', 5, 30, 2);
+  skin.drawTile(board, 0, 0, 30, 'closed', 0, 2, null, hex);
+  assert.equal(canvases.made.length, images('hex'), 'a hexagon board: every state, revealed 0–6, the depth steps and the placeholder, once');
+  for (const c of canvases.made) assert.deepEqual([c.width, c.height], [Math.round(hex.outline.width * 2), 60], 'the hexagon\'s box at the pixel ratio');
+  for (let n = 0; n <= 6; n++) skin.drawTile(board, 0, 0, 30, 'revealed', n, 2, null, hex);
+  assert.equal(canvases.made.length, images('hex'), 'every number of the hexagon board was cached');
+  const image = canvases.made.at(-1);
+  skin.drawTile(board, 10.3, 4.6, 30, 'revealed', 6, 2, null, hex);
+  assert.deepEqual(board.calls.at(-1).args.slice(1), [10.5, 4.5, image.width / 2, image.height / 2], 'copied at its own size, from the device pixel nearest the outline\'s corner');
+  assert.ok(Math.abs(image.width / 2 - hex.outline.width) <= 0.25, 'the image is the outline\'s box, to the device pixel');
+
+  const tri = await makeSkin(mod);
+  const up = await gridCell('tri', 0, 44, 3);
+  const down = await gridCell('tri', 1, 44, 3);
+  tri.skin.drawTile(board, 0, 0, 44, 'closed', 0, 1, null, up);
+  const per = tri.canvases.made.length;
+  assert.equal(per, images('tri'), 'one orientation: every state, revealed 0–12, the depth steps and the placeholder, once');
+  assert.equal(tri.skin.cacheKey(), '44|1|joyful-tiles', 'an orientation is not a rebuild of the cache');
+  tri.skin.drawTile(board, 0, 0, 44, 'closed', 0, 1, null, down);
+  assert.equal(tri.canvases.made.length, 2 * per, 'the second orientation adds its own images');
+  for (const cell of [up, down]) {
+    for (const state of mod.TILE_STATES) for (let n = 0; n <= 12; n++) tri.skin.drawTile(board, 0, 0, 44, state, n, 1, 0.5, cell);
   }
-  assert.equal(canvases.made.length, 2 * per, 'both orientations stay cached');
-  const up = canvases.made[0].ctx;
-  const down = canvases.made[per].ctx;
-  assert.notDeepEqual(trace(up), trace(down), 'each orientation\'s image is drawn through its own outline');
-  skin.drawTile(board, 0, 0, 30, 'closed', 0, 1, null, await squareCell(0, 30));
-  assert.equal(canvases.made.length, 3 * per, 'the square outline is a third orientation');
-  skin.drawTile(board, 0, 0, 30, 'closed', 0, 1);
-  assert.equal(canvases.made.length, 3 * per, 'a tile with no outline is the square\'s');
-  skin.drawTile(board, 0, 0, 32, 'closed', 0, 1, null, triangleCell('up', 0, 0, 32));
-  assert.equal(canvases.made.length, 4 * per, 'a size change drops every orientation, and rebuilds the one drawn');
+  assert.equal(tri.canvases.made.length, 2 * per, 'both orientations stay cached, every number of each');
+  assert.notDeepEqual(trace(tri.canvases.made[0].ctx), trace(tri.canvases.made[per].ctx), 'each orientation\'s image is drawn through its own outline');
+  tri.skin.drawTile(board, 0, 0, 44, 'closed', 0, 1, null, await squareCell(0, 44));
+  assert.equal(tri.canvases.made.length, 2 * per + images('square'), 'the square outline is images of its own');
+  tri.skin.drawTile(board, 0, 0, 44, 'closed', 0, 1);
+  assert.equal(tri.canvases.made.length, 2 * per + images('square'), 'a tile with no outline is the square\'s');
+  tri.skin.drawTile(board, 0, 0, 46, 'closed', 0, 1, null, await gridCell('tri', 0, 46, 3));
+  assert.equal(tri.canvases.made.length, 3 * per + images('square'), 'a size change drops every outline, and rebuilds the one drawn');
 });
 
 test('a tile drawn through its square outline is the same image, copied to the same place, as the tile alone', async () => {
@@ -668,11 +745,10 @@ function removeWebGL2() {
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
 
-// An Expert board (30 × 16) in the Classic 2D window at the narrowest desktop width, in its framed
-// panel: the panel's 1px border and 8px inside it on every side of the board.
+// An Expert board (30 × 16) in the Classic 2D window at the narrowest desktop width, in its board
+// frame: the module's gap on every side of the board (BOARD_FRAME).
 const EXPERT = { cols: 30, rows: 16 };
 const NARROWEST = 1024;
-const INSET = 9;
 
 // Runs in the page: draws every state and number at `size` CSS pixels and `ratio` device pixels
 // each, in one row, from the board module at `module` (handed over as theme `id`), and reports per
@@ -727,19 +803,101 @@ async function drawAllStates([size, ratio, id, module]) {
   return out;
 }
 
-// The largest whole tile at which `n` tiles and the gaps between them fit `room`, with a module's gap.
-const span = (n, tile, gap) => n * tile + (n - 1) * Math.round(tile * gap);
+// Runs in the page: draws every state and number a hexagon or triangle board (`kind`) shows at its
+// tile `size` and `ratio` device pixels each, in one row — a hexagon's tiles and a triangle's in both
+// orientations, each through its geometry's outline and glyph box and the module's gap for the grid —
+// from the board module at `module` (handed over as theme `id`), and reports per tile how many device
+// pixels of its glyph box carry one of its glyph's colours, and the glyph box's side.
+async function drawShapedStates([kind, size, ratio, id, module]) {
+  const { createTileSkin, createBoardArt, TILE_STATES } = await import('/js/classic2d/tile-skin.js');
+  const { createGeometry } = await import('/js/geometry/index.js');
+  const { GRID_NUMBERS } = await import('/js/themes/board-module.js');
+  const { BOARD } = await import(module);
+  await document.fonts.load(`${BOARD.font.weight} 1em "${BOARD.font.family}"`);
+  const art = createBoardArt();
+  art.set(id, BOARD);
+  const geometry = createGeometry(kind, 2, 1);
+  const cells = kind === 'tri' ? [0, 1] : [0];
+  const tiles = [];
+  for (const c of cells) {
+    for (const s of TILE_STATES) if (s !== 'revealed') tiles.push([c, s, 0]);
+    for (let n = 0; n <= GRID_NUMBERS[kind]; n++) tiles.push([c, 'revealed', n]);
+  }
+  const { flag, mine, cross } = BOARD.palette;
+  const glyph = {
+    flagged: [flag.cloth, flag.clothShade, flag.base],
+    mine: [mine.body],
+    exploded: [mine.body],
+    'wrong-flag': [cross.mark, flag.cloth, flag.clothShade],
+  };
+  const tall = kind === 'tri' ? (size * Math.sqrt(3)) / 2 : size;
+  const gap = Math.round(tall * BOARD.style2d.grids[kind].gap);
+  // Each tile's cell moved to its own slot along the row: its outline's box at slot.x, gap.
+  const placed = tiles.map(([c, s, n], i) => {
+    const o = geometry.outline(c, size, gap);
+    const g = geometry.glyphBox(c, size, gap);
+    const dx = gap + i * (o.width + gap) - o.x;
+    const dy = gap - o.y;
+    return {
+      state: s,
+      number: n,
+      cell: {
+        outline: { ...o, x: o.x + dx, y: o.y + dy, points: o.points.map(([px, py]) => [px + dx, py + dy]) },
+        glyphBox: { x: g.x + dx, y: g.y + dy, width: g.width, height: g.height },
+      },
+    };
+  });
+  let canvas = document.getElementById('tile-skin-shot');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'tile-skin-shot';
+    Object.assign(canvas.style, { position: 'fixed', left: '0', top: '0', zIndex: 9999 });
+    document.body.append(canvas);
+  }
+  const last = placed.at(-1).cell.outline;
+  const width = Math.ceil(last.x + last.width + gap);
+  const height = Math.ceil(last.height + 2 * gap);
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.fillStyle = BOARD.palette.boardGround;
+  ctx.fillRect(0, 0, width, height);
+  const skin = createTileSkin({ art, redraw: () => {} });
+  for (const t of placed) skin.drawTile(ctx, t.cell.outline.x, t.cell.outline.y, size, t.state, t.number, ratio, null, t.cell);
+  const parse = (hex) => [1, 3, 5].map((i) => parseInt(hex.trim().slice(i, i + 2), 16));
+  const out = placed.map(({ state: s, number: n, cell }) => {
+    const wanted = (s === 'revealed' ? (n ? [BOARD.numbers2d[n]] : []) : (glyph[s] ?? [])).map(parse);
+    const g = cell.glyphBox;
+    const side = Math.min(g.width, g.height);
+    const data = ctx.getImageData(Math.round(g.x * ratio), Math.round(g.y * ratio), Math.round(side * ratio), Math.round(side * ratio)).data;
+    let hits = 0;
+    for (let p = 0; p < data.length; p += 4) {
+      if (wanted.some(([r, gr, b]) => Math.abs(data[p] - r) + Math.abs(data[p + 1] - gr) + Math.abs(data[p + 2] - b) < 40)) hits++;
+    }
+    return { state: s, number: n, orientation: cell.outline.orientation, glyph: wanted.length > 0, hits, side };
+  });
+  skin.dispose();
+  return out;
+}
+
+// The largest whole tile at which `n` tiles, the gaps between them and the frame's gap on either
+// side fit `room`, with a module's gap.
+const span = (n, tile, gap) => n * tile + (n + 1) * Math.round(tile * gap);
 const fitWith = (n, room, gap) => {
   let tile = Math.floor(room / n);
   while (tile > 1 && span(n, tile, gap) > room) tile--;
   return tile;
 };
 
-test('in a browser, Expert at 1024 px wide keeps the fit rule on the tile and gap in the game window\'s board area, never below MIN_TILE_SIZE, and every state of every board module is legible at 48 px, 26 px and at it, at pixel ratios 1 and 2', async (t) => {
+test('in a browser, Expert at 1024 px wide keeps the fit rule on the tile and gap in the game window\'s board area, never below MIN_TILE_SIZE, and every state of every board module is legible at 48 px, 26 px and at it, and on a hexagon and a triangle board at each grid\'s floor, at pixel ratios 1 and 2', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   const { MIN_TILE_SIZE } = await skinModule();
+  const { createGeometry } = await import('../js/geometry/index.js');
   const shots = mkdtempSync(join(tmpdir(), 'ms3d-tile-skin-'));
   try {
     const page = await browser.newPage({ viewport: { width: NARROWEST, height: 768 }, deviceScaleFactor: 1 });
@@ -760,7 +918,7 @@ test('in a browser, Expert at 1024 px wide keeps the fit rule on the tile and ga
       });
       assert.ok(area.width > 0 && area.height > 0, 'the board area is measured');
       const gap = JOYFUL.style2d.params.gap;
-      const fit = Math.min(fitWith(EXPERT.cols, area.width - 2 * INSET, gap), fitWith(EXPERT.rows, area.height - 2 * INSET, gap));
+      const fit = Math.min(fitWith(EXPERT.cols, area.width, gap), fitWith(EXPERT.rows, area.height, gap));
       assert.equal(layout.tile, Math.max(MIN_TILE_SIZE, Math.min(48, fit)), `1024 × ${height}: the fit rule's tile`);
       assert.equal(layout.scrolls, fit < MIN_TILE_SIZE, `1024 × ${height}: Expert scrolls only below the floor`);
     }
@@ -777,6 +935,21 @@ test('in a browser, Expert at 1024 px wide keeps the fit rule on the tile and ga
           for (const tile of tiles) {
             if (!tile.glyph) continue;
             assert.ok(tile.hits >= area * 0.04, `${theme} ${size}px x${ratio}: ${tile.state} ${tile.number} glyph shows (${tile.hits} device px of ${area})`);
+          }
+        }
+      }
+      // A hexagon and a triangle board in every state, at each grid's floor.
+      for (const kind of ['hex', 'tri']) {
+        const floor = createGeometry(kind, 1, 1).minTile;
+        for (const ratio of [1, 2]) {
+          const tiles = await page.evaluate(drawShapedStates, [kind, floor, ratio, theme, module]);
+          const shot = await page.locator('#tile-skin-shot').screenshot({ path: join(shots, `tile-skin-${theme}-${kind}-${floor}px-x${ratio}.png`) });
+          assert.ok(shot.length > 500, `${theme} ${kind} ${floor}px x${ratio}: screenshot taken`);
+          assert.equal(tiles.filter((tile) => tile.state === 'revealed').length, (kind === 'tri' ? 2 : 1) * (GRID_MAX[kind] + 1), `${theme} ${kind}: every number of the grid drawn, in each orientation`);
+          for (const tile of tiles) {
+            if (!tile.glyph) continue;
+            const area = Math.round(tile.side * ratio) ** 2;
+            assert.ok(tile.hits >= area * 0.04, `${theme} ${kind} ${floor}px x${ratio}: ${tile.orientation} ${tile.state} ${tile.number} glyph shows (${tile.hits} device px of its glyph box's ${area})`);
           }
         }
       }

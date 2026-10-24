@@ -13,8 +13,10 @@
 //
 // createMotionLayer({ canvas, place, paint, frames, clip?, onSettle?, now?, cap? }) → layer
 //   canvas    the layer's <canvas>, or anything with width, height, style and getContext('2d').
-//   place     (cell) → { x, y, size, cx?, cy? }, the cell's tile in canvas CSS pixels and its centre
-//             (the board's geometry's; the tile's middle when not given), or null out of view.
+//   place     (cell) → { x, y, size, width?, height?, cx?, cy? }, the cell's tile in canvas CSS
+//             pixels — its box's corner, the tile size and the box's size (size × size when not
+//             given) — and its centre (the board's geometry's; the box's middle when not given), or
+//             null out of view.
 //   paint     (ctx, cell, face, x, y, size, depth) → draws the cell's `face` (a tile state) at
 //             x, y in the context's current transform, depth null for the face's own.
 //   clip      () → { x, y, width, height } the layer draws inside, or null for the whole canvas.
@@ -32,7 +34,8 @@
 //   dropAll() drops every animation and clears the layer; returns the cells that animated.
 //   resize(width, height, pixelRatio), dispose()
 //
-// A cell is drawn centred on its tile's centre at the offset (in tile sizes), scaled, and turned by the
+// A cell is drawn about its tile's centre — its box where it sits from that centre — at the offset
+// (in tile sizes), scaled, and turned by the
 // rotation as seen face on — a turn about the screen's axis in the plane, about a board axis as a
 // foreshortening —, at the opacity, its brightness a second pass over the painted cell alone: above 1
 // a mix toward white by the excess, below 1 toward black by the shortfall (the board module's
@@ -88,19 +91,25 @@ export function createMotionLayer({
     const at = place(cell);
     if (!at) return;
     const { size } = at;
+    const width = at.width ?? size;
+    const height = at.height ?? size;
     const [a, b, c, d] = turn(v.rotation.axis, v.rotation.angle);
     const k = v.scale;
-    const cx = (at.cx ?? at.x + size / 2) + v.offset.x * size;
-    const cy = (at.cy ?? at.y + size / 2) + v.offset.y * size;
+    const centreX = at.cx ?? at.x + width / 2;
+    const centreY = at.cy ?? at.y + height / 2;
+    const cx = centreX + v.offset.x * size;
+    const cy = centreY + v.offset.y * size;
     ctx.setTransform(ratio * a * k, ratio * b * k, ratio * c * k, ratio * d * k, ratio * cx, ratio * cy);
-    const half = -size / 2;
+    // The box's corner from the centre.
+    const left = at.x - centreX;
+    const top = at.y - centreY;
     ctx.globalAlpha = v.opacity;
-    paint(ctx, cell, v.face, half, half, size, v.depth);
+    paint(ctx, cell, v.face, left, top, size, v.depth);
     if (v.brightness !== 1) {
       ctx.globalCompositeOperation = 'source-atop';
       ctx.globalAlpha = Math.min(1, Math.abs(v.brightness - 1));
       ctx.fillStyle = v.brightness > 1 ? '#ffffff' : '#000000';
-      ctx.fillRect(half, half, size, size);
+      ctx.fillRect(left, top, width, height);
     }
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
