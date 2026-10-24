@@ -315,7 +315,7 @@ Context:
 
 Done: 2026-10-24, commit `055bca2` (3 files, +121/-5). Premise wrong: codes already routed to Hexagon and Triangle, so the commit adds only tests and a header comment; the flat-mode configuration's `codeToken` is still unread.
 
-## [ ] 24. Implement task 271 — Update documentation for feature `flat-grid-modes`
+## [x] 24. Implement task 271 — Update documentation for feature `flat-grid-modes`
 
 Depends on: 20, 21, 22, 23
 
@@ -328,6 +328,8 @@ Context:
 ```prompt
 /task-implement 271 --review
 ```
+
+Done: 2026-10-24, commit `82bf37a` (17 files, +267/-109).
 
 ## [ ] 25. Implement task 272 — Records model and summaries for Hexagon and Triangle
 
