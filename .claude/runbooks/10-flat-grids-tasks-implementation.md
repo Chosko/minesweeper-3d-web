@@ -202,7 +202,7 @@ Context: none
 
 Done: 2026-10-24, commit `edd7209` (3 files, +595/-20). Decision: for hexagon and triangle tiles the style's fractions and corner radius are measured against the tile's height; the recipe's triangle glyph box is 0.55 of the side, while js/geometry/tri.js's `glyphBox` is side / √3.
 
-## [ ] 16. Implement task 263 — Board module per-grid shape, numbers to 12, checks, and Joyful tiles' values
+## [x] 16. Implement task 263 — Board module per-grid shape, numbers to 12, checks, and Joyful tiles' values
 
 Depends on: 8, 12, 15
 
@@ -212,6 +212,8 @@ Context: none
 /task-implement 263 --review
 ```
 
+Done: 2026-10-24, commit `49e7919` (6 files, +129/-22). Decision: the square grid keeps its gap and radius in `style2d.params`; hexagon and triangle shapes go in a new `style2d.grids: { hex, tri }`; `checkBoardModule` takes `floors: { square, hex, tri }` in place of `minTileSize`.
+
 ## [ ] 17. Implement task 264 — The tile painter draws hexagon and triangle tiles
 
 Depends on: 3, 15, 16
@@ -219,6 +221,7 @@ Depends on: 3, 15, 16
 Context:
 - 2026-10-24 (from step 12): the triangle geometry's centre is the triangle's centroid and its glyph box is the square around the inscribed circle (side / √3); it works out each cell's `'up'`/`'down'` orientation itself.
 - 2026-10-24 (from step 15): conflict to settle — the tile recipe's triangle glyph box (js/tile-art.js `glyphBox`) is 0.55 of the side, as the task and feature document say, but the triangle geometry's `glyphBox` (js/geometry/tri.js) is side / √3 ≈ 0.577, and the 2D painter takes its box from the geometry; with the geometry's box triangle glyphs come out about 5% larger than the document says. The recipe takes `drawFace(..., { outline })` with `square`, `hexagon`, `triangle-up` or `triangle-down`, and exports `OUTLINES`, `outlineBox`, `outlinePoints`, `glyphBox` and `inGlyphBox(ctx, box, draw)`.
+- 2026-10-24 (from step 16): the board module keeps the square grid's gap and corner radius in `style2d.params.gap`/`.radius` and the hexagon and triangle shapes in `style2d.grids: { hex: { gap, radius }, tri: { gap, radius } }` — read the square from `params` and the other two from `grids`; a triangle's fractions are of its tile height, though the triangle geometry measures its tile by its side; `GRID_NUMBERS` = `{ square: 8, hex: 6, tri: 12 }`. Whether numbers and glyphs read at each grid's floor was deferred to this task's browser test, which renders hexagon and triangle boards at each floor (checkBoardModule only checks relief there).
 
 ```prompt
 /task-implement 264 --review
@@ -228,7 +231,8 @@ Context:
 
 Depends on: 16
 
-Context: none
+Context:
+- 2026-10-24 (from step 16): the Joyful tiles canvas names the sheets `J-HexSheet` and `J-TriSheet`; the board module holds their shapes in `style2d.grids: { hex: { gap, radius }, tri: { gap, radius } }` (square stays in `style2d.params`), with triangle fractions of the tile height.
 
 ```prompt
 /task-implement 265 --review
@@ -240,6 +244,7 @@ Depends on: 15, 16, 17, 18
 
 Context:
 - 2026-10-24 (from step 15): the tile recipe (js/tile-art.js) takes an `outline` option on `drawFace` and exports `OUTLINES`, `outlineBox`, `outlinePoints`, `glyphBox` and `inGlyphBox`; a hexagon is sized across its flats, a triangle by its side; style fractions and corner radius are measured against the tile height; an angled bevel edge blends the shades of its two neighbouring sides.
+- 2026-10-24 (from step 16): .claude/context/app-shell-board-module.md still describes numbers 1–8 and `minTileSize` — the board module now has `style2d.grids: { hex, tri }`, numbers to 12, `GRID_NUMBERS`, and `checkBoardModule({ floors: { square, hex, tri } })`.
 
 ```prompt
 /task-implement 266 --review
