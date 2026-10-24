@@ -106,7 +106,7 @@ Context:
 
 Done: 2026-10-21, commit `3a5e47d` (4 files, +460/-4). Odd columns sit half a row step, (tile + gap) / 2, lower — not "half a tile" as the feature document says — the only offset that keeps facing sides one gap apart; a press anywhere in the board's rectangle goes to the nearest tile centre.
 
-## [ ] 9. Implement task 256 — Hexagon boards, limits, identity and board-code token
+## [x] 9. Implement task 256 — Hexagon boards, limits, identity and board-code token
 
 Depends on: 7
 
@@ -118,6 +118,8 @@ Context:
 /task-implement 256 --review
 ```
 
+Done: 2026-10-24, commit `a2979de` (11 files, +307/-51). Hexagon Expert at 100 mines met the attempt budget on all 300 seeds measured; a Hexagon board code now parses, though no Hexagon mode exists yet to start from a `#board=` link.
+
 ## [ ] 10. Implement task 257 — Update documentation for feature `hexagon-grid`
 
 Depends on: 7, 8, 9
@@ -126,6 +128,7 @@ Context:
 - 2026-10-21 (from step 8): the hexagon geometry lowers odd columns by half a row step, (tile + gap) / 2, not "half a tile" as the hexagon-grid feature document says; it hit-tests a press anywhere in the board rectangle to the nearest tile centre (ties to the lower index) — bring the document in line.
 - 2026-10-21 (from step 7): task 254's commit already edited .claude/context/ (engine, generation, testing, INDEX) and hexagon-grid.md, including an open question on the Hexagon Expert no-guess budget — build on those edits rather than redo them.
 - 2026-10-21 (amend): the Hexagon Expert no-guess question is settled and removed from hexagon-grid.md — Expert has 100 mines and the attempt budget is unchanged; record the Expert no-guess timing task 256 re-measures at 100 mines, not task 254's at 123.
+- 2026-10-24 (from step 9): .claude/context/records-board-code.md still says "both modes' custom limits" — the board-code module now validates three modes (Classic 2D, Hexagon, 3D); the records and classic2d context files need the hexagon form, `STANDARD_BOARDS_HEX` (an equal copy in js/records/board.js, held equal by a test), the `H` token and js/hexagon/board-setup.js, which re-exports Classic 2D's validation. js/shell/challenge.js gained `hexagon: 'Hexagon'` in its mode names. Task 256 re-measured Hexagon Expert at 100 mines: the budget met on all 300 seeds, both first-click strategies.
 
 ```prompt
 /task-implement 257 --review
@@ -258,7 +261,8 @@ Context:
 
 Depends on: 21
 
-Context: none
+Context:
+- 2026-10-24 (from step 9): a hexagon board code already parses (js/records/board.js), so a `#board=` link carrying one tries to start a mode that does not exist until this task routes it.
 
 ```prompt
 /task-implement 270 --review
@@ -278,7 +282,8 @@ Context: none
 
 Depends on: 9, 13, 22
 
-Context: none
+Context:
+- 2026-10-24 (from step 9): js/records/model.js's boards-played-by-mode code pairs `standardBoard` with the square `STANDARD_BOARDS` for every mode that is not 3D — it must use the list for the mode's grid (`STANDARD_BOARDS_HEX` for Hexagon), or Hexagon's standard boards sort as -1.
 
 ```prompt
 /task-implement 272 --review
