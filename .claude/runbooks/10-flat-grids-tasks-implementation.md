@@ -162,7 +162,7 @@ Context:
 
 Done: 2026-10-24, commit `285170f` (4 files, +527/-6). Premise wrong: triangles are spaced so every pair of facing sides is one gap apart (half a side plus 2·gap/√3 along a row), not "a half side apart plus the gap"; a press goes to the tile whose outline is nearest, not the nearest centre.
 
-## [ ] 13. Implement task 260 — Triangle boards, limits, identity and board-code token
+## [x] 13. Implement task 260 — Triangle boards, limits, identity and board-code token
 
 Depends on: 9, 11
 
@@ -173,6 +173,8 @@ Context:
 /task-implement 260 --review
 ```
 
+Done: 2026-10-24, commit `e682ee0` (11 files, +299/-38). Decision: js/records/board-code.js keeps every 2D mode in one table (prefix `''`, `H` or `T`, grid, custom-limit check, standard boards).
+
 ## [ ] 14. Implement task 261 — Update documentation for feature `triangle-grid`
 
 Depends on: 11, 12, 13
@@ -180,6 +182,7 @@ Depends on: 11, 12, 13
 Context:
 - 2026-10-24 (from step 11): task 258 left js/generation/solver.js unchanged (it already treats an over-budget frontier group as unconstrained) and closed the triangle-grid open question on Expert timing as settled — every one of 1000 seeds met the attempt budget (dev/measure-noguess-tri.mjs).
 - 2026-10-24 (from step 12): the triangle geometry spaces tiles so every pair of facing sides is one gap apart — rows one triangle height plus the gap apart, tiles half a side plus 2·gap/√3 apart along a row — not "a half side apart plus the gap" as the feature document says; a press goes to the tile whose outline is nearest (ties to the lower index); the centre is the centroid and the glyph box is the square around the inscribed circle (side / √3); `minTile` is 44 and `tileCap(scale)` is the square cap × √3, rounded. .claude/context/geometry.md still lists only the square and hexagon kinds — bring both in line.
+- 2026-10-24 (from step 13): .claude/context/records.md, records-board-code.md, classic2d.md, testing.md and INDEX.md still describe only the hexagon board-code form — add the triangle form: js/records/board-code.js's one table of 2D modes (prefix `''`/`H`/`T`), js/triangle/board-setup.js, and "Triangle" in js/shell/challenge.js's mode names.
 
 ```prompt
 /task-implement 261 --review
@@ -274,6 +277,7 @@ Depends on: 21
 
 Context:
 - 2026-10-24 (from step 9): a hexagon board code already parses (js/records/board.js), so a `#board=` link carrying one tries to start a mode that does not exist until this task routes it.
+- 2026-10-24 (from step 13): a triangle board code (`T` prefix) now parses too, so a `#board=` link carrying one also needs this task's routing.
 
 ```prompt
 /task-implement 270 --review
