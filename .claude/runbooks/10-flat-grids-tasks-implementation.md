@@ -175,7 +175,7 @@ Context:
 
 Done: 2026-10-24, commit `e682ee0` (11 files, +299/-38). Decision: js/records/board-code.js keeps every 2D mode in one table (prefix `''`, `H` or `T`, grid, custom-limit check, standard boards).
 
-## [ ] 14. Implement task 261 — Update documentation for feature `triangle-grid`
+## [x] 14. Implement task 261 — Update documentation for feature `triangle-grid`
 
 Depends on: 11, 12, 13
 
@@ -187,6 +187,8 @@ Context:
 ```prompt
 /task-implement 261 --review
 ```
+
+Done: 2026-10-24, commit `d086595` (9 files, +109/-60).
 
 ## [ ] 15. Implement task 262 — Hexagon and triangle outlines in the tile recipe
 
