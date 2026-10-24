@@ -1401,7 +1401,7 @@ Feature: flat-grid-geometry
 
 ## 253. Update documentation for feature `flat-grid-geometry`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/classic2d-board-view.md, .claude/context/classic2d-board-motion.md, .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-input.md, .claude/context/classic2d-mode.md, .claude/context/replay-samplers.md, .claude/context/replay-viewers.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-geometry.md
 Preconditions: 248, 249, 250, 251, 252

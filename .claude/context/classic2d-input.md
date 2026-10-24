@@ -121,6 +121,8 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
 
 - [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
   — the pointer and cursor inputs.
+- [../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md)
+  — the cursor's steps by the geometry's neighbour.
 
 ## CROSS-REFERENCES
 
@@ -129,6 +131,7 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
 - [classic2d-mode.md](classic2d-mode.md) — the mode that mounts the inputs
   and hands in the swap.
 - [engine.md](engine.md) — the input profile markers.
+- [geometry.md](geometry.md) — the `neighbour` query the cursor steps by.
 - [input-controller.md](input-controller.md) — `Repeat`, `stickCurve`, `BTN`, the
   `GamepadReader` poll and the shell's Back buttons left unmapped.
 - [testing.md](testing.md) — `tests/classic2d-pointer.test.mjs`,

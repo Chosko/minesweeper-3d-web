@@ -50,7 +50,9 @@ shell hands in its flow and its sound sink. The area overview is
 ## INTERNAL PATTERNS
 
 - **Start.** `start` normalises the choice, saves it as the last board
-  choice and mounts a fresh view, inputs and sampler. The inputs see the
+  choice and mounts a fresh view, inputs and sampler, the view and the
+  cursor input on the square geometry of the game's grid
+  ([geometry.md](geometry.md)), built once per game. The inputs see the
   session through a gate that reads paused while the board is hidden and
   redraws what an action before the first reveal changed (the session emits
   no event then). The view opens at `flow.scale()` inside `flow.frame()`,
@@ -102,7 +104,8 @@ shell hands in its flow and its sound sink. The area overview is
   `flow.progress`, null when the card hides.
 - **End delay.** A win or loss reports can-pause false at once and runs
   the end delay (`ending`): the view plays the end effect (`WIN` from the
-  last action's cell, `LOSS` from the exploded tile nearest it), `tick()`
+  last action's cell, `LOSS` from the exploded tile nearest it by the
+  geometry's cell centres), `tick()`
   drawing each frame at the clock's time since the end; after
   `END_DELAY_MS` — frames drawn or not — or at `finishNow()` (any press,
   `pagehide`), the view is drawn in its end state and finished is reported
@@ -121,11 +124,14 @@ shell hands in its flow and its sound sink. The area overview is
   — the game window.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — the replay on the mode's reports.
+- [../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md)
+  — the geometry the mode builds per game.
 
 ## CROSS-REFERENCES
 
 - [classic2d-session.md](classic2d-session.md) — its session;
-  [classic2d-board-canvas.md](classic2d-board-canvas.md), [classic2d-input.md](classic2d-input.md) — what it mounts.
+  [classic2d-board-canvas.md](classic2d-board-canvas.md), [classic2d-input.md](classic2d-input.md) — what it mounts;
+  [geometry.md](geometry.md) — the geometry it builds.
 - [app-shell.md](app-shell.md) — the mode host;
   [app-shell-2d.md](app-shell-2d.md) — the flow, `main.js` handing in `sfx`
   and the button swap; [app-shell-end-delay.md](app-shell-end-delay.md) — the

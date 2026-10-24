@@ -32,8 +32,9 @@ overview [classic2d.md](classic2d.md).
   pixels.
 - Touch zoom: `zoomRange` → `{min, max}` (the geometry's floor and the
   fit-to-view tile, the whole board inside the frame, whichever is larger),
-  `boardPoint(x, y)` → `{u, v}` in board units (pitches) from the board's
-  corner, `zoom(tile, x, y, point?)` → changed.
+  `boardPoint(x, y)` → `{u, v}` in the geometry's board units (pitches on
+  the square geometry) from the board's top-left corner,
+  `zoom(tile, x, y, point?)` → changed.
 - `clipMarks(layout, scroll)` → `{left, right, top, bottom, barX, barY}`;
   `SHADOW_DEPTH` (12), `SCROLLBAR` (`{thickness: 4, inset: 2}`).
 - Tokens: `BOARD_SHADOW`, `BOARD_SCROLLBAR`; `BOARD_BACKGROUND`

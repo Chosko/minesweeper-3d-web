@@ -22,8 +22,9 @@ its own layer, the marked start cell, cell motion, the end effect — is
   most `max`, never below `min`; `gapPx(tile, gap)` the gap in whole pixels
   for a gap fraction.
 - `BOARD_SCALES` (`fit`, `100`, `125` — the settings' `boardScale`),
-  `DEFAULT_BOARD_SCALE` (`100`), `TILE_CAP` (48), `tileCap(scale)` → 48 at
-  100 %, 60 at 125 %, `Infinity` at Fit.
+  `DEFAULT_BOARD_SCALE` (`100`), `TILE_CAP`, `tileCap(scale)` → the square
+  geometry's largest tile at a board scale: `TILE_CAP` at 100 %, scaled up
+  at 125 %, `Infinity` at Fit.
 - `BOARD_FRAME` (`{gaps: 1}`) — the board frame every Classic 2D board sits
   in: the module's gap on every side.
 - `boardLayout({geometry, width, height, min, max, frame, gap,

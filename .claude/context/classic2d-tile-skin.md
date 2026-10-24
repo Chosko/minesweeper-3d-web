@@ -103,6 +103,8 @@ styles and glyphs — is [tile-art.md](tile-art.md).
   — the states, the paint call, the cache and the minimum tile size.
 - [../domain/features/themed-board-art-and-motion.md](../domain/features/themed-board-art-and-motion.md)
   — the drawing styles, the board module the skin draws from, the hand-off.
+- [../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md)
+  — a tile drawn through its cell's outline and glyph box.
 
 ## CROSS-REFERENCES
 
@@ -117,6 +119,7 @@ styles and glyphs — is [tile-art.md](tile-art.md).
 - [classic2d-tile-motion.md](classic2d-tile-motion.md) — the cell motion
   player.
 - [tile-art.md](tile-art.md) — the recipe the painter draws through.
+- [geometry.md](geometry.md) — the outlines and glyph boxes the board view hands in.
 - [testing.md](testing.md) — `tests/tile-skin.test.mjs` the painter, cache,
   hand-off and `MIN_TILE_SIZE`.
 

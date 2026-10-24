@@ -21,15 +21,15 @@ builds `createSampler3D` ([mode3d-adapter.md](mode3d-adapter.md),
 ## PUBLIC API
 
 Samplers
-- `sampler-2d.js`: `SAMPLE_INTERVAL_MS` (50), `SAMPLE_STEPS` (64),
+- `sampler-2d.js`: `SAMPLE_INTERVAL_MS`, `SAMPLE_STEPS`,
   `boardPoint(view, x, y, steps?)` (a canvas position in the board view's
   board units from the board's top-left corner, through the view's
   `boardPoint` — pitches on the square geometry, so the whole part is the
   cell under it in any theme — in steps of 1/`SAMPLE_STEPS`),
   `createSampler2D({session, point, interval?})`,
   `mountSampler2D({view, session, win?, interval?})`.
-- `sampler-3d.js`: `SAMPLE_INTERVAL_MS` (100), `POSITION_STEPS` (16),
-  `ANGLE_STEPS` (8192), `VIEW_MODE` (`shift` 1, `space` 2, `ctrl` 4),
+- `sampler-3d.js`: `SAMPLE_INTERVAL_MS`, `POSITION_STEPS`,
+  `ANGLE_STEPS`, `VIEW_MODE` (`shift` 1, `space` 2, `ctrl` 4),
   `cameraSample`, `viewMode`, `createSampler3D({session, camera, controls,
   spacing, interval?, steps?})` (`spacing` a getter). A spacing change
   scales the camera with it (`FlyCamera.rescale`), so its cell-unit sample
@@ -45,6 +45,8 @@ Samplers
 
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — sampling and the measured recording constants.
+- [../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md)
+  — the 2D pointer samples in the geometry's board units.
 
 ## CROSS-REFERENCES
 
@@ -57,6 +59,7 @@ Samplers
 - [classic2d-mode.md](classic2d-mode.md), [mode3d-adapter.md](mode3d-adapter.md),
   [app-shell-3d.md](app-shell-3d.md) — who mounts and ticks the samplers.
 - [input-camera.md](input-camera.md) — `FlyCamera` and its `rescale`.
+- [geometry.md](geometry.md) — the grid geometry whose board units the 2D samples are in.
 - [testing.md](testing.md) — `tests/replay-2d.test.mjs`,
   `tests/replay-3d.test.mjs`, `dev/measure-replays.mjs`.
 

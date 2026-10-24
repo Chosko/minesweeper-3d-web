@@ -96,6 +96,8 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
   — the cursor ring and the 2D motion layer.
 - [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
   — pressed feedback and the focus ring.
+- [../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md)
+  — cell motion around the geometry's centre, the end effect over its extent.
 
 ## CROSS-REFERENCES
 
@@ -108,6 +110,7 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
 - [classic2d-input.md](classic2d-input.md) — the inputs that drive the
   pressed set and the cursor.
 - [classic2d-end-effect.md](classic2d-end-effect.md) — the end effect the view draws.
+- [geometry.md](geometry.md) — the cell centres and outlines the layers place by.
 - [testing.md](testing.md) — `tests/classic2d-view.test.mjs` its
   end-effect drawing; `tests/classic2d-motion.test.mjs` the motion layer
   and its event sources.

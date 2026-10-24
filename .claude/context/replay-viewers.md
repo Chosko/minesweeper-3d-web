@@ -94,6 +94,8 @@ DOM-free at import.
 
 - [../domain/features/replay-playback.md](../domain/features/replay-playback.md)
   — what the viewers show, Show 3BV, the free camera.
+- [../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md)
+  — the 2D viewer on the geometry rebuilt from the replay's board.
 
 ## CROSS-REFERENCES
 
