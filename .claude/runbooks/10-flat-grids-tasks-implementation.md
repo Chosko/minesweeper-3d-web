@@ -258,7 +258,7 @@ Context:
 
 Done: 2026-10-24, commit `0eb1fbe` (12 files, +191/-78). The triangle glyph box was not settled: the hex-tri-board-art document and `TRIANGLE_GLYPH` in js/tile-art.js still say 0.55 of the side, while the painter uses the geometry's box.
 
-## [ ] 20. Implement task 267 — Flat mode configuration, with Classic 2D as the square configuration
+## [x] 20. Implement task 267 — Flat mode configuration, with Classic 2D as the square configuration
 
 Depends on: 2, 4, 5
 
@@ -268,12 +268,15 @@ Context: none
 /task-implement 267 --review
 ```
 
+Done: 2026-10-24, commit `0d42cff` (8 files, +490/-81). Decision: the flat-mode configuration argument is optional everywhere and defaults to the square values, so existing calls still work; side limits and the size hint stay shared by every flat mode.
+
 ## [ ] 21. Implement task 268 — Hexagon and Triangle modes with their board choice screens
 
 Depends on: 8, 9, 12, 13, 20
 
 Context:
 - 2026-10-23 (amend): task 268 was re-planned for the collapsible board choice panel (no Last played chip, Play-only foot, stored pin shared by every mode) and now waits on task 284, the m2b-themes Classic 2D panel, which this runbook does not run.
+- 2026-10-24 (from step 20): js/flat-modes.js builds `CLASSIC_2D` (equal to js/classic2d/board-setup.js's `SQUARE_SETUP`, held by a test); board setup and the board choice screen cannot import js/flat-modes.js (an import cycle, and tests/affected-tests.test.mjs forbids pulling the board view into the 3D tests). Two static tests constrain js/main.js: the Classic 2D registration keeps the literal `'classic-2d'` on one line, and `pin: BOARD_PANEL,` stays the last entry of the board choice call. Side limits and the "Width and height 1–100" hint are shared by every flat mode, not per configuration.
 
 ```prompt
 /task-implement 268 --review
@@ -298,6 +301,7 @@ Depends on: 21
 Context:
 - 2026-10-24 (from step 9): a hexagon board code already parses (js/records/board.js), so a `#board=` link carrying one tries to start a mode that does not exist until this task routes it.
 - 2026-10-24 (from step 13): a triangle board code (`T` prefix) now parses too, so a `#board=` link carrying one also needs this task's routing.
+- 2026-10-24 (from step 20): the flat-mode configuration's code token is not read by anything yet — board codes still route through js/records/board-code.js's own table.
 
 ```prompt
 /task-implement 270 --review
@@ -307,7 +311,8 @@ Context:
 
 Depends on: 20, 21, 22, 23
 
-Context: none
+Context:
+- 2026-10-24 (from step 20): task 267 left the Classic 2D and shell context files for this task — js/flat-modes.js (`CLASSIC_2D`, the per-mode configuration, optional everywhere and defaulting to square) and `SQUARE_SETUP` in js/classic2d/board-setup.js.
 
 ```prompt
 /task-implement 271 --review
@@ -338,7 +343,8 @@ Context: none
 
 Depends on: 7, 11, 22
 
-Context: none
+Context:
+- 2026-10-24 (from step 20): a hexagon or triangle game records no replay today — the replay recorder accepts only square and 3D boards and fails silently on the others.
 
 ```prompt
 /task-implement 274 --review
