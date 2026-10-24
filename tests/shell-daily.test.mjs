@@ -614,6 +614,9 @@ test('in a browser, the menu pre-generates today\'s Expert, Daily plays it on th
     assert.equal(await page.evaluate(() => document.querySelector('#daily-entry-3d [data-line]').textContent), UNAVAILABLE_REASONS.webgl2);
     assert.equal(await page.evaluate(() => { const l = document.querySelector('#daily-preview [data-preview="daily"]'); return !!l && !l.hidden && !!l.querySelector('canvas'); }), true, 'the closed Expert board in the panel');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'no horizontal scroll');
+    // Hexagon and Triangle, playable modes with their board choices, have no daily yet: still Coming soon.
+    assert.deepEqual(await page.evaluate(() => ['hexagon', 'triangle'].map((m) => [globalThis.__ms.modes.has(m), document.querySelector(`#daily-entry-${m} [data-line]`).textContent])),
+      [[true, COMING_SOON], [true, COMING_SOON]]);
     await page.click('#daily-entry-hexagon');
     assert.equal(await page.evaluate(() => document.getElementById('daily-play').disabled), true, 'a coming-soon mode cannot be played');
     await page.click('#daily-entry-classic-2d');

@@ -1551,7 +1551,7 @@ Feature: flat-grid-modes
 
 ## 268. Hexagon and Triangle modes with their board choice screens
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/main.js, js/shell/router.js, index.html, css/style.css, js/classic2d/board-choice.js, js/flat-modes.js, tests/shell-router.test.mjs, tests/components-menu-screens.test.mjs, tests/shell-daily.test.mjs
 Preconditions: 255, 256, 259, 260, 267, 284

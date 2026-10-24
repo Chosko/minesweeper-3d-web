@@ -1259,28 +1259,29 @@ test('index.html builds the Classic 2D board choice from kit components: a windo
 });
 
 test('the shell stylesheet lays the board choice out: the window sized to its content and centred on the page, never nearer its edges than the canvas\'s margin, the panel widening it, denser rows on the smaller desktops only, one column with the drawer on a phone', () => {
-  // The rules are the 3D board choice's too (tests/mode3d-board-choice.test.mjs).
+  // The rules are the 3D board choice's too (tests/mode3d-board-choice.test.mjs), and Hexagon's and
+  // Triangle's (tests/shell-router.test.mjs).
   const css = read('css/style.css');
   assert.doesNotMatch(css, /#(c2d-choice|board-choice|daily)-top|wordmark/, 'no game title above the window');
   assert.match(css, /\n#c2d-choice::before, #board-choice::before, #daily::before,\n#c2d-choice::after, #board-choice::after, #daily::after \{ content: ""; flex: 1 1 0; min-height: 40px; \}/, 'the space above the window as much as below it, 40 px at the least');
   assert.match(css, /\n#c2d-choice-frame, #board-choice-frame \{ flex: 0 1 auto; align-self: center; width: auto; \}/, 'the window as narrow as its content, centred');
-  assert.match(css, /\n#c2d-choice-options, #board-choice-options \{ flex: 1 0 480px; min-width: 480px; \}\n#c2d-choice-panel, #bc-choice-panel \{ flex: 0 1 639px; width: 639px; min-width: 0; \}/, 'the Board list, then the panel beside it');
-  assert.match(css, /@media \(min-width: 720px\) \{\n  #c2d-choice-panel > \.ui-drawer__bar, #c2d-choice-panel:not\(\[data-open="true"\]\), #bc-choice-panel:not\(\[data-open="true"\]\), #bc-choice-panel > \.ui-drawer__bar \{ display: none; \}\n\}/,
+  assert.match(css, /\n#c2d-choice-options, #board-choice-options \{ flex: 1 0 480px; min-width: 480px; \}\n#hex-choice-panel, #tri-choice-panel,\n#c2d-choice-panel, #bc-choice-panel \{ flex: 0 1 639px; width: 639px; min-width: 0; \}/, 'the Board list, then the panel beside it');
+  assert.match(css, /@media \(min-width: 720px\) \{\n  #c2d-choice-panel > \.ui-drawer__bar, #c2d-choice-panel:not\(\[data-open="true"\]\), #bc-choice-panel:not\(\[data-open="true"\]\), #bc-choice-panel > \.ui-drawer__bar,\n  #hex-choice-panel > \.ui-drawer__bar, #hex-choice-panel:not\(\[data-open="true"\]\), #tri-choice-panel > \.ui-drawer__bar, #tri-choice-panel:not\(\[data-open="true"\]\) \{ display: none; \}\n\}/,
     'on a desktop window the panel shows only while open, and never its drawer bar');
-  assert.match(css, /@media \(max-width: 1439px\) \{\n  #daily-frame \{ width: 1080px; \}\n  #c2d-choice::before, #board-choice::before, #daily::before,\n  #c2d-choice::after, #board-choice::after, #daily::after \{ min-height: 24px; \}\n  #c2d-play, #bc-play \{ min-height: 54px; padding: 12px 22px; font-size: 21px; \}/,
+  assert.match(css, /@media \(max-width: 1439px\) \{\n  #daily-frame \{ width: 1080px; \}\n  #hex-choice::before, #tri-choice::before, #hex-choice::after, #tri-choice::after,\n  #c2d-choice::before, #board-choice::before, #daily::before,\n  #c2d-choice::after, #board-choice::after, #daily::after \{ min-height: 24px; \}\n  #hex-play, #tri-play,\n  #c2d-play, #bc-play \{ min-height: 54px; padding: 12px 22px; font-size: 21px; \}/,
     'compact: the 24 px margin and Play');
   const dense = css.match(/@media \(min-width: 720px\) and \(max-width: 1439px\) \{\n([\s\S]*?)\n\}/)?.[1] ?? '';
-  assert.match(dense, /#c2d-choice-options, #board-choice-options \{ flex-basis: 460px; min-width: 460px; \}\n  #c2d-choice-panel, #bc-choice-panel \{ flex-basis: 619px; width: 619px; \}/, 'the compact list and panel');
+  assert.match(dense, /#c2d-choice-options, #board-choice-options \{ flex-basis: 460px; min-width: 460px; \}\n  #hex-choice-panel, #tri-choice-panel,\n  #c2d-choice-panel, #bc-choice-panel \{ flex-basis: 619px; width: 619px; \}/, 'the compact list and panel');
   assert.match(dense, /#c2d-choice \.ui-option, #board-choice \.ui-option, #daily \.ui-option \{ min-height: 46px; padding: 6px 14px; \}/, 'the denser rows, never on a phone');
   assert.doesNotMatch(css, /@media \(max-width: 1439px\) \{[^}]*\.ui-option[^}]*min-height: 46px/, 'no dense rule reaching a phone');
-  const phone = css.match(/@media \(max-width: 719px\) \{\n  #c2d-choice, #board-choice \{ padding: 0; \}\n([\s\S]*?)\n\}/)?.[1] ?? '';
+  const phone = css.match(/@media \(max-width: 719px\) \{\n  #hex-choice, #tri-choice,\n  #c2d-choice, #board-choice \{ padding: 0; \}\n([\s\S]*?)\n\}/)?.[1] ?? '';
   assert.match(phone, /#c2d-panel-toggle, #bc-panel-toggle, #c2d-choice-body > \.ui-divider--vertical, #board-choice-body > \.ui-divider--vertical,\n  #c2d-choice::before, #board-choice::before, #c2d-choice::after, #board-choice::after \{ display: none; \}/,
     'no panel toggle and no rule beside the panel');
   assert.match(phone, /#c2d-choice-body, #board-choice-body \{ flex-direction: column; gap: 18px; padding: 16px 18px 84px; \}/, 'one column, its foot clear of the bar');
   assert.match(phone, /#c2d-choice-panel, #bc-choice-panel \{ flex: none; width: auto; margin: 0 -18px; \}/, 'the drawer full width under the Board list');
   assert.match(phone, /#c2d-choice-panel:not\(\[data-open="true"\]\) > \.ui-drawer__body, #bc-choice-panel:not\(\[data-open="true"\]\) > \.ui-drawer__body,/, 'its body only while open');
   assert.match(phone, /#c2d-choice \.ui-option, #board-choice \.ui-option \{ min-height: 56px; padding: 9px 14px; \}/);
-  assert.match(phone, /#c2d-choice-frame > \.ui-frame__foot, #board-choice-frame > \.ui-frame__foot \{ position: absolute; left: 0; right: 0; bottom: 0; min-height: 64px; \}\n  #c2d-play, #bc-play \{ min-height: 44px; padding: 8px 22px; font-size: 19px; \}/, 'the slimmer bar pinned over the column\'s foot, and its slimmer Play');
+  assert.match(phone, /#c2d-choice-frame > \.ui-frame__foot, #board-choice-frame > \.ui-frame__foot \{ position: absolute; left: 0; right: 0; bottom: 0; min-height: 64px; \}\n  #hex-play, #tri-play,\n  #c2d-play, #bc-play \{ min-height: 44px; padding: 8px 22px; font-size: 19px; \}/, 'the slimmer bar pinned over the column\'s foot, and its slimmer Play');
   assert.doesNotMatch(phone, /#c2d-bests|#bc-bests/, 'the bests show on a phone too');
   assert.match(css, /#c2d-custom > \.ui-row \{ display: grid; grid-template-columns: repeat\(3, minmax\(0, 1fr\)\); gap: var\(--space-3\); \}/, 'the three fields fill one row');
   assert.match(css, /:is\(#c2d-custom, #custom\) \.ui-field__input::-webkit-inner-spin-button,\n:is\(#c2d-custom, #custom\) \.ui-field__input::-webkit-outer-spin-button \{ -webkit-appearance: none; margin: 0; \}/, 'no number spinners');

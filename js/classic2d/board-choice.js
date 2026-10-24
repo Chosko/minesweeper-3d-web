@@ -1,7 +1,7 @@
-// Classic 2D board choice screen: the board options (Beginner, Intermediate, Expert, Custom and
-// Insert Board Code), the board choice panel to their right holding what the chosen one needs (the
-// no-guess switch, the board's three bests and All records, the custom form with Random, or the
-// board code field), and a foot holding Play alone. Opens on the last board choice. Touches only the
+// A flat mode's board choice screen — Classic 2D's, Hexagon's or Triangle's: the board options
+// (Beginner, Intermediate, Expert, Custom and Insert Board Code), the board choice panel to their
+// right holding what the chosen one needs (the no-guess switch, the board's three bests and All
+// records, the custom form with Random, or the board code field), and a foot holding Play alone. Opens on the last board choice. Touches only the
 // elements it is handed.
 //
 // The board choice panel, one behaviour for every mode's board choice (bindChoicePanel below, which
@@ -41,7 +41,7 @@
 //   bestsTitle({ selected, custom, noGuess })  'Intermediate · no-guess · your bests', or the custom
 //                            board's line in place of the name.
 //   showCodeLine(line, field, r)  draws the code field's line for code.resolve's answer r (below),
-//                            on both board choice screens.
+//                            on every board choice screen.
 //
 // bindChoicePanel({ root, pin }) → { draw(selected), destroy() }
 //   root      the screen's element: the panel [data-panel] (data-open "true" while open), the rule
@@ -96,7 +96,7 @@ import { normaliseChoice, aboveDensityHint, DENSITY_HINT_TEXT, boardSetup, SQUAR
 import { CUSTOM_LIMITS } from '../engine/profiles.js';
 import { setNote } from '../ui/components.js';
 
-/** The code field's info line while nothing is typed, on both board choice screens. */
+/** The code field's info line while nothing is typed, on every board choice screen. */
 export const CODE_PROMPT = 'Paste a board code to play that exact board.';
 
 export const CHOICE_SIZES = Object.freeze(['beginner', 'intermediate', 'expert']);
@@ -208,7 +208,7 @@ export function bindChoicePanel({ root, pin = null }) {
 /**
  * The code field's line for `r`, code.resolve's answer (null while empty): CODE_PROMPT as a muted
  * line, an accepted code's text in the success colour, a code of the other mode a warn note, a
- * refused one an err note with the field marked invalid. Both board choice screens draw it.
+ * refused one an err note with the field marked invalid. Every board choice screen draws it.
  */
 export function showCodeLine(line, field, r) {
   const refused = !!r && !r.ok && !r.otherMode;

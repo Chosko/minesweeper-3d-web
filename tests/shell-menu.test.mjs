@@ -533,7 +533,7 @@ test('in a browser, the menu shows its eight buttons, every play tile its own pr
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
     const active = () => ms(() => document.activeElement?.id || '');
-    const shown = () => ms(() => ['menu', 'board-choice', 'coming-soon', 'records', 'c2d-choice', 'settings', 'daily', 'ready', 'pause']
+    const shown = () => ms(() => ['menu', 'board-choice', 'coming-soon', 'records', 'c2d-choice', 'hex-choice', 'tri-choice', 'settings', 'daily', 'ready', 'pause']
       .filter((id) => !document.getElementById(id).classList.contains('hidden')));
     const backdrop = () => ms(() => globalThis.__ms.renderer.game === globalThis.__ms.state.demo);
     // What every play tile's preview shows, and whether the 3D scene shows or draws anywhere on the menu.
@@ -595,15 +595,22 @@ test('in a browser, the menu shows its eight buttons, every play tile its own pr
     assert.deepEqual(await shown(), ['menu']);
     assert.equal(await active(), 'menu-entry-classic-2d');
 
-    // Hexagon, Triangle and Surface: the placeholder titled with the mode; Back returns with the entry selected.
-    for (const [id, title] of [['hexagon', 'Hexagon'], ['triangle', 'Triangle'], ['surface', 'Surface']]) {
+    // Hexagon and Triangle: each its own board choice; Back returns with the entry selected.
+    for (const [id, layer] of [['hexagon', 'hex-choice'], ['triangle', 'tri-choice']]) {
       await page.click(`#menu-entry-${id}`);
-      assert.equal(await mode(), 'coming-soon');
-      assert.equal(await ms(() => document.getElementById('coming-soon-title').textContent), title);
+      assert.equal(await mode(), `${id}-choice`);
+      assert.deepEqual(await shown(), [layer]);
       await page.keyboard.press('Escape');
       assert.equal(await mode(), 'menu');
-      assert.equal(await active(), `menu-entry-${id}`, `Back returns with ${title} selected`);
+      assert.equal(await active(), `menu-entry-${id}`, `Back returns with ${id} selected`);
     }
+    // Surface: the placeholder titled with the mode; Back returns with the entry selected.
+    await page.click('#menu-entry-surface');
+    assert.equal(await mode(), 'coming-soon');
+    assert.equal(await ms(() => document.getElementById('coming-soon-title').textContent), 'Surface');
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'menu');
+    assert.equal(await active(), 'menu-entry-surface', 'Back returns with Surface selected');
 
     // Records, Daily and Settings: their screens, by mouse and keyboard; Back returns to the entry.
     await page.click('#menu-entry-records');
@@ -820,7 +827,7 @@ test('in a browser, the menu fits each window as its artboard draws it: the wind
 async function openPlaceholder(page, base) {
   await page.goto(`${base}/index.html?still-backdrop`);
   await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
-  await page.evaluate(() => document.getElementById('menu-entry-hexagon').click());
+  await page.evaluate(() => document.getElementById('menu-entry-surface').click());
   await page.waitForFunction(() => globalThis.__ms.state.mode === 'coming-soon');
 }
 
@@ -1468,16 +1475,18 @@ test('[slow] in a browser, a controller alone walks the menu, the 3D board choic
       await page.close();
     }
 
-    // ---- Placeholder: Triangle opens it titled with the mode; B leaves it, back on Triangle.
+    // ---- Placeholder: Surface opens it titled with the mode; B leaves it, back on Surface.
     {
       const { errors, press, mode, focused, page } = await controllerPage(browser, base);
       assert.equal(await mode(), 'menu');
       await press(PAD_BTN.DOWN);
       assert.equal(await focused(), 'menu-entry-triangle', 'Triangle under Classic 2D');
+      await press(PAD_BTN.RIGHT);
+      assert.equal(await focused(), 'menu-entry-surface', 'Surface beside it');
       await press(PAD_BTN.A);
       assert.equal(await mode(), 'coming-soon', 'a mode not built yet opens the placeholder');
       assert.ok(await page.evaluate(() => !document.getElementById('coming-soon').classList.contains('hidden')));
-      assert.equal(await page.evaluate(() => document.getElementById('coming-soon-title').textContent), 'Triangle');
+      assert.equal(await page.evaluate(() => document.getElementById('coming-soon-title').textContent), 'Surface');
       assert.equal(await focused(), 'coming-soon-back', 'its Back button takes the focus');
       assert.equal(await page.evaluate(() => document.getElementById('coming-soon-text').textContent), 'This part of the game is coming soon.');
       assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#coming-soon .ui-key-hint')].map((h) => [h.classList.contains('ui-key-hint--pad'), h.textContent])),
@@ -1489,7 +1498,7 @@ test('[slow] in a browser, a controller alone walks the menu, the 3D board choic
       assert.equal(await focused(), 'coming-soon-back');
       await press(PAD_BTN.B);
       assert.equal(await mode(), 'menu', 'B is Back: the placeholder returns to the menu');
-      assert.equal(await focused(), 'menu-entry-triangle', 'with Triangle selected');
+      assert.equal(await focused(), 'menu-entry-surface', 'with Surface selected');
       assert.ok(await page.evaluate(() => document.getElementById('coming-soon').classList.contains('hidden')));
       assert.deepEqual(errors, []);
       await page.close();

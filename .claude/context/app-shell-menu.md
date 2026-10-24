@@ -51,7 +51,7 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
 - `boardBests(board, records)` → `[{stat, label, value, note}]`: the
   board's best time, 3BV/s and efficiency in the results screen's formats,
   each noted with its date, or a dash and `NO_BEST` (`'no best yet'`); a
-  board and its no-guess twin are separate boards. Both board choices'
+  board and its no-guess twin are separate boards. Every board choice's
   `bests`.
 - `BOARD_PANEL_DOC` = `'shell.boardPanel'`, `BOARD_PANEL_VERSION`;
   `createBoardPanelPin({storage})` → `pinned`, `load()` (unpinned for a
@@ -68,9 +68,8 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   (`#menu-entry-<id>`, `data-entry`) — is clicked through `onMenuEntry` →
   `MENU.open(id)`: a registered mode opens its board choice through the
   host, a registered screen is routed to (Records opens on the last board
-  played and its mode), anything else — Hexagon, Triangle and Surface,
-  whose modes are not registered — goes to `coming-soon`, titled with the
-  entry's label. `MISSING` is `webgl2` without WebGL 2; each unavailable
+  played and its mode), anything else — Surface, whose mode is not
+  registered — goes to `coming-soon`, titled with the entry's label. `MISSING` is `webgl2` without WebGL 2; each unavailable
   tile gets `ui.setEntryUnavailable(id, entryReason(…),
   entryShortReason(…))` (aria-disabled, the lock, its reason twice — the
   long one and the phone row's — and its preview locked) and stays
@@ -93,12 +92,15 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   the body scrolls. At phone widths every tile is a phone row in one
   column, its preview a strip pinned inside its right end.
 - **Board choices.** `showChoice2D` / `showChoice3D` show the last board
-  choice (`LAST_CHOICE_2D`, `LAST_CHOICE_3D`); each binder's `bests` is
-  `boardBests` over `RECORDS`, `RECORDS.onChange` refreshes both, and
-  *All records* in the panel opens the Records screen on the chosen board,
-  keeping the screen's `state()` (`held2D`, `held3D`) for the way back.
-  Both binders take the one `BOARD_PANEL` pin, loaded before the first
-  screen, so pinning the panel on one board choice pins it on every one. The binders are
+  choice (`LAST_CHOICE_2D`, `LAST_CHOICE_3D`), and Hexagon's and
+  Triangle's (`HEX_MODE`, `TRI_MODE`, each built by `flatMode` from its
+  flat mode configuration) their own `show` over their `lastChoice`; each
+  binder's `bests` is `boardBests` over `RECORDS`, `RECORDS.onChange`
+  refreshes every one, and *All records* in the panel opens the Records
+  screen on the chosen board, keeping the screen's `state()` (`held2D`,
+  `held3D`, each flat mode's own) for the way back. Every binder takes
+  the one `BOARD_PANEL` pin, loaded before the first screen, so pinning
+  the panel on one board choice pins it on every one. The binders are
   [classic2d.md](classic2d.md) and [mode3d.md](mode3d.md); their code
   fields go through [app-shell-daily.md](app-shell-daily.md)'s `checkCode`
   / `playCode`.

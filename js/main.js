@@ -59,7 +59,7 @@ import { createClassic2DMode } from './classic2d/mode.js';
 import { createButtonSwap } from './classic2d/button-swap.js';
 import { bindBoardChoice } from './classic2d/board-choice.js';
 import { createLastChoice } from './classic2d/board-setup.js';
-import { CLASSIC_2D } from './flat-modes.js';
+import { CLASSIC_2D, HEXAGON, TRIANGLE } from './flat-modes.js';
 import {
   bindBoardChoice as bindBoardChoice3D, boardOf, normaliseChoice as normaliseChoice3D, DEFAULT_CHOICE as DEFAULT_CHOICE_3D,
   LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D,
@@ -125,8 +125,8 @@ function requestLock3D() {
   input.requestLock();
   return true;
 }
-// S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'records' | 'classic-2d-choice' | 'settings' | 'ready' |
-// 'playing' | 'classic-2d' | 'paused' | 'results' | 'ctxlost' (defined below).
+// S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'records' | 'classic-2d-choice' | 'hexagon-choice' |
+// 'triangle-choice' | 'settings' | 'ready' | 'playing' | 'classic-2d' | 'paused' | 'results' | 'ctxlost' (defined below).
 const S = {
   settings: null,
   game: null, // the 3D state view of the game shown (its session's view), or null
@@ -500,6 +500,8 @@ const SHELL = createRouter({
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); recordsBackLabel(); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); SETTINGS_EXPORT.show(RECORDS_EXPORT.hasGames()); } },
     'classic-2d-choice': { defaultFocus: '[data-size][aria-pressed="true"]', show: (d = {}, from) => { MODES.leave(); mode2d.warm(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current, from); } },
+    'hexagon-choice': { defaultFocus: '[data-size][aria-pressed="true"]', show: (d = {}, from) => { MODES.leave(); HEX_MODE.mode.warm(); showMenuBackdrop(); ui.showBoardChoice2D('hex-choice'); HEX_MODE.show(d.choice ?? HEX_MODE.lastChoice.current, from); } },
+    'triangle-choice': { defaultFocus: '[data-size][aria-pressed="true"]', show: (d = {}, from) => { MODES.leave(); TRI_MODE.mode.warm(); showMenuBackdrop(); ui.showBoardChoice2D('tri-choice'); TRI_MODE.show(d.choice ?? TRI_MODE.lastChoice.current, from); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, LOCK_FALLBACK.readyMessage(d.msg), { rules: FIRST_USE.rules3D && !S.learn, blocked: LOCK_FALLBACK.blocked, learn: FIRST_USE.rules3D && !S.learn && !S.started }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => backGame(source) },
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => backGame(source) },
@@ -738,6 +740,43 @@ const CHOICE_2D = bindBoardChoice({
   config: CLASSIC_2D,
   pin: BOARD_PANEL,
 });
+/**
+ * Hexagon and Triangle: each a mode of its own built from its flat mode configuration on the Classic
+ * 2D flow — its own mode instance, last board choice and board choice screen (`#<prefix>-choice`,
+ * routed as `<id>-choice`), bound as Classic 2D's is. The game window, its board area and the page's
+ * button swap are Classic 2D's, shared.
+ */
+function flatMode(config, prefix) {
+  const lastChoice = createLastChoice({ storage, config });
+  const screen = `${config.id}-choice`;
+  const flow = { ...FLOW_2D, openBoardChoice: (choice) => SHELL.go(screen, { data: { choice } }) };
+  const mode = MODES.register(config.id, (report) => createClassic2DMode(report, { config, flow, lastChoice, sound: sfx, buttonSwap: BUTTON_SWAP }));
+  let held = null; // the screen as Records found it, for the way back
+  const choice = bindBoardChoice({
+    root: document.getElementById(`${prefix}-choice`),
+    onStart: (c) => { sfx.unlock(); MODES.start(config.id, c); },
+    onBack: () => shellBack('pointer'),
+    onRecords: (identity) => {
+      held = choice.state();
+      SHELL.go('records', { data: { mode: config.id, boardKey: identity ? boardKey(identity) : null } });
+    },
+    code: { resolve: (text) => checkCode(text, config.id), onPlay: (text) => playCode(text, config.id) },
+    bests: (identity) => boardBests(identity, RECORDS),
+    config,
+    pin: BOARD_PANEL,
+  });
+  return {
+    mode, lastChoice, choice,
+    /** The board choice on `choice`; back from the Records screen it opened, what the screen held then. */
+    show(c, from) {
+      const h = from === 'records' ? held : null;
+      held = null;
+      choice.show(c, { held: h });
+    },
+  };
+}
+const HEX_MODE = flatMode(HEXAGON, 'hex');
+const TRI_MODE = flatMode(TRIANGLE, 'tri');
 
 // ---------------------------------------------------------------- daily boards and board codes
 // The daily boards: each mode's warm client pre-generates today's unused ones when the main menu
@@ -896,7 +935,7 @@ const RECORDS = createRecordsStore({
 });
 const recordsLoaded = RECORDS.load();
 RECORDS.attach(PAUSE);
-RECORDS.onChange(() => { CHOICE_2D.refresh(); CHOICE_3D.refresh(); });
+RECORDS.onChange(() => { CHOICE_2D.refresh(); HEX_MODE.choice.refresh(); TRI_MODE.choice.refresh(); CHOICE_3D.refresh(); });
 
 // ---------- first-use hints ----------
 // What a new player has been taught, in the platform-storage document shell.firstUse, seeded from
@@ -1584,7 +1623,7 @@ function pauseInfo(note = '') {
 
 function showMainMenu() { SHELL.go('menu'); }
 /** The menu screens orbit the camera about the board behind them or in their scene panel (the decorative demo board, the Daily screen's cube); without WebGL 2, the page's static background. */
-const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'records', 'classic-2d-choice', 'settings', 'daily']);
+const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'records', 'classic-2d-choice', 'hexagon-choice', 'triangle-choice', 'settings', 'daily']);
 function onBackdrop() { return BACKDROP_SCREENS.has(S.mode); }
 /** Test hook: `?still-backdrop` in the page's address draws the backdrop when it changes instead of orbiting it every frame. */
 const STILL_BACKDROP = new URLSearchParams(location.search).has('still-backdrop');
@@ -1657,7 +1696,7 @@ function syncScenePanel() {
  * its own backdrop: no 3D scene shows or draws.
  */
 function sceneOff() {
-  return S.mode === 'menu' || S.mode === 'classic-2d-choice' || S.mode === 'board-choice'
+  return S.mode === 'menu' || S.mode === 'classic-2d-choice' || S.mode === 'hexagon-choice' || S.mode === 'triangle-choice' || S.mode === 'board-choice'
     || (S.mode === DAILY_SCREEN && !(DAILY_PREVIEW.shown?.kind === 'scene' && scenePanel));
 }
 if (WEBGL2) window.addEventListener('resize', () => syncScenePanel()); // the panel may move with the window
@@ -1683,7 +1722,7 @@ canvas.addEventListener('webglcontextlost', (e) => {
   if (MODES.active === '3d') mode3d.contextLost();
   else SHELL.go('ctxlost');
 });
-const CTX_LOST_INERT = ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'c2d-status', 'm3d-status'];
+const CTX_LOST_INERT = ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'hex-choice', 'tri-choice', 'c2d', 'c2d-status', 'm3d-status'];
 /** Dead canvas: leave every game mode (so lock changes/keys can't resume) and disable other overlays. */
 function showContextLost() {
   mouse.reset();
@@ -1742,7 +1781,8 @@ function padClick(el) {
 // The board status cards sit above the pause card, and take their default focus from the card.
 const LAYER_SCREEN = {
   'ctx-lost': 'ctxlost', 'c2d-status': null, 'm3d-status': null, replay: 'replay', pause: 'paused', ready: 'ready', 'learn-end': 'learn-end', results: 'results', look: 'look',
-  'coming-soon': 'coming-soon', daily: 'daily', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
+  'coming-soon': 'coming-soon', daily: 'daily', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice',
+  'hex-choice': 'hexagon-choice', 'tri-choice': 'triangle-choice', c2d: 'classic-2d', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
 const STATUS_LAYERS = { 'c2d-status': ['c2d', board2d], 'm3d-status': ['m3d', board3d] };
@@ -2318,6 +2358,7 @@ showMainMenu();
 LINKS.start(); // a #board= link: its challenge or daily over the menu, so Back leads to the menu
 window.addEventListener('hashchange', () => LINKS.hashchange());
 mode2d.loadChoice().catch(() => {}); // the Classic 2D board choice opens on the last board
+for (const m of [HEX_MODE, TRI_MODE]) m.mode.loadChoice().catch(() => {}); // and Hexagon's and Triangle's on theirs
 const bootFocus = document.activeElement;
 LAST_MODE.load().then(() => {
   if (SHELL.current === 'menu' && document.activeElement === bootFocus) SHELL.refocus(); // the player has not moved yet

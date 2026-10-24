@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { defineFlatMode, CLASSIC_2D, FLAT_SIZES } from '../js/flat-modes.js';
+import { defineFlatMode, CLASSIC_2D, HEXAGON, TRIANGLE, FLAT_MODES, FLAT_SIZES } from '../js/flat-modes.js';
 import * as classic2d from '../js/classic2d/board-setup.js';
 import { boardSetup, normaliseChoice, createLastChoice, DEFAULT_CHOICE } from '../js/classic2d/board-setup.js';
 import * as hexagon from '../js/hexagon/board-setup.js';
@@ -55,6 +55,37 @@ test('flat modes: Classic 2D is the square configuration, from Classic 2D\'s boa
   assert.equal(geometry.kind, 'square');
   assert.deepEqual([geometry.width, geometry.height, geometry.count], [9, 7, 63]);
   assert.equal(CLASSIC_2D.createGrid(9, 7).graph.count, 63);
+});
+
+test('flat modes: Hexagon and Triangle are the hex and tri configurations, from their board setups, each with its own last-choice document and code token', () => {
+  for (const [config, setup, name, doc, token] of [[HEXAGON, hexagon, 'Hexagon', 'hexagon.lastChoice', 'H'], [TRIANGLE, triangle, 'Triangle', 'triangle.lastChoice', 'T']]) {
+    assert.equal(config.id, setup.MODE, 'the menu entry\'s id');
+    assert.equal(config.name, name);
+    assert.equal(config.grid, setup.GRID);
+    assert.deepEqual(config.standardSizes, setup.STANDARD_SIZES);
+    assert.equal(config.validateCustom, setup.validateCustom);
+    assert.equal(config.maxMines, setup.maxMines);
+    assert.equal(config.lastChoiceDoc, doc);
+    assert.equal(config.codeToken, token);
+    assert.equal(config.createGeometry(4, 3).kind, setup.GRID);
+  }
+  assert.deepEqual(FLAT_MODES.map((c) => c.id), ['classic-2d', 'hexagon', 'triangle']);
+  assert.equal(new Set(FLAT_MODES.map((c) => c.lastChoiceDoc)).size, 3, 'one document per mode');
+  assert.ok(Object.isFrozen(FLAT_MODES));
+});
+
+test('flat modes: Hexagon\'s and Triangle\'s last board choices are stored in Classic 2D\'s shape; an invalid one reads as Beginner with no-guess on and is never saved', async () => {
+  for (const config of [HEXAGON, TRIANGLE]) {
+    const backend = createMemoryBackend({ initial: { [config.lastChoiceDoc]: JSON.stringify({ version: 1, data: { size: 'giant', noGuess: true } }) } });
+    const storage = createStorage({ backend });
+    const last = createLastChoice({ storage, config });
+    assert.deepEqual(await last.load(), DEFAULT_CHOICE, `${config.id}: the default`);
+    assert.deepEqual([DEFAULT_CHOICE.size, DEFAULT_CHOICE.noGuess], ['beginner', true]);
+    assert.equal(JSON.parse(backend.documents.get(config.lastChoiceDoc)).data.size, 'giant', `${config.id}: an invalid choice is never saved`);
+    await assert.rejects(() => last.save({ size: 'giant', noGuess: true }), RangeError);
+    await last.save({ size: 'custom', custom: { width: 40, height: 20, mines: 120 }, noGuess: false });
+    assert.deepEqual(JSON.parse(backend.documents.get(config.lastChoiceDoc)), { version: 1, data: { size: 'custom', custom: { width: 40, height: 20, mines: 120 }, noGuess: false } });
+  }
 });
 
 test('flat modes: a configuration is immutable, its standard sizes copied and frozen', () => {

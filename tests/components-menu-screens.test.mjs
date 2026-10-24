@@ -1,5 +1,5 @@
 // The main menu and the screens it opens in a browser, readable under the contrast contract: the menu with its
-// focus walk and previews, Settings, the replay viewer, Records, Daily, both board choices
+// focus walk and previews, Settings, the replay viewer, Records, Daily, every board choice
 // and the placeholder; the __ms hook's surface and the menu scene's sky.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -148,8 +148,47 @@ test('in a browser, the menu and the screens it opens meet the contrast contract
     await page.click('#c2d-choice-back');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
+    // Hexagon and Triangle: each its own board choice in the Classic 2D one's composition, readable — its name
+    // heading the body, its boards, Beginner with no-guess on and no Last played chip by default, the panel
+    // closed and Play alone in the foot; Custom and Insert Board Code open the panel on their own, and the
+    // panel's pin is the one every mode shares.
+    for (const [entry, prefix, name, beginner] of [['hexagon', 'hex', 'Hexagon', '9 × 9 · 13 mines'], ['triangle', 'tri', 'Triangle', '13 × 7 · 8 mines']]) {
+      await page.click(`#menu-entry-${entry}`);
+      assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), `${entry}-choice`);
+      const screen = await page.evaluate((p) => {
+        const root = document.getElementById(`${p}-choice`);
+        return {
+          title: document.getElementById(`${p}-choice-title`).textContent,
+          focus: document.activeElement.dataset.size,
+          beginner: root.querySelector('[data-size="beginner"] .ui-option__size').textContent,
+          noGuess: document.getElementById(`${p}-noguess`).checked,
+          chips: root.querySelectorAll('.ui-chip').length,
+          open: document.getElementById(`${p}-choice-panel`).dataset.open,
+          foot: [...root.querySelectorAll(`#${p}-choice-frame > .ui-frame__foot button`)].map((b) => b.id),
+          others: ['c2d-choice', 'hex-choice', 'tri-choice', 'board-choice'].filter((id) => id !== `${p}-choice` && !document.getElementById(id).classList.contains('hidden')),
+        };
+      }, prefix);
+      assert.deepEqual(screen, { title: name, focus: 'beginner', beginner, noGuess: true, chips: 0, open: 'false', foot: [`${prefix}-play`], others: [] }, `${name}: its board choice by default`);
+      await check(page, `#${prefix}-choice`, `${prefix}-choice`);
+      for (const size of ['custom', 'code']) {
+        await page.click(`#${prefix}-choice [data-size="${size}"]`);
+        assert.equal(await page.evaluate((p) => document.getElementById(`${p}-choice-panel`).dataset.open, prefix), 'true', `${name}: ${size} opens the panel`);
+      }
+      await page.click(`#${prefix}-choice [data-size="custom"]`);
+      await check(page, `#${prefix}-choice`, `${prefix}-choice-custom`);
+      await page.click(`#${prefix}-choice [data-size="beginner"]`);
+      await page.click(`#${prefix}-panel-toggle`);
+      assert.equal(await page.evaluate((p) => document.getElementById(`${p}-choice-panel`).dataset.open, prefix), 'true', `${name}: pinned open`);
+      await page.click(`#${prefix}-choice-back`);
+      assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+      await page.click('#menu-entry-classic-2d');
+      assert.equal(await page.evaluate(() => document.getElementById('c2d-panel-toggle').getAttribute('aria-pressed')), 'true', `${name}'s pin pins Classic 2D's panel too`);
+      await page.click('#c2d-panel-toggle');
+      await page.click('#c2d-choice-back');
+    }
+
     // The placeholder in its frame, readable: Back focused with its key hint; the title bar's Back its arrow alone.
-    await page.click('#menu-entry-hexagon');
+    await page.click('#menu-entry-surface');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'coming-soon');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'coming-soon-back');
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#coming-soon .ui-key-hint__key')].map((k) => k.closest('button').id)), ['coming-soon-back']);

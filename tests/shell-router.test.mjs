@@ -9,6 +9,8 @@ import {
   inertSections, tabWrap,
 } from '../js/shell/navigation.js';
 import { BTN, NUM_BUTTONS } from '../js/gamepad.js';
+import { HEXAGON, TRIANGLE } from '../js/flat-modes.js';
+import { sizeLabel, mineDensity } from '../js/classic2d/board-choice.js';
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -427,6 +429,82 @@ test('the shell declares a default focus for each screen it shows', () => {
   assert.equal(decl.ready, '#ready-btn');
   assert.equal(decl.ctxlost, '#ctx-lost-btn');
   assert.match(SCREEN_TABLE, /paused: \{[^\n]*defaultFocus: \(\) =>[^\n]*gameInProgress\(\) \? '#p-resume' : '#p-restart'/, 'pause: Resume during a game, else Restart');
+});
+
+// Hexagon and Triangle: each a mode of its own, registered from its flat mode configuration, with its
+// board choice screen in the Classic 2D board choice's composition and routed as Classic 2D's is.
+const INDEX = read('index.html');
+const sectionOf = (id) => {
+  const start = INDEX.indexOf(`<section id="${id}"`);
+  return start < 0 ? '' : INDEX.slice(start, INDEX.indexOf('\n  </section>\n', start) + '\n  </section>'.length);
+};
+const FLAT = [[HEXAGON, 'hex'], [TRIANGLE, 'tri']];
+
+test('Hexagon and Triangle are registered with the mode host under the menu entries\' ids, each from its configuration, with its own last board choice', () => {
+  assert.match(MAIN, /import \{ CLASSIC_2D, HEXAGON, TRIANGLE \} from '\.\/flat-modes\.js';/);
+  for (const [config, prefix] of FLAT) {
+    const name = config === HEXAGON ? 'HEXAGON' : 'TRIANGLE';
+    assert.match(MAIN, new RegExp(`const ${prefix.toUpperCase()}_MODE = flatMode\\(${name}, '${prefix}'\\);`), `${config.id}: built from its configuration`);
+  }
+  const fn = MAIN.slice(MAIN.indexOf('function flatMode('), MAIN.indexOf('\n}\n', MAIN.indexOf('function flatMode(')));
+  assert.match(fn, /const lastChoice = createLastChoice\(\{ storage, config \}\);/, 'its last board choice, its configuration\'s document');
+  assert.match(fn, /MODES\.register\(config\.id, \(report\) => createClassic2DMode\(report, \{ config, flow, lastChoice, sound: sfx, buttonSwap: BUTTON_SWAP \}\)\)/, 'the Classic 2D mode over its configuration');
+  assert.match(fn, /openBoardChoice: \(choice\) => SHELL\.go\(screen, \{ data: \{ choice \} \}\)/, 'its board choice is its own screen');
+  assert.match(fn, /const screen = `\$\{config\.id\}-choice`;/);
+  assert.match(fn, /root: document\.getElementById\(`\$\{prefix\}-choice`\)/);
+  assert.match(fn, /onStart: \(c\) => \{ sfx\.unlock\(\); MODES\.start\(config\.id, c\); \}/);
+  assert.match(fn, /SHELL\.go\('records', \{ data: \{ mode: config\.id, boardKey: identity \? boardKey\(identity\) : null \} \}\)/, 'All records on the chosen board');
+  assert.match(fn, /code: \{ resolve: \(text\) => checkCode\(text, config\.id\), onPlay: \(text\) => playCode\(text, config\.id\) \}/);
+  assert.match(fn, /bests: \(identity\) => boardBests\(identity, RECORDS\),\n    config,\n    pin: BOARD_PANEL,\n  \}\);/, 'the shell hands it its bests, its configuration and the pin every mode shares');
+  assert.match(MAIN, /RECORDS\.onChange\(\(\) => \{ CHOICE_2D\.refresh\(\); HEX_MODE\.choice\.refresh\(\); TRI_MODE\.choice\.refresh\(\); CHOICE_3D\.refresh\(\); \}\);/, 'the bests redrawn on the records\' change');
+  assert.match(MAIN, /for \(const m of \[HEX_MODE, TRI_MODE\]\) m\.mode\.loadChoice\(\)\.catch\(\(\) => \{\}\);/, 'each board choice opens on its last board');
+});
+
+test('Hexagon\'s and Triangle\'s board choices are routed like Classic 2D\'s, each warming its mode\'s generation client', () => {
+  for (const [config, prefix] of FLAT) {
+    const screen = `${config.id}-choice`;
+    assert.match(SCREEN_TABLE, new RegExp(`'${screen}': \\{ defaultFocus: '\\[data-size\\]\\[aria-pressed="true"\\]', show: \\(d = \\{\\}, from\\) => \\{ MODES\\.leave\\(\\); ${prefix.toUpperCase()}_MODE\\.mode\\.warm\\(\\); showMenuBackdrop\\(\\); ui\\.showBoardChoice2D\\('${prefix}-choice'\\); ${prefix.toUpperCase()}_MODE\\.show\\(d\\.choice \\?\\? ${prefix.toUpperCase()}_MODE\\.lastChoice\\.current, from\\); \\} \\}`),
+      `${screen}: the last board chosen, the client warmed`);
+    assert.match(MAIN, new RegExp(`'${prefix}-choice': '${screen}'`), `${screen}: a controller layer`);
+    assert.match(MAIN, new RegExp(`const BACKDROP_SCREENS = new Set\\(\\[[^\\]]*'${screen}'`), `${screen}: on the menu backdrop`);
+    assert.match(MAIN, new RegExp(`const CTX_LOST_INERT = \\[[^\\]]*'${prefix}-choice'`), `${screen}: inert behind the context-lost card`);
+    assert.match(MAIN, new RegExp(`function sceneOff\\(\\) \\{[^}]*'${screen}'`), `${screen}: no 3D scene behind it`);
+  }
+  const ui = read('js/ui.js');
+  assert.match(ui, /showBoardChoice2D\(id = 'c2d-choice'\) \{/, 'one show for every flat board choice, Classic 2D\'s by default');
+  assert.match(ui, /for \(const id of \['c2d-choice', 'hex-choice', 'tri-choice', 'c2d',/, 'their key hints');
+});
+
+test('Hexagon\'s and Triangle\'s board choices are the Classic 2D board choice\'s markup: the mode\'s name and its standard boards', () => {
+  const c2d = sectionOf('c2d-choice');
+  assert.ok(c2d.length > 1000);
+  for (const [config, prefix] of FLAT) {
+    let expected = c2d.replaceAll('c2d-', `${prefix}-`)
+      .replace('aria-label="Classic 2D board choice"', `aria-label="${config.name} board choice"`)
+      .replace(`id="${prefix}-choice-title">Classic 2D<`, `id="${prefix}-choice-title">${config.name}<`);
+    for (const size of ['beginner', 'intermediate', 'expert']) {
+      const board = config.standardSizes[size];
+      expected = expected.replace(new RegExp(`(data-size="${size}">[^\\n]*?<span class="ui-option__size">)[^<]*(</span> &middot; <span class="ui-option__density">)[^<]*(</span>)`),
+        `$1${sizeLabel(size, config).replace(' × ', ' &times; ').replace(' · ', ' &middot; ')}$2${mineDensity(board)}$3`);
+    }
+    assert.equal(sectionOf(`${prefix}-choice`), expected, `${config.id}: the Classic 2D composition, its name and boards`);
+    assert.doesNotMatch(expected, /ui-chip/, 'no Last played chip');
+  }
+  // Every rule styling the Classic 2D board choice's elements styles Hexagon's and Triangle's too.
+  const ids = [...new Set([...c2d.matchAll(/ id="(c2d-[\w-]+)"/g)].map((m) => m[1]))];
+  for (const file of ['css/style.css', 'themes/joyful-tiles/theme.css']) {
+    const selectors = [...read(file).replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim()).filter((t) => !t.startsWith('@'));
+    let named = 0;
+    for (const sel of selectors) {
+      for (const id of ids.filter((x) => new RegExp(`#${x}(?![\\w-])`).test(sel))) {
+        named++;
+        for (const prefix of ['hex', 'tri']) assert.match(sel, new RegExp(`#${prefix}${id.slice(3)}(?![\\w-])`), `${file}: ${prefix}'s twin of #${id} in "${sel.slice(0, 80)}…"`);
+      }
+    }
+    assert.ok(named > 0, `${file} styles the Classic 2D board choice`);
+  }
+  assert.match(INDEX, /<!-- Hexagon board choice -->\n  <section id="hex-choice"/);
+  assert.match(INDEX, /<!-- Triangle board choice -->\n  <section id="tri-choice"/);
 });
 
 test('Esc and the controller back button always resolve Back through the router', () => {

@@ -742,6 +742,148 @@
   </section>
   <!-- /Daily -->
 
+  <!-- Hexagon board choice -->
+  <section id="hex-choice" class="overlay ui-backdrop hidden" aria-label="Hexagon board choice">
+    <section class="ui-frame" id="hex-choice-frame" aria-labelledby="hex-choice-title">
+      <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
+      <header class="ui-frame__head">
+        <div class="ui-frame__start"><button type="button" id="hex-choice-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"></button></div>
+        <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
+      </header>
+      <div class="ui-frame__heading">
+        <h2 class="ui-frame__title" id="hex-choice-title">Hexagon</h2>
+        <div class="ui-frame__action"><button type="button" id="hex-panel-toggle" class="ui-button ui-button--quiet ui-button--sm" data-panel-toggle data-icon="panel" aria-pressed="false" aria-controls="hex-choice-panel" aria-label="Settings &amp; bests" title="Settings &amp; bests"></button></div>
+      </div>
+      <div class="ui-frame__body" id="hex-choice-body">
+        <div class="ui-column" id="hex-choice-options">
+          <div class="ui-section-label"><h3 class="ui-section-label__text" id="hex-board-label">Board</h3></div>
+          <div class="ui-options" role="group" aria-labelledby="hex-board-label">
+            <button type="button" class="ui-option" aria-pressed="false" data-size="beginner"><span class="ui-option__name">Beginner</span><span class="ui-option__meta"><span class="ui-option__size">9 &times; 9 &middot; 13 mines</span> &middot; <span class="ui-option__density">16.0 % mines</span></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-size="intermediate"><span class="ui-option__name">Intermediate</span><span class="ui-option__meta"><span class="ui-option__size">16 &times; 16 &middot; 50 mines</span> &middot; <span class="ui-option__density">19.5 % mines</span></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-size="expert"><span class="ui-option__name">Expert</span><span class="ui-option__meta"><span class="ui-option__size">30 &times; 16 &middot; 100 mines</span> &middot; <span class="ui-option__density">20.8 % mines</span></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-size="custom"><span class="ui-option__name">Custom</span><span class="ui-option__meta" data-custom-meta>Width and height 1&ndash;100</span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+          </div>
+          <hr class="ui-divider">
+          <div class="ui-options" role="group" aria-label="Board code">
+            <button type="button" class="ui-option" aria-pressed="false" data-size="code" id="hex-code-option"><span class="ui-option__name">Insert Board Code</span><span class="ui-option__meta">Play the exact board a code describes</span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+          </div>
+        </div>
+        <div class="ui-divider ui-divider--vertical hidden" role="separator" aria-orientation="vertical" data-panel-rule></div>
+        <div class="ui-drawer" id="hex-choice-panel" data-panel data-open="false">
+          <button type="button" class="ui-drawer__bar" id="hex-drawer-bar" data-drawer-bar aria-expanded="false" aria-controls="hex-choice-detail"><span class="ui-section-label__text ui-drawer__label" data-drawer-label>Board settings</span><span class="ui-drawer__chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></button>
+          <div class="ui-column ui-drawer__body" id="hex-choice-detail">
+            <div id="hex-settings" data-settings>
+              <div class="ui-section-label"><h3 class="ui-section-label__text">Board settings</h3></div>
+              <div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="hex-noguess">No-guess</label><span class="ui-switchrow__help" id="hex-noguess-help">Solvable by logic alone, no 50/50 guesses. Separate records.</span></span><input type="checkbox" role="switch" id="hex-noguess" class="ui-toggle__input" data-noguess aria-describedby="hex-noguess-help"></div>
+              <p id="hex-density-hint" class="ui-note ui-note--warn hidden" data-icon="warning" data-density-hint><span class="ui-note__text"></span></p>
+            </div>
+            <form id="hex-custom" class="hidden" aria-label="Custom board" novalidate>
+              <div class="ui-row">
+                <label class="ui-field"><span class="ui-field__label">Width</span><input id="hex-width" data-field="width" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="30"></label>
+                <label class="ui-field"><span class="ui-field__label">Height</span><input id="hex-height" data-field="height" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="16"></label>
+                <label class="ui-field"><span class="ui-field__label">Mines</span><input id="hex-mines" data-field="mines" class="ui-field__input" type="number" min="1" max="99" step="1" inputmode="numeric" value="99"></label>
+              </div>
+              <div class="ui-actions ui-actions--row"><p id="hex-info" class="ui-text ui-text--muted" data-info>480 cells &middot; up to 99 mines</p><button type="button" id="hex-random" class="ui-button ui-button--secondary ui-button--sm" data-random data-icon="shuffle">Random</button></div>
+              <p id="hex-refusal" class="ui-note ui-note--warn hidden" data-icon="warning" data-refusal><span class="ui-note__text"></span></p>
+            </form>
+            <div id="hex-bests" data-bests>
+              <hr class="ui-divider">
+              <div class="ui-section-label"><h3 class="ui-section-label__text" id="hex-bests-title" data-bests-title>Beginner &middot; no-guess &middot; your bests</h3></div>
+              <div class="ui-stat-row ui-stat-row--tiles">
+                <div id="hex-best-time" class="ui-stat ui-stat--tile" role="group" aria-labelledby="hex-best-time-label" data-best="time"><span class="ui-stat__label" id="hex-best-time-label">Time</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">no best yet</span></div>
+                <div id="hex-best-bbbvPerSecond" class="ui-stat ui-stat--tile" role="group" aria-labelledby="hex-best-bbbvPerSecond-label" data-best="bbbvPerSecond"><span class="ui-stat__label" id="hex-best-bbbvPerSecond-label">3BV/s</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">no best yet</span></div>
+                <div id="hex-best-efficiency" class="ui-stat ui-stat--tile" role="group" aria-labelledby="hex-best-efficiency-label" data-best="efficiency"><span class="ui-stat__label" id="hex-best-efficiency-label">Efficiency</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">no best yet</span></div>
+              </div>
+              <button type="button" id="hex-records" class="ui-button ui-button--secondary ui-button--sm" data-records data-icon="chart">All records</button>
+            </div>
+            <div id="hex-code-panel" class="hidden" role="group" aria-labelledby="hex-code-title" data-code-panel>
+              <div class="ui-section-label"><h3 class="ui-section-label__text" id="hex-code-title">Board code</h3></div>
+              <label class="ui-field"><span class="ui-field__label">Code</span><input id="hex-code" data-code-field class="ui-field__input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="EN-…"></label>
+              <p id="hex-code-info" class="ui-text ui-text--muted" data-code-info>Paste a board code to play that exact board.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="ui-frame__foot ui-frame__foot--action">
+        <div class="ui-actions ui-actions--row">
+          <button type="button" id="hex-play" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="confirm" aria-hidden="true"></span></button>
+        </div>
+      </footer>
+    </section>
+  </section>
+
+  <!-- Triangle board choice -->
+  <section id="tri-choice" class="overlay ui-backdrop hidden" aria-label="Triangle board choice">
+    <section class="ui-frame" id="tri-choice-frame" aria-labelledby="tri-choice-title">
+      <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
+      <header class="ui-frame__head">
+        <div class="ui-frame__start"><button type="button" id="tri-choice-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"></button></div>
+        <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+        <div class="ui-frame__end"><div class="ui-frame__window" role="group" aria-label="Window"><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise"></button><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen"></button><button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit"></button></div></div>
+      </header>
+      <div class="ui-frame__heading">
+        <h2 class="ui-frame__title" id="tri-choice-title">Triangle</h2>
+        <div class="ui-frame__action"><button type="button" id="tri-panel-toggle" class="ui-button ui-button--quiet ui-button--sm" data-panel-toggle data-icon="panel" aria-pressed="false" aria-controls="tri-choice-panel" aria-label="Settings &amp; bests" title="Settings &amp; bests"></button></div>
+      </div>
+      <div class="ui-frame__body" id="tri-choice-body">
+        <div class="ui-column" id="tri-choice-options">
+          <div class="ui-section-label"><h3 class="ui-section-label__text" id="tri-board-label">Board</h3></div>
+          <div class="ui-options" role="group" aria-labelledby="tri-board-label">
+            <button type="button" class="ui-option" aria-pressed="false" data-size="beginner"><span class="ui-option__name">Beginner</span><span class="ui-option__meta"><span class="ui-option__size">13 &times; 7 &middot; 8 mines</span> &middot; <span class="ui-option__density">8.8 % mines</span></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-size="intermediate"><span class="ui-option__name">Intermediate</span><span class="ui-option__meta"><span class="ui-option__size">25 &times; 13 &middot; 36 mines</span> &middot; <span class="ui-option__density">11.1 % mines</span></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-size="expert"><span class="ui-option__name">Expert</span><span class="ui-option__meta"><span class="ui-option__size">41 &times; 17 &middot; 103 mines</span> &middot; <span class="ui-option__density">14.8 % mines</span></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-size="custom"><span class="ui-option__name">Custom</span><span class="ui-option__meta" data-custom-meta>Width and height 1&ndash;100</span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+          </div>
+          <hr class="ui-divider">
+          <div class="ui-options" role="group" aria-label="Board code">
+            <button type="button" class="ui-option" aria-pressed="false" data-size="code" id="tri-code-option"><span class="ui-option__name">Insert Board Code</span><span class="ui-option__meta">Play the exact board a code describes</span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+          </div>
+        </div>
+        <div class="ui-divider ui-divider--vertical hidden" role="separator" aria-orientation="vertical" data-panel-rule></div>
+        <div class="ui-drawer" id="tri-choice-panel" data-panel data-open="false">
+          <button type="button" class="ui-drawer__bar" id="tri-drawer-bar" data-drawer-bar aria-expanded="false" aria-controls="tri-choice-detail"><span class="ui-section-label__text ui-drawer__label" data-drawer-label>Board settings</span><span class="ui-drawer__chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></button>
+          <div class="ui-column ui-drawer__body" id="tri-choice-detail">
+            <div id="tri-settings" data-settings>
+              <div class="ui-section-label"><h3 class="ui-section-label__text">Board settings</h3></div>
+              <div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="tri-noguess">No-guess</label><span class="ui-switchrow__help" id="tri-noguess-help">Solvable by logic alone, no 50/50 guesses. Separate records.</span></span><input type="checkbox" role="switch" id="tri-noguess" class="ui-toggle__input" data-noguess aria-describedby="tri-noguess-help"></div>
+              <p id="tri-density-hint" class="ui-note ui-note--warn hidden" data-icon="warning" data-density-hint><span class="ui-note__text"></span></p>
+            </div>
+            <form id="tri-custom" class="hidden" aria-label="Custom board" novalidate>
+              <div class="ui-row">
+                <label class="ui-field"><span class="ui-field__label">Width</span><input id="tri-width" data-field="width" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="30"></label>
+                <label class="ui-field"><span class="ui-field__label">Height</span><input id="tri-height" data-field="height" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="16"></label>
+                <label class="ui-field"><span class="ui-field__label">Mines</span><input id="tri-mines" data-field="mines" class="ui-field__input" type="number" min="1" max="99" step="1" inputmode="numeric" value="99"></label>
+              </div>
+              <div class="ui-actions ui-actions--row"><p id="tri-info" class="ui-text ui-text--muted" data-info>480 cells &middot; up to 99 mines</p><button type="button" id="tri-random" class="ui-button ui-button--secondary ui-button--sm" data-random data-icon="shuffle">Random</button></div>
+              <p id="tri-refusal" class="ui-note ui-note--warn hidden" data-icon="warning" data-refusal><span class="ui-note__text"></span></p>
+            </form>
+            <div id="tri-bests" data-bests>
+              <hr class="ui-divider">
+              <div class="ui-section-label"><h3 class="ui-section-label__text" id="tri-bests-title" data-bests-title>Beginner &middot; no-guess &middot; your bests</h3></div>
+              <div class="ui-stat-row ui-stat-row--tiles">
+                <div id="tri-best-time" class="ui-stat ui-stat--tile" role="group" aria-labelledby="tri-best-time-label" data-best="time"><span class="ui-stat__label" id="tri-best-time-label">Time</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">no best yet</span></div>
+                <div id="tri-best-bbbvPerSecond" class="ui-stat ui-stat--tile" role="group" aria-labelledby="tri-best-bbbvPerSecond-label" data-best="bbbvPerSecond"><span class="ui-stat__label" id="tri-best-bbbvPerSecond-label">3BV/s</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">no best yet</span></div>
+                <div id="tri-best-efficiency" class="ui-stat ui-stat--tile" role="group" aria-labelledby="tri-best-efficiency-label" data-best="efficiency"><span class="ui-stat__label" id="tri-best-efficiency-label">Efficiency</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">no best yet</span></div>
+              </div>
+              <button type="button" id="tri-records" class="ui-button ui-button--secondary ui-button--sm" data-records data-icon="chart">All records</button>
+            </div>
+            <div id="tri-code-panel" class="hidden" role="group" aria-labelledby="tri-code-title" data-code-panel>
+              <div class="ui-section-label"><h3 class="ui-section-label__text" id="tri-code-title">Board code</h3></div>
+              <label class="ui-field"><span class="ui-field__label">Code</span><input id="tri-code" data-code-field class="ui-field__input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="EN-…"></label>
+              <p id="tri-code-info" class="ui-text ui-text--muted" data-code-info>Paste a board code to play that exact board.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="ui-frame__foot ui-frame__foot--action">
+        <div class="ui-actions ui-actions--row">
+          <button type="button" id="tri-play" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="confirm" aria-hidden="true"></span></button>
+        </div>
+      </footer>
+    </section>
+  </section>
+
   <!-- Look at the board: the hint over the finished 3D board -->
   <p id="look" class="look-hint hidden" role="status">Looking at the finished board &middot; Esc or any button: back to the results</p>
 

@@ -169,7 +169,7 @@ test('the shell hands both board choices their bests, redrawn on the records\' c
   assert.doesNotMatch(MAIN, /presetDetails|CHOICE_ITEMS|details: /, 'no detail lines on the options');
   assert.match(MAIN, /bests: \(identity\) => boardBests\(identity, RECORDS\)/, 'read through the store\'s queries');
   assert.match(MAIN, /bests: \(board\) => boardBests\(identity3D\(board\), RECORDS\)/);
-  assert.match(MAIN, /RECORDS\.onChange\(\(\) => \{ CHOICE_2D\.refresh\(\); CHOICE_3D\.refresh\(\); \}\)/, 'and its change notification');
+  assert.match(MAIN, /RECORDS\.onChange\(\(\) => \{ CHOICE_2D\.refresh\(\); HEX_MODE\.choice\.refresh\(\); TRI_MODE\.choice\.refresh\(\); CHOICE_3D\.refresh\(\); \}\)/, 'and its change notification');
 });
 
 test('the catalogue documents both board choices\' bests, and no Play again or session strip on the main menu', () => {

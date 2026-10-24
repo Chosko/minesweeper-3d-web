@@ -19,13 +19,17 @@
 // createGeometry(width, height) → its flat grid geometry. An unknown grid kind, a malformed field,
 // or a standard size its own validateCustom refuses throws a RangeError.
 //
-// CLASSIC_2D is the square configuration, from Classic 2D's board setup values.
+// CLASSIC_2D is the square configuration, from Classic 2D's board setup values; HEXAGON and TRIANGLE
+// are the hex and tri configurations, from their board setups (js/hexagon/board-setup.js,
+// js/triangle/board-setup.js), each with its own last-choice document. FLAT_MODES lists the three.
 
 import { GRID_KINDS, createGeometry } from './geometry/index.js';
 import { createSquareGrid } from './engine/square-grid.js';
 import { createHexGrid } from './engine/hex-grid.js';
 import { createTriGrid } from './engine/tri-grid.js';
 import { MODE, GRID, STANDARD_SIZES, validateCustom, maxMines, LAST_CHOICE_DOC } from './classic2d/board-setup.js';
+import * as hexagon from './hexagon/board-setup.js';
+import * as triangle from './triangle/board-setup.js';
 
 /** The standard sizes every flat mode offers, in order. */
 export const FLAT_SIZES = Object.freeze(['beginner', 'intermediate', 'expert']);
@@ -88,3 +92,30 @@ export const CLASSIC_2D = defineFlatMode({
   lastChoiceDoc: LAST_CHOICE_DOC,
   codeToken: '',
 });
+
+/** Hexagon: the hex configuration. */
+export const HEXAGON = defineFlatMode({
+  id: hexagon.MODE,
+  name: 'Hexagon',
+  grid: hexagon.GRID,
+  standardSizes: hexagon.STANDARD_SIZES,
+  validateCustom: hexagon.validateCustom,
+  maxMines: hexagon.maxMines,
+  lastChoiceDoc: 'hexagon.lastChoice',
+  codeToken: 'H',
+});
+
+/** Triangle: the tri configuration. */
+export const TRIANGLE = defineFlatMode({
+  id: triangle.MODE,
+  name: 'Triangle',
+  grid: triangle.GRID,
+  standardSizes: triangle.STANDARD_SIZES,
+  validateCustom: triangle.validateCustom,
+  maxMines: triangle.maxMines,
+  lastChoiceDoc: 'triangle.lastChoice',
+  codeToken: 'T',
+});
+
+/** Every flat mode's configuration, in the menu's order. */
+export const FLAT_MODES = Object.freeze([CLASSIC_2D, HEXAGON, TRIANGLE]);

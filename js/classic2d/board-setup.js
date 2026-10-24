@@ -17,7 +17,7 @@
 //
 // No-guess is on in DEFAULT_CHOICE, the choice of a player with no last board choice stored; once a
 // game starts, the last choice remembers the switch as played. NOGUESS_HELP_TEXT is the helper line
-// under the switch on both board choice screens.
+// under the switch on every board choice screen.
 //
 // normaliseChoice, boardSetup and createLastChoice take a flat mode configuration
 // (js/flat-modes.js) for its mode id, grid kind and graph provider, standard sizes, custom limits
@@ -47,7 +47,7 @@ export const DEFAULT_CHOICE = Object.freeze({
   noGuess: true,
 });
 
-/** The helper line under the no-guess switch on both board choice screens. */
+/** The helper line under the no-guess switch on every board choice screen. */
 export const NOGUESS_HELP_TEXT = 'Solvable by logic alone, no 50/50 guesses. Separate records.';
 /** Above this share of mines (mines ÷ cells) a no-guess board may not be found. */
 export const NOGUESS_DENSITY_HINT = 0.25;

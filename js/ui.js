@@ -96,7 +96,7 @@ export class UI {
       resume: $('p-resume'), home: $('p-home'), restart: $('p-restart'), restartLabel: $('p-restart').querySelector('[data-label]'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
       confirm: $('pause-confirm'), confirmTitle: $('pause-confirm-title'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
-      c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStage: $('c2d-stage'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
+      c2dChoice: $('c2d-choice'), hexChoice: $('hex-choice'), triChoice: $('tri-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStage: $('c2d-stage'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
       c2dTitle: $('c2d-title'), c2dSize: $('c2d-size'), c2dMines: $('c2d-mines-left'), c2dTime: $('c2d-time'), c2dFigures: $('c2d-figures'),
       c2dReminder: $('c2d-reminder'), c2dFiguresToggle: $('c2d-figures-toggle'),
       c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
@@ -288,7 +288,7 @@ export class UI {
   // ---------- screens ----------
   /** Hide the menu screens (main menu, board choices, placeholder, records, settings) before another screen shows. */
   _hideMenus() {
-    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.records, this.el.c2dChoice, this.el.settings, this.el.daily]) el?.classList.add('hidden');
+    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.records, this.el.c2dChoice, this.el.hexChoice, this.el.triChoice, this.el.settings, this.el.daily]) el?.classList.add('hidden');
   }
   /** Hide the Classic 2D window and give the counters back to the 3D game's overlay. */
   _hide2D() {
@@ -396,11 +396,11 @@ export class UI {
     if (this.el.settings.classList.contains('hidden')) return false;
     return this._reset.close();
   }
-  /** The Classic 2D board choice, over the menu backdrop. */
-  showBoardChoice2D() {
+  /** A flat mode's board choice — Classic 2D's (#c2d-choice), Hexagon's (#hex-choice) or Triangle's (#tri-choice) — over the menu backdrop. */
+  showBoardChoice2D(id = 'c2d-choice') {
     this.showMenu();
     this._hideMenus();
-    this.el.c2dChoice.classList.remove('hidden');
+    $(id).classList.remove('hidden');
   }
   /**
    * The Classic 2D game window: the title bar (Pause, the logo), the counter strip over the board in
@@ -890,7 +890,7 @@ export class UI {
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
-    for (const id of ['c2d-choice', 'c2d', 'hud', 'board-choice', 'daily', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
+    for (const id of ['c2d-choice', 'hex-choice', 'tri-choice', 'c2d', 'hud', 'board-choice', 'daily', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
     this._renderReminder();
     this._renderHelp();
     this._renderHudStrip();

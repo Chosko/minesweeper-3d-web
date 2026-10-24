@@ -2360,7 +2360,7 @@ test('screen frame: a named section on the backdrop with its title bar (Back, th
 
 // The desktop windows whose head is the title bar, by frame id, with their Back's id (none on the main menu).
 const TITLE_BARS = {
-  'menu-frame': null, 'c2d-choice-frame': 'c2d-choice-back', 'board-choice-frame': 'board-choice-back', 'daily-frame': 'daily-back',
+  'menu-frame': null, 'c2d-choice-frame': 'c2d-choice-back', 'hex-choice-frame': 'hex-choice-back', 'tri-choice-frame': 'tri-choice-back', 'board-choice-frame': 'board-choice-back', 'daily-frame': 'daily-back',
   'records-frame': 'records-back', 'settings-frame': 'settings-back', 'replay-frame': 'rp-back', 'coming-soon-frame': 'coming-soon-menu',
   'c2d-frame': null,
 };

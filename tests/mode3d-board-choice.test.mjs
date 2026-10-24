@@ -504,7 +504,7 @@ test('the shell wires the 3D board choice, its last choice and every control', (
   assert.match(MAIN, /CHOICE_3D\.show\(LAST_CHOICE_3D\.current, \{ held \}\)/);
   assert.match(MAIN, /onStart: \(choice\) => \{[^\n]*LAST_CHOICE_3D\.save\(choice\)[^\n]*MODES\.start\('3d', boardOf\(choice\)\)/);
   assert.match(MAIN, /bests: \(board\) => boardBests\(identity3D\(board\), RECORDS\)/, 'the bests read through the store\'s queries');
-  assert.match(MAIN, /RECORDS\.onChange\(\(\) => \{ CHOICE_2D\.refresh\(\); CHOICE_3D\.refresh\(\); \}\)/, 'and redrawn on its change notification');
+  assert.match(MAIN, /RECORDS\.onChange\(\(\) => \{ CHOICE_2D\.refresh\(\); HEX_MODE\.choice\.refresh\(\); TRI_MODE\.choice\.refresh\(\); CHOICE_3D\.refresh\(\); \}\)/, 'and redrawn on its change notification');
   assert.match(MAIN, /onRecords: \(board\) => \{\s*held3D = CHOICE_3D\.state\(\);\s*SHELL\.go\('records', \{ data: \{ mode: MODE_3D, boardKey: board \? boardKey\(identity3D\(board\)\) : null \} \}\);/,
     'All records opens on the chosen board and switch, Back returning to what the screen held');
   assert.match(MAIN, /bests: \(board\) => boardBests\(identity3D\(board\), RECORDS\),\n  pin: BOARD_PANEL,\n\}\);/, 'the panel\'s pin, shared with Classic 2D');
