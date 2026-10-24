@@ -77,7 +77,8 @@ const ROWS_3D = Object.freeze({
     ['Hold {lb} / {rb} / {y}', 'View modes'],
     ['D-pad ↑ ↓', 'Spacing'],
     ['{x}', 'Help'],
-    ['{start} / {back}', 'Pause'],
+    ['{back}', 'Show / hide live figures'],
+    ['{start}', 'Pause'],
     ['{start} + {y}', 'Restart'],
   ],
   touch: [
@@ -175,9 +176,9 @@ export const BINDINGS = Object.freeze({
       ['{a} / {rt}', 'Reveal'],
       ['{x} / {lt}', 'Flag / unflag'],
       ['{y} · {lt} + {rt}', 'Chord'],
-      ['{start} / {b} / {back}', 'Pause'],
+      ['{back}', 'Show / hide live figures'],
+      ['{start}', 'Pause'],
       ['{start} + {y}', 'Restart'],
-      ['{rb}', 'Show / hide live figures'],
     ]),
     touch: rows([
       ['Tap', 'Reveal (or flag on Tap: Flag)'],

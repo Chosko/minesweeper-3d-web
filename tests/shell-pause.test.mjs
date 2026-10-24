@@ -502,8 +502,9 @@ test('every pause source in the shell goes through the pause controller', () => 
   assert.match(MAIN, /cancelGeneration: \(\) => cancelGeneration\(\)/, 'the controller cancels through the active mode');
   assert.match(MAIN, /onLockChange: \(locked\) => \{[\s\S]*?backGame\('key'\)[\s\S]*?\n {2}\},\n {2}onLockError/,
     'the Esc the browser consumes to release the pointer lock is that Back');
-  assert.match(MAIN, /function padPlaying\([\s\S]*?backButtons\(S\.mode\)\.some\(pressed\)\) \{ backGame\('pad'\)/, 'the controller\'s back button in 3D play');
-  assert.match(MAIN, /function padBoard2D\([\s\S]*?backButtons\(S\.mode\)\.some\(pressed\)\) \{ backGame\('pad'\)/, 'and on the Classic 2D board');
+  assert.match(MAIN, /function padStatus3D\([\s\S]*?backButtons\(S\.mode, \{ card: true \}\)\.some\(pressed\)\) \{ backGame\('pad'\)/, 'the controller\'s back button over the 3D board status card');
+  assert.match(MAIN, /function padBoard2D\([\s\S]*?backButtons\(S\.mode, \{ card: true \}\)\.some\(pressed\)\) \{ backGame\('pad'\)/, 'and over the Classic 2D one');
+  assert.match(MAIN, /function padPlaying\([\s\S]*?if \(pressed\(BTN\.START\)\) \{ padClick\(document\.getElementById\('hud-pause'\)\)/, 'Start alone pauses 3D play');
 });
 
 test('the failure offer of both modes renders above the pause card', () => {
@@ -1081,9 +1082,9 @@ test('in a browser with touch on a phone, the toolbar clears the overlay\'s coun
     const overlap = await ms(() => {
       const tb = document.getElementById('touch-modes').getBoundingClientRect();
       const apart = (el) => { const r = el.getBoundingClientRect(); return tb.top >= r.bottom || tb.bottom <= r.top || tb.left >= r.right || tb.right <= r.left; };
-      return !apart(document.getElementById('hud-counters')) || !apart(document.querySelector('#hud-figures .ui-figures__head'));
+      return !apart(document.getElementById('hud-counters')) || !apart(document.getElementById('hud-pause'));
     });
-    assert.equal(overlap, false, 'the toolbar is clear of the overlay\'s counters and title bar');
+    assert.equal(overlap, false, 'the toolbar is clear of the overlay\'s counters and Pause');
     await ms(() => { globalThis.__ms.aimAt(3); globalThis.__ms.click('left'); });
     await page.tap('#touch-modes [data-mode="ctrl"]');
     const pauseBox = await page.locator('#hud-pause').boundingBox();

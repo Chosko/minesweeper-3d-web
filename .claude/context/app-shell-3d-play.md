@@ -68,11 +68,13 @@ presses and releases Enter and ' through `input.actions` as their keys do;
   `leaveGame`. In the look a touch on the scene skips `LOOK_END`
   (`lookTouch`) and its tap (`onTap`) ends the look.
 - **Controller in play.** `padPlaying`: Start presses the overlay's pause
-  button, Back pauses (or cancels a board being generated), X toggles help,
+  button — the controller's only pause —, View presses
+  `#hud-figures-toggle` while it shows (`padToggleFigures`), X toggles help,
   RT / LT drive `mouse` as buttons 0 / 2, LB / RB / Y hold the view modes,
   the sticks go through `padSticks` (left moves, right looks through
   `view3D().lookAxes`), A / B move up / down in Fly, the D-pad steps the
-  spacing. While the status card shows, `padStatus3D` takes over.
+  spacing. While the status card shows, `padStatus3D` takes over: View
+  there cancels a board being generated (`backGame('pad')`).
 - **The camera** — Fly and Orbit (`view3D()`), the camera aids, spacing
   (`setSpacing`, `spacingStep`) and render on demand — is
   [app-shell-3d-camera.md](app-shell-3d-camera.md).

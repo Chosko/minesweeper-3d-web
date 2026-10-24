@@ -252,8 +252,10 @@ it generalises.
   a loss — at the next launch, with the summary of the last of those
   moments.
 - **Navigation contract** — every shell screen is fully operable by mouse,
-  keyboard and controller; Esc, the controller's back button and the
-  browser's Back always mean Back or Pause, never a game action. The
+  keyboard and controller; Esc and the browser's Back always mean Back or
+  Pause, never a game action, and so does the controller's back button off
+  the board — on the board it shows or hides the live figures
+  (`in-game-layout`), and Start is the controller's only pause in play. The
   browser's Back differs from Esc only during a game: on the board it
   pauses, on the pause card and on a started game's ready card it keeps the
   game where it is, during the 3D end delay it does nothing, so it never

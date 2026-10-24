@@ -25,7 +25,7 @@ overlay's parts and the aimed-cell readout are
   Classic 2D's `boardTitle2D`
   (`"Classic 2D · Expert"`), its size line `boardLine2D` and foot line
   `boardFoot2D` (the size line with *No-guess* capitalised); 3D's
-  `boardTitle3D` (`"3D · Cube Intermediate"`) and `shortTitle3D` (`"3D"`);
+  `boardTitle3D` (`"3D · Cube Intermediate"`);
   `figuresLine` (re-exported). The pause card's board line joins a mode's
   title to its size line (`boardLine2D`, `boardLine3D` with mines).
 - `UI(cb)` — callbacks are named after the control they serve
@@ -54,7 +54,8 @@ overlay's parts and the aimed-cell readout are
   - confirmations: `showConfirm({title, message, confirmLabel}, onYes, onNo)`,
     `isConfirmOpen`, `closeConfirm`, `closeResetConfirm` (→ false when none
     is open);
-  - HUD: `setBoard` (the 3D title and the pause card's full board line),
+  - HUD: `setBoard` (the pause card's full 3D board line; the overlay names
+    no board), `setFigures3D(open)` (the 3D panel and its toggle's state),
     `setLearn(on)` (Learn 3D's overlay), `updateHud(time, minesLeft,
     clicks?)`, `updateFigures3D(input, {tick, bests})`, `overlayBottom3D()`
     (the overlay's top row's bottom, for the touch zones), `setModes`,

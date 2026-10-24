@@ -361,10 +361,12 @@ test('buttons not held at the change are never suppressed', () => {
   assert.equal(s.pressed(p2, BTN.A), false);
 });
 
-test('Esc and the controller back button mean Back; B is Back only off the board', () => {
+test('Esc and the controller back button mean Back; neither View nor B is Back on the board', () => {
   assert.equal(isBackKey('Escape'), true);
   for (const k of ['KeyQ', 'Space', 'Backspace', 'Enter']) assert.equal(isBackKey(k), false, k);
-  assert.deepEqual(backButtons('playing'), [BTN.BACK], 'B is a game action while playing');
+  for (const screen of ['playing', 'classic-2d']) assert.deepEqual(backButtons(screen), [], `${screen}: Start alone pauses; View shows or hides the live figures`);
+  assert.deepEqual(backButtons('playing', { card: true }), [BTN.BACK], 'over the 3D board status card View cancels, B stays a game button');
+  assert.deepEqual(backButtons('classic-2d', { card: true }), [BTN.B, BTN.BACK], 'over the Classic 2D board status card, a menu, both do');
   for (const screen of ['menu', 'board-choice', 'paused', 'results', 'records', 'settings', 'ready']) {
     assert.deepEqual(backButtons(screen), [BTN.B, BTN.BACK], screen);
   }

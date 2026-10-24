@@ -81,8 +81,8 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   reaches it through `Input`'s `onKey`; the board choices', placeholder's
   and Settings page's Back buttons through `onBack`, the Records screen's
   `#records-back` through its view's `onBack`; controller back buttons
-  through `padMenus` (on a board, `padBoard2D` and `padPlaying` turn them
-  into `backGame('pad')`). Pointer-locked Esc:
+  through `padMenus` (on a board none is Back; over a board status card
+  `padBoard2D` and `padStatus3D` turn them into `backGame('pad')`). Pointer-locked Esc:
   [app-shell-3d.md](app-shell-3d.md) § Pointer lock; Esc on the pause card:
   [app-shell-pause.md](app-shell-pause.md). Each Back Esc triggers carries
   its back key hint inside it (`ui-key-hint data-action="back"`, none on

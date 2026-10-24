@@ -52,13 +52,12 @@ the stylesheets (§ Learn 3D's screens).
 - **Learn 3D's screens** (J-Ready-states: "Learn 3D · prompt 1–4", "clear
   the rest", "end card · won", "end card · lost").
   - Play layout: `UI.setLearn(on)` puts `hud--learn` on `#hud` and hides
-    the timer (the pause card then shows mines left alone). The figures
-    panel is its head alone — the title "Learn 3D" and Pause with its Esc
-    hint, no 3BV, Clicks, Flags or reminder — and above a phone the head
-    and the counter strip (mines and Restart) stand in a column at the top
-    left, the help panel on the right edge; on a phone the overlay keeps
-    the phone layouts with the timer and figures gone. The layout is
-    `css/style.css`'s, the head's surface and title size the theme's.
+    the timer (the pause card then shows mines left alone). No title, no
+    figures panel and no live-figures toggle: above a phone the floating
+    Pause and the counter strip (mines and Restart) stand in a column at
+    the top left, the help panel on the right edge; on a phone the overlay
+    keeps the phone layouts with the timer gone. The layout is
+    `css/style.css`'s, Pause's surface the theme's.
   - Prompt strip: a Learn 3D prompt takes the hint strip's own form
     (`hint-strip--learn`, set by `setHintStrip`'s `learn`): no close
     button, its own padding and gap, the step ("1 / 4") smaller in the mono

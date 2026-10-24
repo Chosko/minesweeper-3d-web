@@ -4,7 +4,8 @@
 // (js/classic2d/board-view.js), which draws the cursor as a focus ring, and to the session
 // (js/classic2d/session.js). DOM-free at import.
 //
-// The mapping — B, Start and Back are the shell's (back / pause) and never act on the board:
+// The mapping — B, Start and Back never act on the board (Start is the shell's pause, Back its
+// live-figures toggle, B nothing here):
 //   reveal  Space, Enter; controller A, RT   — held on a closed cell, it shows the pressed
 //                                              feedback; released there, it reveals. It never
 //                                              chords: there is no "smart" button.

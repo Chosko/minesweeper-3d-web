@@ -98,9 +98,15 @@ export function keepsArrow(control, dir) {
   return horizontal && (type === 'range' || TEXT_TYPES.has(type));
 }
 
-/** Controller buttons that mean Back on a screen: the back button always, B off the board. */
-export function backButtons(screen) {
-  return screen === 'playing' ? [BTN.BACK] : [BTN.B, BTN.BACK];
+/**
+ * Controller buttons that mean Back on a screen: B and the back button off the board, none on it —
+ * Start pauses and the back button shows or hides the live figures. Over a board status card
+ * (`card`) the back button is Back, and B too over Classic 2D's, which is navigated as a menu.
+ */
+export function backButtons(screen, { card = false } = {}) {
+  if (screen === 'playing') return card ? [BTN.BACK] : [];
+  if (screen === 'classic-2d' && !card) return [];
+  return [BTN.B, BTN.BACK];
 }
 
 /**

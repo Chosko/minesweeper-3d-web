@@ -296,6 +296,6 @@ Settled: on the board, A or RT reveals, X or LT flags, and Y or both
 triggers chord; no single "smart" button is offered, so a reveal never
 chords a number and a chord never reveals. The
 triggers match the 3D mode's trigger-as-mouse-button feel, and the face
-buttons avoid B and Start, which keep their shell meanings (back and pause)
-and never act on the board. Holding a reveal or chord button shows the same
+buttons avoid B and Start, which never act on the board: Start pauses and B
+is Back off the board only (`game-shell` § Navigation contract). Holding a reveal or chord button shows the same
 pressed feedback as a held mouse button, and the action happens on release.

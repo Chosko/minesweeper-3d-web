@@ -55,11 +55,12 @@ themselves are [classic2d.md](classic2d.md).
   `FLOW_2D.progress` redraws it (`drawStatus2D`) without moving focus. An
   offer answered over the pause card resumes first (`answer2D`); Main menu
   is `PAUSE.toMenu()`.
-- **Controller.** On `classic-2d` polls go to `padBoard2D`: Start pauses
-  through `#c2d-pause`, B/Back is `backGame('pad')`, the status card is
-  navigated as a menu, RB presses `#c2d-figures-toggle` while it shows
-  (never on a phone, where it is hidden), every other poll goes to
-  `mode2d.pad` after held-button suppression.
+- **Controller.** On `classic-2d` polls go to `padBoard2D`: Start alone
+  pauses, through `#c2d-pause`; the status card is navigated as a menu,
+  its B / View `backGame('pad')`; on the board View presses
+  `#c2d-figures-toggle` while it shows (`padToggleFigures`; never on a
+  phone, where it is hidden), and every other poll goes to `mode2d.pad`
+  after held-button suppression.
 - `F` flags in Classic 2D (fullscreen is 3D only); `M` and `H` act in both
   modes ([app-shell-help.md](app-shell-help.md)).
 

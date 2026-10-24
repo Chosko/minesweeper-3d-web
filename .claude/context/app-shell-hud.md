@@ -63,16 +63,21 @@ the aimed-cell readout. The `UI` methods that write them are
   alike: the sizes are the theme stylesheet's, its in-game readouts' steps
   after the readouts' own rules; the 3D touch toolbar's buttons take the
   coarse rule's size in `css/style.css`.
-- **3D overlay** (`#hud-overlay`): the counter strip `#hud-counters` at the
-  top centre, the figures panel `#hud-figures` on the right headed by the
-  title `#hud-title` and Pause `#hud-pause`, each on its own surface over
-  the sky. The title's full name is its tooltip and accessible name; it
-  drops the board (`shortTitle3D`) when the name overflows its line —
-  measured, refitted on resize and once the fonts load. Learn 3D's overlay
-  (`hud--learn`, from `setLearn`) is its own layout: no timer and no figures
-  panel, its head over the counter strip at the top left —
-  [mode3d-learn.md](mode3d-learn.md) § Learn 3D's screens. START pauses through
-  `#hud-pause` (`#c2d-pause` in Classic 2D). Layouts by window size:
+- **3D overlay** (`#hud-overlay`), with no title: Pause `#hud-pause`
+  (icon-only) floating at the top left, the counter strip `#hud-counters`
+  at the top centre, the live-figures toggle `#hud-figures-toggle` at the
+  top right (`aria-pressed`, through `onToggleFigures`, never taking focus
+  from the mouse, Enter or Space on it never reaching the scene) and the
+  figures panel `#hud-figures` on the right, each on its own surface over
+  the sky. The panel shows while the same stored preference as Classic
+  2D's is open (`setFigures3D`, `#hud[data-figures="open"]`); one toggle
+  flips both modes' panels. On a phone and in landscape only Pause remains
+  of the floating controls. Learn 3D's overlay (`hud--learn`, from
+  `setLearn`) is its own layout: no timer, no figures panel and no toggle,
+  Pause over the counter strip at the top left —
+  [mode3d-learn.md](mode3d-learn.md) § Learn 3D's screens. Start pauses through
+  `#hud-pause` (`#c2d-pause` in Classic 2D); the controller's View button
+  presses the mode's live-figures toggle while it shows. Layouts by window size:
   `css/components.css`'s head comment (*3D game overlay*).
 - **Behind a card.** While the 3D ready card (not pending), the pause card
   or the results show, `#hud` is hidden — the 3D overlay, the key strip,

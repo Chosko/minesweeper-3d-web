@@ -200,24 +200,33 @@ test('a malformed or newer panel document reads as closed; a failed save keeps t
   }
 });
 
-test('one preference, loaded before the first screen, drives the Classic 2D window\'s panel and its toggle', () => {
+test('one preference, loaded before the first screen, drives the Classic 2D window\'s and the 3D overlay\'s panels and their toggles', () => {
   const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
   assert.match(main, /const LIVE_FIGURES = createFiguresPanel\(\{ storage \}\);/);
-  assert.match(main, /await Promise\.all\(\[[^\]]*LIVE_FIGURES\.load\(\)\.catch\(\(\) => \{\}\)[^\]]*\]\);\nui\.setFigures2D\(LIVE_FIGURES\.open\);\nshowMainMenu\(\);/, 'the window opens on the stored state');
+  assert.match(main, /await Promise\.all\(\[[^\]]*LIVE_FIGURES\.load\(\)\.catch\(\(\) => \{\}\)[^\]]*\]\);\nui\.setFigures2D\(LIVE_FIGURES\.open\);\nui\.setFigures3D\(LIVE_FIGURES\.open\);\nshowMainMenu\(\);/, 'the window and the 3D overlay open on the stored state');
   assert.match(main, /onToggleFigures: \(\) => toggleFigures\(\),/);
   const toggle = main.slice(main.indexOf('function toggleFigures('), main.indexOf('}', main.indexOf('function toggleFigures(')) + 1);
   assert.match(toggle, /LIVE_FIGURES\.setOpen\(!LIVE_FIGURES\.open\)/, 'the toggle flips the one stored state');
   assert.match(toggle, /ui\.setFigures2D\(LIVE_FIGURES\.open\)/);
+  assert.match(toggle, /ui\.setFigures3D\(LIVE_FIGURES\.open\)/, 'the 3D overlay\'s panel under the same state');
   assert.match(toggle, /size2D\(\)/, 'and the window refits its board to the room left');
 });
 
-test('the controller\'s RB presses the Classic 2D window\'s live-figures toggle while it shows, never the board', () => {
+test('the controller\'s View button shows or hides the live figures in both modes, never the board, and pauses nothing', () => {
   const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
-  const start = main.indexOf('function padBoard2D(');
-  const body = main.slice(start, main.indexOf('\n}\n', start));
-  const rb = body.indexOf('pressed(BTN.RB)');
-  assert.ok(rb > 0, 'padBoard2D reads RB');
-  assert.ok(rb < body.indexOf('mode2d.pad('), 'before the board\'s cursor input');
-  assert.match(body, /if \(pressed\(BTN\.RB\)\) \{ const toggle = document\.getElementById\('c2d-figures-toggle'\); if \(toggle\.checkVisibility\(\)\) padClick\(toggle\); return; \}/,
-    'the toggle\'s own press, and nothing on a phone, where the toggle is hidden');
+  const fn = (name) => { const start = main.indexOf(`function ${name}(`); return main.slice(start, main.indexOf('\n}\n', start)); };
+  const board = fn('padBoard2D');
+  const view = board.indexOf('pressed(BTN.BACK)');
+  assert.ok(view > 0, 'padBoard2D reads View');
+  assert.ok(view < board.indexOf('mode2d.pad('), 'before the board\'s cursor input');
+  assert.match(board, /if \(pressed\(BTN\.BACK\)\) \{ padToggleFigures\('c2d-figures-toggle'\); return; \}/, 'the window\'s own toggle');
+  assert.doesNotMatch(board, /BTN\.RB/, 'RB is no longer the Classic 2D toggle');
+  assert.ok(board.indexOf('backButtons(') > board.indexOf('board2d.failure || board2d.generating'), 'Back only on the board status card');
+  const play = fn('padPlaying');
+  assert.match(play, /if \(pressed\(BTN\.BACK\)\) padToggleFigures\('hud-figures-toggle'\);/, 'the 3D overlay\'s toggle');
+  assert.match(play, /controls\.pad\.space = held\(BTN\.RB\);/, 'RB stays the Space view mode in 3D');
+  assert.doesNotMatch(play, /backButtons\(/, 'View no longer pauses 3D play');
+  const toggle = fn('padToggleFigures');
+  assert.match(toggle, /checkVisibility\(\)/, 'nothing where the toggle is hidden (a phone, Learn 3D)');
+  assert.match(toggle, /padClick\(/);
 });

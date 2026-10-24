@@ -59,7 +59,9 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   in DOM order for Down and Right, the previous for Up and Left, Up landing in a row on its first
   item; no wrap past either end.
 - `isBackKey(code)` — Esc is Back on every screen (Pause while playing);
-  `backButtons(screen)` → `[BTN.BACK]` on `'playing'`, else `[BTN.B, BTN.BACK]`.
+  `backButtons(screen, { card })` → none on the boards (`'playing'`, `'classic-2d'`), where
+  Start pauses and View is the live-figures toggle; over a board status card (`card`)
+  `[BTN.BACK]` in 3D and `[BTN.B, BTN.BACK]` in Classic 2D; elsewhere `[BTN.B, BTN.BACK]`.
 - `arrowDirection(code)`; `keepsArrow(control, dir)` — range, number and text inputs and a
   textarea keep Left/Right, a select every arrow.
 - `createHeldSuppressor()` → `update(held)` (once per poll, before acting), `screenChanged()`,
@@ -76,7 +78,7 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   `nav.update(p.held)` each poll and reads buttons only through `nav.held` / `nav.pressed`; every
   screen change calls `screenChanged()`, so a button held through the
   change is ignored until released. Back is `isBackKey` from the keyboard and `backButtons(screen)`
-  from the controller (B is Back only off the board, where it moves down); both, and the
+  from the controller (neither B nor View is Back on a board); both, and the
   browser's Back, resolve through the router ([app-shell-navigation.md](app-shell-navigation.md)). The arrow keys take
   the D-pad's focus move off the boards, Records and the replay viewer, unless the focused
   control `keepsArrow`.
@@ -100,7 +102,7 @@ enforces.
   [app-shell-pause.md](app-shell-pause.md) — the router and pause controller Back resolves through.
 - [rendering.md](rendering.md) — the renderer toggles `Controls.shift/space/ctrl` feed.
 - [classic2d-input.md](classic2d-input.md) — the Classic 2D cursor input reuses `BTN`, `Repeat`
-  and `stickCurve` and reads `GamepadReader` polls; B, Start and Back stay the shell's there too.
+  and `stickCurve` and reads `GamepadReader` polls; B, Start and Back are unmapped there.
 - [testing.md](testing.md) — `tests/gamepad.test.mjs` covers the gamepad helpers, rumble,
   `GamepadReader` and `Controls`; `tests/shell-router.test.mjs` the shell navigation helpers;
   `tests/shell-pad-walk.test.mjs` the controller's walk over every screen;

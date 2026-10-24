@@ -65,8 +65,6 @@ export function boardTitle3D(s) {
   try { preset = !s.daily && preset3D(createBoardIdentity({ mode: MODE_3D, width: s.X, height: s.Y, depth: s.Z, mines: s.mines, noGuess: false })); } catch { /* a board no record can name: Custom */ }
   return `3D · ${s.daily ? 'Daily' : preset ? `${preset.family} ${preset.name}` : 'Custom'}`;
 }
-/** The title with the board dropped, the mode alone ("3D"), for a bar too narrow for the full name; a title with no board part is its own. */
-export const shortTitle3D = (title) => title.split(' · ')[0];
 /** What a figures panel's live part says when the game's counts change (js/shell/live-figures.js). */
 export { figuresLine };
 
@@ -82,7 +80,7 @@ export class UI {
     this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleFigures, onTapMode, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onTouchMode }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
-      hudCounters: $('hud-counters'), hudFigures: $('hud-figures'), hudHead: $('hud-figures').querySelector('.ui-figures__head'), hudTitle: $('hud-title'),
+      hudCounters: $('hud-counters'), hudFigures: $('hud-figures'), hudPause: $('hud-pause'), hudFiguresToggle: $('hud-figures-toggle'),
       hudReminder: $('hud-reminder'),
       help: $('help'), helpList: $('help').querySelector('.ui-controls'), helpFoot: $('help-foot'), readyKeys: $('ready-keys'),
       hintStrip: $('hint-strip'), hintStripText: $('hint-strip-text'), hintStep: $('hint-strip-step'),
@@ -172,10 +170,6 @@ export class UI {
     this._figuresLive2D = bindFiguresLive(this.el.c2dFigures);
     this._figures3D = bindFigures(this.el.hudFigures);
     this._figuresLive3D = bindFiguresLive(this.el.hudFigures);
-    // The 3D title is refitted whenever its line changes width (the window, the panel, the fonts arriving).
-    this._title3D = '';
-    if (typeof ResizeObserver === 'function') new ResizeObserver(() => this._fitTitle3D()).observe(this.el.hudTitle);
-    document.fonts?.ready.then(() => this._fitTitle3D());
     // The 3D touch toolbar: each button latches or clears its view mode; it never takes focus.
     for (const b of document.querySelectorAll('#touch-modes [data-mode]')) {
       b.addEventListener('mousedown', (e) => e.preventDefault());
@@ -189,6 +183,10 @@ export class UI {
     this.el.c2dFiguresToggle.addEventListener('mousedown', (e) => e.preventDefault());
     this.el.c2dFiguresToggle.addEventListener('click', () => cb.onToggleFigures?.());
     $('c2d-tools').addEventListener('keydown', (e) => { if (PRESS_KEYS.has(e.code)) e.stopPropagation(); });
+    // The 3D overlay's live-figures toggle the same way: the scene keeps the keys, Space its view mode.
+    this.el.hudFiguresToggle.addEventListener('mousedown', (e) => e.preventDefault());
+    this.el.hudFiguresToggle.addEventListener('click', () => cb.onToggleFigures?.());
+    this.el.hudFiguresToggle.addEventListener('keydown', (e) => { if (PRESS_KEYS.has(e.code)) e.stopPropagation(); });
     // The Tap choice neither: a chosen option hands its value to the shell.
     this.el.hudTap.addEventListener('mousedown', (e) => e.preventDefault());
     bindSegmented(this.el.hudTap, { horizontal: true, onChange: (value) => cb.onTapMode?.(value) });
@@ -580,7 +578,6 @@ export class UI {
     this.el.readyLearn.classList.toggle('hidden', !learn);
     this.el.readyBlocked.classList.toggle('hidden', !blocked);
     this._syncHelp();
-    this._fitTitle3D();
   }
   /**
    * The ready card waits unseen (`ready--pending`) while a pointer-lock request the player's own
@@ -597,7 +594,6 @@ export class UI {
     this.el.pause.classList.add('hidden');
     this.el.hud.classList.remove('hidden');
     this._syncHelp();
-    this._fitTitle3D();
   }
   _syncHelp() { if (!this._helpByUser) this.toggleHelp(false); }
   /**
@@ -761,44 +757,34 @@ export class UI {
 
   // ---------- HUD ----------
   /**
-   * The 3D board the overlay's title ("3D · Cube Intermediate", boardTitle3D) and the pause card
-   * ("3D · Cube Intermediate · 8 × 8 × 8 · 40 mines · no-guess") name; `daily` marks a daily's board.
+   * The 3D board the pause card names ("3D · Cube Intermediate · 8 × 8 × 8 · 40 mines · no-guess",
+   * boardTitle3D and boardLine3D); the overlay names none. `daily` marks a daily's board.
    */
   setBoard(settings) {
     this._boardText = settings.learn ? LEARN_TITLE : `${boardTitle3D(settings)} · ${boardLine3D(settings, { mines: true })}`;
-    this._setTitle3D(boardTitle3D(settings));
     this._sizeMines(settings.mines);
   }
-  /** The overlay's title: the full name as its tooltip and accessible name, the text fitted to its line. */
-  _setTitle3D(title) {
-    this._title3D = title;
-    this.el.hudTitle.setAttribute('title', title);
-    this.el.hudTitle.setAttribute('aria-label', title);
-    this._fitTitle3D();
-  }
   /**
-   * The title drops the board (shortTitle3D) when the full name does not fit on its one line in the
-   * panel's bar — measured, so it follows the window; a title not laid out (hidden) keeps the full name.
+   * The 3D overlay's live figures panel open or closed (the stored preference Classic 2D's window
+   * shares, js/shell/live-figures.js), its toggle pressed while open.
    */
-  _fitTitle3D() {
-    const el = this.el.hudTitle;
-    const full = this._title3D;
-    if (!full) return;
-    if (el.textContent !== full) el.textContent = full;
-    if (el.clientWidth > 0 && el.scrollWidth > el.clientWidth) el.textContent = shortTitle3D(full);
+  setFigures3D(open) {
+    if (open) this.el.hud.dataset.figures = 'open';
+    else delete this.el.hud.dataset.figures;
+    this.el.hudFiguresToggle.setAttribute('aria-pressed', open ? 'true' : 'false');
   }
   /**
-   * The bottom of the 3D overlay's top row: the counter strip, with the title bar when it sits at the
-   * top too (a phone); a touch below it is the scene's.
+   * The bottom of the 3D overlay's top row: the counter strip, and the floating Pause and live-figures
+   * toggle where they show; a touch below it is the scene's.
    */
   overlayBottom3D() {
-    const strip = this.el.hudCounters.getBoundingClientRect();
-    const head = this.el.hudHead.getBoundingClientRect();
-    return head.height > 0 && head.top <= strip.bottom ? Math.max(strip.bottom, head.bottom) : strip.bottom;
+    const bottoms = [this.el.hudCounters, this.el.hudPause, this.el.hudFiguresToggle]
+      .map((el) => el.getBoundingClientRect()).filter((r) => r.height > 0).map((r) => r.bottom);
+    return Math.max(0, ...bottoms);
   }
   /**
    * Learn 3D's own overlay (`hud--learn`) while `on`: no timer — the pause card shows mines left alone —
-   * and no figures panel, its head (the title and Pause) over the strip of mines and Restart at the top left.
+   * and no figures panel or toggle, Pause over the strip of mines and Restart at the top left.
    */
   setLearn(on) {
     this._timed = !on;

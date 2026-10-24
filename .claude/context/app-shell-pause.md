@@ -36,7 +36,8 @@ head comment. Both modes' end delay and its skip are
   to menu. Every pause source goes through `pauseGame(source)` (nothing
   during an end delay, else `PAUSE.pause`): the overlay's pause button,
   controller disconnect (with a note), `blur`, `visibilitychange` hidden,
-  `__ms.pause()`. Esc/Back on the board and pointer-lock loss go through
+  `__ms.pause()`. Esc on the board, the controller's back buttons over a
+  board status card and pointer-lock loss go through
   `backGame(source)` → `PAUSE.back`, which first cancels a board being
   generated (`cancelGeneration()`; a 3D game without lock or controller
   play goes to the click-to-play card) and pauses otherwise.
@@ -55,7 +56,7 @@ head comment. Both modes' end delay and its skip are
   each window step's width in the *J-Pause* artboards, two equal columns
   from the kit breakpoint: its title block `#pause-head` holds the title,
   the full board line `#pause-board` (mode, board, size, mines, no-guess:
-  the game window's or the 3D overlay's title joined to the board's size
+  the mode's board title, `boardTitle2D` or `boardTitle3D`, joined to the board's size
   line) and the status line `#pause-sub` in the mono face. Each action
   leads with its icon (Resume play, Back to start cube, Restart restart,
   Main menu arrow-left). `ui.showPause` takes `inProgress` from

@@ -670,10 +670,11 @@ function sizeSoon2D() {
   if (!sizing2D) sizing2D = requestAnimationFrame(() => { sizing2D = 0; size2D(); });
 }
 new ResizeObserver(size2D).observe(document.getElementById('c2d'));
-/** The live-figures toggle: the one stored state flipped, the panel shown or hidden, the board refitted to the room left. */
+/** Either mode's live-figures toggle: the one stored state flipped, both modes' panels shown or hidden, the Classic 2D board refitted to the room left. */
 function toggleFigures() {
   LIVE_FIGURES.setOpen(!LIVE_FIGURES.open);
   ui.setFigures2D(LIVE_FIGURES.open);
+  ui.setFigures3D(LIVE_FIGURES.open);
   size2D();
 }
 const board2d = { generating: false, failure: null, progress: null };
@@ -1985,8 +1986,8 @@ function handlePad(p, dt, now) {
 
 function padPlaying(p, held, pressed, dt, now) {
   if (board3d.failure || board3d.generating) { padStatus3D(p, held, pressed, now); return; }
-  if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; } // the overlay's pause button
-  if (backButtons(S.mode).some(pressed)) { backGame('pad'); return; } // Back while playing = Pause, or cancels a board being generated
+  if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; } // the overlay's pause button: Start alone pauses
+  if (pressed(BTN.BACK)) padToggleFigures('hud-figures-toggle');
   if (pressed(BTN.X)) ui.userToggleHelp();
   // Triggers drive the same release-based state machine as the mouse (both = chord via its toggle);
   // a trigger's press pulses, the cue that its action comes on release.
@@ -2025,19 +2026,27 @@ function padLook(p, dt) {
   padSticks(p, dt);
 }
 
+/** The controller's View button: the mode's live-figures toggle pressed while it shows (none on a phone or in Learn 3D). */
+function padToggleFigures(id) {
+  const toggle = document.getElementById(id);
+  if (toggle.checkVisibility()) padClick(toggle);
+}
+
 /**
- * The Classic 2D board: Start pauses through the window's Pause and the back buttons are
- * Back (Pause, or cancelling a board being generated); the board status card is a menu; RB
- * presses the foot's live-figures toggle while it shows, and everything else goes to the
- * board's cursor input.
+ * The Classic 2D board: Start alone pauses, through the window's Pause; the board status card is
+ * a menu whose back buttons are Back (cancelling a board being generated); View presses the foot's
+ * live-figures toggle, and everything else goes to the board's cursor input.
  */
 function padBoard2D(p, held, pressed, now) {
   controls.releasePad();
   if (padUsed(p)) used2D();
   if (pressed(BTN.START)) { padClick(document.getElementById('c2d-pause')); return; }
-  if (backButtons(S.mode).some(pressed)) { backGame('pad'); return; }
-  if (board2d.failure || board2d.generating) { padMenus(p, held, pressed, now); return; }
-  if (pressed(BTN.RB)) { const toggle = document.getElementById('c2d-figures-toggle'); if (toggle.checkVisibility()) padClick(toggle); return; }
+  if (board2d.failure || board2d.generating) {
+    if (backButtons(S.mode, { card: true }).some(pressed)) { backGame('pad'); return; }
+    padMenus(p, held, pressed, now);
+    return;
+  }
+  if (pressed(BTN.BACK)) { padToggleFigures('c2d-figures-toggle'); return; }
   mode2d.pad({ ...p, held: p.held.map((_, b) => held(b)) }, now);
 }
 
@@ -2062,7 +2071,7 @@ function padReplay(p, held, pressed, dt, now) {
 function padStatus3D(p, held, pressed, now) {
   controls.releasePad();
   if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; }
-  if (backButtons(S.mode).some(pressed)) { backGame('pad'); return; }
+  if (backButtons(S.mode, { card: true }).some(pressed)) { backGame('pad'); return; }
   padMenus(p, held, pressed, now);
 }
 
@@ -2300,6 +2309,7 @@ function frame(now) {
 
 await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {}), RECORDS_VIEW_PREFS.load().catch(() => {}), BOARD_PANEL.load().catch(() => {}), LIVE_FIGURES.load().catch(() => {})]);
 ui.setFigures2D(LIVE_FIGURES.open);
+ui.setFigures3D(LIVE_FIGURES.open);
 showMainMenu();
 LINKS.start(); // a #board= link: its challenge or daily over the menu, so Back leads to the menu
 window.addEventListener('hashchange', () => LINKS.hashchange());

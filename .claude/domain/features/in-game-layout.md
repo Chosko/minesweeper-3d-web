@@ -43,7 +43,10 @@ In scope (m2b-themes):
   column with no surface of its own after a divider, and is drawn sunk
   while it is open. Whether it is open is a stored preference, as the
   board choice panel's pin is (`shared-screen-layout`): it holds across
-  sessions and across every mode until the player changes it.
+  sessions and across every mode until the player changes it. On the
+  controller the View button (the back button) presses the toggle in
+  every mode, Classic 2D and 3D alike, wherever the toggle shows; RB stays
+  the 3D Space view mode.
 - **Counter readouts** — new kit components: the counter readout
   `ui-counter` (its `digits` and an optional `icon` as parts), so a theme
   can draw it as plain figures, LED digits on black or anything between,

@@ -181,18 +181,15 @@
 
   <!-- In-game HUD -->
   <div id="hud" class="hidden" aria-live="off">
-    <!-- The game's overlay over the scene: the counter strip at the top centre; the figures panel headed by the title and Pause, on the right -->
+    <!-- The game's overlay over the scene: Pause floating at the top left, the counter strip at the top centre, the live-figures toggle at the top right and the figures panel it opens on the right -->
     <div id="hud-overlay" class="hud-overlay">
+      <button type="button" id="hud-pause" class="ui-button ui-button--secondary ui-button--sm hud-pause" data-icon="pause" aria-label="Pause game" title="Pause"></button>
       <div class="ui-counter-strip hud-counters" id="hud-counters" role="group" aria-label="Counters">
         <div class="ui-counter" role="group" aria-label="Mines left"><svg class="ui-counter__icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h12l-3 4 3 4H5"/></svg><span id="hud-mines" class="ui-counter__digits">000</span></div>
-        <button type="button" id="hud-restart" class="ui-button ui-button--secondary ui-button--sm" data-no-focus><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Restart <span class="ui-key-hint" data-action="restart" aria-hidden="true"></span></button>
+        <button type="button" id="hud-restart" class="ui-button ui-button--secondary ui-button--sm" data-icon="restart" aria-label="Restart" title="Restart" data-no-focus></button>
         <div class="ui-counter" role="group" aria-label="Time"><span id="hud-time" class="ui-counter__digits">000</span><svg class="ui-counter__icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
       </div>
-      <section class="ui-figures hud-figures" id="hud-figures" aria-labelledby="hud-title">
-        <header class="ui-figures__head">
-          <h2 class="ui-figures__title" id="hud-title">3D</h2>
-          <button type="button" id="hud-pause" class="ui-button ui-button--secondary ui-button--sm ui-figures__action" aria-label="Pause game"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pause <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
-        </header>
+      <section class="ui-figures hud-figures" id="hud-figures" aria-label="Live figures">
         <div class="ui-figures__body">
           <div class="ui-figure ui-figure--progress" role="group" aria-labelledby="hud-fig-bbbv" data-figure="bbbv"><span class="ui-figure__label" id="hud-fig-bbbv">3BV</span><span class="ui-figure__value">0 / &mdash;</span><span class="ui-figure__bar" role="progressbar" aria-labelledby="hud-fig-bbbv" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="ui-figure__fill" style="width: 0%"></span></span></div>
           <div class="ui-figure hidden" role="group" aria-labelledby="hud-fig-pace" data-figure="pace"><span class="ui-figure__label" id="hud-fig-pace">Pace vs PB</span><span class="ui-figure__value">&mdash;</span><span class="ui-figure__detail"></span></div>
@@ -203,6 +200,7 @@
         </div>
         <p class="ui-figures__live" role="status" aria-live="polite" aria-atomic="true"></p>
       </section>
+      <button type="button" id="hud-figures-toggle" class="ui-button ui-button--quiet ui-button--sm hud-figures-toggle" data-panel-toggle data-icon="panel" aria-pressed="false" aria-controls="hud-figures" aria-label="Live figures" title="Live figures" data-no-focus></button>
     </div>
     <div id="hud-tools" class="hud-panel hud-tools"></div>
     <div id="crosshair" class="crosshair off" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 28 28"><path class="crosshair__halo" d="M14 2v8M14 18v8M2 14h8M18 14h8"/><path class="crosshair__line" d="M14 3v7M14 18v7M3 14h7M18 14h7"/></svg></div>

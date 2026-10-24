@@ -101,7 +101,8 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
 - **Cursor input.** Space / Enter and A / RT only reveal (nothing on a
   number), F and X / LT flag (on the press), D and Y only chord; reveal and
   flag held together are left + right, chording when `chordInputs` has
-  `left+right`. B, Start and Back are the shell's and unmapped. Press
+  `left+right`. B, Start and Back are unmapped: Start is the shell's
+  pause, Back its live-figures toggle, and B does nothing on the board. Press
   feedback and a held press under a moving cursor read the same profile
   markers as the pointer input. Each step up, down, left or right is the
   board's grid geometry's `neighbour` query (the square geometry of the

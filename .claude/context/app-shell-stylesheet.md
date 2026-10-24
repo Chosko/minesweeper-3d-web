@@ -37,7 +37,7 @@ None: styles. The rules select the ids and classes
   coarse)` block — the kit's gives `ui-toggle__input` and
   `ui-checkbox__input` a 44 px hit square (`::after`) and `ui-slider__input`
   a 44 px height; the shell's shows `#hud-tap` in Classic 2D at 48 px, gives
-  `#hud-pause`, `#hud-restart` and `#c2d-restart` a 44 px band (`::after`),
+  `#hud-pause` a 44 px square and `#hud-restart` and `#c2d-restart` a 44 px band (`::after`),
   `#touch-modes` buttons 76 × 44 px, and hides `#hud-swap` (every main menu
   entry is at least 44 px on any pointer, [app-shell-menu.md](app-shell-menu.md)). Every
   fine-pointer hit area stays as above (`tests/components.test.mjs` pins

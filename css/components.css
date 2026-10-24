@@ -1135,23 +1135,23 @@
      hidden, and held sideways the board takes the left edge and a column
      beside it holds the mines, the time, Restart and the Tap choice.
      Default focus: none (the board takes the keys).
-   3D game overlay (index.html #hud-overlay over the full-window scene): a
-     ui-counter-strip (mines left, Restart with its restart key hint, the
-     timer) at the top centre, and on the right, centred vertically, the
-     ui-figures panel headed by the title and Pause (small secondary, with its
-     back key hint) — the live figures and the controls reminder under it,
-     the H help panel beside it. Each part carries its own surface over the
-     sky. The title is the mode and the board, the full name its tooltip and
-     accessible name; it drops the board when the full name does not fit on
-     its line, as measured. The HUD key strip sits at the bottom centre,
-     the hint strip and the view chips above it. On a phone no figures and
-     no key strip: upright, the title and Pause bar on top and the counters
-     under it; held sideways, the title a pill at the top left, the counters
-     at the top centre and Pause an icon button at the top right; the touch
-     hint strip wraps under them. Learn 3D's overlay has no timer and no
-     figures: above a phone, the panel's head alone (the title and Pause)
-     over the counter strip, a column at the top left; its prompt in the
-     hint strip's own Learn 3D form, the step before it.
+   3D game overlay (index.html #hud-overlay over the full-window scene), with
+     no title anywhere: Pause floating at the top left (small secondary,
+     the pause icon alone, named "Pause game"), a ui-counter-strip (mines
+     left, the icon-only Restart, the timer) at the top centre, and the
+     live-figures toggle at the top right (the Classic 2D window's latched
+     quiet icon-only button, aria-pressed and sunk while open). The ui-figures
+     panel, with no head bar — the live figures and the controls reminder —
+     shows on the right, centred vertically, only while the stored
+     preference is open, the H help panel beside it. Each part carries its
+     own surface over the sky. The HUD key strip sits at the bottom centre,
+     the hint strip and the view chips above it. On a phone no toggle, no
+     figures and no key strip: upright, Pause on top and the counters under
+     it; held sideways, Pause at the top left and the counters at the top
+     centre; the touch hint strip wraps under them. Learn 3D's overlay has
+     no timer, no figures and no toggle: above a phone, Pause over the
+     counter strip, a column at the top left; its prompt in the hint strip's
+     own Learn 3D form, the step before it.
      Default focus: none (the scene takes the keys).
    Board status (index.html #c2d-status centred on the Classic 2D board
      column, and #m3d-status over the 3D box): ui-card ui-screen while a
