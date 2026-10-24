@@ -1741,7 +1741,7 @@ Feature: in-game-layout
 
 ## 287. 3D game overlay without a title: floating Pause and live-figures toggle
 
-Status: [MISSING]
+Status: [PARKED]
 Target: claude
 Files: index.html, css/style.css, css/components.css, themes/joyful-tiles/theme.css, js/ui.js, js/shell/mode-3d.js, js/mode3d/session.js, js/mode3d/learn.js, js/touch-3d.js, js/main.js, tests/shell-mode-3d.test.mjs, tests/components-game3d.test.mjs, tests/components-ready.test.mjs, tests/components.test.mjs
 Preconditions: 286
