@@ -43,7 +43,7 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   `createLastMode({storage, modes})` → `current`, `record(mode)`, `load()`
   (null for nothing or a malformed document), `dispose()`.
 - `createLastBoardChoice({storage, doc, version?, normalise, fallback})` →
-  `current` (`fallback` until loaded or saved), `played`, `load()`,
+  `current` (`fallback` until loaded or saved), `load()`,
   `save(choice)` (`RangeError` on a choice `normalise` refuses); the 3D mode
   keeps `mode3d.lastChoice` with it.
 

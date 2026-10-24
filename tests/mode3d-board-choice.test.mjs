@@ -268,19 +268,18 @@ test('the last 3D board choice is remembered through the shell and restored on r
   const backend = createMemoryBackend();
   const last = lastChoice(memoryStorage(null, backend));
   assert.deepEqual(last.current, DEFAULT_CHOICE);
-  assert.equal(last.played, false, 'nothing played yet');
-  assert.deepEqual(await last.load(), DEFAULT_CHOICE);
-  assert.equal(last.played, false);
+  assert.equal('played' in last, false, 'the choice keeps no played flag');
+  assert.deepEqual(await last.load(), DEFAULT_CHOICE, 'nothing stored loads the fallback');
+  assert.deepEqual(last.current, DEFAULT_CHOICE);
 
   const choice = { size: 'custom', custom: { X: 4, Y: 5, Z: 6, mines: 11 }, noGuess: true };
   const saving = last.save(choice);
   assert.deepEqual(last.current, choice, 'current changes at once');
-  assert.equal(last.played, true);
   await saving;
 
   const again = lastChoice(memoryStorage(null, backend));
   assert.deepEqual(await again.load(), choice, 'a later launch restores X, Y, Z, mines and no-guess');
-  assert.equal(again.played, true);
+  assert.deepEqual(again.current, choice);
   await assert.rejects(() => again.save({ size: 'custom', custom: { X: 0, Y: 1, Z: 1, mines: 1 }, noGuess: false }), RangeError);
   assert.deepEqual(again.current, choice, 'an invalid choice changes nothing');
 });
@@ -289,7 +288,7 @@ test('a malformed stored 3D choice falls back to the default; the 2D choice is a
   const storage = memoryStorage({ [LAST_CHOICE_DOC]: JSON.stringify({ version: 1, data: { size: 'custom', custom: { X: 500 }, noGuess: false } }) });
   const last = lastChoice(storage);
   assert.deepEqual(await last.load(), DEFAULT_CHOICE);
-  assert.equal(last.played, false);
+  assert.deepEqual(last.current, DEFAULT_CHOICE);
   const { LAST_CHOICE_DOC: doc2d } = await import('../js/classic2d/board-setup.js');
   assert.notEqual(LAST_CHOICE_DOC, doc2d, 'each mode keeps its own last board choice');
 });
