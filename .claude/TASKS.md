@@ -6,7 +6,7 @@ Last task number: 288
 
 ## 84. Electron main process: window, game protocol, window state and crash log
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: desktop/package.json, desktop/main.js, desktop/protocol.js, desktop/window.js, desktop/window-state.js, desktop/crash-log.js, desktop/closing.js, tests/desktop-main.test.mjs
 Preconditions: none

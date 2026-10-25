@@ -1,0 +1,15 @@
+{
+  "name": "minesweeper-3d-desktop",
+  "productName": "Minesweeper 3D",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Windows desktop host of Minesweeper 3D: an Electron window serving the web game's files.",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "44.9.3"
+  }
+}
