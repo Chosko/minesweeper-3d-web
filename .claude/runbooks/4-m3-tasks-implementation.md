@@ -53,7 +53,7 @@ Context:
 
 Done: 2026-10-11, commit `4132d08` (4 files, +85/-53).
 
-## [ ] 1. Implement task 84 — Electron main process: window, game protocol, window state and crash log
+## [x] 1. Implement task 84 — Electron main process: window, game protocol, window state and crash log
 
 Depends on: none
 
@@ -63,6 +63,8 @@ Context:
 ```prompt
 /task-implement 84 --review
 ```
+
+Done: 2026-10-25, commit `35561e8` (9 files, +841/-1). Fullscreen state is tracked from enter/leave events, because `isFullScreen()` always answers false for a transparent window on Windows; Electron is pinned at `44.9.3` with no lockfile.
 
 ## [ ] 2. Implement task 85 — Steamworks capability adapter, unavailable implementation and the page bridge
 
@@ -81,6 +83,7 @@ Depends on: 2
 
 Context:
 - 2026-10-23 (amend): task 86 was re-planned to drive the desktop window from the page (title bar drag region, Minimise, Fullscreen / Windowed, content size) and now waits on task 282, the m2b-themes title bar, which this runbook does not run.
+- 2026-10-25 (from step 1): the host calls `setMovable(false)` while fullscreen, unverified until the page marks its drag region; the window opens at a default content size of 1280×800 until the page reports its size; the page still draws its web backdrop around the desktop window until it knows it is on desktop.
 
 ```prompt
 /task-implement 86 --review --rounds 2
@@ -92,7 +95,8 @@ Depends on: 1
 
 Needs: agent+human
 
-Context: none
+Context:
+- 2026-10-25 (from step 1): `desktop/node_modules` is not git-ignored yet (only the root `node_modules` is) — task 87 should add it to `.gitignore`; Electron is pinned at `44.9.3` with no lockfile; the game protocol reads the game files from `resources/game` in the packaged build, so packaging must place `index.html`, `css`, `js`, `themes`, `assets` and `vendor` there.
 
 ```prompt
 /task-implement 87 --review
@@ -127,7 +131,8 @@ Context: none
 
 Depends on: 1, 2, 3, 4, 5, 6
 
-Context: none
+Context:
+- 2026-10-25 (from step 1): `.claude/context/` has no entry yet for `desktop/` or the `desktop-` tests.
 
 ```prompt
 /task-implement 90 --review
