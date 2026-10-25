@@ -428,7 +428,7 @@ Context:
 
 Done: 2026-10-25, commit `f5bcea6` (8 files, +92/-11). Premise wrong: the routes and the Daily list's *Coming soon* were already in place; decision: the Daily note for a mode with no daily board now reads "<Mode> has no daily board yet."
 
-## [ ] 33. Implement task 280 — Hexagon and Triangle daily boards on the Daily screen
+## [x] 33. Implement task 280 — Hexagon and Triangle daily boards on the Daily screen
 
 Depends on: 23, 26, 30, 31
 
@@ -439,6 +439,8 @@ Context:
 /task-implement 280 --review
 ```
 
+Done: 2026-10-25, commit `d958c28` (11 files, +416/-125). Decision: the new daily boards are `hex-expert` (30 × 16, 100 mines) and `tri-expert` (41 × 17, 103 mines), both no-guess, listed in menu order; `dailyPreview(now, grid)` takes a grid and `PREVIEW_DAILY` is gone.
+
 ## [ ] 32. Implement task 279 — Update documentation for feature `flat-grid-menu-entries`
 
 Depends on: 30, 31
@@ -446,6 +448,7 @@ Depends on: 30, 31
 Context:
 - 2026-10-25 (from step 30): task 277 already updated .claude/context/INDEX.md, app-shell-menu-preview.md, app-shell-markup.md, app-shell-kit.md and classic2d-board-view.md and the css/components.css catalogue — a board preview is `{ kind: 'board', grid, ground }`, `demoBoard2D(grid)` builds the seeded Intermediate board, and the badge preview is no longer used by any tile (the kit still accepts it).
 - 2026-10-25 (from step 31): `createLastMode`'s `load()` reads a stored mode the host has not registered as none (main.js passes `modes.has`) — already recorded in .claude/context/app-shell-menu.md; the Daily note for a mode with no daily board reads "<Mode> has no daily board yet."
+- 2026-10-25 (from step 33): .claude/context/app-shell-daily.md, records-board-code.md, records-screen.md and their INDEX rows still say Hexagon and Triangle are *Coming soon*, list two daily boards and mention `PREVIEW_DAILY` — the daily list is expert, hex-expert (30 × 16, 100 mines), tri-expert (41 × 17, 103 mines), cube, all playable but Surface; `dailyPreview(now, grid)` takes a grid; js/shell/menu-preview.js keeps one board view per grid and shows the mode's card when a board fails to mount.
 
 ```prompt
 /task-implement 279 --review
