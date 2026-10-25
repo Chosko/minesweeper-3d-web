@@ -42,7 +42,7 @@ unchanged.
 - `createSeededSource(seed)` → `{ next(), int(n) }`; `seed` an integer
   `0 .. 2^32 - 1`; `int(n)` unbiased by rejection sampling. Never reads
   `Math.random`.
-- `GENERATOR_VERSION` (`1`, recorded with every board);
+- `GENERATOR_VERSION` (recorded with every board);
   `placeMines({ graph, mineCount, firstClick, source })` → ascending
   `Int32Array` over any cell graph. Only the first-click cell is excluded:
   safe first click, not always an opening — the reference rule.
@@ -54,12 +54,12 @@ unchanged.
   now? })` → `{ ok: true, mines, seed, generatorVersion, candidates? }` or,
   no-guess budget exhausted, `{ ok: false, reason, seed, generatorVersion,
   candidates }`; a malformed or impossible request throws `RangeError`.
-  `onProgress({ candidates })` at most every `PROGRESS_INTERVAL_MS` (250);
+  `onProgress({ candidates })` at most every `PROGRESS_INTERVAL_MS`;
   it never changes the result.
 - `graph` is a description, `{ kind: 'square', width, height }`,
   `{ kind: 'hex', width, height }`, `{ kind: 'tri', width, height }` or
   `{ kind: 'box', X, Y, Z }`, built by `boardGraph(description)`.
-  `ATTEMPT_BUDGET` — 2000 candidates.
+  `ATTEMPT_BUDGET` — the candidates tried before a no-guess request fails.
 - `startCell(description)` → the centre cell of each side (⌊side / 2⌋) as an
   index in the provider's order. A request input like any first click: no
   generator change.
@@ -94,7 +94,7 @@ unchanged.
   from it one after another with `placeMines`, and the first one `solve`
   clears is the board — so the candidate sequence is part of the output. A
   standard board is the placer's first draw.
-- **Attempt budget.** 2000 candidates, set from a measurement of Expert
+- **Attempt budget.** `ATTEMPT_BUDGET` candidates, set from a measurement of Expert
   no-guess generation recorded beside the constant and in the feature
   document's § Attempt budget and timing. Hexagon Expert's mine count is the
   one at which every seed `dev/measure-noguess-hex.mjs` measures meets the

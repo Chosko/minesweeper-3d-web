@@ -74,10 +74,11 @@ stays true while any runs.
   non-mines draw `L_WRONG_FLAG`. Neither changes game state.
 - **Ground grid.** Drawn in the sky's fullscreen pass (`SKY_FRAG`'s `groundGrid`), so it lies behind
   every cube, writes no depth and is never picked: the view ray meets a horizontal plane
-  `GROUND_GAP` (12) below the box's bottom at the current spacing; lines every power-of-two count of
+  `GROUND_GAP` below the box's bottom at the current spacing; lines every power-of-two count of
   lattice pitches (growing with the box), antialiased with `fwidth` and faded where they crowd, plus
-  a faint fill, all fading toward the sky from 0.55 of the fade distance (`max(GROUND_FADE_MIN`
-  400`, 4 × (camera distance + board radius))`), which reads as a horizon. Its ink is the palette's
+  a faint fill, all fading toward the sky over the outer part of the fade distance (at least
+  `GROUND_FADE_MIN`, further out for a far camera or a big box: `_placeGround`), which reads as a
+  horizon. Its ink is the palette's
   horizon stop, darkened on a light sky and lightened on a dark one. `_placeGround` sets `uGround` /
   `uEye` each `render()`; off without a board; the view modes, effects and shake leave it alone.
 - **Replay-driven camera.** A 3D replay draws through the same renderer: `js/main.js`'s

@@ -39,7 +39,7 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   mode played, else the first available entry.
 - `menuPreview(id, …)` — what a play tile's preview shows
   ([app-shell-menu-preview.md](app-shell-menu-preview.md)).
-- `LAST_MODE_DOC` = `'shell.lastMode'`, `LAST_MODE_VERSION` = 1;
+- `LAST_MODE_DOC` = `'shell.lastMode'`, `LAST_MODE_VERSION`;
   `createLastMode({storage, modes})` → `current`, `record(mode)`, `load()`
   (null for nothing, a malformed document or a mode `modes.has` does not
   know), `dispose()`.

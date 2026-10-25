@@ -6,7 +6,7 @@ The figures and pictures the Records screen ([records-screen.md](records-screen.
 draws from a board's history: the two history charts on a canvas with
 their hover readouts and text alternatives, the paging both lists share,
 and the pure stats — the one ranking (also the results screen's rank), the
-Top 10, averages, the last-50 win rate, the period and outcome filters and
+Top 10, averages, the recent win rate (over `RECENT_GAMES`), the period and outcome filters and
 the best time's steps.
 
 - `js/records/history-chart.js` — the 3BV/s and efficiency chart and the
@@ -26,7 +26,7 @@ History chart (`js/records/history-chart.js`)
   `draw(data, emptyText?)`, `hoverAt(x)`, `leave()`, `readout`,
   `destroy()`. A chart with nothing to draw shows only its empty line,
   centred: no grid, axes or legend.
-- `pageOf(items, page, size = PAGE_SIZE)`; `PAGE_SIZE` — 10.
+- `pageOf(items, page, size = PAGE_SIZE)`; `PAGE_SIZE` — the rows per page.
 
 Stats (`js/records/stats.js`)
 - `rankedGames(history, stat)`, `gameRank(history, summary, stat?)`,

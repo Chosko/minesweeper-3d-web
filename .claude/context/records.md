@@ -35,7 +35,7 @@ Board identity (`js/records/board.js`; its header documents the key format)
 - `createBoardIdentity(fields)` → frozen identity of exactly its form's six
   fields, plus `daily: true` on a Daily board only, else a `RangeError`. 2D
   `{ mode, grid, width, height, mines, noGuess }`; 3D `{ mode: MODE_3D,
-  width, height, depth, mines, noGuess }` (no `grid`; sides `1 .. 100`).
+  width, height, depth, mines, noGuess }` (no `grid`; sides `1 .. DIM_MAX_3D`).
   A hexagon board is the 2D form with mode `hexagon` and grid `hex`, a
   triangle board the 2D form with mode `triangle` and grid `tri`; either
   mode on another grid is a `RangeError`. `MODE_3D` — `'3d'`,
@@ -44,8 +44,8 @@ Board identity (`js/records/board.js`; its header documents the key format)
   `hexagon:hex:30x16:100:guess` / `triangle:tri:41x17:103:guess` /
   `3d:10x10x10:100:no-guess` (a 3D key never equals a 2D key; a hexagon or
   triangle key is the 2D format with its own mode and grid), a Daily board
-  `daily:<board key>`; `parseBoardKey(key)` its inverse; `BOARD_KEY_FORMAT`
-  — `2`.
+  `daily:<board key>`; `parseBoardKey(key)` its inverse; `BOARD_KEY_FORMAT`,
+  the key format's version.
 - `boardLabel(identity)` → `"Expert · no-guess"`, `"20 × 12 · 50 mines"`,
   `"Cube Expert"`, `"10 × 10 × 10 · 80 mines"`, `"Daily · Expert ·
   no-guess"`, `"Daily · 8 × 8 × 8 · 40 mines · no-guess"` (a Daily 3D board

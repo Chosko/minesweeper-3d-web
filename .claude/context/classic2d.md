@@ -27,7 +27,7 @@ own on the same board setup, board choice, session and mode.
 | `js/classic2d/motion-layer.js` | The motion layer over the board canvas: animating cells drawn from the tile cache, frames only while a cell animates; `changeEvent`. DOM-free at import. | [classic2d-board-motion.md](classic2d-board-motion.md) |
 | `js/classic2d/pointer-input.js` | Mouse press-and-release state machine from profile markers, `mountPointerInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
 | `js/classic2d/button-swap.js` | The page's mouse button swap (off at creation, never saved), per-press translation. DOM-free. | [classic2d-input.md](classic2d-input.md) |
-| `js/classic2d/touch-input.js` | Touch state machine: tap on the lift, 400 ms long-press flag, the Tap choice's Reveal / Flag, chord on a number, one-finger pan, two-finger pan and pinch; `mountTouchInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
+| `js/classic2d/touch-input.js` | Touch state machine: tap on the lift, long-press flag (`LONG_PRESS_MS`), the Tap choice's Reveal / Flag, chord on a number, one-finger pan, two-finger pan and pinch; `mountTouchInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
 | `js/classic2d/cursor-input.js` | Keyboard and controller cell cursor, auto-repeat, reveal / flag / chord, `mountCursorInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
 | `js/classic2d/tile-skin.js` | Stateless tile painter from the active board module, tile cache with its depth steps, the board art hand-off `BOARD_ART`, `MIN_TILE_SIZE`. DOM-free at import. | [classic2d-tile-skin.md](classic2d-tile-skin.md) |
 | `js/tile-art.js` | The shared tile recipe both boards draw through — named drawing styles (`bevel`, `flat`) at any size and depth, the glyphs, every colour an argument; imports nothing. | [tile-art.md](tile-art.md) |
@@ -55,9 +55,9 @@ own on the same board setup, board choice, session and mode.
 `js/classic2d/board-setup.js`
 - `MODE` (`'classic-2d'`), `GRID` (`'square'`), `BOARD_SIZES` (`beginner`,
   `intermediate`, `expert`, `custom`), `STANDARD_SIZES` (from the records'
-  `STANDARD_BOARDS`), `DEFAULT_CHOICE` (Beginner, custom 30 × 16 / 99,
-  no-guess on). A choice is `{size, custom, noGuess}`.
-- `NOGUESS_HELP_TEXT`, `NOGUESS_DENSITY_HINT` (0.25), `DENSITY_HINT_TEXT`,
+  `STANDARD_BOARDS`), `DEFAULT_CHOICE` (Beginner, custom at Expert's
+  size and mines, no-guess on). A choice is `{size, custom, noGuess}`.
+- `NOGUESS_HELP_TEXT`, `NOGUESS_DENSITY_HINT`, `DENSITY_HINT_TEXT`,
   `aboveDensityHint(mines, cells)` — shared by both modes' board choices.
 - `customMineCap(width, height)` — the reference site's cap;
   `maxMines(width, height)` — that cap, at most cells − 1;
@@ -70,7 +70,7 @@ own on the same board setup, board choice, session and mode.
   board identity in its mode and grid
   ([records.md](records.md)), `request` the generation request
   ([generation.md](generation.md)); an invalid choice throws `RangeError`.
-- `LAST_CHOICE_DOC` (`'classic2d.lastChoice'`), `LAST_CHOICE_VERSION` (1),
+- `LAST_CHOICE_DOC` (`'classic2d.lastChoice'`), `LAST_CHOICE_VERSION`,
   `createLastChoice({storage, config?})` → `{current, load(), save(choice)}`
   over the configuration's `lastChoiceDoc` ([platform.md](platform.md)).
 - `SQUARE_SETUP` — the square values in a configuration's shape, less its
@@ -139,13 +139,13 @@ own on the same board setup, board choice, session and mode.
   codes, records keys and replays are those of the square values the
   functions read without a configuration.
 - **Board setup and limits.** The standard sizes are the records' standard
-  boards. A custom board is 1 to 100 a side (`CUSTOM_LIMITS` in
-  `js/engine/profiles.js`, citing "Largest custom board" in
+  boards. A custom board's sides run from `minSide` to `maxSide`
+  (`CUSTOM_LIMITS` in `js/engine/profiles.js`, citing "Largest custom board" in
   `tests/fidelity/minesweeper-online.md`); its mines run from 1 to the
-  smaller of the site's cap — every cell up to 36 cells, then the measured
+  smaller of the site's cap — every cell up to `everyCellUpTo` cells, then the measured
   caps interpolated by cell count, rounded down — and cells − 1, so the
-  first click is always safe. A 1 × 1 board is refused on the mines field,
-  after the side checks; the smallest is 1 × 2. The records identity still
+  first click is always safe. A one-cell board, which has no room for a
+  mine, is refused on the mines field, after the side checks. The records identity still
   accepts 0 mines, so entries earned on such boards keep loading. The
   Hexagon and Triangle board setups take the same limits through their
   re-exports; only their standard boards are their own.

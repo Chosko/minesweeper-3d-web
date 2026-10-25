@@ -84,7 +84,7 @@ return a Promise and may throw.
   failReads }?)` plus the `blobs` Map for tests.
 - IndexedDB: `openIndexedDBBlobStore({ indexedDB }?)` → Promise of the
   contract, rejecting when there is no factory or the open fails or is
-  blocked; `DB_NAME` `'ms3d-blobs'`, `STORE_NAME` `'blobs'`, version 1.
+  blocked; `DB_NAME` `'ms3d-blobs'`, `STORE_NAME` `'blobs'`, its schema version `DB_VERSION`.
 
 ## INTERNAL PATTERNS
 

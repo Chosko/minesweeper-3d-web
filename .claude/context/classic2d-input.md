@@ -38,7 +38,7 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
   returns it; a release with no recorded press passes through.
 
 `js/classic2d/touch-input.js`
-- `LONG_PRESS_MS` (400), `TAP_SLOP` (8 px), `VIBRATE_MS`, `TAP_MODES`
+- `LONG_PRESS_MS`, `TAP_SLOP` (px), `VIBRATE_MS`, `TAP_MODES`
   (`reveal`, `flag`).
 - `createTouchInput({graph, game, onPress, onAction, onPan?, onPinchStart?,
   onPinch?, scrolls?, flagMode?, vibrate?, clock?, rules?, active?})` →

@@ -39,7 +39,7 @@ every function.
 - `HUD_STRIP`, `HINT_STRIP`, `hudStripHtml(mode, device, glyphs?, { muted,
   spacing })` (only the keys, buttons or gestures the mode binds on that
   device; F is not listed in Classic 2D, where it flags; 3D's first entry is
-  the spacing readout, `X` spacing 1.1 to one decimal, D-pad on the
+  the spacing readout, `X` with the current spacing to one decimal ("spacing 1.1"), D-pad on the
   controller, Pinch on touch, its only touch entry; Classic 2D's touch strip
   is empty), `hintStripHtml(mode, device, glyphs?)` (keyboard and controller:
   each row a `kbd-hint` holding its whole input in one `<kbd>` and its

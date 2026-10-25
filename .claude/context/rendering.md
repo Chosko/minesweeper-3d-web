@@ -14,7 +14,7 @@ shake, ground grid — and the replay and end-of-game behaviour are in
 | File | Responsibility |
 | --- | --- |
 | `js/render.js` | `BoardRenderer`: cube geometry, cell/sky/confetti shaders, opaque and transparent instance lists, back-to-front sort, the board module hand-off (`setBoard`), effects and cell motion, the selection, the target rectangle it draws into |
-| `js/readability.js` | the 3D readability aids' pure functions: the aimed-cell readout ([app-shell-3d-camera.md](app-shell-3d-camera.md)) and, read here, Space's depth dimming — `spaceAlpha(d)` (`SPACE_NEAR_ALPHA` 0.7, `SPACE_FLOOR_ALPHA` 0.1, `SPACE_FALLOFF` 3, interpolated into `VERT`) and `boxDepth(cam, box)`, the camera's lattice distance from the box's nearest face |
+| `js/readability.js` | the 3D readability aids' pure functions: the aimed-cell readout ([app-shell-3d-camera.md](app-shell-3d-camera.md)) and, read here, Space's depth dimming — `spaceAlpha(d)` (`SPACE_NEAR_ALPHA`, `SPACE_FLOOR_ALPHA`, `SPACE_FALLOFF`, interpolated into `VERT`) and `boxDepth(cam, box)`, the camera's lattice distance from the box's nearest face |
 
 ## Public API
 
@@ -47,8 +47,8 @@ shake, ground grid — and the replay and end-of-game behaviour are in
   much covers the tile) in a second RGBA8 data texture the fragment shader mixes in (`uRegion`,
   `uRegionOn`); the caller redraws. `cellScreen(idx)` → `{x, y}` the cell centre in canvas CSS
   pixels through the camera as it is, or null behind it (the replay's press rings).
-- Constants: kinds `K_CLOSED, K_FLAG, K_NUMBER, K_MINE, K_HIDDEN` (0..4), `GHOST_ALPHA` (0.25),
-  `FLY_THROUGH_ALPHA` (0.25), `FLY_THROUGH_BAND` (half a pitch at the start spacing, 2.2) and
+- Constants: kinds `K_CLOSED, K_FLAG, K_NUMBER, K_MINE, K_HIDDEN` (0..4), `GHOST_ALPHA`,
+  `FLY_THROUGH_ALPHA`, `FLY_THROUGH_BAND` (a fraction of a pitch at the start spacing) and
   `flyThroughAlpha(dist)` (the shader's `flyAlpha`; the distance is `FLY_THROUGH_DIST`, [input-camera.md](input-camera.md)),
   the flash constants ([rendering-effects.md](rendering-effects.md)).
   Node imports the module only with `three` resolved to `vendor/three/` (the test's resolve hook).
@@ -69,8 +69,8 @@ shake, ground grid — and the replay and end-of-game behaviour are in
   (transparent, no depth write) keeps alpha < 1. Lists may over-include; culled instances move
   off-screen. The vertex shader's alpha table implements the spec's drawing rules with the port's
   changes: a hidden cell under Ctrl is a ghost at `GHOST_ALPHA` (transparent pass), and a number
-  under Space takes `spaceAlpha(depth)` instead of 0.2 — 0.7 at the box's nearest face (about 0.61
-  on the front layer, whose cube centres sit half a cell in) to a 0.1 floor, `depth` from
+  under Space takes `spaceAlpha(depth)` instead of 0.2 — `SPACE_NEAR_ALPHA` at the box's nearest face (a little
+  less on the front layer, whose cube centres sit half a cell in) down to `SPACE_FLOOR_ALPHA`, `depth` from
   `uBoxDepth`, which `render()` sets from `boxDepth` each frame. Last, every cube takes the lower of
   its alpha and `flyAlpha` (fly through glass): `FLY_THROUGH_ALPHA` within `FLY_THROUGH_DIST` of
   `cameraPosition`, ramping back to 1 over `FLY_THROUGH_BAND` — whatever its kind and view mode; the
@@ -86,7 +86,7 @@ shake, ground grid — and the replay and end-of-game behaviour are in
   under Space, and under Shift holds only mines, those shrinking hidden cells and the aimed cell's
   3×3×3 neighbourhood.
 - **Transparent sort** is an O(n) counting sort on quantised L1 lattice distance to the camera
-  (`SORT_BUCKETS` = 65536), farthest first — an exact painter's order for equal cubes on a lattice.
+  (`SORT_BUCKETS` buckets), farthest first — an exact painter's order for equal cubes on a lattice.
   It runs while Shift, Space or Ctrl is held (closed, flag and number cubes under Shift, numbers
   under Space, hidden cells under Ctrl, and every drawn cube within the fade band). With none held,
   `_nearCells` builds the list from the lattice cells around the camera only — the cubes within
@@ -112,7 +112,7 @@ shake, ground grid — and the replay and end-of-game behaviour are in
 - [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md) — gameplay fidelity to the original is
   the overriding rule. This area enforces: *Drawing rules (per cell)* (tile per state, alpha 0.2
   under Shift/Space — under Space, by depth, and the Shift neighbourhood drawn over the faded cubes,
-  "Web port:" notes there —, Ctrl shows hidden cells — as 25 % ghosts, a "Web port:" note there —, the
+  "Web port:" notes there —, Ctrl shows hidden cells — as `GHOST_ALPHA` ghosts, a "Web port:" note there —, the
   "solved" pulse before a number hides — the board module's solved-pulse motion —, back-to-front
   transparency); *Cube face orientation*
   (corners and UVs); *Grid & geometry* (cube edge 4, pitch `4*s`, background RGB(200,225,255) —

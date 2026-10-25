@@ -33,21 +33,22 @@ switches and volume sliders are bound to the store, not to this module — see
 - `Sfx.setMuted(m)` — unmuting (muted → unmuted) also creates/resumes the context; ramps master gain.
 - `Sfx.toggleMute() -> boolean` — returns the new muted state; the game mutes through the `muted` setting, not this.
 - `Sfx.setVolume(v)` — clamps to 0..1, ignores non-finite input; ramps master gain.
-- `Sfx.getVolume() -> number` — 0..1, default 0.7.
+- `Sfx.getVolume() -> number` — 0..1, default `DEFAULT_VOLUME`.
 - `Sfx.unlock()` — creates/resumes the AudioContext; no-op while muted. Call from a user gesture.
 
 **Sounds** (each no-ops when muted or when WebAudio is unavailable; each self-throttles)
-- `Sfx.reveal(count = 1)` — cells opened; intensity scales with `log2(count)`; `count >= 6` adds a whoosh + pentatonic cascade.
+- `Sfx.reveal(count = 1)` — cells opened; intensity scales with `log2(count)`; a flood past a fixed count adds a whoosh + pentatonic cascade.
 - `Sfx.flag(on = true, count = 1)` — flag placed (`on`) or removed; its voice is `flagVoice(on, count)`.
 - `flagVoice(on, count)` — pure: `{ on, count, steps, level }` for a flag click changing `count`
-  cells, capped at `FLAG_COUNT_CAP` (26); steps and level never fall as the count grows, counts 1, 2,
-  4, 8 and 16 differ, count 1 is the single flag sound with no step. A mass flag stacks rising steps
+  cells, capped at `FLAG_COUNT_CAP`; steps and level never fall as the count grows, a step added at
+  each doubling of the count up to one per `FLAG_STEP_RATIOS` entry, count 1 the single flag sound
+  with no step. A mass flag stacks rising steps
   through `FLAG_STEP_RATIOS` above the plant; an unflag (a number's undo) the same steps falling
   below the pluck.
 - `Sfx.chord(count = 0)` — chord knock + triad; when `count > 0` it also calls `reveal(count)`.
 - `Sfx.noop()` — soft thunk for an action that changed nothing.
-- `Sfx.explode()` — loss boom with debris and rumble tail (~1.7 s).
-- `Sfx.win()` — ~1.5 s arpeggio then bell chord.
+- `Sfx.explode()` — loss boom with debris and rumble tail.
+- `Sfx.win()` — arpeggio then bell chord.
 
 **Free functions** (thin wrappers over `sfx`): `unlock`, `setMuted`, `isMuted`,
 `toggleMute`, `setVolume`, `getVolume`, `playReveal`, `playFlag`, `playChord`,
@@ -56,11 +57,11 @@ not these.
 
 ## INTERNAL PATTERNS
 
-- **Signal chain:** every voice -> `bus` (gain 1.4) -> `DynamicsCompressor`
-  (threshold -12 dB, ratio 6) -> `master` -> `destination`. Mute and volume act
+- **Signal chain:** every voice -> `bus` (a fixed boost) -> `DynamicsCompressor`
+  -> `master` -> `destination`; the gains and the compressor's settings are in `_setContext`. Mute and volume act
   only on `master`; voices never read them.
-- **Master gain curve:** `muted ? 0 : volume²` (0.7 -> ~0.49). Changes are
-  applied with `setTargetAtTime(…, 0.015)` after cancelling scheduled values,
+- **Master gain curve:** `muted ? 0 : volume²` (`_masterGain`). Changes are
+  applied with a short `setTargetAtTime` after cancelling scheduled values,
   so toggling never clicks.
 - **Lazy context:** no AudioContext exists until `_ensure()` runs (via
   `unlock`, `setMuted(false)`, or the first sound while unmuted). `_ensure()`
@@ -71,14 +72,14 @@ not these.
   once a context exists. While muted they stay installed (unlock is a no-op).
 - **Gate:** every sound starts with `_ok()` (= not muted and `_ensure()`
   succeeded), then `_throttle(key, gap)` keyed per sound on
-  `ctx.currentTime` (reveal 35 ms single / 60 ms flood, flag 40 ms, chord 50 ms,
-  noop 80 ms, explode 300 ms, win 500 ms). A throttled call is silently dropped.
-- **Voice cap:** `MAX_VOICES = 48`; `_tone`/`_noise` drop new voices at the
+  `ctx.currentTime`, each sound with its own gap (reveal a longer one for a
+  flood than for a single cell). A throttled call is silently dropped.
+- **Voice cap:** `MAX_VOICES`; `_tone`/`_noise` drop new voices at the
   cap. The counter is decremented in each source's `onended`.
 - **Primitives:** `_tone`, `_noise`, `_bell` use exponential envelopes from
-  0.0001 (exponential ramps cannot target 0). `_noise` reads a random offset in
-  one shared 2 s white-noise buffer built in `_setContext`; keep any new noise
-  voice shorter than ~1.95 s.
+  a near-zero floor (exponential ramps cannot target 0). `_noise` reads a random offset in
+  one shared white-noise buffer built in `_setContext`; keep any new noise
+  voice short enough that its offset plus its length stays inside that buffer.
 - **Randomness:** pitches carry small multiplicative `jitter` so repeated
   sounds vary; sounds are not deterministic.
 - **`_setContext(c)`** builds the whole chain on any context (documented as
@@ -88,7 +89,7 @@ not these.
   volume start at their defaults until the settings appliers set them.
 - **Environment safety:** `window` access is guarded (`typeof window`
   checks), so the module imports under
-  `node --test` without a DOM; it then reports unmuted, volume 0.7, and every
+  `node --test` without a DOM; it then reports unmuted, volume `DEFAULT_VOLUME`, and every
   sound no-ops.
 - Event semantics (what counts as reveal vs chord vs noop, flag direction for
   mixed results) are decided by the callers, not here: `main.js::onAction`

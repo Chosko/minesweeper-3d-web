@@ -6,8 +6,8 @@
 (the platform blob store) and of the library index document,
 `replays.library` ([platform.md](platform.md)); storage and the blob store
 are handed in. It keeps every sealed replay ([replay.md](replay.md)), pins
-personal bests and the replays the player pins, and keeps the newest 100
-others. `js/main.js` builds the one library (`REPLAYS`) over the platform
+personal bests and the replays the player pins, and keeps the newest
+`RETAINED_UNPINNED` others. `js/main.js` builds the one library (`REPLAYS`) over the platform
 `storage` and `blobStore`; the results flow adds to it
 ([app-shell-results.md](app-shell-results.md)), the Records screen's library view lists and
 pins ([records-library-view.md](records-library-view.md)), and the viewer reads bytes
@@ -15,8 +15,8 @@ pins ([records-library-view.md](records-library-view.md)), and the viewer reads 
 
 ## PUBLIC API
 
-- `LIBRARY_DOC` (`'replays.library'`), `LIBRARY_VERSION` (1),
-  `RETAINED_UNPINNED` (100), `PIN_BEST` (`'best'`), `PIN_HAND` (`'hand'`).
+- `LIBRARY_DOC` (`'replays.library'`), `LIBRARY_VERSION`,
+  `RETAINED_UNPINNED`, `PIN_BEST` (`'best'`), `PIN_HAND` (`'hand'`).
 - `createReplayLibrary({storage, blobStore, onNotSaved?})` → library;
   registers `LIBRARY_DOC` at creation; `onNotSaved({reason})` at most once.
   - `load()` → Promise, shared by repeated calls.

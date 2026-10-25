@@ -36,7 +36,7 @@ overview [classic2d.md](classic2d.md).
   the square geometry) from the board's top-left corner,
   `zoom(tile, x, y, point?)` → changed.
 - `clipMarks(layout, scroll)` → `{left, right, top, bottom, barX, barY}`;
-  `SHADOW_DEPTH` (12), `SCROLLBAR` (`{thickness: 4, inset: 2}`).
+  `SHADOW_DEPTH`, `SCROLLBAR` (`{thickness, inset}`).
 - Tokens: `BOARD_SHADOW`, `BOARD_SCROLLBAR`; `BOARD_BACKGROUND`
   (`--color-board-frame`) only while the skin has no board module, whose
   `palette.boardGround` takes its place. `PAN_MODIFIER` (`shiftKey`).

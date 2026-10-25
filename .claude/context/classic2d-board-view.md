@@ -22,14 +22,14 @@ its own layer, the marked start cell, cell motion, the end effect — is
   most `max`, never below `min`; `gapPx(tile, gap)` the gap in whole pixels
   for a gap fraction.
 - `BOARD_SCALES` (`fit`, `100`, `125` — the settings' `boardScale`),
-  `DEFAULT_BOARD_SCALE` (`100`), `TILE_CAP`, `tileCap(scale)` → the square
+  `DEFAULT_BOARD_SCALE`, `TILE_CAP`, `tileCap(scale)` → the square
   geometry's largest tile at a board scale: `TILE_CAP` at 100 %, scaled up
   at 125 %, `Infinity` at Fit.
 - `GRID_UNIT` — the share of its geometry's tile a grid's shape fractions
   (`style2d.grids`) are of: a triangle's height per side, the tile itself
   for a grid it does not name; the board checks measure each grid's floor
   in it ([app-shell-board-module.md](app-shell-board-module.md)).
-- `BOARD_FRAME` (`{gaps: 1}`) — the board frame every Classic 2D board sits
+- `BOARD_FRAME` (`{gaps}`) — the board frame every Classic 2D board sits
   in: the module's gap on every side.
 - `boardLayout({geometry, width, height, min, max, frame, gap,
   frameRadius})` (or `cols, rows` for a square board in place of

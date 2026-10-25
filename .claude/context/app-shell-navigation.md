@@ -34,7 +34,7 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   `history.go(-n)` until the depth equals `router.stack.length`),
   `popstate(state)`, `depth`, `pending`.
 - `storedSet(getStorage, key, limit?)` → `{has, add}` — superseded loads in
-  session storage (`ms3d.history.superseded`, newest 50); unusable storage
+  session storage (`ms3d.history.superseded`, the newest `limit`, its default in `storedSet`); unusable storage
   reads as empty.
 
 ## INTERNAL PATTERNS
@@ -57,8 +57,8 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   screen unwinds to it; `replace` swaps without stacking (`ready` hands over
   to `playing` that way). Back is the screen's own `back` when declared —
   `ready` → `readyBack` (board choice for a fresh board, pause for a
-  started game; a keyboard Back within 500 ms of a lock release is
-  ignored), `playing` / `classic-2d` → `backGame` (cancels a board being
+  started game; a keyboard Back just after a lock release — within the
+  window `js/main.js`'s `ready` screen sets — is ignored), `playing` / `classic-2d` → `backGame` (cancels a board being
   generated, else pause), `paused` → `resumeFromPause` (the menu once the
   game has ended, else resume), `results` → menu, `replay` → its `returnTo`
   (the menu when none), `ctxlost` → menu — else the stacked screen.

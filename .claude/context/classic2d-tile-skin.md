@@ -105,7 +105,7 @@ styles and glyphs — is [tile-art.md](tile-art.md).
   does not fit at it scrolls. Every state and number of every board module
   is legible at it, and on a hexagon and a triangle board at each grid's
   own floor (the browser test in `tests/tile-skin.test.mjs`, which also
-  checks Expert's fit rule in the game window at 1024 px wide).
+  checks Expert's fit rule in the game window at the test's desktop width).
 - **No second palette.** Neither the skin nor the recipe holds a literal
   colour: every colour, parameter and the number font are the board
   module's, which the board conformance checks hold to the contrast and

@@ -36,7 +36,7 @@ before its font loads is never handed over. Returns the unsubscribe.
 `js/main.js` binds it before the applier starts.
 
 `js/shell/scene-palette.js` — `parseRgb(value)` (`#rgb`, `#rrggbb`, `rgb()`
-or `rgba()` as channels, fallback `[255, 0, 255]`),
+or `rgba()` as channels, fallback `UNREADABLE`, a loud magenta),
 `bindScenePalette({art?, renderer, onApplied?})` → calls
 `renderer.setBoard` with the module `art` holds now, if any, and each one
 handed over after it (`js/main.js` sets `needRender` in `onApplied`);

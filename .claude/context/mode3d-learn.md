@@ -16,8 +16,8 @@ the stylesheets (§ Learn 3D's screens).
 `js/mode3d/learn.js`
 - `LEARN_BOARD` — frozen `{X, Y, Z, mines, seed, generatorVersion,
   startCell, minePositions, proofNumber, lessonNumber, lessonMine}`: the
-  lesson box, 4 × 4 × 3 · 4 outside the presets, seed 75, start cell 26 (the marked centre cell),
-  P 36, L 25, M 40; `LEARN_TITLE` 'Learn 3D'.
+  lesson box, a size outside the presets, its seed and its start cell (the marked centre cell),
+  the cells P (`proofNumber`), L (`lessonNumber`) and M (`lessonMine`); `LEARN_TITLE` 'Learn 3D'.
 - `lessonCells(view, startCell)` → `{proofNumber, lessonNumber, lessonMine}`
   or null: the board conditions after the first reveal (not won, a cube
   hidden, a 1 with one closed neighbour M, another 1 L nearest the start
@@ -28,7 +28,8 @@ the stylesheets (§ Learn 3D's screens).
 - `LEARN_PROMPTS` (`start`, `shift`, `ctrl`, `flag`, `chord`, `rest`),
   `LEARN_HINTS` (each prompt's `HINT_TEXT` name,
   [settings-bindings.md](settings-bindings.md)), `learnStepOf(hint)` (a
-  step prompt's "1 / 4", null for the start and the rest);
+  step prompt's place among the step prompts, as "<step> / <steps>", null for the start and the
+  rest);
   `createLearnPrompts({lessonNumber, lessonMine})` → `current`,
   `done(name)`, `tinted`, `started()`, `shift(selected)`, `ctrl()`,
   `flagged(cells)`, `chorded(cell, revealed)`, `lessonClosed(count)` (L's
@@ -43,7 +44,7 @@ the stylesheets (§ Learn 3D's screens).
   prompt is done by its action at any time after the first reveal and
   skipped when its turn comes; the chord prompt is also done once L has no
   closed, unflagged neighbour, since a chord on L can then open nothing; L
-  carries the start-cell tint during prompts 1 and 4, M during prompt 3. Starting it saves no choice and moves
+  carries the start-cell tint during the `shift` and `chord` prompts, M during `flag`. Starting it saves no choice and moves
   no last-board mark (`data-last`); the shell's wiring is
   [app-shell-3d-session.md](app-shell-3d-session.md).
 - **Learn 3D's end.** A win offers *Play Cube Intro* — an ordinary pick of
@@ -60,7 +61,7 @@ the stylesheets (§ Learn 3D's screens).
     `css/style.css`'s, Pause's surface the theme's.
   - Prompt strip: a Learn 3D prompt takes the hint strip's own form
     (`hint-strip--learn`, set by `setHintStrip`'s `learn`): no close
-    button, its own padding and gap, the step ("1 / 4") smaller in the mono
+    button, its own padding and gap, the step (`learnStepOf`) smaller in the mono
     face, before the prompt.
   - End cards: the "Learn 3D" section label above the title, the line in
     ink on both — the win's offer of Cube Intro, the loss's "The lesson box

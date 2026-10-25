@@ -51,8 +51,8 @@ which adds it to the library once its summary is recorded ([app-shell-results.md
   rebuilds the cell graph and, for a flat kind, the geometry. A
   current-version blob whose graph kind this build does not know is refused
   as `ReplayNewerVersionError`, as a newer version is.
-- `sampleIntervalMs(version, mode)` → ms (2D 50, 3D 100), `undefined` for an
-  unknown version.
+- `sampleIntervalMs(version, mode)` → ms (that version's entry in
+  `SAMPLE_INTERVALS_MS`), `undefined` for an unknown version.
 - `encodeReplay(replay, {version?})` → `Uint8Array`; `version` 1 writes an
   old body for tests.
 - `decodeReplay(blob)` → the replay at the current version; throws
@@ -61,7 +61,7 @@ which adds it to the library once its summary is recorded ([app-shell-results.md
 - `cellStateDigest({revealed, flagged, hidden})` → 32-bit FNV-1a.
 
 `js/replay/recorder.js`
-- `MOVEMENT_CAP_BYTES` — 2 MB.
+- `MOVEMENT_CAP_BYTES` — the movement streams' byte cap.
 - `startRecording({mode, graph, board, profile}, {onFailure?,
   movementCap?})` → recorder: `boardArrived`, `action(kind, cell, time)`,
   `sample`, `cursor`, `view`, `seal(summary, final, pauses?)` → `{blob,

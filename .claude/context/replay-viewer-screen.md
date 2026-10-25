@@ -70,7 +70,7 @@ The `#replay` binder (`createReplayView`) is
   or unreadable too); a box replay with no 3D viewer (no WebGL 2); any other
   graph kind with no viewer. Back works in every case.
 - **The timeline.** A replay opens paused on the start position (the
-  closed board, `LEAD_IN_MS` before game time 0, clock 00.000) at 1×, Show 3BV off, the
+  closed board, `LEAD_IN_MS` before game time 0, clock 00.000) at `DEFAULT_SPEED`, Show 3BV off, the
   camera on Follow; at game time 0 the time-0 actions (the first click, a
   3D game's flags before it) play as the first action.
 - **The viewer's frame.** `tick(ms)` runs once per frame: while playing it
@@ -92,7 +92,8 @@ The `#replay` binder (`createReplayView`) is
 - **Press rings and cues.** Each action playback reaches going forward shows
   its press ring; a seek or step shows the rings of the actions where it
   lands, none for those it crosses. With sound on (kept for the session),
-  each action reached going forward at 2× or slower plays `actionCue`, as
+  each action reached going forward at the slower speeds (up to a speed
+  fixed in the viewer's cue step) plays `actionCue`, as
   does a step or a forward seek onto an action.
 - **Live figures.** The panel shows the live figures model of the playback
   position (the frame's counts, flags and mines, the game time), so it

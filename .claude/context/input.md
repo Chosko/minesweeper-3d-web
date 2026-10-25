@@ -36,11 +36,11 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   `held`, `reset()`: Enter (`'Enter'`) is button 0 and ' (`'Quote'`) button 2 of the given
   `MouseActions`, so every release rule is the mouse's; an auto-repeat presses nothing more, and a
   release whose press it never took does nothing.
-- `DragLook({mouse, onLook, threshold = DRAG_LOOK_THRESHOLD_PX})` (6 px) — `down`, `move(dx, dy)`,
+- `DragLook({mouse, onLook, threshold = DRAG_LOOK_THRESHOLD_PX})` — `down`, `move(dx, dy)`,
   `up`, `reset()`: drag-to-look over a `MouseActions`. Once the held buttons move `threshold` px
   the mouse actions are reset without firing and all movement goes to `onLook` until every button
   is up; under the threshold the release acts as a locked one does.
-- `TapToggle(tapMs = SPACE_TAP_MS)` (250 ms) — `down(now, active)`, `up(now)`, `on`, `reset()`: a
+- `TapToggle(tapMs = SPACE_TAP_MS)` — `down(now, active)`, `up(now)`, `on`, `reset()`: a
   tap turns `on` until the next press's release; a longer hold leaves nothing on; a press while
   not `active` is ignored.
 - `Input(opts)` — installs window/document listeners in the constructor (no teardown). opts:
@@ -57,17 +57,17 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   that released the lock, not an auto-repeat ([app-shell-pause.md](app-shell-pause.md)).
 
 **js/touch-3d.js** (DOM-free but `mountTouch3D`; mounted only on a coarse-only device)
-- `STICK_RADIUS_PX` (60), `PINCH_STEP_PX` (24); `LONG_PRESS_MS`, `TAP_SLOP`, `VIBRATE_MS` re-exported
-  from touch Classic 2D (400 ms, 8 px, 20 ms).
+- `STICK_RADIUS_PX`, `PINCH_STEP_PX`; `LONG_PRESS_MS`, `TAP_SLOP`, `VIBRATE_MS` re-exported
+  from touch Classic 2D.
 - `touchZone(x, y, {width, top})` → `'stick'` (left half) | `'look'` (right half) | null above `top`.
 - `stickAxes(dx, dy)` → `{f, r}`: the offset over the radius through `stickCurve`, up forward.
 - `applyTouchStick({cam, dt, stick, orbit})` — Fly: `cam.moveAxes(dt, f, r, 0)`; Orbit: `orbit.dollyAxis(dt, f)`.
 - `createTouch3D({mouse, onLook, onSpacing, onTap, vibrate, clock, canAct, canMove})` — `down(id, x, y,
   zone)`, `move`, `up`, `cancel(id)`, `reset()`, `stick`, `stickView`, `holding`. A look finger presses
-  button 0 as it lands: lifted under 8 px before 400 ms it releases (tap, then `onTap`); moved 8 px it is
-  dropped (`cancel`) and turns `onLook(dx, dy)`; held 400 ms it is dropped and button 2 pressed and
-  released, with `vibrate`. A second look finger on a pending tap presses button 2 (either lift chords);
-  either moving 8 px or the spread changing 8 px makes a pinch, both presses dropped, one
+  button 0 as it lands: lifted within `TAP_SLOP` before `LONG_PRESS_MS` it releases (tap, then `onTap`);
+  moved `TAP_SLOP` it is dropped (`cancel`) and turns `onLook(dx, dy)`; held `LONG_PRESS_MS` it is dropped
+  and button 2 pressed and released, with `vibrate`. A second look finger on a pending tap presses
+  button 2 (either lift chords); either moving `TAP_SLOP` or the spread changing `TAP_SLOP` makes a pinch, both presses dropped, one
   `onSpacing(±1)` per `PINCH_STEP_PX`. A press made or lifted while `canAct()` is false is dropped; a
   touch begun while `canMove()` is false is ignored.
 - `mountTouch3D({canvas, touch, zone})` — touch pointers on the canvas; cancels the browser's touch
@@ -98,8 +98,8 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   activation, quick find) prevented, only while `canAct()`. Ctrl+other keys and `RETURN_KEYS`
   (`Home`, `KeyR`: back to the start view, ahead of `F2` and the results screen's `R`,
   [app-shell-3d-camera.md](app-shell-3d-camera.md)) are swallowed while active. `onKey` skips auto-repeat except for
-  `ARROW_KEYS`, whose repeats are the shell's held focus moves. Mouse deltas > 400 px are
-  discarded (post-lock spikes).
+  `ARROW_KEYS`, whose repeats are the shell's held focus moves. Mouse deltas past a fixed spike bound
+  (in `Input`'s `mousemove` listener) are discarded (post-lock spikes).
 - **Wheel notches.** Normalized by `deltaMode`, wheel up = positive, Shift+wheel reads `deltaX`;
   the caller turns them into a spacing (`spacingStep`, timed on the event's arrival) in Fly and a
   dolly in Orbit ([app-shell-3d-camera.md](app-shell-3d-camera.md)).

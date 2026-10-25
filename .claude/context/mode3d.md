@@ -26,15 +26,15 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   starts at `SPACING_START` ([input-camera.md](input-camera.md)).
 - A board choice is `{size, custom: {X, Y, Z, mines}, noGuess}`; `custom` is
   kept beside a preset so the custom fields reopen as the player left them.
-  `DEFAULT_CHOICE` is cube Beginner, custom 10 × 10 × 10 / 25, no-guess on.
-- `DIM_MIN` / `DIM_MAX` (1 / 100); `validateCustom(board)` → `{ok: true}` or
+  `DEFAULT_CHOICE` is cube Beginner, a default custom box beside it, no-guess on.
+- `DIM_MIN` / `DIM_MAX`; `validateCustom(board)` → `{ok: true}` or
   `{ok: false, field: 'X'|'Y'|'Z'|'mines', reason}` — mines 1 to cells − 1,
   so a one-cell board is refused. `customStatus(board)` → `{ok, field, max,
-  text, warn?}` (a warning above 250,000 cells).
-- `NOGUESS_CELL_LIMIT` = 8000 (20 × 20 × 20); `noGuessAvailable(choice)` —
+  text, warn?}` (a warning above `LARGE_BOARD` cells).
+- `NOGUESS_CELL_LIMIT`; `noGuessAvailable(choice)` —
   true on every preset and on a custom board of at most that many cells
   with no side of exactly 2 (a side of 1 keeps it); `noGuessReason(choice)`
-  — the side-of-2 line, which takes precedence, else the 8,000-cell line.
+  — the side-of-2 line, which takes precedence, else the cell-limit line.
   `densityHintShown(custom, noGuess)` — from Classic 2D's
   `NOGUESS_DENSITY_HINT` ([classic2d.md](classic2d.md)).
 - `normaliseChoice(choice)` → a valid plain copy or null (null for a `size`
@@ -48,7 +48,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   `presetTitle(p)` → 'Cube Beginner' (as results and Records name the
   board); `CUSTOM_HINT`, `customInfo(board)`,
   `bestsTitle({selected, custom, noGuess})`.
-- `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION` = 1.
+- `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION`.
 - `bindBoardChoice({root, onStart, onLearn, onBack, onRecords?, code?,
   bests?, pin?})` → `{show(choice, {held}), state(), refresh(),
   destroy()}`, the Classic 2D binder's shape ([classic2d.md](classic2d.md))

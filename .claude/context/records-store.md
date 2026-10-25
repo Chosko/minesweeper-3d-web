@@ -54,12 +54,12 @@ Model (`js/records/model.js`; its head comment documents the documents)
 
 Store (`js/records/store.js`)
 - `createRecordsStore({ storage, onNotSaved? })` → store. Registers
-  `RECORDS_DOC` `records` (`RECORDS_VERSION` 5: `upgradeRecords` from 1
+  `RECORDS_DOC` `records` (`RECORDS_VERSION`: `upgradeRecords` from 1
   and from 4 — the Hexagon and Triangle step — unchanging steps from 2 and
   3), `HISTORY_DOC` `records.history`
-  (`HISTORY_VERSION` 2, an unchanging step from 1 — the Daily boards and
+  (`HISTORY_VERSION`, an unchanging step from 1 — the Daily boards and
   challenges step, so an older build refuses the documents),
-  `IN_PROGRESS_DOC` `records.inProgress` (1). `onNotSaved({ reason })` at
+  `IN_PROGRESS_DOC` `records.inProgress` (`IN_PROGRESS_VERSION`). `onNotSaved({ reason })` at
   most once, at the first failed save.
 - `load()` → Promise, shared by repeated calls; `record`, `begin` and
   `checkpoint` before it throw.

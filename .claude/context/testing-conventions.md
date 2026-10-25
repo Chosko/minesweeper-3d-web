@@ -64,8 +64,8 @@ helper is [testing-browser.md](testing-browser.md)'s.
   counter's text takes it from the display helper that formats it
   (`formatMineCount`, `formatOverlayTime`), never a restated literal.
 - **Timing slack** (`tests/helpers/timing.mjs`): a performance budget
-  (e.g. 100×100×100, 1000 mines: build and open < 2 s) is asserted through
-  `timed(budget, fn)` — up to three attempts, the fastest counting, against
+  (e.g. building and opening a box of the largest size) is asserted through
+  `timed(budget, fn)` — up to `attempts` tries, the fastest counting, against
   the budget × `TIME_SLACK`, so work several times over its budget still
   fails. A frame-bound upper bound multiplies only its frame slop by
   `TIME_SLACK`; a lower bound stays exact. A wait for a state polls
@@ -75,7 +75,7 @@ helper is [testing-browser.md](testing-browser.md)'s.
   happen. Two short settle sleeps remain: Back's entries settling
   (`shell-history`) and the pointer-lock refusal's second signal
   (`shell-lock-fallback`, `components-ready`).
-  `MS_TIME_SLACK` sets the factor (default 2, at least 1).
+  `MS_TIME_SLACK` sets the factor (its default and floor are `timeSlack`'s).
 - Untested by Node beyond static and stub checks: most of `js/render.js`,
   `js/textures.js`, `js/picking.js`, `js/ui.js`, `js/main.js`, the WebAudio
   output — verify these in the browser.

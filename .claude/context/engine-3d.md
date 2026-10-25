@@ -17,9 +17,9 @@ as Classic 2D.
 ## PUBLIC API
 
 - `createBoxGrid(X, Y, Z)` → `{ X, Y, Z, graph, index(i, j, k), coords(c) }`,
-  each side 1 .. 100; `index = i + X * (j + Y * k)`; neighbour order (di, dj,
+  each side 1 .. `MAX_SIDE`; `index = i + X * (j + Y * k)`; neighbour order (di, dj,
   dk) each over -1 .. 1, di outer, dk inner. It stores no neighbour lists
-  (26 fixed offsets, edges clipped), so a million-cell box builds in
+  (26 fixed offsets, edges clipped), so a box of the largest size builds in
   constant memory.
 - `PROFILE_3D` (`'minesweeper-3d'`, versions 1 and 2, 2 current). The engine
   branches on its `flagRevealedCell: 'neighbours'`, `zeroFloodStopsAtFlag`,
@@ -54,9 +54,10 @@ as Classic 2D.
 - **Loss presentation.** The state view reads a loss as every cell pressed,
   none flagged or unlinked, every cell dirty; the engine's own arrays (served
   directly while not lost) are left as the loss left them.
-- **Large-board memory.** A 100 × 100 × 100 game holds about 37 bytes a
-  cell (box graph 0, game 31, state view 6, 2 more after a loss), measured
-  by `tests/engine-3d-view.test.mjs`.
+- **Large-board memory.** A game of the largest box holds a fixed number of
+  bytes a cell — nothing for the box graph, the rest the game's and the
+  state view's arrays, a little more after a loss. The per-array figures
+  are measured and asserted in `tests/engine-3d-view.test.mjs`.
 
 ## DOMAIN DEPENDENCIES
 

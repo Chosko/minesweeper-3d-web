@@ -43,7 +43,7 @@ Records screen (`js/records/screen.js`)
   counters replace the streak pair with "Days in a row" and "Longest days
   in a row" (`daysInARow` as of `now`'s local date), each figure carrying
   its label; `overallLine` is the mode's overall figures as one sentence,
-  `averages.winRate` the last-50 win rate line.
+  `averages.winRate` the recent win rate line (`recentWinRate`).
 - `GAME_TABS` (Recent games, Top 10, Replays, Leaderboards, the first the
   default), `TOP_STATS`, `TOP_EMPTY_TEXT`, `TOP_EMPTY_PERIOD`,
   `GAMES_EMPTY_TEXT`, `WON_ONLY_TEXT`.

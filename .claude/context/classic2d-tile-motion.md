@@ -42,7 +42,7 @@ tile looks is [classic2d-tile-skin.md](classic2d-tile-skin.md).
   restarts it; a `null` description, or a new cell past the cap, starts
   nothing and drops the cell's running animation, so it shows its new
   state at once. `MOTION_CAP` is measured by `dev/measure-cell-motion.mjs`,
-  a flood reveal on a 100 × 100 board, and the module's head comment holds
+  a flood reveal on a board of the largest custom size, and the module's head comment holds
   the measurement and the rule that picks it.
 - **Depth.** A `depth` value is drawn by the 2D motion layer from the tile
   cache's nearest depth step ([classic2d-tile-skin.md](classic2d-tile-skin.md)),

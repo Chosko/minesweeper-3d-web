@@ -23,17 +23,17 @@ Each module's head comment states its full contract.
 
 | Setting | Type | Range / values | Default | Applied to |
 | --- | --- | --- | --- | --- |
-| `lookSensitivity` | number | 0.25–3 | 1 | 3D camera `sensitivity` |
+| `lookSensitivity` | number | `SCHEMA`'s min–max | 1 (the original's rate) | 3D camera `sensitivity` |
 | `invertY` | boolean | | false | 3D camera `invertY` |
 | `confirmRestart` | boolean | | false | "Always ask before restarting": the pause controller's `askRestart` ([app-shell-pause.md](app-shell-pause.md)) |
 | `fullscreen` | boolean | | false | browser fullscreen |
 | `renderResolution` | choice | `auto`, `sharp`, `fast` | `auto` | 3D renderer pixel ratio |
 | `boardScale` | choice | `fit`, `100`, `125` | `100` | the Classic 2D tile's cap (`js/classic2d/board-view.js` `tileCap`): the open board (`mode2d.setScale`) and the replay viewer's 2D board (`REPLAY_VIEWER.setScale`), wired in `js/main.js` |
 | `theme` | choice | an id of the theme registry (`js/themes/registry.js`) | `joyful-tiles` | the theme applier's `setTheme` ([app-shell-theme-runtime.md](app-shell-theme-runtime.md)) |
-| `volume` | number | 0–1 | 0.7 | `sfx.setVolume` |
+| `volume` | number | 0–1 | `SCHEMA`'s | `sfx.setVolume` |
 | `muted` | boolean | | false | `sfx.setMuted`, the HUD strip (`UI.setSound`), the Sound switch of the page and the pause card (on while false) |
 | `aimReadout` | boolean | | true | "3D neighbour count": the aimed-cell readout beside the crosshair, read each frame by `updateReadout` in `js/main.js` ([app-shell-3d-camera.md](app-shell-3d-camera.md)) |
-| `fieldOfView` | number | 45–90 | 60 (45 for an existing install) | the 3D renderer camera's vertical `fov` and projection, then a redraw — play, the menu backdrop and the 3D replay viewer |
+| `fieldOfView` | number | `SCHEMA`'s min–max (degrees) | `SCHEMA`'s (`EXISTING_FIELD_OF_VIEW` for an existing install) | the 3D renderer camera's vertical `fov` and projection, then a redraw — play, the menu backdrop and the 3D replay viewer |
 | `camera` | choice | `fly`, `orbit` | `fly` | the 3D camera's mode: `js/main.js`'s `setCameraMode`, also mid-game ([app-shell-3d-camera.md](app-shell-3d-camera.md)), and the 3D rows every help surface shows ([settings-bindings.md](settings-bindings.md)) |
 
 ## PUBLIC API
@@ -45,7 +45,7 @@ Each module's head comment states its full contract.
   `SETTING_KEYS`, `DEFAULTS`, `isValid(key, value)`.
 - Store: `SETTINGS_DOC` = `'settings'`, `SETTINGS_VERSION`;
   `LEGACY_KEYS` (`lookSensitivity`, `invertY`, `volume`, `muted` → their
-  `ms3d.*` keys), `EXISTING_FIELD_OF_VIEW` = 45.
+  `ms3d.*` keys), `EXISTING_FIELD_OF_VIEW`.
   `createSettingsStore({ storage, legacy?, onNotKept? })` →
   `{ load, get, set, onChange }`:
   - `load()` → one shared Promise; fills missing or invalid values with

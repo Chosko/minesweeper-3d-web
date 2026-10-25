@@ -31,15 +31,17 @@ None: styles. The rules select the ids and classes
   motion. How a browser check waits for it:
   [testing-browser.md](testing-browser.md).
 - **Pointer sizes.** The text minimums hold on every pointer, in the
-  top-level rules: `ui-stat__label` 12 px (one step above `--font-size-xs`,
-  which stays 11 px) and `kbd` `max(11px, 0.78em)`. Only the 44 px hit areas
-  depend on the pointer: each stylesheet ends with one `@media (pointer:
-  coarse)` block — the kit's gives `ui-toggle__input` and
-  `ui-checkbox__input` a 44 px hit square (`::after`) and `ui-slider__input`
-  a 44 px height; the shell's shows `#hud-tap` in Classic 2D at 48 px, gives
-  `#hud-pause` a 44 px square and `#hud-restart` and `#c2d-restart` a 44 px band (`::after`),
-  `#touch-modes` buttons 76 × 44 px, and hides `#hud-swap` (every main menu
-  entry is at least 44 px on any pointer, [app-shell-menu.md](app-shell-menu.md)). Every
+  top-level rules: `ui-stat__label` one step above `--font-size-xs`, which
+  keeps its own size, and `kbd` with a pixel floor under its `em` size. Only
+  the hit areas, at the 44 px touch-target minimum, depend on the pointer:
+  each stylesheet ends with one `@media (pointer: coarse)` block — the kit's
+  gives `ui-toggle__input` and `ui-checkbox__input` a minimum hit square
+  (`::after`) and `ui-slider__input` the minimum height; the shell's shows
+  `#hud-tap` in Classic 2D at a larger height, gives `#hud-pause` a minimum
+  square and `#hud-restart` and `#c2d-restart` a minimum band (`::after`),
+  `#touch-modes` buttons wider than the minimum and at least its height, and
+  hides `#hud-swap` (every main menu entry meets the minimum on any pointer,
+  [app-shell-menu.md](app-shell-menu.md)). Every
   fine-pointer hit area stays as above (`tests/components.test.mjs` pins
   both).
 

@@ -12,8 +12,9 @@ The module's head comment states its full contract.
 ## PUBLIC API
 
 - Appliers (each returns its unsubscribe): `pixelRatioFor(resolution,
-  devicePixelRatio, cells)` — `auto` the device ratio capped at 2, at 1.5
-  above 20³ cells and 1 above 50³; `sharp` the full device ratio; `fast` 1.
+  devicePixelRatio, cells)` — `auto` the device ratio under a cap that
+  steps down to 1 as the board's cell count grows (the steps are `pixelRatioFor`'s); `sharp` the
+  full device ratio; `fast` 1.
   `applyTheme(store, theme)` (the theme applier's `setTheme`; a rejected
   switch is left to the applier, which has told the player), `applyAudio`, `applyLook`, `applyCamera(store, setMode)`
   (`setMode('fly' | 'orbit')`), `applyResolution`,

@@ -71,7 +71,7 @@ mode configuration themselves are [classic2d.md](classic2d.md).
   `FLOW_2D`; `showStatus2D` shows `#c2d-status` — the generating card on
   the board only, the offer there and over the pause card — and focuses the
   offer (`statusFocus`: Retry, or Play a standard board once
-  `failure.count` is 2 or more). The generating card focuses Cancel unless
+  `failure.count` shows a repeated failure). The generating card focuses Cancel unless
   the focus is already on its Cancel or Play a standard board;
   `FLOW_2D.progress` redraws it (`drawStatus2D`) without moving focus. An
   offer answered over the pause card resumes first (`answer2D`); Main menu

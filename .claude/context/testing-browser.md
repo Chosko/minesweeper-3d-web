@@ -83,7 +83,7 @@ How a browser test is built:
   auto-repeat never fires (`shell-pad-walk`, `shell-menu`, `settings-page`); a touch tap or
   one-finger drag is a gesture the browser synthesizes
   (`Input.synthesizeTapGesture`, `Input.synthesizeScrollGesture`), so the
-  400 ms long-press never sees it (`classic2d-touch`, the 3D look in
+  long-press (`LONG_PRESS_MS`) never sees it (`classic2d-touch`, the 3D look in
   `shell-mode-3d`).
 - **A Classic 2D board is measured once the board art hand-off has
   happened** (`BOARD_ART.current()`,

@@ -30,7 +30,7 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
 - `BTN` (standard-mapping indices A..HOME), `NUM_BUTTONS` (17), `STICK_DEADZONE`,
   `STICK_EXPONENT`, `TRIGGER_ON`, `TRIGGER_OFF`.
 - `stickCurve(x, y, dz?, exp?)` → `[x, y]`; `triggerHeld(wasHeld, value, on?, off?)`;
-  `Repeat(delay = 380, interval = 60)` — `update(held, now)` → fire count, `reset()`.
+  `Repeat(delay, interval)` (ms; defaults in its constructor) — `update(held, now)` → fire count, `reset()`.
 - `padFamily(id)` → `'playstation' | 'xbox' | 'nintendo' | 'generic'`; `GLYPHS`; `padGlyphs(id)`.
 - `PAD_PRESS` (a trigger pressed on a board), `PAD_FLAG` (a controller flag: two pulses),
   `PAD_BOOM` (a mine) — frozen `{at, effect}` pulse patterns; `padPulse(pad, steps, {setTimeout?})`
@@ -38,8 +38,8 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   nothing and a rejecting or throwing effect is swallowed.
 - `pickInDirection(from, cands, dir)` — spatial focus step over `[{rect, item}]`: a candidate counts
   when its centre lies past `from`'s and it overlaps `from` on the perpendicular axis or its centre
-  lies within 45° of the direction; score = gap along + 2 × perpendicular gap, centre distance the
-  tie-break.
+  lies within 45° of the direction; score = gap along + the perpendicular gap weighted above it, centre
+  distance the tie-break.
 - `GamepadReader({getGamepads?, onConnect?, onDisconnect?, onActiveChange?})` — `poll()` →
   `{pad, held, pressed, released, ls, rs, active}` (button arrays indexed by `BTN`);
   `activePad()`, `connected`.
@@ -84,7 +84,7 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   control `keepsArrow`.
 - **Rumble never interrupts play.** Every pulse goes through `padPulse` on the active pad; its
   callers are the shell's ([app-shell-3d-play.md](app-shell-3d-play.md), the Classic 2D mode's `padCue`).
-- **Repeat** fires once on press, then after `delay` every `interval`, at most 4 per tick, and
+- **Repeat** fires once on press, then after `delay` every `interval`, a bounded number of fires per tick, and
   resynchronizes after a stall instead of bursting.
 
 ## DOMAIN DEPENDENCIES

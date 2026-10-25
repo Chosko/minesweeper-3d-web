@@ -16,7 +16,7 @@ shell hands in its flow and its sound sink. The area overview is
 ## PUBLIC API
 
 `js/classic2d/mode.js`
-- `MODE_ID` (`'classic-2d'`), `END_DELAY_MS` (1000).
+- `MODE_ID` (`'classic-2d'`), `END_DELAY_MS`.
 - `createClassic2DMode(report, {config?, flow, lastChoice, createClient?,
   mount?, sound?, clock?, randomSeed?, generatingDelayMs?, place?,
   buttonSwap?})` →

@@ -14,7 +14,7 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
 
 - `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
   `lost`, `left`), `FAILURE_OFFERS` (`retry`, `standard`),
-  `GENERATING_DELAY_MS` (200), `SESSION_EVENTS` (`generating`, `started`,
+  `GENERATING_DELAY_MS`, `SESSION_EVENTS` (`generating`, `started`,
   `changed`, `failed`, `finished`, `abandoned`, `mark`, `refused`),
   `START_HINT` ('Start on the marked cell').
 - `createTimer({now})` → `{start, pause, resume, stop, elapsedMs(),
