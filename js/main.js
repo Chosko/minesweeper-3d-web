@@ -1154,6 +1154,8 @@ onThemeChange(() => { if (replay3d.view && replay3d.tints) REPLAY_SCENE.tint(rep
 
 /** The replay viewer's 2D viewer, at the board scale setting. */
 function mountReplay2D(options) { return mountViewer2D({ ...options, scale: SETTINGS.get('boardScale') }); }
+/** Every flat graph kind's replay plays on the 2D viewer, over its grid's geometry. */
+const FLAT_REPLAY_VIEWERS = { square: mountReplay2D, hex: mountReplay2D, tri: mountReplay2D };
 /** The replay viewer's box viewer; with the graphics context gone it is a mode's failure, and nothing mounts. */
 function mountReplay3D({ sim }) {
   if (contextLost) { SHELL.go('ctxlost'); return { draw() {}, destroy() {} }; }
@@ -1181,7 +1183,7 @@ const REPLAY_VIEWER = createReplayViewer({
     onOpen: () => pickReplayFile().then((file) => { if (file && S.mode === REPLAY_SCREEN) REPLAY_VIEWER.openFile(file); }),
     onCopy: (c) => copyCode(c),
   }),
-  viewers: WEBGL2 ? { square: mountReplay2D, box: mountReplay3D } : { square: mountReplay2D }, // a 3D replay then says why it cannot play
+  viewers: WEBGL2 ? { ...FLAT_REPLAY_VIEWERS, box: mountReplay3D } : FLAT_REPLAY_VIEWERS, // a 3D replay then says why it cannot play
 });
 // The board scale setting reaches an open Classic 2D board and the replay viewer's 2D board at once.
 SETTINGS.onChange('boardScale', (scale) => { flat2D()?.setScale(scale); REPLAY_VIEWER.setScale(scale); });

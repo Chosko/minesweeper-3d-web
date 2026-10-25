@@ -1,4 +1,5 @@
-// The replay viewer's 2D viewer: a Classic 2D replay drawn on the mode's own board view, read-only,
+// The replay viewer's 2D viewer: a flat replay — Classic 2D, Hexagon or Triangle — drawn on the flat
+// modes' board view over its grid's geometry, read-only,
 // with the recorded pointer — a core in a contrasting outline, trailing its last TRAIL_MS while
 // playing —, the recorded keyboard and controller cursor, a press ring for each click and Show
 // 3BV's paint. DOM-free at import: createViewer2D is driven by calls; mountViewer2D is its browser

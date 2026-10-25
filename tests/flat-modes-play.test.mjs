@@ -1,11 +1,13 @@
 // Hexagon and Triangle played on the Classic 2D flow: the game window's title naming the mode, and in
 // a browser a Hexagon and a Triangle game on fixed boards played to a win and a loss — by mouse,
 // keyboard and touch — in the Classic 2D game window, through the end effect to the shared results
-// screen, whose Play again, Records and Main menu work as after a Classic 2D game.
+// screen, whose Play again, Records and Main menu work as after a Classic 2D game, and whose Watch
+// replay plays the game just recorded on its own grid: verified, seeked and stepped.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { boardTitle2D } from '../js/ui.js';
 import { createBoardIdentity } from '../js/records/board.js';
+import { LEAD_IN_MS } from '../js/replay/clock.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
 
@@ -80,6 +82,41 @@ function helpers(page, { tap = null } = {}) {
       const e = globalThis.__ms.board2D?.effect;
       return e ? { kind: e.kind, origin: e.origin } : null;
     }),
+    /** Watch replay from the results screen: the game just played, verified, played to its end, seeked back and stepped, then Back. */
+    watch: async (name, outcome) => {
+      await click('#r-watch');
+      await page.waitForFunction(() => ['ready', 'failed'].includes(globalThis.__ms.replayViewer.state.status), null, { timeout: patience(5000) });
+      assert.equal(await ms(() => globalThis.__ms.replayViewer.state.status), 'ready', `the ${name} replay verifies and plays on its own grid`);
+      assert.equal(await ms(() => document.getElementById('replay-title').textContent), `Replay · ${name} · Beginner`, 'the viewer\'s title names the mode');
+      await ms(() => document.activeElement.blur());
+      await page.keyboard.press('End');
+      assert.equal(await ms(() => globalThis.__ms.replayViewer.state.ended), true, 'End seeks to the end of the game');
+      assert.match(await ms(() => document.getElementById('replay-end').textContent), new RegExp(`^${outcome}`), 'with the end line');
+      await page.keyboard.press('Home');
+      assert.equal(await ms(() => globalThis.__ms.replayViewer.state.time), -LEAD_IN_MS, 'Home seeks back to the start position');
+      await page.keyboard.press('ArrowRight');
+      assert.equal(await ms(() => globalThis.__ms.replayViewer.state.time), 0, 'a step applies the first click');
+      const ring = await ms(() => {
+        const r = document.querySelector('#replay-board .replay-ring--reveal')?.getBoundingClientRect();
+        const b = document.getElementById('replay-board').getBoundingClientRect();
+        if (!r) return false;
+        const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        return x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+      });
+      assert.ok(ring, 'its press ring on the board');
+      await page.keyboard.press('KeyB');
+      const painted = await ms(() => {
+        const c = document.querySelector('#replay-board .replay-bbbv');
+        if (!c || c.hidden) return 0;
+        const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+        let n = 0;
+        for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++;
+        return n;
+      });
+      assert.ok(painted > 0, 'Show 3BV tints the board');
+      await page.click('#rp-back');
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'results');
+    },
     results: async () => {
       await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(5000) });
       return ms(() => ({ title: document.getElementById('results-title').textContent, board: document.getElementById('results-board').textContent }));
@@ -108,7 +145,7 @@ const cursorPath = (page, board, from, to) => page.evaluate(async ([a, b, { kind
   return keys;
 }, [from, to, board]);
 
-test('in a browser, Hexagon and Triangle Beginner boards are won and lost by mouse and keyboard in the Classic 2D window, then the results screen', async (t) => {
+test('in a browser, Hexagon and Triangle Beginner boards are won and lost by mouse and keyboard in the Classic 2D window, then the results screen and the game\'s replay', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -154,6 +191,7 @@ test('in a browser, Hexagon and Triangle Beginner boards are won and lost by mou
     assert.equal((await h.effect())?.kind, 'win', 'the win wave and confetti play on the board');
     let shown = await h.results();
     assert.deepEqual(shown, { title: 'You won!', board: 'Hexagon · Beginner' }, 'the board line leads with the mode\'s name');
+    await h.watch('Hexagon', 'Won');
 
     // ---- Play again: a fresh Hexagon game, lost by keyboard
     await page.click('#r-again');
@@ -203,6 +241,7 @@ test('in a browser, Hexagon and Triangle Beginner boards are won and lost by mou
     assert.deepEqual(await h.effect(), { kind: 'loss', origin: triMine });
     shown = await h.results();
     assert.deepEqual(shown, { title: 'Game over', board: 'Triangle · Beginner' });
+    await h.watch('Triangle', 'Lost');
     assert.deepEqual(errors, []);
   } finally {
     await page.close();

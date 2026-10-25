@@ -18,10 +18,14 @@ import {
 import { FIGURES, liveFigures, figuresLine } from '../js/shell/live-figures.js';
 import { encodeBoardCode, parseBoardCode } from '../js/records/board-code.js';
 import { replayFileName } from '../js/records/replay-list.js';
-import { boardKey } from '../js/records/board.js';
+import { boardKey, createBoardIdentity } from '../js/records/board.js';
 import { bbbvPartition } from '../js/engine/metrics.js';
 import { createSimulator, REFUSAL } from '../js/replay/simulator.js';
-import { decodeReplay, encodeReplay, REPLAY_FORMAT_VERSION } from '../js/replay/format.js';
+import { decodeReplay, encodeReplay, cellStateDigest, REPLAY_FORMAT_VERSION } from '../js/replay/format.js';
+import { createGameWithMines, PHASE } from '../js/engine/rules.js';
+import { createHexGrid } from '../js/engine/hex-grid.js';
+import { createTriGrid } from '../js/engine/tri-grid.js';
+import { REFERENCE_PROFILE } from '../js/engine/profiles.js';
 import { formatOverlayTime, formatMineCount } from '../js/ui/components.js';
 import { formatTime, DASH } from '../js/results/view.js';
 import { REPLAY_SCREEN } from '../js/records/replay-list.js';
@@ -430,7 +434,7 @@ function fakeViewers() {
       destroy: () => made.push('destroyed'),
     };
   };
-  return { drawn, made, pressed, how, calls, square: board('square'), box: board('box') };
+  return { drawn, made, pressed, how, calls, square: board('square'), hex: board('hex'), tri: board('tri'), box: board('box') };
 }
 function viewerOver({ library = fakeLibrary(), viewers = fakeViewers(), sound = null, files = null, bests } = {}) {
   const view = fakeScreen();
@@ -898,7 +902,8 @@ test('the shell registers the viewer under the Records screen\'s replay route an
 });
 
 test('the shell offers the 3D viewer only with WebGL 2, and mounts the 2D one at the board scale setting', () => {
-  assert.match(MAIN, /viewers: WEBGL2 \? \{ square: mountReplay2D, box: mountReplay3D \} : \{ square: mountReplay2D \}/);
+  assert.match(MAIN, /const FLAT_REPLAY_VIEWERS = \{ square: mountReplay2D, hex: mountReplay2D, tri: mountReplay2D \};/, 'every flat graph kind on the 2D viewer');
+  assert.match(MAIN, /viewers: WEBGL2 \? \{ \.\.\.FLAT_REPLAY_VIEWERS, box: mountReplay3D \} : FLAT_REPLAY_VIEWERS/);
   assert.match(MAIN, /function mountReplay2D\(options\) \{ return mountViewer2D\(\{ \.\.\.options, scale: SETTINGS\.get\('boardScale'\) \}\); \}/);
 });
 
@@ -1644,6 +1649,118 @@ test('on another geometry the 2D viewer finds the pointer\'s cell, the press rin
     x: 5 + o.x, y: 7 + o.y, size: 40, width: o.width, height: o.height, shape: 'triangle',
     points: o.points.map(([px, py]) => [5 + px, 7 + py]), tint: 1,
   }], 'the tint fills the tile\'s outline where the geometry puts it');
+});
+
+// A Hexagon or Triangle Beginner game won by a player who knows the mines: a first reveal, a flag,
+// then every closed safe cell in index order, the recorded pointer on each acted cell (in board
+// units at a 40 px tile and 4 px gap) and the cursor shown for one of them.
+const FLAT_BOARDS = {
+  hex: { mode: 'hexagon', width: 9, height: 9, mines: 13, build: createHexGrid },
+  tri: { mode: 'triangle', width: 13, height: 7, mines: 8, build: createTriGrid },
+};
+function flatReplay(grid) {
+  const { mode, width, height, mines: count, build } = FLAT_BOARDS[grid];
+  const n = width * height;
+  const mines = Array.from({ length: count }, (_, k) => (3 + 7 * k) % n).sort((a, b) => a - b);
+  const geometry = createGeometry(grid, width, height);
+  const game = createGameWithMines({ graph: build(width, height).graph, profile: REFERENCE_PROFILE, version: 1, mines });
+  const actions = [], movement = [{ time: 0, type: 'cursor', cell: -1 }];
+  let time = 0;
+  const act = (kind, cell) => {
+    const { x, y } = geometry.centre(cell, 40, 4);
+    movement.push({ time, type: 'sample', values: [Math.round((x / 44) * 64), Math.round((y / 44) * 64)] });
+    actions.push({ time, kind, cell });
+    if (kind === 'reveal') game.reveal(cell); else game.toggleFlag(cell);
+    time += 300;
+  };
+  act('reveal', 0);
+  act('flag', mines[0]);
+  for (let c = 0; c < n && game.phase === PHASE.PLAYING; c++) {
+    if (!mines.includes(c) && game.cellState(c) === 'closed') {
+      if (actions.length === 4) movement.push({ time, type: 'cursor', cell: c });
+      act('reveal', c);
+    }
+  }
+  const { bbbv, bbbvSolved, clicks } = game.counts();
+  return decodeReplay(encodeReplay({
+    header: {
+      id: `${grid}-won`, mode, graph: { kind: grid, width, height },
+      board: createBoardIdentity({ mode, grid, width, height, mines: count, noGuess: false }),
+      mines, profile: { id: REFERENCE_PROFILE, version: 1 }, seed: 1, generatorVersion: 1,
+      endedAt: '2026-10-24T12:00:00.000Z', movementEndedAt: null, pauses: [],
+    },
+    actions,
+    movement,
+    check: { outcome: game.phase === PHASE.WON ? 'won' : 'abandoned', elapsedMs: time - 300, bbbv, bbbvSolved, clicks: structuredClone(clicks), digest: cellStateDigest(game.state) },
+  }));
+}
+
+test('a Hexagon and a Triangle replay draw through their grid\'s geometry: the pointer\'s cell, press rings, the cursor and tints in the tile\'s outline', () => {
+  for (const grid of ['hex', 'tri']) {
+    const replay = flatReplay(grid);
+    assert.equal(replay.check.outcome, 'won', `${grid}: the game is won`);
+    const { width, height } = FLAT_BOARDS[grid];
+    const geometry = createGeometry(grid, width, height);
+    const sim = createSimulator(replay);
+    const view = gapView();
+    view.layout = { ...view.layout, scrolls: true };
+    const rings = [];
+    const pointer = { ...fakePointer(), trail() {}, ring: (x, y, kind) => rings.push([x, y, kind]) };
+    let painted = null;
+    const v = createViewer2D({ view, sim, pointer, overlay: { paint: (rects) => { painted = rects; }, clear() {} } });
+    assert.deepEqual(view.calls.game, [sim.game], `${grid}: the board view draws the simulator's game`);
+
+    const act = replay.actions[4];
+    const sample = replay.movement.find((e) => e.type === 'sample' && e.time === act.time);
+    const frame = sim.seek(act.time);
+    v.draw(frame, { playing: true });
+    assert.deepEqual(view.calls.update.at(-1), [...frame.changed], `${grid}: the cells the frame changed are redrawn`);
+    const at = [5 + (sample.values[0] / 64) * 44, 7 + (sample.values[1] / 64) * 44];
+    assert.deepEqual(pointer.at.at(-1), at, `${grid}: the pointer in the geometry's board units`);
+    assert.equal(view.calls.cursor.at(-1), act.cell, `${grid}: the recorded cursor's ring`);
+    v.press([{ index: 4, ...act }]);
+    assert.deepEqual(rings.at(-1), [...at, act.kind], `${grid}: the pointer is on the acted cell as the geometry hit-tests it`);
+    const keyed = replay.actions[0];
+    const c = geometry.centre(keyed.cell, 40, 4);
+    v.press([{ index: 0, ...keyed, time: act.time }]);
+    assert.deepEqual(rings.at(-1), [5 + c.x, 7 + c.y, keyed.kind], `${grid}: off the pointer, the ring sits on the cell's centre`);
+
+    const tints = new Array(width * height).fill(-1);
+    tints[act.cell] = 0;
+    v.showBbbv(tints);
+    const o = geometry.outline(act.cell, 40, 4);
+    assert.notEqual(o.shape, 'square');
+    assert.deepEqual(painted, [{ x: 5 + o.x, y: 7 + o.y, size: 40, width: o.width, height: o.height, shape: o.shape,
+      points: o.points.map(([px, py]) => [5 + px, 7 + py]), tint: 0 }], `${grid}: the tint fills the tile's outline`);
+    v.draw(sim.seek(sim.duration), { playing: false });
+    assert.equal(sim.seek(sim.duration).phase, 'won');
+    v.destroy();
+  }
+});
+
+test('the viewer screen opens a Hexagon and a Triangle replay on their own viewer, titled and coded for the mode, and plays it to its end line', async () => {
+  for (const [grid, name, token] of [['hex', 'Hexagon', 'H'], ['tri', 'Triangle', 'T']]) {
+    const replay = flatReplay(grid);
+    const { viewer, view, viewers } = viewerOver();
+    await viewer.show({ replay: encodeReplay(replay) });
+    assert.equal(viewer.state.status, 'ready', `${grid}: verified and ready`);
+    const [, info] = view.log[2];
+    assert.equal(info.kind, grid);
+    assert.equal(viewers.made[0].kind, grid, `${grid}: the mode's own viewer mounts`);
+    assert.equal(info.title, `Replay · ${name} · Beginner`, `${grid}: the title names the mode`);
+    const parsed = parseBoardCode(info.code);
+    assert.equal(parsed.ok, true, `${grid}: the strip's code chip carries the board code`);
+    assert.equal(parsed.board.mode, FLAT_BOARDS[grid].mode, `${grid}: the code names the mode`);
+    assert.ok(info.code.includes(token), `${grid}: with its token`);
+    viewer.command('next');
+    viewer.command('next');
+    assert.equal(viewers.drawn.at(-1).index, 2, `${grid}: stepping applies its actions`);
+    viewer.command('end');
+    assert.deepEqual([view.last.ended, view.last.end], [true, endLine(replay.check)], `${grid}: the end line`);
+    assert.equal(viewers.drawn.at(-1).phase, 'won');
+    viewer.command('start');
+    assert.equal(viewers.drawn.at(-1).index, 0, `${grid}: a seek back to the start`);
+  }
 });
 
 test('Show 3BV fills an outline other than a square as its polygon, at the same alpha', () => {

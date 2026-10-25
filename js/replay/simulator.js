@@ -16,7 +16,7 @@
 //   createSimulator(input, { snapshotInterval?, snapshotMinCells?, snapshotMemory? }) → simulator
 //       (the options default to the constants below; tests set them); throws
 //       ReplayRefusedError (`reason`, `message`) where openReplay refuses.
-//     replay, grid (the square or box grid), duration (the check's elapsed time, or the last
+//     replay, grid (the square, hexagon, triangle or box grid), duration (the check's elapsed time, or the last
 //     action's time when later), length (the number of actions)
 //     game          the engine game, read-only for callers; always the same object
 //     seek(t)       → frame at replay time t (clamped to 0 .. duration): every action with
@@ -58,6 +58,8 @@ import { decodeReplay, encodeReplay, ReplayNewerVersionError } from './format.js
 import { createGameWithMines, PHASE } from '../engine/rules.js';
 import { PROFILES } from '../engine/profiles.js';
 import { createSquareGrid } from '../engine/square-grid.js';
+import { createHexGrid } from '../engine/hex-grid.js';
+import { createTriGrid } from '../engine/tri-grid.js';
 import { createBoxGrid } from '../engine/box-grid.js';
 
 export const SNAPSHOT_MIN_CELLS = 8000;
@@ -96,7 +98,9 @@ export function openReplay(input) {
   return { ok: true, replay };
 }
 
-const gridOf = (graph) => (graph.kind === 'square' ? createSquareGrid(graph.width, graph.height) : createBoxGrid(graph.x, graph.y, graph.z));
+const FLAT_GRIDS = Object.freeze({ square: createSquareGrid, hex: createHexGrid, tri: createTriGrid });
+
+const gridOf = (graph) => (graph.kind === 'box' ? createBoxGrid(graph.x, graph.y, graph.z) : FLAT_GRIDS[graph.kind](graph.width, graph.height));
 
 export function createSimulator(input, {
   snapshotInterval = SNAPSHOT_INTERVAL, snapshotMinCells = SNAPSHOT_MIN_CELLS, snapshotMemory = SNAPSHOT_MEMORY,

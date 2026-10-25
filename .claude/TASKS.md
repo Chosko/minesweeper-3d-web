@@ -1621,7 +1621,7 @@ Feature: flat-grid-records-replays
 
 ## 275. Playback of Hexagon and Triangle replays
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/simulator.js, js/replay/verify.js, js/replay/viewer-2d.js, js/replay/viewer.js, js/replay/library.js, js/main.js, tests/replay-simulator.test.mjs, tests/replay-viewer.test.mjs, tests/replay-2d.test.mjs
 Preconditions: 264, 274

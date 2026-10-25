@@ -22,13 +22,13 @@ let nextId = 1;
 
 // A sealed replay: its blob and its listing fields, one minute after the previous one unless an
 // end date is given.
-function replay({ id = `r-${nextId++}`, boardKey = BOARD, endedAt, outcome = 'won' } = {}) {
+function replay({ id = `r-${nextId++}`, boardKey = BOARD, mode = 'classic-2d', endedAt, outcome = 'won' } = {}) {
   clock += 60000;
   const blob = new Uint8Array([nextId & 255, 1, 2, 3]);
   return {
     blob,
     listing: {
-      id, boardKey, mode: 'classic-2d', outcome, elapsedMs: 12345, bbbvPerSecond: 1.5,
+      id, boardKey, mode, outcome, elapsedMs: 12345, bbbvPerSecond: 1.5,
       efficiency: 0.9, endedAt: endedAt ?? new Date(clock).toISOString(), size: blob.length,
     },
   };
@@ -156,6 +156,27 @@ test('add writes the blob, then the index entry, then applies retention', async 
   const deleteAt = log.indexOf(`blob:delete:${oldest}`);
   assert.ok(indexAt > 0, 'the index is saved after the blob');
   assert.ok(deleteAt > indexAt, 'retention runs after the entry is saved');
+});
+
+test('Hexagon and Triangle replays are kept by board key: their own boards, best and hand pins, retention across every mode', async () => {
+  const HEX = 'hexagon:hex:9x9:13:standard', TRI = 'triangle:tri:13x7:8:standard';
+  const { library, backend } = await setup();
+  const hexBest = replay({ boardKey: HEX, mode: 'hexagon' });
+  const tri = replay({ boardKey: TRI, mode: 'triangle' });
+  await library.add(hexBest.blob, hexBest.listing, true);
+  await library.add(tri.blob, tri.listing, false);
+  await library.pin(tri.listing.id);
+  assert.deepEqual(library.forBoard(HEX).map((e) => [e.id, e.mode, e.pins]), [[hexBest.listing.id, 'hexagon', [PIN_BEST]]], 'the Hexagon board\'s own replay, pinned as its best');
+  assert.deepEqual(library.forBoard(TRI).map((e) => [e.id, e.mode, e.pins]), [[tri.listing.id, 'triangle', [PIN_HAND]]], 'the Triangle board\'s, pinned by hand');
+  assert.deepEqual(library.forBoard(BOARD), [], 'never on a Classic 2D board');
+  const hexOld = replay({ boardKey: HEX, mode: 'hexagon' });
+  await library.add(hexOld.blob, hexOld.listing, false);
+  await addAll(library, Array.from({ length: RETAINED_UNPINNED }, () => replay()));
+  assert.equal(library.has(hexOld.listing.id), false, 'an unpinned Hexagon replay falls to retention like any other');
+  assert.equal(library.has(hexBest.listing.id) && library.has(tri.listing.id), true, 'pinned ones stay');
+  await library.settled();
+  const again = await setup({ initialDocs: { [LIBRARY_DOC]: backend.documents.get(LIBRARY_DOC) }, initialBlobs: { [hexBest.listing.id]: hexBest.blob, [tri.listing.id]: tri.blob } });
+  assert.deepEqual(again.library.forBoard(TRI).map((e) => e.id), [tri.listing.id], 'reloaded by board key');
 });
 
 test('the blob is stored under the replay id with its bytes', async () => {

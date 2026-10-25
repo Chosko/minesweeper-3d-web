@@ -16,6 +16,8 @@ import { verify } from '../js/replay/verify.js';
 import { decodeReplay, encodeReplay, cellStateDigest, REPLAY_FORMAT_VERSION } from '../js/replay/format.js';
 import { createGameWithMines, PHASE } from '../js/engine/rules.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
+import { createHexGrid } from '../js/engine/hex-grid.js';
+import { createTriGrid } from '../js/engine/tri-grid.js';
 import { createBoxGrid } from '../js/engine/box-grid.js';
 import { PROFILE_3D, REFERENCE_PROFILE } from '../js/engine/profiles.js';
 import { createBoardIdentity, MODE_3D } from '../js/records/board.js';
@@ -25,7 +27,8 @@ const index = JSON.parse(readFileSync(new URL('index.json', FIXTURES), 'utf8'));
 const blobOf = (file) => new Uint8Array(readFileSync(new URL(file, FIXTURES)));
 const fixture = (file) => decodeReplay(blobOf(file));
 
-const gridOf = (graph) => (graph.kind === 'square' ? createSquareGrid(graph.width, graph.height) : createBoxGrid(graph.x, graph.y, graph.z));
+const FLAT_GRIDS = { square: createSquareGrid, hex: createHexGrid, tri: createTriGrid };
+const gridOf = (graph) => (graph.kind === 'box' ? createBoxGrid(graph.x, graph.y, graph.z) : FLAT_GRIDS[graph.kind](graph.width, graph.height));
 
 function apply(game, a) {
   if (a.kind === 'reveal') return game.reveal(a.cell);
@@ -78,12 +81,28 @@ function lcg(seed) {
 // closed safe cells in index order, flags some mines on the way and chords now and then, so the
 // stream holds every kind, wasted clicks, auto-hide and, with `lose`, a loss at the end.
 function syntheticReplay({ x, y, z, density = 0.12, seed = 7, lose = false }) {
+  return synthetic({
+    id: `synthetic-${x}x${y}x${z}`, mode: MODE_3D, graph: { kind: 'box', x, y, z }, profile: PROFILE_3D,
+    board: (mines) => createBoardIdentity({ mode: MODE_3D, width: x, height: y, depth: z, mines, noGuess: false }),
+  }, { density, seed, lose });
+}
+
+// The same player on a Hexagon or Triangle board: `grid` 'hex' or 'tri', under the reference profile.
+function syntheticFlatReplay({ grid, width, height, density = 0.15, seed = 7, lose = false }) {
+  const mode = grid === 'hex' ? 'hexagon' : 'triangle';
+  return synthetic({
+    id: `synthetic-${grid}-${width}x${height}`, mode, graph: { kind: grid, width, height }, profile: REFERENCE_PROFILE,
+    board: (mines) => createBoardIdentity({ mode, grid, width, height, mines, noGuess: false }),
+  }, { density, seed, lose });
+}
+
+function synthetic({ id, mode, graph: graphOf, profile, board }, { density, seed, lose }) {
   const rnd = lcg(seed);
-  const box = createBoxGrid(x, y, z);
-  const n = box.graph.count;
+  const grid = gridOf(graphOf);
+  const n = grid.graph.count;
   const mines = [];
   for (let c = 1; c < n; c++) if (rnd() < density) mines.push(c);
-  const game = createGameWithMines({ graph: box.graph, profile: PROFILE_3D, version: 1, mines });
+  const game = createGameWithMines({ graph: grid.graph, profile, version: 1, mines });
   const actions = [];
   let time = 0;
   const act = (kind, cell) => { time += 40 + Math.floor(rnd() * 400); actions.push({ time, kind, cell }); apply(game, { kind, cell }); };
@@ -104,12 +123,12 @@ function syntheticReplay({ x, y, z, density = 0.12, seed = 7, lose = false }) {
   const { bbbv, bbbvSolved, clicks } = game.counts();
   const replay = {
     header: {
-      id: `synthetic-${x}x${y}x${z}`,
-      mode: MODE_3D,
-      graph: { kind: 'box', x, y, z },
-      board: createBoardIdentity({ mode: MODE_3D, width: x, height: y, depth: z, mines: mines.length, noGuess: false }),
+      id,
+      mode,
+      graph: graphOf,
+      board: board(mines.length),
       mines,
-      profile: { id: PROFILE_3D, version: 1 },
+      profile: { id: profile, version: 1 },
       seed,
       generatorVersion: 1,
       endedAt: '2026-10-10T12:00:00.000Z',
@@ -329,6 +348,51 @@ test('verify: a large synthetic game, won and lost, reproduces', () => {
     const replay = syntheticReplay({ x: 12, y: 12, z: 8, lose });
     assert.equal(replay.check.outcome, lose ? 'lost' : 'won');
     assert.deepEqual(verify(encodeReplay(replay)), { ok: true, result: 'reproduces' });
+  }
+});
+
+// ---------- Hexagon and Triangle ----------
+
+const FLAT = [
+  { grid: 'hex', width: 16, height: 16 },
+  { grid: 'tri', width: 30, height: 16 },
+];
+
+test('a Hexagon and a Triangle replay simulate, seek both ways with engine-state snapshots and verify, deterministically', () => {
+  for (const spec of FLAT) {
+    for (const lose of [false, true]) {
+      const name = `${spec.grid}${lose ? ' lost' : ' won'}`;
+      const replay = syntheticFlatReplay({ ...spec, lose });
+      assert.equal(replay.check.outcome, lose ? 'lost' : 'won', name);
+      assert.deepEqual(replay.header.graph, { kind: spec.grid, width: spec.width, height: spec.height });
+      const sim = createSimulator(replay);
+      assert.equal(sim.grid.graph.count, spec.width * spec.height, `${name}: the simulator builds the header's graph`);
+      const e = replay.check.elapsedMs;
+      walk(sim, replay, [e / 2, e, e / 4, 0, e, e * 3 / 4, e / 3], name);
+      assert.equal(cellStateDigest(sim.seek(e).state), replay.check.digest, `${name}: the recorded final state`);
+
+      // Periodic snapshots: a backward seek restores the nearest one and replays less than an interval.
+      const interval = 10;
+      const snapped = createSimulator(replay, { snapshotInterval: interval, snapshotMinCells: 0 });
+      const total = replay.actions.length;
+      assert.ok(total > 3 * interval, `${name}: a long stream (${total} actions)`);
+      snapped.seekIndex(total);
+      for (const i of [Math.floor(total / 2) + 3, interval + 1, total - 2]) {
+        assertFrame(snapped.seekIndex(i), replay, i, `${name} snapshots → ${i}`);
+      }
+      snapped.seekIndex(total);
+      snapped.seekIndex(interval * 2 + 5);
+      assert.deepEqual(snapped.stats().lastSeek, { from: 'snapshot', applied: 5 }, `${name}: from the nearest snapshot`);
+
+      // Deterministic: the blob and the object play the same frames, and verify reproduces.
+      const a = simulate(replay, e / 2), b = simulate(encodeReplay(replay), e / 2);
+      assert.equal(cellStateDigest(a.state), cellStateDigest(b.state), `${name}: same state from blob or object`);
+      assert.deepEqual(sorted(a.changed), sorted(b.changed));
+      assert.deepEqual(verify(encodeReplay(replay)), { ok: true, result: 'reproduces' }, name);
+      const tampered = structuredClone(replay);
+      tampered.check.digest = (tampered.check.digest ^ 1) >>> 0;
+      assert.equal(verify(encodeReplay(tampered)).field, 'digest', `${name}: a tampered digest differs`);
+    }
   }
 });
 
