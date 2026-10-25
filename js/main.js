@@ -790,18 +790,19 @@ const TRI_MODE = flatMode(TRIANGLE, 'tri');
 // every mode with its state. A board code — typed in a board choice or carried by a #board= link —
 // starts a challenge in its mode; today's daily code opens the Daily screen instead
 // (js/shell/challenge.js).
-const DAILY_BOARDS_HELD = createDailyBoards({ clients: { 'classic-2d': () => mode2d.client, '3d': () => (WEBGL2 ? GEN_3D : null) } });
-// The Daily screen's panel shows the selected mode's board: today's Expert closed with its start cell
-// marked, drawn by a Classic 2D board view; today's cube drawn live by the 3D renderer
-// (showDailyScene); or a coming-soon mode's colour badge.
+const DAILY_BOARDS_HELD = createDailyBoards({ clients: { 'classic-2d': () => mode2d.client, hexagon: () => HEX_MODE.mode.client, triangle: () => TRI_MODE.mode.client, '3d': () => (WEBGL2 ? GEN_3D : null) } });
+// The Daily screen's panel shows the selected mode's board: a flat mode's daily board of today closed
+// with its start cell marked, drawn by the flat board view over the mode's grid (the mode's card when
+// it fails to mount); today's cube drawn live by the 3D renderer (showDailyScene); or a coming-soon
+// mode's colour badge.
 const DAILY_PREVIEW = bindMenuPreview({
   panel: document.getElementById('daily-preview'),
   stage: document.getElementById('daily-preview-stage'),
   tag: document.getElementById('daily-preview-tag'),
   iconOf: (entry) => document.querySelector(`#menu-entry-${entry} .ui-play-tile__icon > svg`),
   mountBoard: ({ container, grid, geometry }) => mountBoardView({ container, grid, geometry, minTile: 1, framed: true }),
-  boardOf: () => {
-    const daily = dailyPreview();
+  boardOf: (kind, grid) => {
+    const daily = dailyPreview(new Date(), grid);
     return { key: daily.date, ...dailyBoard2D(daily) };
   },
 });

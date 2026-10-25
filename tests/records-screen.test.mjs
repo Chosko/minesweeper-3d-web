@@ -112,6 +112,25 @@ test('the picker lists the three standard boards, the three no-guess ones, the D
   assert.equal(new Set(boards.map((b) => b.key)).size, boards.length, 'a standard board played is not listed twice');
 });
 
+test('the Hexagon and Triangle pickers list their Daily board as "Daily" after their standard boards, its days in a row as for Classic 2D', () => {
+  for (const [mode, grid, width, height, mines, code] of [['hexagon', 'hex', 30, 16, 100, 'HEN'], ['triangle', 'tri', 41, 17, 103, 'TEN']]) {
+    const plainDaily = createBoardIdentity({ mode, grid, width, height, mines, noGuess: true });
+    const dailyBoard = createBoardIdentity({ ...plainDaily, daily: true });
+    const daily = (date) => game(dailyBoard, { daily: date, startCell: 0, endedAt: `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6)}T12:00:00.000Z` });
+    const store = fakeStore({ games: [daily('20261009'), daily('20261010')] });
+    const boards = pickerBoards(store, mode);
+    assert.deepEqual(boards.map((b) => b.label), [...STANDARD_LABELS, DAILY_OPTION], `${mode}: the Daily board after the standard boards, listed once`);
+    assert.equal(boards[6].key, boardKey(dailyBoard));
+    assert.equal(pickerBoards(fakeStore(), mode)[6].label, DAILY_OPTION, `${mode}: listed with no game played`);
+    const c = recordsContent(store, { mode, boardKey: boardKey(dailyBoard), now: new Date(2026, 9, 11, 9) });
+    assert.equal(c.board.key, boardKey(dailyBoard));
+    assert.deepEqual(['currentStreak', 'longestStreak'].map((k) => [stat(c.counters, k).label, stat(c.counters, k).value]),
+      [['Days in a row', '2'], ['Longest days in a row', '2']]);
+    assert.match(c.games.rows[0].code, new RegExp(`^${code}-20261010-`), 'a daily row shows its daily form');
+    assert.ok(!pickerBoards(store, 'classic-2d').some((b) => b.key === boardKey(dailyBoard)), 'never in another mode\'s picker');
+  }
+});
+
 test('the last board played is the one whose latest game ended last; none before any game', () => {
   assert.equal(lastBoardPlayed(fakeStore()), null);
   const store = fakeStore({ games: [

@@ -1,8 +1,8 @@
 // The daily boards in the shell (js/shell/daily.js): each row's counted attempt and state from the
 // records — across a reload and across midnight —, the days in a row, the boards pre-generated when
 // the main menu shows and nothing asked for a used attempt, the Daily screen's entries — every mode
-// in menu order, the modes not built coming soon — and its binding; its markup in index.html and its
-// wiring in js/main.js.
+// in menu order, Classic 2D, Hexagon, Triangle and 3D with their board, Surface coming soon — and its
+// binding; its markup in index.html and its wiring in js/main.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   DAILY_SCREEN, NOT_PLAYED, WON, LOST, dailyIdentity, countedAttempt, dailyRows, dailyModes, dailyPanel, createDailyBoards, bindDailyScreen,
-  dailyDateLabel,
+  dailyDateLabel, dailyPreview,
 } from '../js/shell/daily.js';
 import { dailyGame } from '../js/records/board-code.js';
 import { createRecordsModel } from '../js/records/model.js';
@@ -39,6 +39,7 @@ function daily(id, date, { outcome = 'won', ms = 48230, endedAt = new Date(2026,
     endedAt, id: `d${++n}`, startCell: g.startCell, daily: date,
   });
 }
+const rowOf = (rows, id) => rows.find((r) => r.id === id);
 const store = (games = []) => {
   const model = createRecordsModel();
   for (const g of games) model.record(g);
@@ -46,9 +47,14 @@ const store = (games = []) => {
 };
 const TODAY = new Date(2026, 9, 11, 9, 30);
 
-test('daily rows: Expert and Cube, today\'s local date, not played, their codes, Play offered', () => {
+test('daily rows: Expert, Hexagon and Triangle Expert, and Cube, today\'s local date, not played, their codes, Play offered', () => {
   const rows = dailyRows({ records: store(), now: TODAY });
-  assert.deepEqual(rows.map((r) => [r.id, r.label, r.board]), [['expert', 'Expert', 'Expert · no-guess'], ['cube', 'Cube', '8 × 8 × 8 · 40 mines · no-guess']]);
+  assert.deepEqual(rows.map((r) => [r.id, r.mode, r.label, r.board, r.line]), [
+    ['expert', 'classic-2d', 'Expert', 'Expert · no-guess', 'Expert · 30 × 16 · 99 mines · no-guess'],
+    ['hex-expert', 'hexagon', 'Expert', 'Expert · no-guess', 'Expert · 30 × 16 · 100 mines · no-guess'],
+    ['tri-expert', 'triangle', 'Expert', 'Expert · no-guess', 'Expert · 41 × 17 · 103 mines · no-guess'],
+    ['cube', '3d', 'Cube', '8 × 8 × 8 · 40 mines · no-guess', 'Cube · 8 × 8 × 8 · 40 mines · no-guess'],
+  ]);
   for (const r of rows) {
     assert.equal(r.date, '20261011');
     assert.equal(r.dateLabel, '11 Oct 2026');
@@ -66,7 +72,8 @@ test('daily rows: Expert and Cube, today\'s local date, not played, their codes,
 test('daily rows: the counted attempt is the first daily game of the date; its result shows and Play is gone', () => {
   const won = daily('expert', '20261011', { ms: 48291 });
   const records = store([daily('cube', '20261010'), won, daily('cube', '20261011', { outcome: 'lost' })]);
-  const [expert, cube] = dailyRows({ records, now: TODAY, replays: { has: () => true } });
+  const rows = dailyRows({ records, now: TODAY, replays: { has: () => true } });
+  const [expert, cube] = ['expert', 'cube'].map((id) => rowOf(rows, id));
   assert.deepEqual([expert.state, expert.result, expert.time, expert.canPlay, expert.attempt, expert.watch], ['won', 'Won 48.291 s', '48.291 s', false, won.id, won.id]);
   assert.deepEqual([cube.state, cube.result, cube.time, cube.canPlay, cube.watch], ['lost', LOST, null, false, null], 'a lost game\'s kept replay offers no Watch replay');
   assert.deepEqual([cube.current, cube.longest], [2, 2]);
@@ -75,9 +82,27 @@ test('daily rows: the counted attempt is the first daily game of the date; its r
   assert.equal(countedAttempt(records, 'expert', '20261012'), null);
 });
 
+test('daily rows: a Hexagon or Triangle daily game counts on its own mode\'s Daily board, with its own days in a row', () => {
+  const hex = daily('hex-expert', '20261011', { ms: 61004 });
+  const records = store([daily('hex-expert', '20261010', { outcome: 'lost' }), hex, daily('tri-expert', '20261011', { outcome: 'lost' })]);
+  const rows = dailyRows({ records, now: TODAY, replays: { has: () => true } });
+  const [expert, hexagon, triangle] = ['expert', 'hex-expert', 'tri-expert'].map((id) => rowOf(rows, id));
+  assert.deepEqual([hexagon.state, hexagon.result, hexagon.canPlay, hexagon.attempt, hexagon.watch], ['won', 'Won 61.004 s', false, hex.id, hex.id]);
+  assert.deepEqual([hexagon.current, hexagon.longest], [2, 2]);
+  assert.deepEqual([triangle.state, triangle.canPlay, triangle.watch, triangle.current], ['lost', false, null, 1]);
+  assert.deepEqual([expert.state, expert.canPlay, expert.current], ['unplayed', true, 0], 'Classic 2D\'s row is untouched');
+  assert.equal(dailyIdentity('hex-expert').mode, 'hexagon');
+  assert.equal(dailyIdentity('tri-expert').grid, 'tri');
+  assert.equal(dailyIdentity('hex-expert').daily, true);
+  assert.equal(countedAttempt(records, 'hex-expert', '20261011').id, hex.id);
+  assert.equal(countedAttempt(records, 'expert', '20261011'), null);
+});
+
 test('daily rows: the cube row is disabled with the 3D entry\'s reason when 3D cannot run', () => {
-  const [expert, cube] = dailyRows({ records: store(), now: TODAY, unavailable: { '3d': UNAVAILABLE_REASONS.webgl2 } });
+  const rows = dailyRows({ records: store(), now: TODAY, unavailable: { '3d': UNAVAILABLE_REASONS.webgl2 } });
+  const [expert, cube] = ['expert', 'cube'].map((id) => rowOf(rows, id));
   assert.equal(expert.canPlay, true);
+  assert.deepEqual(rows.filter((r) => r.mode !== '3d').map((r) => r.canPlay), [true, true, true], 'the flat rows play without WebGL 2');
   assert.equal(cube.canPlay, false);
   assert.equal(cube.reason, UNAVAILABLE_REASONS.webgl2);
 });
@@ -88,7 +113,7 @@ test('daily rows: a started daily left by a reload is that date\'s counted attem
   await first.load();
   first.begin(daily('expert', '20261011', { outcome: 'abandoned', ms: 3000 })); // the marker of a started game
   await first.settled();
-  assert.equal(dailyRows({ records: first, now: TODAY })[0].state, 'unplayed', 'still running in this page');
+  assert.equal(rowOf(dailyRows({ records: first, now: TODAY }), 'expert').state, 'unplayed', 'still running in this page');
   const reloaded = createRecordsStore({ storage: createStorage({ backend }) });
   await reloaded.load();
   const [expert] = dailyRows({ records: reloaded, now: TODAY });
@@ -109,39 +134,42 @@ test('daily rows: a daily started before midnight is its own date\'s attempt; th
   assert.equal(after.current, 1, 'yesterday\'s daily keeps the run alive today');
 });
 
-test('daily modes: every mode in menu order; Classic 2D and 3D with their board, the others coming soon', () => {
+test('daily modes: every mode in menu order; Classic 2D, Hexagon, Triangle and 3D with their board, Surface coming soon', () => {
   const modes = dailyModes({ records: store(), now: TODAY });
   assert.deepEqual(modes.map((m) => m.mode), MENU_ENTRIES.filter((e) => e.mode).map((e) => e.mode));
   assert.deepEqual(modes.map((m) => m.mode), ['classic-2d', 'hexagon', 'triangle', 'surface', '3d']);
   assert.deepEqual(modes.map((m) => [m.label, m.daily?.id ?? null, m.line]), [
     ['Classic 2D', 'expert', 'Expert · 30 × 16 · 99 mines · no-guess'],
-    ['Hexagon', null, COMING_SOON],
-    ['Triangle', null, COMING_SOON],
+    ['Hexagon', 'hex-expert', 'Expert · 30 × 16 · 100 mines · no-guess'],
+    ['Triangle', 'tri-expert', 'Expert · 41 × 17 · 103 mines · no-guess'],
     ['Surface', null, COMING_SOON],
     ['3D', 'cube', 'Cube · 8 × 8 × 8 · 40 mines · no-guess'],
   ]);
   assert.deepEqual(modes.map((m) => m.title), [
-    'Classic 2D · Expert · no-guess', 'Hexagon · daily', 'Triangle · daily', 'Surface · daily', '3D · Cube 8 × 8 × 8 · 40 mines · no-guess',
+    'Classic 2D · Expert · no-guess', 'Hexagon · Expert · no-guess', 'Triangle · Expert · no-guess', 'Surface · daily',
+    '3D · Cube 8 × 8 × 8 · 40 mines · no-guess',
   ]);
   assert.deepEqual(modes.map((m) => m.summary), [
-    'Daily · Classic 2D · Expert · no-guess', 'Daily · Hexagon · coming soon', 'Daily · Triangle · coming soon', 'Daily · Surface · coming soon',
-    'Daily · 3D · Cube 8 × 8 × 8 · 40 mines · no-guess',
+    'Daily · Classic 2D · Expert · no-guess', 'Daily · Hexagon · Expert · no-guess', 'Daily · Triangle · Expert · no-guess',
+    'Daily · Surface · coming soon', 'Daily · 3D · Cube 8 × 8 × 8 · 40 mines · no-guess',
   ]);
-  assert.equal(modes[1].note, 'Hexagon has no daily board yet.');
-  assert.equal(modes[0].note, null);
-  assert.deepEqual(modes.map((m) => m.canPlay), [true, false, false, false, true], 'a coming-soon mode cannot be played');
+  assert.equal(modes[3].note, 'Surface has no daily board yet.');
+  assert.deepEqual(modes.map((m) => m.note), [null, null, null, 'Surface has no daily board yet.', null]);
+  assert.deepEqual(modes.map((m) => m.canPlay), [true, true, true, false, true], 'a coming-soon mode cannot be played');
 });
 
-test('daily modes: Hexagon and Triangle, registered modes, read Coming soon and are never playable while they have no daily board', () => {
+test('daily modes: Hexagon and Triangle are playable as Classic 2D is, whether or not 3D can run; a played one says so', () => {
   for (const unavailable of [{}, { '3d': UNAVAILABLE_REASONS.webgl2 }]) {
     const modes = dailyModes({ records: store(), now: TODAY, unavailable });
-    for (const [mode, label] of [['hexagon', 'Hexagon'], ['triangle', 'Triangle']]) {
+    for (const [mode, id] of [['hexagon', 'hex-expert'], ['triangle', 'tri-expert']]) {
       const entry = modes.find((m) => m.mode === mode);
-      assert.deepEqual([entry.daily, entry.line, entry.canPlay], [null, COMING_SOON, false], `${label}: Coming soon, not playable`);
-      assert.equal(entry.note, `${label} has no daily board yet.`, 'the note claims no mode still to come');
+      assert.deepEqual([entry.daily.id, entry.daily.state, entry.daily.reason, entry.note, entry.canPlay], [id, 'unplayed', null, null, true]);
+      assert.equal(entry.daily.code, dailyGame(id, '20261011').code);
     }
   }
-  assert.ok(!dailyRows({ records: store(), now: TODAY }).some((r) => ['hexagon', 'triangle'].includes(r.mode)), 'no daily board of theirs yet');
+  const modes = dailyModes({ records: store([daily('tri-expert', '20261011', { outcome: 'lost' })]), now: TODAY });
+  const tri = modes.find((m) => m.mode === 'triangle');
+  assert.deepEqual([tri.daily.result, tri.summary, tri.canPlay], [LOST, 'Daily · Triangle · played today', false]);
 });
 
 test('daily modes: a played row says so in the summary; 3D without WebGL 2 reads its reason and cannot be played', () => {
@@ -151,12 +179,24 @@ test('daily modes: a played row says so in the summary; 3D without WebGL 2 reads
   assert.deepEqual([three.line, three.summary, three.canPlay, three.daily.reason], [UNAVAILABLE_REASONS.webgl2, 'Daily · 3D · needs WebGL 2', false, UNAVAILABLE_REASONS.webgl2]);
 });
 
-test('daily panel: the closed Expert board for Classic 2D, the 3D scene for the cube (still without WebGL 2), a colour badge for a coming-soon mode', () => {
+test('daily panel: each flat mode\'s closed daily board on its grid, the 3D scene for the cube (still without WebGL 2), a colour badge for a coming-soon mode', () => {
   const modes = dailyModes({ records: store(), now: TODAY });
-  assert.deepEqual(dailyPanel(modes[0]), { kind: 'daily', tag: '' });
+  assert.deepEqual(dailyPanel(modes[0]), { kind: 'daily', grid: 'square', entry: 'classic-2d', label: 'Classic 2D', tag: '' });
+  assert.deepEqual(dailyPanel(modes[1]), { kind: 'daily', grid: 'hex', entry: 'hexagon', label: 'Hexagon', tag: '' });
+  assert.deepEqual(dailyPanel(modes[2]), { kind: 'daily', grid: 'tri', entry: 'triangle', label: 'Triangle', tag: '' });
   assert.deepEqual(dailyPanel(modes[4]), { kind: 'scene', tag: '' });
   assert.deepEqual(dailyPanel(modes[4], { missing: ['webgl2'] }), { kind: 'still', tag: '' });
-  assert.deepEqual(dailyPanel(modes[1]), { kind: 'badge', entry: 'hexagon', label: COMING_SOON, note: null, locked: false });
+  assert.deepEqual(dailyPanel(modes[3]), { kind: 'badge', entry: 'surface', label: COMING_SOON, note: null, locked: false });
+});
+
+test('daily preview: today\'s closed daily board of the flat mode on a grid, its marked start cell with it', () => {
+  for (const [grid, id] of [['square', 'expert'], ['hex', 'hex-expert'], ['tri', 'tri-expert']]) {
+    const p = dailyPreview(TODAY, grid);
+    const g = dailyGame(id, '20261011');
+    assert.deepEqual([p.board, p.startCell, p.date, p.dateLabel, p.tag], [g.board, g.startCell, '20261011', '11 Oct 2026', 'Daily · 11 Oct 2026']);
+  }
+  assert.deepEqual(dailyPreview(TODAY), dailyPreview(TODAY, 'square'), 'Classic 2D\'s by default');
+  assert.throws(() => dailyPreview(TODAY, 'box'), RangeError);
 });
 
 // ---------------------------------------------------------------- pre-generation
@@ -173,14 +213,20 @@ function fakeClient() {
 
 test('pre-generation: when the menu shows, today\'s unused daily boards are asked of each mode\'s client, once', () => {
   const two = fakeClient();
+  const hex = fakeClient();
+  const tri = fakeClient();
   const three = fakeClient();
-  const boards = createDailyBoards({ clients: { 'classic-2d': () => two, '3d': () => three } });
+  const boards = createDailyBoards({ clients: { 'classic-2d': () => two, hexagon: () => hex, triangle: () => tri, '3d': () => three } });
   boards.prepare(store(), TODAY);
   assert.deepEqual(two.requests, [dailyGame('expert', '20261011').request]);
+  assert.deepEqual(hex.requests, [dailyGame('hex-expert', '20261011').request], 'Hexagon\'s through its own client');
+  assert.deepEqual(tri.requests, [dailyGame('tri-expert', '20261011').request], 'Triangle\'s through its own client');
   assert.deepEqual(three.requests, [dailyGame('cube', '20261011').request]);
   boards.prepare(store(), TODAY);
-  assert.equal(two.requests.length + three.requests.length, 2, 'a board held or in flight is not asked again');
-  assert.equal(boards.has(dailyGame('expert', '20261011').code), true);
+  assert.equal(two.requests.length + hex.requests.length + tri.requests.length + three.requests.length, 4, 'a board held or in flight is not asked again');
+  for (const id of ['expert', 'hex-expert', 'tri-expert', 'cube']) assert.equal(boards.has(dailyGame(id, '20261011').code), true);
+  boards.prepare(store([daily('hex-expert', '20261011')]), new Date(2026, 9, 12, 9));
+  assert.deepEqual(hex.requests.at(-1), dailyGame('hex-expert', '20261012').request, 'the next day\'s board');
 });
 
 test('pre-generation: nothing is asked for a used attempt; take hands a board over once; a failed one is asked again', async () => {
@@ -289,21 +335,26 @@ test('the Daily screen lists every mode with its state chip and board line, sele
   assert.equal(at(opt('3d'), '[data-time]').classes.has('hidden'), true, 'no time for a row not won');
   assert.equal(at(opt('3d'), '[data-state]').textContent, NOT_PLAYED);
   assert.equal(at(opt('3d'), '[data-state]').classes.has('ui-chip--muted'), true);
-  for (const mode of ['hexagon', 'triangle', 'surface']) {
-    assert.equal(at(opt(mode), '[data-state]').classes.has('hidden'), true, `${mode}: no state chip`);
-    assert.equal(at(opt(mode), '[data-line]').textContent, COMING_SOON);
+  assert.equal(at(opt('surface'), '[data-state]').classes.has('hidden'), true, 'surface: no state chip');
+  assert.equal(at(opt('surface'), '[data-line]').textContent, COMING_SOON);
+  for (const mode of ['hexagon', 'triangle']) {
+    assert.equal(at(opt(mode), '[data-state]').classes.has('hidden'), false, `${mode}: its state chip`);
+    assert.equal(at(opt(mode), '[data-state]').textContent, NOT_PLAYED);
   }
   assert.equal(at(opt('classic-2d'), '[data-line]').textContent, 'Expert · 30 × 16 · 99 mines · no-guess');
-  assert.equal(screen.selected, '3d', 'today\'s first playable mode');
-  assert.deepEqual(selected, ['3d']);
-  assert.deepEqual(['classic-2d', 'hexagon', 'triangle', 'surface', '3d'].map((m) => opt(m).attrs['aria-pressed']), ['false', 'false', 'false', 'false', 'true']);
-  assert.equal(screen.defaultFocus(), '#daily-entry-3d');
-  assert.equal(at(root, '[data-title]').textContent, '3D · Cube 8 × 8 × 8 · 40 mines · no-guess');
+  assert.equal(at(opt('hexagon'), '[data-line]').textContent, 'Expert · 30 × 16 · 100 mines · no-guess');
+  assert.equal(at(opt('triangle'), '[data-line]').textContent, 'Expert · 41 × 17 · 103 mines · no-guess');
+  assert.equal(screen.selected, 'hexagon', 'today\'s first playable mode');
+  assert.deepEqual(selected, ['hexagon']);
+  assert.deepEqual(['classic-2d', 'hexagon', 'triangle', 'surface', '3d'].map((m) => opt(m).attrs['aria-pressed']), ['false', 'true', 'false', 'false', 'false']);
+  assert.equal(screen.defaultFocus(), '#daily-entry-hexagon');
+  assert.equal(at(root, '[data-title]').textContent, 'Hexagon · Expert · no-guess');
   assert.equal(at(root, '[data-streak]').textContent, 'Days in a row 0 · longest 0');
   assert.equal(at(root, '[data-result-time]').classes.has('hidden'), true);
   assert.equal(at(root, '[data-code-group]').classes.has('hidden'), false);
-  assert.equal(at(root, '.ui-code__value').textContent, dailyGame('cube', '20261011').code);
-  assert.equal(at(root, '[data-summary]').textContent, 'Daily · 3D · Cube 8 × 8 × 8 · 40 mines · no-guess');
+  assert.equal(at(root, '.ui-code__value').textContent, dailyGame('hex-expert', '20261011').code);
+  assert.equal(at(root, '[data-summary]').textContent, 'Daily · Hexagon · Expert · no-guess');
+  assert.equal(at(root, '[data-note]').classes.has('hidden'), true);
   assert.equal(at(root, '[data-play]').disabled, false);
   assert.equal(at(root, '[data-watch]').classes.has('hidden'), true);
 });
@@ -325,20 +376,22 @@ test('the Daily screen: Play plays the selected mode\'s board, Watch replay only
   assert.equal(at(root, '[data-summary]').textContent, 'Daily · Classic 2D · played today');
   at(root, '[data-watch]').click();
   at(root, '[data-play]').click();
-  at(root, '[data-mode="hexagon"]').click();
+  at(root, '[data-mode="triangle"]').click();
+  at(root, '[data-play]').click();
+  at(root, '[data-mode="surface"]').click();
   assert.equal(at(root, '[data-play]').disabled, true, 'a coming-soon mode cannot be played');
   assert.equal(at(root, '[data-watch]').classes.has('hidden'), true);
   assert.equal(at(root, '[data-code]').classes.has('hidden'), true, 'no board, no code');
   assert.equal(at(root, '[data-code-group]').classes.has('hidden'), true, 'nor its label');
   assert.equal(at(root, '[data-status]').classes.has('hidden'), true, 'no state, no days in a row');
   assert.equal(at(root, '[data-note]').classes.has('hidden'), false);
-  assert.equal(at(root, '[data-note]').textContent, 'Hexagon has no daily board yet.');
-  assert.equal(at(root, '[data-summary]').textContent, 'Daily · Hexagon · coming soon');
+  assert.equal(at(root, '[data-note]').textContent, 'Surface has no daily board yet.');
+  assert.equal(at(root, '[data-summary]').textContent, 'Daily · Surface · coming soon');
   at(root, '[data-back]').click();
-  assert.deepEqual(calls, [['play', 'cube'], ['watch', won.id], ['back']]);
+  assert.deepEqual(calls, [['play', 'hex-expert'], ['watch', won.id], ['play', 'tri-expert'], ['back']]);
   kept.clear();
   screen.show(dailyModes({ records: store([won]), now: TODAY, replays: { has: (id) => kept.has(id) } }));
-  assert.equal(screen.selected, 'hexagon', 'the selection stays across a refresh');
+  assert.equal(screen.selected, 'surface', 'the selection stays across a refresh');
   screen.select('classic-2d');
   assert.equal(at(root, '[data-watch]').classes.has('hidden'), true, 'a replay the library no longer keeps');
 });
@@ -354,15 +407,17 @@ test('the Daily screen: Enter on a mode selects it and plays it; 3D without WebG
   assert.equal(screen.selected, 'classic-2d');
   screen.select('3d');
   assert.equal(screen.selected, 'classic-2d', 'a disabled entry is never selected');
-  const hex = at(root, '[data-mode="hexagon"]');
+  const surface = at(root, '[data-mode="surface"]');
   const enter = (target) => root.fire('keydown', { key: 'Enter', target });
-  assert.ok(enter(hex).prevented);
-  assert.equal(screen.selected, 'hexagon');
+  assert.ok(enter(surface).prevented);
+  assert.equal(screen.selected, 'surface');
   assert.deepEqual(calls, [], 'a coming-soon mode does not play');
   enter(at(root, '[data-mode="classic-2d"]'));
-  assert.deepEqual(calls, ['expert']);
+  enter(at(root, '[data-mode="hexagon"]'));
+  assert.deepEqual(calls, ['expert', 'hex-expert']);
   assert.equal(enter(at(root, '[data-back]')).prevented, undefined, 'another button activates itself');
-  root.fire('keydown', { key: 'Enter', target: hex, repeat: true });
+  screen.select('classic-2d');
+  root.fire('keydown', { key: 'Enter', target: surface, repeat: true });
   assert.equal(screen.selected, 'classic-2d', 'a held Enter does nothing');
   screen.show(dailyModes({ records: store([daily('expert', '20261011')]), now: TODAY, unavailable: { '3d': UNAVAILABLE_REASONS.webgl2 } }));
   assert.equal(screen.defaultFocus(), '#daily-entry-classic-2d', 'the selected entry, played or not');
@@ -423,6 +478,9 @@ test('the shell routes the Daily screen, pre-generates when the menu shows and s
   assert.match(MAIN, /menu: \{[^\n]*DAILY_BOARDS_HELD\.prepare\(RECORDS\)/, 'the menu shows: the daily boards are asked for');
   assert.match(MAIN, /function playDaily\(id, source\)/);
   assert.match(MAIN, /DAILY_BOARDS_HELD\.take\(game\.code\)/);
+  const clients = /createDailyBoards\(\{ clients: \{([^\n]*)\} \}\)/.exec(MAIN);
+  assert.ok(clients, 'the daily boards are prepared through a client per mode');
+  for (const m of ['classic-2d', 'hexagon', 'triangle', '3d']) assert.match(clients[1], new RegExp(`'?${m}'?: \\(\\) =>`), `${m}'s warm client`);
   assert.match(MAIN, /dailyModes\(\{ records: RECORDS, replays: REPLAYS, unavailable: UNAVAILABLE_MODES \}\)/);
   assert.match(MAIN, /BACKDROP_SCREENS = new Set\(\[[^\]]*'daily'/, 'the Daily screen sits on the backdrop');
 });
@@ -529,7 +587,7 @@ test('in a browser, the Daily screen matches its artboards at each size: key hin
       if (!phone) assert.deepEqual(got.foot.summary, ['16px', '700'], `${label}: the summary 16 px bold`);
       assert.equal(got.scroll, true, `${label}: no horizontal scroll`);
       if (!phone) {
-        await page.click('#daily-entry-hexagon');
+        await page.click('#daily-entry-surface');
         const card = await page.waitForFunction(() => {
           const panel = document.getElementById('daily-preview');
           const badge = panel.querySelector('[data-preview="card"]:not([hidden]) .ui-scene-panel__badge');
@@ -626,10 +684,10 @@ test('in a browser, the menu pre-generates today\'s Expert, Daily plays it on th
     assert.equal(await page.evaluate(() => document.querySelector('#daily-entry-3d [data-line]').textContent), UNAVAILABLE_REASONS.webgl2);
     assert.equal(await page.evaluate(() => { const l = document.querySelector('#daily-preview [data-preview="daily"]'); return !!l && !l.hidden && !!l.querySelector('canvas'); }), true, 'the closed Expert board in the panel');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'no horizontal scroll');
-    // Hexagon and Triangle, playable modes with their board choices, have no daily yet: still Coming soon.
-    assert.deepEqual(await page.evaluate(() => ['hexagon', 'triangle'].map((m) => [globalThis.__ms.modes.has(m), document.querySelector(`#daily-entry-${m} [data-line]`).textContent])),
-      [[true, COMING_SOON], [true, COMING_SOON]]);
-    await page.click('#daily-entry-hexagon');
+    // Hexagon and Triangle have their daily boards; Surface is still Coming soon.
+    assert.deepEqual(await page.evaluate(() => ['hexagon', 'triangle', 'surface'].map((m) => document.querySelector(`#daily-entry-${m} [data-line]`).textContent)),
+      ['Expert · 30 × 16 · 100 mines · no-guess', 'Expert · 41 × 17 · 103 mines · no-guess', COMING_SOON]);
+    await page.click('#daily-entry-surface');
     assert.equal(await page.evaluate(() => document.getElementById('daily-play').disabled), true, 'a coming-soon mode cannot be played');
     await page.click('#daily-entry-classic-2d');
     await page.click('#daily-play');
@@ -657,6 +715,81 @@ test('in a browser, the menu pre-generates today\'s Expert, Daily plays it on th
     assert.equal(await page.evaluate(() => document.querySelector('#daily-entry-classic-2d [data-state]').textContent), 'Lost');
     assert.equal(await page.evaluate(() => document.getElementById('daily-play').disabled), true, 'the counted attempt is used');
     assert.equal(await page.evaluate(() => globalThis.__ms.daily.has(document.querySelector('#daily [data-code] .ui-code__value').textContent)), false, 'nothing asked for a used attempt');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, today\'s Hexagon daily is pre-generated, previewed on its grid with its marked cell, played from the Daily screen to its results, and its row then reads Won or Lost', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    const today = dailyGame('hex-expert', dateText());
+    const tri = dailyGame('tri-expert', dateText());
+    await page.waitForFunction((codes) => codes.every((c) => globalThis.__ms.daily.has(c)), [today.code, tri.code], { timeout: patience(10000) });
+    await page.click('#menu-entry-daily');
+    await page.click('#daily-entry-hexagon');
+    const row = await page.evaluate(() => ({
+      state: document.querySelector('#daily-entry-hexagon [data-state]').textContent,
+      code: document.querySelector('#daily [data-code] .ui-code__value').textContent,
+      title: document.querySelector('#daily [data-title]').textContent,
+      play: document.getElementById('daily-play').disabled,
+    }));
+    assert.deepEqual(row, { state: NOT_PLAYED, code: today.code, title: 'Hexagon · Expert · no-guess', play: false });
+    assert.match(today.code, /^HEN-\d{8}-/);
+    const preview = await page.waitForFunction(() => {
+      const l = document.querySelector('#daily-preview [data-preview="daily"][data-grid="hex"]:not([hidden])');
+      return l && l.querySelector('canvas') ? { shows: document.getElementById('daily-preview').dataset.shows } : null;
+    }, null, { polling: 100 }).then((h) => h.jsonValue());
+    assert.deepEqual(preview, { shows: 'daily' }, 'the closed Hexagon board drawn by the flat board view');
+    await page.click('#daily-play');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
+    assert.equal(await page.evaluate(() => globalThis.__ms.modes.active), 'hexagon');
+    assert.equal(await page.evaluate(() => globalThis.__ms.board2D.mark), today.startCell, 'forced on the marked cell');
+    assert.equal(await page.evaluate((c) => globalThis.__ms.daily.has(c), today.code), false, 'the held board was taken');
+    const centre = (cell) => page.evaluate(async ([c, b]) => {
+      const { createGeometry } = await import('/js/geometry/index.js');
+      const v = globalThis.__ms.board2D;
+      v.ensureVisible(c);
+      const geometry = createGeometry('hex', b.width, b.height);
+      const L = v.layout;
+      const r = v.canvas.getBoundingClientRect();
+      const p = geometry.centre(c, L.tile, L.gap ?? 0);
+      const s = v.scroll;
+      return { x: r.left + L.offsetX - s.x + p.x, y: r.top + L.offsetY - s.y + p.y };
+    }, [cell, { width: today.board.width, height: today.board.height }]);
+    let at = await centre(today.startCell);
+    await page.mouse.click(at.x, at.y);
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started === true);
+    const summary = await page.evaluate(() => globalThis.__ms.modes.summary());
+    assert.deepEqual([summary.daily, summary.board.mode, summary.board.daily, summary.seed], [dateText(), 'hexagon', true, today.seed]);
+    const mine = await page.evaluate(() => {
+      const g = globalThis.__ms.game2D;
+      return Array.from(g.snapshot().mines).find((c) => g.cellState(c) === 'closed');
+    });
+    at = await centre(mine);
+    await page.mouse.click(at.x, at.y);
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(5000) });
+    assert.equal(await page.evaluate(() => document.getElementById('results-title').textContent), 'Game over');
+    await page.click('#r-menu');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'menu');
+    await page.click('#menu-entry-daily');
+    await page.click('#daily-entry-hexagon');
+    const after = await page.evaluate(() => ({
+      state: document.querySelector('#daily-entry-hexagon [data-state]').textContent,
+      play: document.getElementById('daily-play').disabled,
+      triangle: document.querySelector('#daily-entry-triangle [data-state]').textContent,
+    }));
+    assert.ok([WON, LOST].includes(after.state), `the Hexagon row reads Won or Lost, got ${after.state}`);
+    assert.deepEqual([after.play, after.triangle], [true, NOT_PLAYED], 'the counted attempt is used; Triangle\'s is its own');
+    assert.equal(await page.evaluate((c) => globalThis.__ms.daily.has(c), today.code), false, 'nothing asked for a used attempt');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

@@ -197,6 +197,59 @@ test('the preview binder shows each preview: a board view mounted once per board
   assert.equal(tag.classes.has('hidden'), false);
 });
 
+test('the preview binder: a daily board on each grid in its own view, over its grid; a view that fails to mount shows the mode\'s card', () => {
+  const { panel, stage, tag } = stubDoc();
+  const mounts = [];
+  const asked = [];
+  const preview = bindMenuPreview({
+    panel, stage, tag,
+    iconOf: (entry) => ({ cloneNode: () => `icon:${entry}` }),
+    mountBoard: ({ container, grid }) => {
+      if (grid === 'tri-grid') throw new Error('no canvas');
+      const view = { container, grid, games: [], marks: [], setGame: (g) => view.games.push(g), setMark: (m) => view.marks.push(m) };
+      mounts.push(view);
+      return view;
+    },
+    boardOf: (kind, grid) => { asked.push([kind, grid]); return { key: 'today', grid: `${grid}-grid`, game: `${grid}-game`, mark: 3 }; },
+  });
+  const shownLayers = () => stage.children.filter((c) => !c.hidden).map((c) => [c.dataset.preview, c.dataset.grid ?? null]);
+  preview.show({ kind: 'daily', grid: 'square', entry: 'classic-2d', label: 'Classic 2D', tag: '' });
+  preview.show({ kind: 'daily', grid: 'hex', entry: 'hexagon', label: 'Hexagon', tag: '' });
+  assert.deepEqual(asked, [['daily', 'square'], ['daily', 'hex']], 'the board of each preview\'s grid');
+  assert.deepEqual(mounts.map((m) => [m.grid, m.games, m.marks]), [['square-grid', ['square-game'], [3]], ['hex-grid', ['hex-game'], [3]]], 'one view per grid');
+  assert.deepEqual(shownLayers(), [['daily', 'hex']]);
+  assert.equal(panel.dataset.shows, 'daily');
+  preview.show({ kind: 'daily', grid: 'square', entry: 'classic-2d', label: 'Classic 2D', tag: '' });
+  assert.equal(mounts.length, 2, 'each grid\'s view is mounted once');
+  assert.deepEqual(shownLayers(), [['daily', 'square']]);
+
+  preview.show({ kind: 'daily', grid: 'tri', entry: 'triangle', label: 'Triangle', tag: 'Daily' });
+  assert.equal(panel.dataset.shows, 'badge', 'the panel shows a card');
+  assert.equal(tag.classes.has('hidden'), true);
+  const card = stage.children.find((c) => c.dataset.preview === 'card');
+  assert.equal(card.hidden, false);
+  const [badge, name] = card.children[0].children;
+  assert.deepEqual([badge.dataset, badge.children, name.textContent], [{ entry: 'triangle' }, ['icon:triangle'], 'Triangle']);
+  assert.deepEqual(shownLayers(), [['card', null]], 'the failed layer stays hidden');
+  preview.show({ kind: 'daily', grid: 'tri', entry: 'triangle', label: 'Triangle', tag: '' });
+  assert.equal(asked.filter(([, g]) => g === 'tri').length, 1, 'a failed mount is not tried again');
+  assert.equal(panel.dataset.shows, 'badge');
+});
+
+test('the Hexagon and Triangle daily previews are today\'s closed daily boards on their grids, their start cells marked', () => {
+  const now = new Date(2026, 9, 16, 9, 30);
+  for (const [grid, id, cells] of [['hex', 'hex-expert', 480], ['tri', 'tri-expert', 41 * 17]]) {
+    const daily = dailyPreview(now, grid);
+    const g = dailyGame(id, dateText(now));
+    const d = dailyBoard2D(daily);
+    assert.equal(d.geometry.kind, grid);
+    assert.deepEqual([d.grid.width, d.grid.height, d.game.mineCount], [g.board.width, g.board.height, g.board.mines]);
+    assert.equal(d.grid.graph.count, cells, 'one cell per tile of the board');
+    assert.equal(d.mark, g.startCell);
+    assert.ok(Array.from({ length: cells }, (_, c) => d.game.cellState(c)).every((x) => x === 'closed'), 'closed');
+  }
+});
+
 test('the play tiles\' previews: the Classic 2D, Hexagon and Triangle board views mounted at once in their tiles\' art, each over its grid and handed its game; a mount that fails leaves the plain ground', () => {
   const tile = (entry) => {
     const art = { children: ['stale'], replaceChildren: (...xs) => { art.children = xs; } };

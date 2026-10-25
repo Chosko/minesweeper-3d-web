@@ -125,6 +125,36 @@ test('a hexagon or triangle code starts its board on its start cell in its own m
   }
 });
 
+test('today\'s Hexagon or Triangle daily code opens the Daily screen from any board choice or a link; another day\'s is a challenge in its mode', () => {
+  for (const [id, mode, config] of [['hex-expert', 'hexagon', HEXAGON], ['tri-expert', 'triangle', TRIANGLE]]) {
+    const g = dailyGame(id, '20261011');
+    for (const from of [mode, 'classic-2d', '3d', null]) {
+      const r = resolveCode(g.code, { today: '20261011', mode: from });
+      assert.deepEqual([r.kind, r.id], ['daily', id], `today's ${mode} daily from ${from ?? 'a link'}`);
+    }
+    const past = dailyGame(id, '20261010');
+    const r = resolveCode(past.code, { today: '20261011', mode });
+    assert.equal(r.kind, 'challenge');
+    assert.equal('daily' in r.parsed, false, 'its date is dropped: it plays as a challenge');
+    assert.deepEqual([r.parsed.board.mode, r.parsed.seed, r.parsed.startCell], [mode, past.seed, past.startCell]);
+    assert.equal(resolveCode(past.code, { today: '20261011', mode: 'classic-2d' }).otherMode, mode, 'another board choice refuses it with the hint');
+    const start = gameStart(r.parsed);
+    assert.equal(start.mode, mode);
+    assert.deepEqual(start.choice.fixed, { startCell: past.startCell, seed: past.seed, challenge: true });
+    assert.equal(normaliseChoice(start.choice, config).size, 'expert');
+    const daily = gameStart({ board: g.board, seed: g.seed, startCell: g.startCell, daily: g.date });
+    assert.equal(daily.mode, mode, 'a daily starts in its own mode');
+    assert.deepEqual(daily.choice.fixed, { startCell: g.startCell, seed: g.seed, daily: '20261011' });
+    assert.equal(normaliseChoice(daily.choice, config).noGuess, true);
+  }
+  const link = links(fakeWindow(`#board=${dailyGame('hex-expert', '20261011').code}`));
+  link.l.start();
+  assert.deepEqual(link.calls, [['daily', 'hex-expert']]);
+  const old = links(fakeWindow(`#board=${dailyGame('hex-expert', '20261009').code}`));
+  old.l.start();
+  assert.deepEqual(old.calls, [['challenge', 'hexagon', dailyGame('hex-expert', '20261009').seed, dailyGame('hex-expert', '20261009').startCell]]);
+});
+
 test('a code of another mode is refused with the other-mode hint, in each direction between Classic 2D, Hexagon, Triangle and 3D', () => {
   const codes = { 'classic-2d': code2D, hexagon: codeHex, triangle: codeTri, '3d': code3D };
   for (const [of, code] of Object.entries(codes)) {

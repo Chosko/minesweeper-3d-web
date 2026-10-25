@@ -304,11 +304,41 @@ test('board code: every square, hexagon and 3D code keeps its meaning beside the
 
 // ---------- the daily boards ----------
 
-test('daily: two boards a day, Expert no-guess and the cube 8 × 8 × 8 · 40 no-guess', () => {
-  assert.deepEqual(DAILY_BOARDS.map((d) => [d.id, d.label, d.token]), [['expert', 'Expert', 'EN'], ['cube', 'Cube', '8X8X8M40N']]);
+test('daily: four boards a day in menu order, each named by its dimensions — Expert, Hexagon and Triangle Expert, all no-guess, and the cube 8 × 8 × 8 · 40 no-guess', () => {
+  assert.deepEqual(DAILY_BOARDS.map((d) => [d.id, d.label, d.token]), [
+    ['expert', 'Expert', 'EN'], ['hex-expert', 'Expert', 'HEN'], ['tri-expert', 'Expert', 'TEN'], ['cube', 'Cube', '8X8X8M40N'],
+  ]);
+  assert.deepEqual(DAILY_BOARDS.map((d) => [d.board.mode, graphOf(d.board).kind]), [
+    ['classic-2d', 'square'], ['hexagon', 'hex'], ['triangle', 'tri'], ['3d', 'box'],
+  ]);
   assert.equal(dailyBoardOf(sq(30, 16, 99, true)).id, 'expert');
+  assert.equal(dailyBoardOf(hx(30, 16, 100, true)).id, 'hex-expert');
+  assert.equal(dailyBoardOf(tr(41, 17, 103, true)).id, 'tri-expert');
   assert.equal(dailyBoardOf(box(8, 8, 8, 40, true)).id, 'cube');
   assert.equal(dailyBoardOf(sq(30, 16, 99, false)), null);
+  assert.equal(dailyBoardOf(hx(30, 16, 100, false)), null, 'the daily board is the no-guess one');
+  assert.equal(dailyBoardOf(hx(30, 16, 99, true)), null, 'Classic 2D\'s Expert on the hex grid is no daily board');
+});
+
+test('daily: the Classic 2D and 3D daily boards keep their seeds and codes', () => {
+  const pinned = ['expert', 'cube'].map((id) => { const g = dailyGame(id, '20261011'); return [id, g.seed, g.code, g.startCell]; });
+  assert.deepEqual(pinned, [['expert', 444544172, 'EN-20261011-184A', 255], ['cube', 449335490, '8X8X8M40N-20261011-1BDC', 292]]);
+});
+
+test('daily: the Hexagon and Triangle daily codes are the frozen daily form over HEN and TEN', () => {
+  for (const [id, token, board, kind] of [['hex-expert', 'HEN', hx(30, 16, 100, true), 'hex'], ['tri-expert', 'TEN', tr(41, 17, 103, true), 'tri']]) {
+    const g = dailyGame(id, '20261011');
+    assert.match(g.code, new RegExp(`^${token}-20261011-${V}[0-9A-F]{3}$`));
+    assert.equal(g.code, encodeBoardCode({ board, generatorVersion: V, daily: '20261011' }));
+    assert.equal(g.seed, dailySeed('20261011', token));
+    assert.equal(g.startCell, startCell({ kind, width: board.width, height: board.height }));
+    assert.equal(g.request.graph.kind, kind);
+    assert.deepEqual(g.board, board);
+    const parsed = parseBoardCode(g.code);
+    assert.deepEqual([parsed.ok, parsed.daily, parsed.seed, parsed.startCell], [true, '20261011', g.seed, g.startCell]);
+    assert.deepEqual(parsed.board, board);
+    assert.notEqual(dailyGame(id, '20261012').code, g.code, 'another day, another code');
+  }
 });
 
 test('daily: each board is generated for its marked start cell with the daily seed', () => {
@@ -325,7 +355,7 @@ test('daily: each board is generated for its marked start cell with the daily se
   }
 });
 
-test('daily: the mines of 2026-10-11\'s two boards are pinned', () => {
+test('daily: the mines of 2026-10-11\'s Classic 2D and 3D boards are pinned', () => {
   const expert = generate(dailyGame('expert', '20261011').request);
   assert.deepEqual(Array.from(expert.mines), [3, 5, 17, 36, 39, 45, 65, 67, 71, 74, 76, 81, 82, 87, 95, 105, 110, 112, 115, 117,
     120, 122, 123, 126, 134, 135, 136, 137, 141, 144, 149, 155, 159, 162, 171, 173, 190, 191, 196, 197, 215, 218, 235, 236, 239,

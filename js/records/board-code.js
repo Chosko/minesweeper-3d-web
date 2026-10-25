@@ -33,9 +33,11 @@
 // no-guess board the 3D board choice refuses, and a start cell outside the board. A code always
 // spells its board canonically: a standard 2D board spelled out is malformed.
 //
-// The daily boards (DAILY_BOARDS): 2D Expert no-guess and the cube 8 × 8 × 8 · 40 no-guess, named
-// by their dimensions so a preset re-tune changes neither. dailyGame(id, date) is one day's board:
-// its seed, marked start cell, code and generation request.
+// The daily boards (DAILY_BOARDS), one per mode in the menu's order: Classic 2D's, Hexagon's and
+// Triangle's Expert no-guess on their grids and the cube 8 × 8 × 8 · 40 no-guess, named by their
+// dimensions so a preset re-tune changes none. A daily code is the daily form over the board's own
+// token (EN, HEN, TEN, 8X8X8M40N). dailyGame(id, date) is one day's board: its seed, marked start
+// cell, code and generation request.
 
 import { createBoardIdentity, standardBoard, STANDARD_BOARDS, MODE_3D } from './board.js';
 import { startCell as markedCell } from '../generation/start-cell.js';
@@ -252,13 +254,15 @@ export function parseBoardCode(text, { generatorVersion: build = GENERATOR_VERSI
   return { ok: true, board, seed: parseInt(parts[1], 16), startCell, generatorVersion: version };
 }
 
-// The two daily boards, in the Daily screen's order.
+// The daily boards, one per mode, in the menu's order.
 const dailyBoard = (id, label, fields) => {
   const board = createBoardIdentity(fields);
   return Object.freeze({ id, label, board, token: boardToken(board) });
 };
 export const DAILY_BOARDS = Object.freeze([
   dailyBoard('expert', 'Expert', { mode: MODE_2D, grid: GRID, width: 30, height: 16, mines: 99, noGuess: true }),
+  dailyBoard('hex-expert', 'Expert', { mode: hexagon.MODE, grid: hexagon.GRID, width: 30, height: 16, mines: 100, noGuess: true }),
+  dailyBoard('tri-expert', 'Expert', { mode: triangle.MODE, grid: triangle.GRID, width: 41, height: 17, mines: 103, noGuess: true }),
   dailyBoard('cube', 'Cube', { mode: MODE_3D, width: 8, height: 8, depth: 8, mines: 40, noGuess: true }),
 ]);
 

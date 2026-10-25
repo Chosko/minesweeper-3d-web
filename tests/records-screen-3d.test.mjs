@@ -112,16 +112,16 @@ test('the switch offers Classic 2D, Hexagon, Triangle and 3D in menu order, no S
   assert.equal(recordsContent(fakeStore()).mode, 'classic-2d');
 });
 
-test('the Hexagon and Triangle pickers list their standard boards without no-guess, then with it, no Daily board, then their custom boards played', () => {
+test('the Hexagon and Triangle pickers list their standard boards without no-guess, then with it, their Daily board, then their custom boards played', () => {
   const store = fakeStore({ games: [game(HEX_CUSTOM), game(TRI_CUSTOM), game(BEGINNER)] });
   const STANDARD = ['Beginner', 'Intermediate', 'Expert'];
   const NAMED = [...STANDARD, ...STANDARD.map((l) => `${l} · no-guess`)];
   const hex = pickerBoards(store, 'hexagon');
-  assert.deepEqual(hex.map((b) => b.label), [...NAMED, '12 × 10 · 20 mines'], 'a mode without a daily board lists none');
+  assert.deepEqual(hex.map((b) => b.label), [...NAMED, DAILY_3D, '12 × 10 · 20 mines']);
   assert.ok(hex.every((b) => b.board.mode === 'hexagon' && b.board.grid === 'hex'));
   assert.deepEqual(hex.slice(0, 3).map((b) => [b.board.width, b.board.height, b.board.mines]), [[9, 9, 13], [16, 16, 50], [30, 16, 100]]);
   const tri = pickerBoards(store, 'triangle');
-  assert.deepEqual(tri.map((b) => b.label), [...NAMED, '20 × 9 · 13 mines']);
+  assert.deepEqual(tri.map((b) => b.label), [...NAMED, DAILY_3D, '20 × 9 · 13 mines']);
   assert.ok(tri.every((b) => b.board.mode === 'triangle' && b.board.grid === 'tri'));
   assert.deepEqual(tri.slice(0, 3).map((b) => [b.board.width, b.board.height, b.board.mines]), [[13, 7, 8], [25, 13, 36], [41, 17, 103]]);
   assert.ok(!pickerBoards(store, 'classic-2d').some((b) => b.key === boardKey(HEX_CUSTOM)), 'never mixed into another mode');
@@ -340,7 +340,7 @@ test('the mode switch shows the chosen mode on its last board played, on the fir
   screen.setMode('hexagon');
   assert.equal(screen.mode, 'hexagon');
   assert.equal(screen.board, boardKey(HEX_BEGINNER), 'a mode with nothing played: its first board');
-  assert.ok(view.shown.at(-1).boards.every((b) => b.key.startsWith('hexagon:hex:')));
+  assert.ok(view.shown.at(-1).boards.every((b) => b.key.startsWith('hexagon:hex:') || b.key.startsWith('daily:hexagon:hex:')));
 });
 
 test("a 3D board gets every history view: the Top 10, the averages, the best-time chart and the filters, ranking its no-guess board alone", () => {
@@ -532,7 +532,7 @@ test('in a browser, mouse, keyboard and controller operate the mode switch', asy
     assert.equal(await boardShown(), 'Beginner · Bests', 'Hexagon\'s first board, nothing played there');
     assert.equal(await overallTitle(), 'Hexagon overall');
     assert.equal(await ms(() => document.activeElement?.dataset.value), 'hexagon', 'focus stays on the switch');
-    assert.equal(await ms(() => document.querySelectorAll('#records-picker .ui-segmented__option').length), 6, 'its six standard boards, no Daily');
+    assert.equal(await ms(() => document.querySelectorAll('#records-picker .ui-segmented__option').length), 7, 'its six standard boards and its Daily board');
 
     // Controller: focus moves onto the 2D option and A chooses it.
     await tap(BTN.LEFT);

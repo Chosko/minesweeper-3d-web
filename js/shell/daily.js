@@ -2,14 +2,15 @@
 // records, the boards pre-generated when the main menu shows, and the Daily screen. The logic is
 // DOM-free; bindDailyScreen binds the #daily markup handed in.
 //
-// Each day has the two DAILY_BOARDS (js/records/board-code.js): Expert no-guess and the cube
-// 8 × 8 × 8 · 40 no-guess. "Today" is the player's local calendar date (dateText). A row's counted
-// attempt is the first daily game of that date recorded on its Daily board — the board's identity
-// with the daily flag — which a daily reaches at its first click: the records' game-in-progress
-// marker makes a game started and then left, restarted or closed a loss of its own date, so a
-// reload or midnight changes nothing. A daily left before its first click uses nothing.
+// Each day has the DAILY_BOARDS (js/records/board-code.js), one per mode: Classic 2D's, Hexagon's
+// and Triangle's Expert no-guess and the cube 8 × 8 × 8 · 40 no-guess. "Today" is the player's
+// local calendar date (dateText). A row's counted attempt is the first daily game of that date
+// recorded on its Daily board — the board's identity with the daily flag — which a daily reaches at
+// its first click: the records' game-in-progress marker makes a game started and then left,
+// restarted or closed a loss of its own date, so a reload or midnight changes nothing. A daily left
+// before its first click uses nothing.
 //
-// dailyIdentity(id) → the Daily board's identity of a row ('expert' | 'cube').
+// dailyIdentity(id) → the Daily board's identity of a row ('expert' | 'hex-expert' | 'tri-expert' | 'cube').
 // countedAttempt(records, id, date) → the row's counted history entry for date, or null.
 // dailyRows({ records, replays?, now?, unavailable? }) → one row per daily board, in DAILY_BOARDS
 //   order: { id, mode, label, board, line, date, dateLabel, code, state ('unplayed' | 'won' | 'lost'),
@@ -24,12 +25,13 @@
 // dailyModes({ records, replays?, now?, unavailable?, entries? }) → the Daily screen's entries, one
 //   per mode of the main menu in its order (MENU_ENTRIES, js/shell/menu.js): { mode, label, daily
 //   (its dailyRows row, null for a mode with no daily board yet), line (the board line, the row's
-//   reason, or COMING_SOON), title ("Classic 2D · Expert · no-guess", "Hexagon · daily"), summary
+//   reason, or COMING_SOON), title ("Hexagon · Expert · no-guess", "Surface · daily"), summary
 //   (the bottom bar: "Daily · <title>", "Daily · 3D · played today", "Daily · 3D · needs WebGL 2",
-//   "Daily · Hexagon · coming soon"), note (a coming-soon mode's line, else null), canPlay }.
+//   "Daily · Surface · coming soon"), note (a coming-soon mode's line, else null), canPlay }.
 // dailyPanel(entry, { missing? }) → what the screen's scene panel shows for an entry, as the main
-//   menu's preview binder takes it (js/shell/menu-preview.js): the closed Expert board ('daily'),
-//   the 3D scene ('scene'; 'still' when `missing` holds 'webgl2'), or the mode's colour badge with
+//   menu's preview binder takes it (js/shell/menu-preview.js): a flat mode's closed daily board on
+//   its grid ('daily', with `grid` and the entry and label of the card a failed mount shows), the
+//   3D scene ('scene'; 'still' when `missing` holds 'webgl2'), or the mode's colour badge with
 //   COMING_SOON ('badge').
 // createDailyBoards({ clients }) → { prepare(records, now?), take(code), has(code) }: clients maps a
 //   mode to () → its generation client (js/generation/client.js), each mode's one warm client.
@@ -38,9 +40,11 @@
 //   never waits. A finished board is held under its code: it is deterministic, so it equals a fresh
 //   generation. take(code) hands the held board over (in flight or arrived) and forgets it; a failed
 //   or cancelled one is not handed over, so the session generates it afresh.
-// dailyPreview(now?) → the Daily screen's Classic 2D preview: today's daily Expert board, closed, its start cell
-//   marked — { board, startCell, date, dateLabel, tag } (tag "Daily · 16 Oct 2026"); nothing is
-//   generated, the start cell comes with the day's board (dailyGame).
+// dailyPreview(now?, grid?) → the Daily screen's preview of the flat mode on grid kind `grid`
+//   ('square' by default, 'hex', 'tri'): today's daily board, closed, its start cell marked —
+//   { board, startCell, date, dateLabel, tag } (tag "Daily · 16 Oct 2026"); nothing is generated,
+//   the start cell comes with the day's board (dailyGame). A grid with no daily board throws a
+//   RangeError.
 // bindDailyScreen({ root, onPlay, onWatch, onBack, onCopy?, onSelect? }) → { show(entries),
 //   select(mode), selected, defaultFocus() }: one option [data-mode="<mode>"] per entry (aria-pressed
 //   marks the selected one), its state chip [data-state] (the state alone — NOT_PLAYED, WON, LOST —
@@ -158,14 +162,13 @@ export function dailyModes({ records, replays = null, now = new Date(), unavaila
 export function dailyPanel(entry, { missing = [] } = {}) {
   if (!entry.daily) return { kind: 'badge', entry: entry.mode, label: COMING_SOON, note: null, locked: false };
   if (entry.mode === '3d') return { kind: missing.includes('webgl2') ? 'still' : 'scene', tag: '' };
-  return { kind: 'daily', tag: '' };
+  return { kind: 'daily', grid: rowOf(entry.daily.id).board.grid, entry: entry.mode, label: entry.label, tag: '' };
 }
 
-/** The daily board the Daily screen's Classic 2D preview shows: today's Expert. */
-export const PREVIEW_DAILY = 'expert';
-
-export function dailyPreview(now = new Date()) {
-  const game = dailyGame(PREVIEW_DAILY, dateText(now));
+export function dailyPreview(now = new Date(), grid = 'square') {
+  const d = DAILY_BOARDS.find((b) => b.board.grid === grid);
+  if (!d) throw new RangeError(`no daily board on grid kind ${JSON.stringify(grid)}`);
+  const game = dailyGame(d.id, dateText(now));
   const dateLabel = dailyDateLabel(game.date);
   return {
     board: game.board, startCell: game.startCell, date: game.date, dateLabel, tag: `Daily · ${dateLabel}`,
