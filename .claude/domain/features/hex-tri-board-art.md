@@ -36,7 +36,8 @@ In scope (m2c-flat-grids):
   outline's edges, each shaded by the way it faces. The glyphs (numbers,
   flag, mine, wrong-flag cross, start-cell ring) are drawn in the
   geometry's glyph box: a hexagon's box is its size across the flats, a
-  triangle's is 0.55 of its side, centred on its centroid.
+  triangle's is the square around its inscribed circle (side / √3),
+  centred on its centroid.
 - **Board checks** extended to the new grids: every entry present; each
   number at least 4.5:1 against the revealed face and its shade; the cursor
   ring at least 3:1 against the closed and revealed faces; the closed face's
