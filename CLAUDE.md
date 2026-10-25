@@ -76,6 +76,12 @@ next, who needs the rule, not the road to it. Every edit follows these rules.
 10. **No drifting numbers.** Documentation states no precise number the code
     can change — a count, a size, a timing. It names the thing instead, and
     the code or the one authority file that enumerates it holds the number.
+    A number the code does not own stays: one fixed by geometry or the
+    game's rules, by `docs/ORIGINAL_SPEC.md` or by an outside standard; a
+    code or identifier the doc must name, including a version number a
+    behaviour or upgrade step depends on; an example of an output format; a
+    fixed name of a past board or a product; a fact about the environment;
+    a design count written in words.
 
 <!-- chosko-llm:git-commit-style:begin v0.2.0 -->
 
