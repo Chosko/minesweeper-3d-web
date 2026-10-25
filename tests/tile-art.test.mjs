@@ -683,20 +683,10 @@ test('a bevel\'s sloped sides follow the outline\'s edges, each shaded by the wa
   }
 });
 
-test('the glyph box: the square\'s whole tile, a hexagon\'s size across the flats, a triangle\'s 0.55 of its side on its centroid', async () => {
+test('the recipe keeps no glyph box of its own: a tile\'s glyph box comes from its board\'s geometry', async () => {
   const art = await artModule();
-  for (const S of [26, 60]) {
-    assert.deepEqual(art.glyphBox('square', S), { x: 0, y: 0, width: S, height: S });
-    const hex = art.glyphBox('hexagon', S);
-    const hw = art.outlineBox('hexagon', S).width;
-    assert.ok(near(hex.x, (hw - S) / 2) && hex.y === 0 && hex.width === S && hex.height === S, `${S}px: the hexagon's box is its size, centred`);
-    for (const outline of ['triangle-up', 'triangle-down']) {
-      const g = art.glyphBox(outline, S);
-      const [cx, cy] = centroidOf(art.outlinePoints(outline, S));
-      assert.ok(near(g.width, 0.55 * S) && near(g.height, 0.55 * S), `${S}px: ${outline}'s box is 0.55 of the side`);
-      assert.ok(near(g.x + g.width / 2, cx) && near(g.y + g.height / 2, cy), `${S}px: ${outline}'s box is centred on its centroid`);
-    }
-  }
+  assert.equal('glyphBox' in art, false);
+  assert.equal(typeof art.inGlyphBox, 'function');
 });
 
 test('every glyph draws in a given glyph box: at its corner, a square of its smaller side centred in it', async () => {
@@ -708,8 +698,8 @@ test('every glyph draws in a given glyph box: at its corner, a square of its sma
     cross: (ctx, S) => art.drawCross(ctx, S, { outline: '#ffffff', mark: '#c62f2f' }),
     ring: (ctx, S) => art.drawMarkRing(ctx, S, { color: '#16204a' }),
   };
-  for (const outline of art.OUTLINES) {
-    const box = art.glyphBox(outline, 60);
+  const boxes = { square: { x: 0, y: 0, width: 60, height: 60 }, hexagon: { x: 5, y: 0, width: 60, height: 60 }, triangle: { x: 12, y: 18, width: 60 / Math.sqrt(3), height: 60 / Math.sqrt(3) } };
+  for (const [outline, box] of Object.entries(boxes)) {
     for (const [name, draw] of Object.entries(glyphs)) {
       const boxed = fakeContext();
       art.inGlyphBox(boxed, box, (S) => draw(boxed, S));

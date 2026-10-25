@@ -31,12 +31,10 @@ the active theme's board module, which hands it every colour and parameter.
   `outlinePoints(outline, size)` → its corners clockwise in that box, at a
   tile `size`: a square's side, a flat-top hexagon's size across its flats,
   a triangle's side.
-- `glyphBox(outline, size)` → `{x, y, width, height}` in the outline's box:
-  the square's whole tile, a hexagon's size across the flats centred on it,
-  a triangle's a square on its centroid, its side the recipe's fraction of
-  the triangle's side (`TRIANGLE_GLYPH`); `inGlyphBox(ctx, box, draw)` calls
-  `draw(S)` with the context moved to a square of the box's smaller side,
-  centred in it, so any glyph draws in it.
+- `inGlyphBox(ctx, box, draw)` calls `draw(S)` with the context moved to a
+  square of the box's smaller side, centred in it, so any glyph draws in it.
+  The recipe holds no glyph box of its own: the box comes from the board's
+  geometry (`glyphBox` in [geometry.md](geometry.md)).
 - `explodedParams(params)` — a style's parameters for the exploded tile's
   revealed face: its `border` as the hairline, unchanged for a style
   without one.

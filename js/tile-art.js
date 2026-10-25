@@ -3,11 +3,12 @@
 // the two modes read as one game. A face is drawn through `drawFace` in one of
 // the named drawing styles (`STYLES`) with its parameters, and the glyphs over
 // it by their own functions, each in a `size` × `size` box at the context's
-// origin (or the box of a hexagon or triangle outline, the glyphs in its glyph
-// box), at any size, with every colour passed in by the caller: both callers
-// pass the active theme's board module's (js/themes/board-module.js) — the atlas
-// its 3D style and palette, the 2D skin its Classic 2D ones. This module
-// imports nothing, reads no token and touches no DOM.
+// origin (or the box of a hexagon or triangle outline, the glyphs in the glyph
+// box its board's geometry gives, through `inGlyphBox`), at any size, with
+// every colour passed in by the caller: both callers pass the active theme's
+// board module's (js/themes/board-module.js) — the atlas its 3D style and
+// palette, the 2D skin its Classic 2D ones. This module imports nothing, reads
+// no token and touches no DOM.
 //
 // The bevel style's own parameters are the proportions of the 256 px atlas
 // face. `px`, when given, is one device pixel in drawing units: every band then
@@ -79,8 +80,6 @@ function clipped(ctx, S, radius, draw) {
 // against its height, which for the square and the hexagon is the size.
 const SQRT3 = Math.sqrt(3);
 export const OUTLINES = Object.freeze(['square', 'hexagon', 'triangle-up', 'triangle-down']);
-// A triangle's glyph box, as a fraction of its side.
-const TRIANGLE_GLYPH = 0.55;
 
 const outlineOf = (outline) => (OUTLINES.includes(outline) ? outline : 'square');
 
@@ -106,19 +105,6 @@ export function outlinePoints(outline, size) {
     case 'triangle-down': return [[0, 0], [w, 0], [w / 2, h]];
     default: return [[0, 0], [w, 0], [w, h], [0, h]];
   }
-}
-
-// The box the glyphs are set in, in the outline's box: the square's whole
-// tile, a hexagon's size across the flats centred on it, and a square of 0.55
-// of a triangle's side centred on its centroid.
-export function glyphBox(outline, size) {
-  const kind = outlineOf(outline);
-  const { width: w, height: h } = outlineBox(kind, size);
-  if (kind === 'square') return { x: 0, y: 0, width: size, height: size };
-  if (kind === 'hexagon') return { x: (w - size) / 2, y: 0, width: size, height: size };
-  const g = size * TRIANGLE_GLYPH;
-  const cy = kind === 'triangle-up' ? (2 * h) / 3 : h / 3;
-  return { x: w / 2 - g / 2, y: cy - g / 2, width: g, height: g };
 }
 
 // Calls draw(S) with the context moved to a glyph box's square — its smaller
