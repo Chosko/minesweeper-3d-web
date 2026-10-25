@@ -386,7 +386,7 @@ Context:
 
 Done: 2026-10-24, commit `7831449` (12 files, +297/-31). Premise wrong: the 2D viewer, verifier and library were already grid-neutral; the replay strip names the mode only through the code chip's `H`/`T` token.
 
-## [ ] 29. Implement task 276 — Update documentation for feature `flat-grid-records-replays`
+## [x] 29. Implement task 276 — Update documentation for feature `flat-grid-records-replays`
 
 Depends on: 25, 26, 27, 28
 
@@ -399,6 +399,8 @@ Context:
 ```prompt
 /task-implement 276 --review
 ```
+
+Done: 2026-10-25, commit `5030421` (9 files, +30/-24).
 
 ## [ ] 30. Implement task 277 — Menu previews for Hexagon and Triangle
 
