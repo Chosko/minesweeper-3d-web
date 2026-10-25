@@ -9,6 +9,7 @@ import {
 } from '../js/shell/menu.js';
 import { VERSION } from '../js/version.js';
 import { demoBoard2D, dailyBoard2D, bindMenuPreview, mountTilePreviews } from '../js/shell/menu-preview.js';
+import { HEXAGON, TRIANGLE } from '../js/flat-modes.js';
 import { dailyPreview } from '../js/shell/daily.js';
 import { dailyGame, dateText } from '../js/records/board-code.js';
 import { createModeHost } from '../js/shell/mode-host.js';
@@ -71,14 +72,15 @@ test('the menu opens on the last mode played; the first entry when nothing was p
   assert.equal(openingEntry(null, { entries, missing: ['webgl2'] }), 'b', 'the first enabled entry, not the first entry');
 });
 
-test('each play tile shows its own preview: the Classic 2D board and the badges on the dark ground, the stills and the calendar on the light one, 3D locked without WebGL 2; the small entries none', () => {
-  assert.deepEqual(menuPreview('classic-2d'), { kind: 'board', ground: 'dark' });
-  for (const id of ['hexagon', 'triangle']) assert.deepEqual(menuPreview(id), { kind: 'badge', ground: 'dark' }, `${id}: its placeholder art`);
+test('each play tile shows its own preview: the Classic 2D, Hexagon and Triangle boards on the dark ground, the stills and the calendar on the light one, 3D locked without WebGL 2; the small entries none', () => {
+  assert.deepEqual(menuPreview('classic-2d'), { kind: 'board', grid: 'square', ground: 'dark' });
+  assert.deepEqual(menuPreview('hexagon'), { kind: 'board', grid: 'hex', ground: 'dark' }, 'Hexagon: its board on the hex grid');
+  assert.deepEqual(menuPreview('triangle'), { kind: 'board', grid: 'tri', ground: 'dark' }, 'Triangle: its board on the tri grid');
   assert.deepEqual(menuPreview('surface'), { kind: 'still', still: 'surface', ground: 'light' }, 'Surface: the torus');
   assert.deepEqual(menuPreview('3d'), { kind: 'still', still: '3d', ground: 'light' }, '3D: a still of the demo board, never the live scene');
   assert.deepEqual(menuPreview('daily'), { kind: 'icon', ground: 'light' }, 'Daily: a calendar icon');
   assert.deepEqual(menuPreview('3d', { missing: ['webgl2'] }), { kind: 'locked', ground: 'locked' }, 'no WebGL 2: the locked preview');
-  assert.deepEqual(menuPreview('classic-2d', { missing: ['webgl2'] }), { kind: 'board', ground: 'dark' }, 'Classic 2D draws without WebGL 2');
+  for (const id of ['classic-2d', 'hexagon', 'triangle']) assert.equal(menuPreview(id, { missing: ['webgl2'] }).kind, 'board', `${id} draws without WebGL 2`);
   assert.equal(menuPreview('records'), null, 'a small entry: no preview');
   assert.equal(menuPreview('settings'), null);
   assert.throws(() => menuPreview('campaign'), /unknown menu entry/);
@@ -97,6 +99,8 @@ test('the Classic 2D preview is a real engine board, the same on every load; the
   assert.ok(revealed > 10 && revealed < 200, `an opening revealed (${revealed} cells)`);
   assert.ok(Array.from({ length: 256 }, (_, c) => a.game.cellState(c)).includes('flagged'), 'a few flags');
   assert.equal(a.game.phase, 'playing', 'a game in progress');
+  assert.equal(a.geometry.kind, 'square');
+  assert.deepEqual(demoBoard2D('square').game.mineCount, 40, 'the square grid by name too');
 
   const now = new Date(2026, 9, 16, 9, 30);
   const daily = dailyPreview(now);
@@ -190,7 +194,7 @@ test('the preview binder shows each preview: a board view mounted once per board
   assert.equal(tag.classes.has('hidden'), false);
 });
 
-test('the play tiles\' previews: the Classic 2D board view mounted at once in its tile\'s art and handed its game; a mount that fails leaves the plain ground', () => {
+test('the play tiles\' previews: the Classic 2D, Hexagon and Triangle board views mounted at once in their tiles\' art, each over its grid and handed its game; a mount that fails leaves the plain ground', () => {
   const tile = (entry) => {
     const art = { children: ['stale'], replaceChildren: (...xs) => { art.children = xs; } };
     const preview = { dataset: {} };
@@ -198,7 +202,8 @@ test('the play tiles\' previews: the Classic 2D board view mounted at once in it
   };
   const tiles = MENU_ENTRIES.filter((e) => e.block === 0).map((e) => tile(e.id));
   const mounted = [];
-  const demo = { grid: { width: 16, height: 16 }, geometry: 'square', game: 'demo-game' };
+  const demos = Object.fromEntries(['square', 'hex', 'tri'].map((g) => [g, { grid: { width: 16, height: 16, g }, geometry: g, game: `${g}-game` }]));
+  const demo = demos.square;
   const views = mountTilePreviews({
     tiles,
     previewOf: (id) => menuPreview(id),
@@ -207,15 +212,41 @@ test('the play tiles\' previews: the Classic 2D board view mounted at once in it
       mounted.push(view);
       return view;
     },
-    boardOf: (kind) => (kind === 'board' ? demo : null),
+    boardOf: (kind, grid) => (kind === 'board' ? demos[grid] : null),
   });
-  assert.deepEqual([...views.keys()], ['classic-2d'], 'only the board preview is drawn by a view; the others are the tiles\' own art');
-  assert.deepEqual([mounted.length, mounted[0].container, mounted[0].grid, mounted[0].geometry, mounted[0].games, mounted[0].marks],
-    [1, tiles[0].art, demo.grid, 'square', ['demo-game'], [-1]], 'the demo game, no mark');
+  assert.deepEqual([...views.keys()], ['classic-2d', 'hexagon', 'triangle'], 'only the board previews are drawn by views, one per tile; the others are the tiles\' own art');
+  assert.equal(mounted.length, 3, 'one view each');
+  for (const [i, g] of ['square', 'hex', 'tri'].entries()) {
+    assert.deepEqual([mounted[i].container, mounted[i].grid, mounted[i].geometry, mounted[i].games, mounted[i].marks],
+      [tiles[i].art, demos[g].grid, g, [`${g}-game`], [-1]], `${g}: its demo game in its own tile, no mark`);
+  }
   const failing = [tile('classic-2d')];
   const none = mountTilePreviews({ tiles: failing, previewOf: (id) => menuPreview(id), mountBoard: () => { throw new Error('no canvas'); }, boardOf: () => demo });
   assert.equal(none.size, 0);
   assert.deepEqual([failing[0].art.children, failing[0].preview.dataset], [[], { failed: '' }], 'the fallback: the preview\'s plain ground');
+});
+
+test('the Hexagon and Triangle previews are their modes\' Intermediate boards, real engine games built from the fixed seed, the same on every load, each on its grid\'s geometry', () => {
+  for (const [kind, mode] of [['hex', HEXAGON], ['tri', TRIANGLE]]) {
+    const a = demoBoard2D(kind);
+    const b = demoBoard2D(kind);
+    const { width, height, mines } = mode.standardSizes.intermediate;
+    const n = width * height;
+    assert.deepEqual([a.grid.width, a.grid.height, a.game.mineCount], [width, height, mines], `${kind}: Intermediate`);
+    assert.equal(a.geometry.kind, kind, `${kind}: its grid's geometry`);
+    assert.deepEqual([a.geometry.width, a.geometry.height], [width, height]);
+    const own = mode.createGrid(width, height).graph;
+    assert.ok(Array.from({ length: n }, (_, c) => c).every((c) => String(Array.from(a.grid.graph.neighbours(c))) === String(Array.from(own.neighbours(c)))), `${kind}: the mode's own graph`);
+    const states = (g) => Array.from({ length: n }, (_, c) => `${g.cellState(c)}${g.cellNumber(c)}`).join();
+    assert.equal(states(a.game), states(b.game), `${kind}: the same board each time`);
+    const cells = Array.from({ length: n }, (_, c) => a.game.cellState(c));
+    const revealed = cells.filter((x) => x === 'revealed').length;
+    assert.ok(revealed > 5 && revealed < n - mines, `${kind}: an opening revealed (${revealed} cells)`);
+    assert.ok(cells.includes('flagged'), `${kind}: a few flags`);
+    assert.equal(a.game.phase, 'playing', `${kind}: a game in progress`);
+  }
+  assert.notDeepEqual([demoBoard2D('hex').geometry.kind, demoBoard2D('hex').grid.width], [demoBoard2D('tri').geometry.kind, demoBoard2D('tri').grid.width], 'each kind its own mode\'s board');
+  assert.throws(() => demoBoard2D('cube'), RangeError, 'no flat mode on that grid');
 });
 
 test('a mode entry opens its mode\'s board choice once the mode is registered', () => {
@@ -420,8 +451,7 @@ test('index.html: the menu\'s window under its title bar, the play tiles with th
     assert.equal(!!m[4], preview.ground === 'light', `${m[2]}: on its ${preview.ground} ground`);
   }
   const art = Object.fromEntries(tiles.map((m) => [m[2], [m[6]?.trim() ?? null, m[7]]]));
-  assert.deepEqual(art['classic-2d'], ['id="menu-preview-classic-2d"', ''], 'Classic 2D: the board view mounts there');
-  for (const id of ['hexagon', 'triangle']) assert.match(art[id][1], /^<span class="ui-play-tile__badge"><svg [^>]*>/, `${id}: its badge`);
+  for (const id of ['classic-2d', 'hexagon', 'triangle']) assert.deepEqual(art[id], [`id="menu-preview-${id}"`, ''], `${id}: its board view mounts there`);
   assert.equal(art.surface[1], '<img class="ui-play-tile__still" data-still="surface" src="assets/menu/surface.png" alt="">', 'Surface: the torus still');
   assert.equal(art['3d'][1], '<img class="ui-play-tile__still" data-still="3d" src="assets/menu/3d.png" alt="">', '3D: the demo board\'s still, no live scene');
   assert.match(art.daily[1], /^<svg class="ui-play-tile__calendar" viewBox="0 0 160 140">/, 'Daily: the calendar icon');
@@ -560,13 +590,13 @@ test('in a browser, the menu shows its eight buttons, every play tile its own pr
     assert.equal(await ms(() => document.querySelectorAll('#menu [aria-disabled="true"]').length), 0, 'with WebGL 2 nothing is disabled');
     assert.equal(await ms(() => document.querySelectorAll('#menu .ui-chip, #menu [data-last]').length), 0, 'no Last played chip');
 
-    // Every tile's own preview at once: the Classic 2D board drawn by its board view, the others their art.
-    await page.waitForFunction(() => document.querySelector('#menu-preview-classic-2d canvas'));
+    // Every tile's own preview at once: the Classic 2D, Hexagon and Triangle boards drawn by their board views, the others their art.
+    await page.waitForFunction(() => ['classic-2d', 'hexagon', 'triangle'].every((id) => document.querySelector(`#menu-preview-${id} canvas`)));
     await page.waitForFunction(() => [...document.querySelectorAll('#menu img.ui-play-tile__still')].every((i) => i.complete && i.naturalWidth > 0));
     const all = {
       'classic-2d': { kind: 'board', light: false, canvas: true, still: null, shown: true },
-      hexagon: { kind: 'badge', light: false, canvas: false, still: null, shown: true },
-      triangle: { kind: 'badge', light: false, canvas: false, still: null, shown: true },
+      hexagon: { kind: 'board', light: false, canvas: true, still: null, shown: true },
+      triangle: { kind: 'board', light: false, canvas: true, still: null, shown: true },
       surface: { kind: 'still', light: true, canvas: false, still: true, shown: true },
       '3d': { kind: 'still', light: true, canvas: false, still: true, shown: true },
       daily: { kind: 'icon', light: true, canvas: false, still: null, shown: true },
@@ -779,14 +809,8 @@ test('in a browser, the menu fits each window as its artboard draws it: the wind
       await page.focus('#menu-entry-classic-2d');
       await settle(page);
       await fit(page, size);
-      // The Classic 2D board, near playing size, larger than its square: cropped from the middle, no edge of it showing.
-      const crop = await page.evaluate(() => {
-        const square = document.querySelector('#menu-entry-classic-2d .ui-play-tile__preview').getBoundingClientRect();
-        const board = document.querySelector('#menu-preview-classic-2d canvas').getBoundingClientRect();
-        return { inside: board.left < square.left && board.right > square.right && board.top < square.top && board.bottom > square.bottom,
-          centred: Math.abs((board.left + board.right) / 2 - (square.left + square.right) / 2) < 1 && Math.abs((board.top + board.bottom) / 2 - (square.top + square.bottom) / 2) < 1 };
-      });
-      assert.deepEqual([crop.inside, crop.centred], [true, true], `${size.width}: the Classic 2D board cropped from its middle`);
+      // The Classic 2D, Hexagon and Triangle boards, near playing size, larger than their squares: cropped from the middle, no edge showing.
+      await assertBoardsCropped(page, `${size.width}`);
       // Selected, a tile keeps its size and place in the grid, only moved down level with the surface.
       const before = await page.evaluate(() => { const b = document.getElementById('menu-entry-hexagon'); return [b.offsetTop, b.offsetHeight, b.offsetWidth]; });
       await page.focus('#menu-entry-hexagon');
@@ -803,6 +827,7 @@ test('in a browser, the menu fits each window as its artboard draws it: the wind
     await phone.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
     await settle(phone);
     await fit(phone, SIZES.find((s) => s.phone));
+    await assertBoardsCropped(phone, 'a phone row');
     assert.equal(await phone.evaluate(() => document.getElementById('touch-note').classList.contains('hidden')), false, 'the touch note in the foot');
     for (const [width, height] of [[1366, 768], [1024, 768]]) {
       await phone.setViewportSize({ width, height });
@@ -822,6 +847,39 @@ test('in a browser, the menu fits each window as its artboard draws it: the wind
     await browser.close();
   }
 });
+
+// Each board preview — Classic 2D, Hexagon, Triangle — drawn by its board view in its own tile, its board's
+// tiles covering the tile's preview past every side (no board edge showing) and centred on it.
+async function assertBoardsCropped(page, label) {
+  await page.waitForFunction(() => ['classic-2d', 'hexagon', 'triangle'].every((id) => document.querySelector(`#menu-preview-${id} canvas`)));
+  const crops = await page.evaluate(async () => {
+    const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+    while (!BOARD_ART.current()) await new Promise((r) => setTimeout(r, 20));
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+    return Object.fromEntries(['classic-2d', 'hexagon', 'triangle'].map((id) => {
+      const square = document.querySelector(`#menu-entry-${id} .ui-play-tile__preview`).getBoundingClientRect();
+      const canvas = document.querySelector(`#menu-preview-${id} canvas`);
+      const box = canvas.getBoundingClientRect();
+      // the drawn board: the canvas's painted pixels, read back in CSS pixels
+      const k = canvas.width / box.width;
+      const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      let [l, t, r, b] = [Infinity, Infinity, -Infinity, -Infinity];
+      for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
+        if (data[(y * canvas.width + x) * 4 + 3] === 0) continue;
+        l = Math.min(l, x); r = Math.max(r, x); t = Math.min(t, y); b = Math.max(b, y);
+      }
+      const board = { left: box.left + l / k, right: box.left + (r + 1) / k, top: box.top + t / k, bottom: box.top + (b + 1) / k };
+      return [id, {
+        drawn: r >= l,
+        inside: board.left < square.left && board.right > square.right && board.top < square.top && board.bottom > square.bottom,
+        centred: Math.abs((box.left + box.right) / 2 - (square.left + square.right) / 2) < 1 && Math.abs((box.top + box.bottom) / 2 - (square.top + square.bottom) / 2) < 1,
+      }];
+    }));
+  });
+  for (const [id, crop] of Object.entries(crops)) {
+    assert.deepEqual(crop, { drawn: true, inside: true, centred: true }, `${label}: the ${id} board drawn, cropped from its middle, no edge of it showing`);
+  }
+}
 
 // Open the placeholder from the menu, its window settled.
 async function openPlaceholder(page, base) {

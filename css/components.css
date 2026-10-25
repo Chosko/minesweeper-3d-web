@@ -901,9 +901,8 @@
      button and no entry; its body holds one ui-mode-list filling it: the
      ui-play-tile of Classic 2D and Hexagon, Triangle and Surface, 3D and
      Daily, each a route, data-entry naming it, showing its own preview at
-     once (the Classic 2D board view drawing a game in progress, the
-     Hexagon and Triangle badges, the Surface and 3D stills, the Daily
-     calendar), a tile that cannot open here aria-disabled with its reason
+     once (the Classic 2D, Hexagon and Triangle board views each drawing
+     a game in progress, the Surface and 3D stills, the Daily calendar), a tile that cannot open here aria-disabled with its reason
      and its preview locked; then Records and Settings, each a
      ui-small-entry route; no Last played chip and no preview panel. The
      foot holds the build label alone, a ui-text--muted line, with the
@@ -1958,8 +1957,11 @@
   place-items: center;
   transform: translate(-50%, -50%);
 }
-/* the Classic 2D board view at near playing size, the Intermediate board larger than its square */
+/* the board view at near playing size, the mode's Intermediate board larger than its square: Classic 2D's
+   square, Hexagon's taller than wide, Triangle's wider than tall */
 .ui-play-tile__preview[data-preview="board"] > .ui-play-tile__art { width: 452px; height: 452px; }
+.ui-play-tile[data-entry="hexagon"] .ui-play-tile__preview[data-preview="board"] > .ui-play-tile__art { width: 347px; height: 404px; }
+.ui-play-tile[data-entry="triangle"] .ui-play-tile__preview[data-preview="board"] > .ui-play-tile__art { width: 466px; height: 404px; }
 .ui-play-tile__badge { display: grid; place-items: center; width: 96px; height: 96px; }
 .ui-play-tile__badge > svg { width: 50%; height: 50%; }
 .ui-play-tile__still { display: block; object-fit: contain; }

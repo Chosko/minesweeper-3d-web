@@ -4073,6 +4073,7 @@ test('in a browser, the gallery beside J-Components: no part overlaps another, e
       await page.evaluate(() => globalThis.galleryReady);
       await page.waitForFunction(() => document.querySelector('[data-canvas="3d-preview"]').dataset.shows
         && document.querySelector('[data-canvas="board-preview"] canvas')
+        && document.querySelector('#g-tile-hexagon .ui-play-tile__art canvas')
         && [...document.querySelectorAll('[data-canvas="theme-list"] .ui-segmented__swatch')].every((s) => s.style.background), null, { timeout: patience(10000) });
       const got = await page.evaluate(() => {
         const box = (el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width, height: r.height }; };
@@ -4105,9 +4106,12 @@ test('in a browser, the gallery beside J-Components: no part overlaps another, e
           preview3d: { shows: preview3d.dataset.shows, canvas: !!preview3d.querySelector('canvas'), tag: preview3d.querySelector('.ui-scene-panel__tag').textContent },
           board: board && box(board),
           boardTag: document.querySelector('[data-canvas="board-preview"] .ui-scene-panel__tag').textContent,
+          tiles: ['g-tile-classic', 'g-tile-hexagon'].map((id) => document.querySelector(`#${id} .ui-play-tile__preview`).dataset.preview
+            + (document.querySelector(`#${id} .ui-play-tile__art canvas`) ? ' drawn' : '')),
         };
       });
       assert.deepEqual(got.cardOverlaps, [], `${width}: no card overlaps another`);
+      assert.deepEqual(got.tiles, ['board drawn', 'board drawn'], `${width}: the Classic 2D and Hexagon play tiles each draw their board`);
       assert.ok(got.gaps.length >= 2 && got.gaps.every((g) => g >= 12), `${width}: the columns blocks stand apart (${got.gaps})`);
       assert.ok(got.resultsGap >= 12, `${width}: the results' tiles stand below the board line (${got.resultsGap})`);
       assert.ok(got.bar > 0, `${width}: the panel with no best keeps its 3BV progress bar`);

@@ -1641,7 +1641,7 @@ Feature: flat-grid-records-replays
 
 ## 277. Menu previews for Hexagon and Triangle
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/menu-preview.js, js/shell/menu.js, js/main.js, tests/shell-menu.test.mjs, tests/components-menu-screens.test.mjs
 Preconditions: 264, 268, 283

@@ -57,9 +57,9 @@ export const COMING_SOON = 'Coming soon';
 
 /** Each play tile's own preview, by entry: what it draws and on which ground. */
 const TILE_PREVIEWS = Object.freeze({
-  'classic-2d': Object.freeze({ kind: 'board', ground: 'dark' }),
-  hexagon: Object.freeze({ kind: 'badge', ground: 'dark' }),
-  triangle: Object.freeze({ kind: 'badge', ground: 'dark' }),
+  'classic-2d': Object.freeze({ kind: 'board', grid: 'square', ground: 'dark' }),
+  hexagon: Object.freeze({ kind: 'board', grid: 'hex', ground: 'dark' }),
+  triangle: Object.freeze({ kind: 'board', grid: 'tri', ground: 'dark' }),
   surface: Object.freeze({ kind: 'still', still: 'surface', ground: 'light' }),
   '3d': Object.freeze({ kind: 'still', still: '3d', ground: 'light' }),
   daily: Object.freeze({ kind: 'icon', ground: 'light' }),
@@ -68,10 +68,10 @@ const TILE_PREVIEWS = Object.freeze({
 /**
  * The preview play tile `id` shows at once, in a browser lacking `missing`, as data the shell draws —
  * every tile its own, none following the selection, each cropped from the middle of its art:
- *   { kind: 'board', ground: 'dark' }    Classic 2D: a real Intermediate game in progress, drawn by
- *                                        the Classic 2D board view on the dark scene ground;
- *   { kind: 'badge', ground: 'dark' }    Hexagon and Triangle: the mode's badge, placeholder art
- *                                        until their boards land;
+ *   { kind: 'board', grid, ground: 'dark' }  Classic 2D ('square'), Hexagon ('hex') and Triangle
+ *                                        ('tri'): the mode's Intermediate demo game in progress on
+ *                                        that grid (js/shell/menu-preview.js demoBoard2D), drawn by
+ *                                        the flat board view on the dark scene ground;
  *   { kind: 'still', still, ground: 'light' }  Surface the torus, 3D the menu's demo board, each a
  *                                        still image cut out on translucent white;
  *   { kind: 'icon', ground: 'light' }    Daily: a calendar icon;

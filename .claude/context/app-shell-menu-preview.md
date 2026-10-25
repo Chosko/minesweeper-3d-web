@@ -16,22 +16,25 @@ Daily screen's use of the binder is
 
 `js/shell/menu.js`
 - `menuPreview(id, {entries?, missing?})` → what play tile `id` shows, as
-  data: `{kind: 'board' | 'badge' | 'still' | 'icon' | 'locked', ground,
-  still?}` (its head comment), null for a small entry; `DEMO_BOARD_3D`,
+  data: `{kind: 'board' | 'still' | 'icon' | 'locked', ground, grid?,
+  still?}` (its head comment) — a board names its grid kind —, null for a
+  small entry; `DEMO_BOARD_3D`,
   the size of the backdrop's demo board, the one the 3D still shows.
 
 `js/shell/menu-preview.js` (its head comment is the contract)
-- `DEMO_SEED`; `demoBoard2D()` → `{grid, geometry, game}`, the Classic 2D
-  tile's Intermediate game in progress and its square geometry, the same on
-  every load; `dailyBoard2D(daily)` → `{grid, geometry, game, mark}`,
+- `DEMO_SEED`; `demoBoard2D(grid = 'square')` → `{grid, geometry, game}`,
+  the Intermediate game in progress of the flat mode on that grid kind
+  (`js/flat-modes.js`) and its geometry — the Classic 2D, Hexagon or
+  Triangle tile's —, the same on every load; `dailyBoard2D(daily)` → `{grid, geometry, game, mark}`,
   today's daily Expert board closed with its start cell; `demoBoard3D(random?)`
   → the 3D game of the menu screens' backdrop (a `DEMO_BOARD_3D` box, some
   shell cells revealed, a few mines flagged; `Math.random` by default, the
   gallery's seeded) and `DEMO_SPACING_3D`, the spacing it is drawn at.
 - `mountTilePreviews({tiles, previewOf, mountBoard, boardOf})` → the board
-  views mounted, by entry: each tile whose preview is a board gets its
-  board view at once in its `ui-play-tile__art`, handed its game; a mount
-  that throws leaves the preview its plain ground (`data-failed`).
+  views mounted, by entry: each tile whose preview is a board gets its own
+  board view at once in its `ui-play-tile__art`, over the board
+  `boardOf(kind, grid)` gives for its preview's grid, handed its game; a
+  mount that throws leaves the preview its plain ground (`data-failed`).
 - `bindMenuPreview({panel, stage, tag, iconOf, mountBoard, boardOf})` →
   `{show(preview), shown}` over a `ui-scene-panel`: a board view per board
   kind, mounted once (`mountBoard({container, grid, geometry})`) and kept
@@ -42,11 +45,13 @@ Daily screen's use of the binder is
 ## INTERNAL PATTERNS
 
 - **Every tile its own preview, at once.** None follows the selection:
-  the Classic 2D tile's art is the Classic 2D board view (`mountBoardView`,
-  unframed, [classic2d-board-canvas.md](classic2d-board-canvas.md)) laid
-  out on a square larger than the tile's preview, so the board is cropped
-  from its middle with no edge showing; Hexagon and Triangle show their
-  badge, placeholder art until their boards land; Surface and 3D show
+  the Classic 2D, Hexagon and Triangle tiles' art is the flat board view
+  (`mountBoardView`, unframed,
+  [classic2d-board-canvas.md](classic2d-board-canvas.md)) over the mode's
+  demo board, laid out on a box larger than the tile's preview — square
+  for Classic 2D, the board's own proportions for Hexagon and Triangle
+  (sized per entry in the stylesheets) — so the board is cropped from its
+  middle with no edge showing; Surface and 3D show
   still images (`assets/menu/`: the canvas's torus and a still of the demo
   board cut out on a transparent background); Daily a calendar icon in
   the markup. The menu shows no 3D scene: `sceneOff()` holds on the menu

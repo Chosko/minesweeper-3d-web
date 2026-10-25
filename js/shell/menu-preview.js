@@ -1,12 +1,14 @@
 // The previews the menu screens draw: the main menu's play tiles' own previews, and the scene panel
-// binder the Daily screen shows its selected mode in — a board drawn by the Classic 2D board view
+// binder the Daily screen shows its selected mode in — a board drawn by the flat board view
 // (today's daily Expert board closed with its marked start cell), the 3D scene drawn live into the
 // panel by the renderer, the panel's static background, or a card with the entry's badge, its name
 // and a note.
 //
-// demoBoard2D()       → { grid, geometry, game }: an Intermediate board (STANDARD_SIZES) with a fixed mine set,
-//                       an opening revealed and a few flags placed — a real engine game, the same on
-//                       every load; the Classic 2D play tile's preview.
+// demoBoard2D(grid?)  → { grid, geometry, game }: the Intermediate board of the flat mode on grid kind
+//                       `grid` ('square' by default, 'hex', 'tri': js/flat-modes.js) with a fixed mine set
+//                       from DEMO_SEED, an opening revealed and a few flags placed — a real engine game,
+//                       the same on every load, never stored; that mode's play tile preview. A grid
+//                       no flat mode is on throws a RangeError.
 // demoBoard3D(random?) → the 3D game of the menu screens' backdrop: a DEMO_BOARD_3D box
 //                       with mines from `random` (Math.random by default), some cells of its outer shell
 //                       revealed until about 55 % stay closed, a few mines flagged; DEMO_SPACING_3D the
@@ -16,15 +18,17 @@
 // mountTilePreviews({ tiles, previewOf, mountBoard, boardOf }) → the board views mounted, by entry:
 //   tiles                the main menu's play tiles ([data-entry], each with its ui-play-tile__art);
 //   previewOf(entry)     its preview (js/shell/menu.js menuPreview);
-//   mountBoard, boardOf  as for bindMenuPreview below, the board view mounted unframed: the board
-//                        is cropped from its middle, no edge of it showing.
-//   Each tile whose preview is a board gets its board view at once, handed its game; a mount that
+//   mountBoard           as for bindMenuPreview below, the board view mounted unframed: the board
+//                        is cropped from its middle, no edge of it showing;
+//   boardOf(kind, grid)  → { grid, geometry, game, mark? }: the board of the preview's kind on its grid.
+//   Each tile whose preview is a board gets its own board view at once, over the grid its preview
+//   names, handed its game, kept mounted; a mount that
 //   throws leaves the tile's preview its plain ground (data-failed), the tile's fallback. Every other
 //   preview is the tile's own markup.
 // bindMenuPreview({ panel, stage, tag, iconOf, mountBoard, boardOf }) → { show(preview), shown }:
 //   panel, stage, tag    the ui-scene-panel, its stage and its tag;
 //   iconOf(entry)        the entry's icon, an element the card's badge takes a copy of;
-//   mountBoard({ container, grid, geometry }) → a mounted Classic 2D board view in its board frame
+//   mountBoard({ container, grid, geometry }) → a mounted flat board view in its board frame
 //                        (js/classic2d/board-view.js mountBoardView, framed), asked once per board
 //                        kind, the first time it shows;
 //   boardOf(kind)        → { key, grid, geometry, game, mark? } for 'board' and 'daily'; a board whose key
@@ -40,7 +44,7 @@ import { createSquareGrid } from '../engine/square-grid.js';
 import { createGeometry } from '../geometry/index.js';
 import { createGame, createGameWithMines } from '../engine/rules.js';
 import { REFERENCE_PROFILE } from '../engine/profiles.js';
-import { STANDARD_SIZES } from '../classic2d/board-setup.js';
+import { FLAT_MODES } from '../flat-modes.js';
 import { DEMO_BOARD_3D } from './menu.js';
 import { create3DGame } from '../mode3d/session.js';
 
@@ -55,9 +59,11 @@ function lcg(seed) {
 
 export const DEMO_SEED = 20261016;
 
-export function demoBoard2D() {
-  const { width, height, mines: count } = STANDARD_SIZES.intermediate;
-  const grid = createSquareGrid(width, height);
+export function demoBoard2D(kind = 'square') {
+  const mode = FLAT_MODES.find((m) => m.grid === kind);
+  if (!mode) throw new RangeError(`no flat mode on grid kind ${JSON.stringify(kind)}`);
+  const { width, height, mines: count } = mode.standardSizes.intermediate;
+  const grid = mode.createGrid(width, height);
   const random = lcg(DEMO_SEED);
   const centre = grid.index(width >> 1, height >> 1);
   const clear = new Set([centre, ...grid.graph.neighbours(centre)]);
@@ -73,7 +79,7 @@ export function demoBoard2D() {
     if (!mines.has(c) || game.cellState(c) !== 'closed') continue;
     if (grid.graph.neighbours(c).some((n) => game.cellState(n) === 'revealed')) { game.toggleFlag(c); flags++; }
   }
-  return { grid, geometry: createGeometry('square', width, height), game };
+  return { grid, geometry: mode.createGeometry(width, height), game };
 }
 
 export const DEMO_SPACING_3D = 1.25;
@@ -114,7 +120,7 @@ export function mountTilePreviews({ tiles, previewOf, mountBoard, boardOf }) {
     if (preview?.kind !== 'board') continue;
     const art = tile.querySelector('.ui-play-tile__art');
     try {
-      const b = boardOf(preview.kind);
+      const b = boardOf(preview.kind, preview.grid);
       const view = mountBoard({ container: art, grid: b.grid, geometry: b.geometry });
       view.setGame(b.game);
       view.setMark(b.mark ?? -1);

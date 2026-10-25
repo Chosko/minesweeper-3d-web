@@ -67,6 +67,8 @@ kbd {
   #menu-entries .ui-small-entry__icon { width: 34px; height: 34px; }
   #menu-entries .ui-small-entry__label { font-size: 19px; }
   #menu-entries [data-preview="board"] > .ui-play-tile__art { width: 298px; height: 298px; }
+  #menu-entries [data-entry="hexagon"] [data-preview="board"] > .ui-play-tile__art { width: 229px; height: 266px; }
+  #menu-entries [data-entry="triangle"] [data-preview="board"] > .ui-play-tile__art { width: 307px; height: 266px; }
   #menu-entries .ui-play-tile__badge { width: 63px; height: 63px; }
   #menu-entries .ui-play-tile__still[data-still="surface"] { width: 111px; height: 111px; translate: 0 -7px; }
   #menu-entries .ui-play-tile__still[data-still="3d"] { width: 98px; height: 99px; }
@@ -85,6 +87,8 @@ kbd {
   #menu-entries .ui-small-entry { min-height: 50px; padding: 6px 16px; }
   /* each phone row's art at its strip's scale */
   #menu-entries [data-preview="board"] > .ui-play-tile__art { width: 271px; height: 271px; }
+  #menu-entries [data-entry="hexagon"] [data-preview="board"] > .ui-play-tile__art { width: 208px; height: 242px; }
+  #menu-entries [data-entry="triangle"] [data-preview="board"] > .ui-play-tile__art { width: 280px; height: 242px; }
   #menu-entries .ui-play-tile__badge { width: 58px; height: 58px; }
   #menu-entries .ui-play-tile__still[data-still="surface"] { width: 92px; height: 92px; translate: 0 -6px; }
   #menu-entries .ui-play-tile__still[data-still="3d"] { width: 59px; height: 60px; }

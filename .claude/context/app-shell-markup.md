@@ -37,8 +37,8 @@ bind.
   - main menu `#menu`: `#menu-title` (the logo), `#menu-entries` (a
     `ui-mode-list`: its tiles, a `ui-play-tile` per mode and Daily, then
     its places, a `ui-small-entry` each for Records and Settings — each
-    `#menu-entry-<id>`, `data-entry`; the Classic 2D tile's board view in
-    `#menu-preview-classic-2d`), `#menu-foot` with `#touch-note` and the
+    `#menu-entry-<id>`, `data-entry`; the Classic 2D, Hexagon and Triangle tiles' board
+    views in `#menu-preview-<id>`), `#menu-foot` with `#touch-note` and the
     build label `#menu-build` ([app-shell-menu.md](app-shell-menu.md));
   - board choices `#c2d-choice` ([classic2d.md](classic2d.md)), its copies
     `#hex-choice` and `#tri-choice` — the same markup under the `hex` and

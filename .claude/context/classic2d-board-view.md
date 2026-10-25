@@ -102,8 +102,8 @@ its own layer, the marked start cell, cell motion, the end effect — is
   container `#c2d-board` fills) sized to the board's extent in that room,
   so a board that fits sits at the area's corner with nothing to centre ([app-shell-2d.md](app-shell-2d.md)).
 - **Board frame.** Every Classic 2D board — the game, the Daily preview
-  and the replay viewer; not the main menu's Classic 2D tile, whose board
-  is mounted unframed and cropped from its middle — sits in the kit's board frame
+  and the replay viewer; not the main menu's play tiles, whose boards
+  are mounted unframed and cropped from their middle — sits in the kit's board frame
   component `ui-board-frame`, padded by the module's gap on every side
   (`BOARD_FRAME`, counted in the fit) and styled by the theme stylesheet
   with its corner radius `--board-frame-radius`, the module's

@@ -1357,14 +1357,14 @@ function menuFocusEntry() {
   return menuOpened ?? openingEntry(LAST_MODE.current, { missing: MISSING });
 }
 
-// Every play tile shows its own preview at once (js/shell/menu-preview.js): the Classic 2D tile a
-// real game in progress drawn by its board view, the others their own art; the menu shows no 3D scene.
-const DEMO_2D = demoBoard2D();
+// Every play tile shows its own preview at once (js/shell/menu-preview.js): the Classic 2D, Hexagon
+// and Triangle tiles a real game in progress on their grid drawn by the flat board view, the others
+// their own art; the menu shows no 3D scene.
 mountTilePreviews({
   tiles: document.querySelectorAll('#menu .ui-play-tile'),
   previewOf: (id) => menuPreview(id, { missing: MISSING }),
   mountBoard: ({ container, grid, geometry }) => mountBoardView({ container, grid, geometry, minTile: 1 }),
-  boardOf: () => DEMO_2D,
+  boardOf: (kind, grid) => demoBoard2D(grid),
 });
 ui.setBuild(buildLabel(VERSION));
 
