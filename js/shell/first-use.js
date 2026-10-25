@@ -18,7 +18,8 @@
 //                 (a document without it reads as not yet);
 //   dismissed     the mode's hint strip was dismissed, for good.
 // When the document is first created it is seeded from the records store's per-mode game
-// counters: a returning player's recorded games count toward the three, and any recorded 3D game
+// counters: a returning player's recorded games count toward the three, a record's games summed over
+// every mode sharing it (Hexagon's and Triangle's toward Classic 2D's), and any recorded 3D game
 // counts as the finished one, so a returning player is not taught again. A malformed document is
 // seeded afresh. Storage failure never blocks play: until the document loads, and when nothing
 // can be read or saved, the hints behave as on first use for the session.
@@ -75,9 +76,9 @@ export function normaliseFirstUse(data) {
 function seeded(records) {
   const s = fresh();
   try {
-    for (const m of FIRST_USE_MODES) {
+    for (const m of [...FIRST_USE_MODES, ...Object.keys(FIRST_USE_RECORD)]) {
       const games = records.overall(m)?.games;
-      s.games[m] = isCount(games) ? games : 0;
+      if (isCount(games)) s.games[recordOf(m)] += games;
     }
     s.finished3D = s.games['3d'] > 0;
   } catch {

@@ -23,7 +23,9 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const text = (html) => html.replace(/<[^>]+>/g, '').replace(/&middot;/g, '·');
 
 // A records store's per-mode game counters, as the first use is seeded from them.
-const records = (games2d, games3d) => ({ overall: (mode) => ({ games: mode === '3d' ? games3d : games2d, wins: 0, currentStreak: 0, longestStreak: 0 }) });
+const records = (games2d, games3d, others = {}) => ({
+  overall: (mode) => ({ games: mode === '3d' ? games3d : mode === 'classic-2d' ? games2d : others[mode] ?? 0, wins: 0, currentStreak: 0, longestStreak: 0 }),
+});
 const stored = (data) => createMemoryBackend({ initial: { [FIRST_USE_DOC]: JSON.stringify({ version: FIRST_USE_VERSION, data }) } });
 const docOf = (backend) => JSON.parse(backend.documents.get(FIRST_USE_DOC)).data;
 const settle = () => new Promise((r) => setTimeout(r, 0));
@@ -72,6 +74,28 @@ test('when the document is first created it is seeded from the records\' per-mod
   await veteran.load();
   assert.equal(veteran.inFirstGames('classic-2d'), false);
   assert.equal(veteran.inFirstGames('3d'), false);
+});
+
+test('Classic 2D\'s record is seeded from the games of every mode sharing it; 3D\'s from its own', async () => {
+  const backend = createMemoryBackend();
+  const mixed = createFirstUse({ storage: createStorage({ backend }), records: records(1, 0, { hexagon: 2, triangle: 4 }) });
+  await mixed.load();
+  assert.deepEqual(docOf(backend).games, { 'classic-2d': 7, '3d': 0 });
+  assert.equal(docOf(backend).finished3D, false, 'flat games never count as the finished 3D one');
+
+  for (const only of ['hexagon', 'triangle']) {
+    const below = createFirstUse({ storage: createStorage({ backend: createMemoryBackend() }), records: records(0, 0, { [only]: FIRST_GAMES - 1 }) });
+    await below.load();
+    assert.equal(below.inFirstGames(only), true, `${FIRST_GAMES - 1} ${only} games: the next is still in the window`);
+    const played = createFirstUse({ storage: createStorage({ backend: createMemoryBackend() }), records: records(0, 0, { [only]: FIRST_GAMES }) });
+    await played.load();
+    assert.equal(played.inFirstGames(only), false, `${FIRST_GAMES} ${only} games count as ${FIRST_GAMES} Classic 2D games`);
+    assert.equal(played.inFirstGames('classic-2d'), false);
+  }
+
+  const odd = createFirstUse({ storage: createStorage({ backend: createMemoryBackend() }), records: records(2, 0, { hexagon: 'x', triangle: -1 }) });
+  await odd.load();
+  assert.equal(odd.inFirstGames('classic-2d'), true, 'a counter that is not a count adds nothing');
 });
 
 test('a stored document is read back, not seeded again; a malformed one is seeded afresh', async () => {
