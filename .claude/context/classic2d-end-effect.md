@@ -18,7 +18,9 @@ the board view draws it ([classic2d-board-motion.md](classic2d-board-motion.md))
   `reachMs`, `preLossState`, `wonState`, `shownState`,
   `waveAt(effect, c, state, t, end2d)` → `{scale, flash}` or null,
   `confettiAt(effect, t, {tile, gap?, width?, height?})`, `done`,
-  `drawWave(ctx, x, y, size, wave, board, paint)`, `drawConfetti`. The
+  `drawWave(ctx, x, y, size, wave, board, paint, outline?)` (a hexagon or
+  triangle tile's `{points, centre, radius}` sets the scale's centre and
+  the light's shape), `drawConfetti`. The
   module head comment is the contract.
 
 ## INTERNAL PATTERNS

@@ -31,6 +31,12 @@ the active theme's board module, which hands it every colour and parameter.
   `outlinePoints(outline, size)` → its corners clockwise in that box, at a
   tile `size`: a square's side, a flat-top hexagon's size across its flats,
   a triangle's side.
+- `outlinePath(ctx, points, r)` — the path of an outline's corners (any
+  convex polygon's), its corners rounded by `r` when above zero: the path a
+  hexagon or triangle face is clipped by. `growOutline(points, d)` — the
+  corners with every edge moved `d` outward, parallel to itself (inward for
+  a negative `d`). The board view's cursor ring and the end effect's light
+  draw through them ([classic2d-board-motion.md](classic2d-board-motion.md)).
 - `inGlyphBox(ctx, box, draw)` calls `draw(S)` with the context moved to a
   square of the box's smaller side, centred in it, so any glyph draws in it.
   The recipe holds no glyph box of its own: the box comes from the board's

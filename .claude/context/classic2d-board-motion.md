@@ -59,7 +59,12 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
   module's `cursor` — the ring round its inner band, the band's outer edge
   `radius.px` outside the tile and its corners `radius.tile` × the tile
   plus `radius.px`; without one a square ring in `CURSOR_RING` just outside
-  the tile.
+  the tile. On a hexagon or triangle board either ring follows the cell's
+  outline grown outward (`growOutline`, stroked through `outlinePath`,
+  [tile-art.md](tile-art.md)) instead of the square: the module's band
+  each edge's same distance out, its corners `radius.tile` × the outline's
+  height plus `radius.px`; the fallback straight-cornered, half its width
+  out.
 - **Marked start cell.** While closed and not pressed the marked cell is
   drawn as the skin's `marked` tile — the module's marked face under its
   dashed ring ([classic2d-tile-skin.md](classic2d-tile-skin.md)) — in the
@@ -89,7 +94,10 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
 - **End effect drawing.** Over the skin's static tiles: each tile from
   `shownState`, drawn through `drawWave` with its `waveAt` from the skin's
   board module — scaled about its centre, its light clipped to the rounded
-  tile — then the confetti in the module's colours after all tiles, clipped
+  tile; on a hexagon or triangle board `drawWave` takes the cell's outline,
+  so the scale is about the geometry's centre and the light fills the
+  outline rounded by the grid's corner radius × the outline's height — then
+  the confetti in the module's colours after all tiles, clipped
   to the view; without a module the tiles alone. A full repaint draws the
   same moment. Without an
   effect a won game's closed tiles are drawn as flags (`wonState`). The
