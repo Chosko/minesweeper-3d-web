@@ -78,10 +78,8 @@ In scope (m2c-flat-grids), for each of Hexagon and Triangle:
   Play again, Records and Main menu work as they do after a Classic 2D
   game. These modes' replays and their place on the Records screen are
   `flat-grid-records-replays`', which builds on this feature: until it
-  lands the replay recorder refuses the hexagon and triangle graphs and
-  its failure never interrupts play, so a game ends without a replay and
-  Watch replay is not offered, and Records opens on the last board played
-  rather than on the game's board.
+  lands Records opens on the last board played rather than on the game's
+  board.
 
 Non-goals:
 

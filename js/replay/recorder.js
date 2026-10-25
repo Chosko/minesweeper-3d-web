@@ -2,7 +2,8 @@
 // discarded with the session (no DOM).
 //
 // startRecording(fields, options) takes the header fields known at board open —
-//   { mode, graph, board, profile }   (js/replay/format.js names each)
+//   { mode, graph, board, profile }   (js/replay/format.js names each; graph is a 2D board's
+//                                     square, hex or tri graph — its grid — or a 3D board's box)
 // and returns the recorder:
 //   boardArrived({ mines, seed, generatorVersion })  the rest of the header, when the board arrives
 //   action(kind, cell, time)   every action the session hands to the engine while the game accepts
@@ -10,12 +11,12 @@
 //                              for actions before its timer starts, and they keep their order
 //   sample(values, time)       one movement sample of SAMPLE_ARITY[graph kind] quantised integers;
 //                              stored only when it differs from the previous sample
-//   cursor(cell, time)         the 2D keyboard and controller cursor's cell when it moves, -1 while
+//   cursor(cell, time)         on a flat graph, the 2D keyboard and controller cursor's cell when it moves, -1 while
 //                              its ring is hidden; the stream opens with -1 at the first cursor
 //                              event, before it when that event is a cell, so a replay states
 //                              when the ring showed from its first event (a recording made before
 //                              the ring could hide opens on a cell, js/replay/viewer-2d.js)
-//   view(mode, time)           the 3D view mode, when it changes
+//   view(mode, time)           on a box, the 3D view mode, when it changes
 //   seal(summary, final, pauses)  → { blob, listing } or null
 //   stats()                    { actions, movement, movementBytes }
 //   failed                     true once the recorder has failed
@@ -46,8 +47,8 @@
 // cannot be encoded — drops the replay, is reported once through options.onFailure (a console
 // warning by default), and turns every later call into a no-op; seal then returns null.
 
-import { ACTION_KINDS, SAMPLE_ARITY, encodeReplay, cellStateDigest } from './format.js';
-import { createBoardIdentity, boardKey } from '../records/board.js';
+import { ACTION_KINDS, SAMPLE_ARITY, FLAT_KINDS, encodeReplay, cellStateDigest } from './format.js';
+import { createBoardIdentity, boardKey, MODE_3D } from '../records/board.js';
 import { codeOf } from '../records/board-code.js';
 
 // Checked by dev/measure-replays.mjs: the busiest measured 3D game records about 3.8 KB of
@@ -116,7 +117,10 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
     if (!fields || typeof fields !== 'object') throw new RangeError('recording needs the header fields');
     const board = createBoardIdentity(fields.board);
     const kind = fields.graph?.kind;
-    if (!Object.hasOwn(SAMPLE_ARITY, kind)) throw new RangeError(`replay graph kind must be square or box, got ${JSON.stringify(kind)}`);
+    if (!Object.hasOwn(SAMPLE_ARITY, kind)) throw new RangeError(`replay graph kind must be one of ${Object.keys(SAMPLE_ARITY).join(', ')}, got ${JSON.stringify(kind)}`);
+    if (kind === 'box' ? board.mode !== MODE_3D : board.mode === MODE_3D || board.grid !== kind) {
+      throw new RangeError(`a ${kind} graph cannot record board ${boardKey(board)}`);
+    }
     if (!fields.profile || typeof fields.profile !== 'object') throw new RangeError('recording needs the rule profile');
     header = { mode: fields.mode, graph: { ...fields.graph }, board, profile: { id: fields.profile.id, version: fields.profile.version } };
     cells = board.width * board.height * (board.depth ?? 1);
@@ -192,7 +196,7 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
     }),
 
     cursor: guard((cell, time) => {
-      if (header.graph.kind !== 'square') throw new RangeError('a cursor event belongs to a 2D recording');
+      if (!FLAT_KINDS.includes(header.graph.kind)) throw new RangeError('a cursor event belongs to a 2D recording');
       if (cell !== -1) checkCell('cursor cell', cell, cells);
       if (lastCursor === null && cell !== -1) cursorEvent(-1, time);
       if (cell === lastCursor) return;

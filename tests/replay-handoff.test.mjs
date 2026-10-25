@@ -1,7 +1,9 @@
 // The end-of-game hand-off to the replay library (js/results/flow.js): a finished or abandoned
 // game's summary is recorded first, then its sealed replay is added to the library, pinned when the
 // comparison shows a new best; a dropped replay adds nothing; a replay that cannot be saved stays
-// available for the session. Over fakes, and over the real library on in-memory platform storage.
+// available for the session. Over fakes, and over the real library on in-memory platform storage,
+// where a Hexagon and a Triangle game played through the session hand over their replay like a
+// Classic 2D one and the results screen offers Watch replay.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -15,6 +17,12 @@ import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { createBlobStore } from '../js/platform/blob-store.js';
 import { createMemoryBlobStore } from '../js/platform/memory-blob-store.js';
 import { createReplayLibrary, PIN_BEST } from '../js/replay/library.js';
+import { decodeReplay } from '../js/replay/format.js';
+import { REPLAY_SCREEN } from '../js/records/replay-list.js';
+import { createSession } from '../js/classic2d/session.js';
+import { HEXAGON, TRIANGLE } from '../js/flat-modes.js';
+import { boardKey } from '../js/records/board.js';
+import { codeOf } from '../js/records/board-code.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
@@ -255,6 +263,62 @@ test('a replay that could not be saved stays playable for the session', async ()
   assert.equal(library.has('g1'), false, 'nothing was kept');
   assert.equal(notices.length, 1, 'the failure is reported once');
   assert.deepEqual(await library.bytes('g1'), new Uint8Array([7, 8, 9]), 'the results screen can play it');
+});
+
+// A Hexagon or Triangle Beginner game through the Classic 2D session, its standard board placed
+// with `mines`: the first reveal at `start`, then `play(session)`; resolves to the finished report.
+async function flatGame(config, { mines, start, play }) {
+  let t = 1000;
+  const clock = { now: () => t, setTimeout: () => 0, clearTimeout() {} };
+  const session = createSession({
+    choice: { size: 'beginner', noGuess: false }, config, clock, randomSeed: () => 7,
+    client: { request: () => Promise.reject(new Error('no requests')), cancel() {} },
+    place: (req) => ({ ok: true, mines, seed: req.seed, generatorVersion: 1 }),
+  });
+  let finished = null;
+  session.on('finished', (e) => { finished = e; });
+  await session.reveal(start);
+  t += 500;
+  play(session, () => finished !== null, () => { t += 100; });
+  assert.ok(finished, `${config.id}: finished`);
+  return finished;
+}
+
+test('a finished Hexagon or Triangle game hands its replay to the library like a Classic 2D one, and the results screen offers Watch replay', async () => {
+  const games = [
+    { config: HEXAGON, mode: 'hexagon', kind: 'hex', mines: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], start: 80, outcome: 'won',
+      play(session, done, later) { for (let c = 13; c < 81 && !done(); c++) { later(); session.reveal(c); } } },
+    { config: TRIANGLE, mode: 'triangle', kind: 'tri', mines: [0, 15, 30, 45, 52, 60, 66, 75], start: 90, outcome: 'lost',
+      play(session, done, later) { later(); session.reveal(0); } },
+  ];
+  for (const g of games) {
+    const { summary: s, replay } = await flatGame(g.config, g);
+    assert.equal(s.outcome, g.outcome, g.mode);
+    assert.ok(replay && replay.blob instanceof Uint8Array, `${g.mode}: the game sealed a replay`);
+    const decoded = decodeReplay(replay.blob);
+    assert.equal(decoded.header.mode, g.mode);
+    assert.equal(decoded.header.graph.kind, g.kind);
+    assert.equal(decoded.actions[0].cell, g.start);
+    assert.equal(replay.listing.mode, g.mode);
+    assert.equal(replay.listing.boardKey, boardKey(s.board));
+    assert.equal(replay.listing.code, codeOf(s), `${g.mode}: the board code is in the listing`);
+    assert.equal(typeof replay.listing.code, 'string');
+
+    const { library } = await realLibrary();
+    await library.load();
+    const router = fakeRouter();
+    const flow = createResultsFlow({ records: fakeRecords([]), replays: library, router, restart() {}, goMenu() {} });
+    const shown = flow.finished(s, g.mode, replay);
+    assert.equal(shown.watch, true, `${g.mode}: Watch replay is offered`);
+    await tick();
+    await library.settled();
+    assert.equal(library.has(s.id), true, `${g.mode}: the library keeps the replay`);
+    assert.deepEqual(library.forBoard(boardKey(s.board)).map((e) => e.id), [s.id]);
+    assert.deepEqual(await library.bytes(s.id), replay.blob);
+    flow.watch();
+    assert.equal(router.routes[1][0], REPLAY_SCREEN);
+    assert.equal(router.routes[1][1].replay, replay, 'Watch replay plays the game\'s own replay');
+  }
 });
 
 // ---------------------------------------------------------------- wiring

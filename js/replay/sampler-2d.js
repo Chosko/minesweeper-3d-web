@@ -1,16 +1,17 @@
-// The Classic 2D movement sampler: the pointer in board coordinates about 20 times a second and the
-// keyboard and controller cursor's cell whenever it moves, fed to the session's recorder. DOM-free
-// at import: createSampler2D is driven by calls; mountSampler2D is its browser wiring.
+// The 2D movement sampler of every flat mode — Classic 2D, Hexagon and Triangle: the pointer in board
+// coordinates about 20 times a second and the keyboard and controller cursor's cell whenever it
+// moves, fed to the session's recorder. DOM-free at import: createSampler2D is driven by calls;
+// mountSampler2D is its browser wiring.
 //
 // boardPoint(view, x, y, steps?) → [bx, by]: canvas position x, y (CSS pixels) in the board view's
-//   board units from the board's top-left corner (js/classic2d/board-view.js boardPoint: on the
-//   square geometry a unit is the layout's pitch, a cell's tile and the gap after it, so a point's
-//   whole part is the cell under it in any theme), quantised to 1/steps of a unit (SAMPLE_STEPS by
+//   board units from the board's top-left corner (js/classic2d/board-view.js boardPoint: a unit is
+//   the layout's pitch on every grid geometry — on the square one a cell's tile and the gap after
+//   it, so a point's whole part is the cell under it in any theme), quantised to 1/steps of a unit (SAMPLE_STEPS by
 //   default; another step is for the measurement, dev/measure-replays.mjs); off the board the
 //   values run below 0 or past the board's size, so a replay plays at any window size and zoom.
 //
 // createSampler2D({ session, point, interval? }) → sampler
-//   session   the Classic 2D session (js/classic2d/session.js): recording, elapsedMs(),
+//   session   the flat mode's session (js/classic2d/session.js): recording, elapsedMs(),
 //             recordSample(values), recordCursor(cell).
 //   point     () → [bx, by] from boardPoint, or null while no pointer position is known.
 //   tick()    call every frame: while the session is recording, takes a sample when

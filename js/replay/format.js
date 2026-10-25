@@ -6,9 +6,10 @@
 //   header   { id, mode, graph, board, mines, profile, seed, generatorVersion, endedAt,
 //              movementEndedAt, pauses }
 //            id is the summary's id; mode is the board identity's mode; graph is
-//            { kind: 'square', width, height } or { kind: 'box', x, y, z } and matches the board
-//            (js/records/board.js), a square graph for a 2D square-grid board, a box for a 3D
-//            one; mines are the mine cells as indices, ascending, as many as the board has;
+//            { kind: 'square' | 'hex' | 'tri', width, height } or { kind: 'box', x, y, z } and
+//            matches the board (js/records/board.js): a flat graph's kind is a 2D board's grid
+//            (FLAT_KINDS) and its size the board's, a box is a 3D board; it rebuilds the cell
+//            graph (js/engine/) and, for a flat kind, the geometry (js/geometry/index.js); mines are the mine cells as indices, ascending, as many as the board has;
 //            profile is { id, version }, the rule profile and its rules version
 //            (js/engine/profiles.js); seed (0 .. 2^32 - 1) and generatorVersion are for reference
 //            only; endedAt is an ISO 8601 string, not before 1970; movementEndedAt is the game-clock time where a
@@ -21,9 +22,9 @@
 //   movement [{ time, type: 'sample', values } | { time, type: 'cursor', cell }
 //            | { time, type: 'view', mode }] — time never decreasing; a sample holds
 //            SAMPLE_ARITY[graph kind] integers, already quantised by the mode's sampler (2D: the
-//            pointer in board coordinates; 3D: camera position, yaw and pitch); 'cursor' is the
-//            2D keyboard and controller cursor's cell, or -1 while its ring is hidden; 'view' the
-//            3D view mode (0 .. 255).
+//            pointer in the geometry's board units; 3D: camera position, yaw and pitch); 'cursor'
+//            is the 2D keyboard and controller cursor's cell, or -1 while its ring is hidden, on a
+//            flat graph; 'view' the 3D view mode (0 .. 255), on a box.
 //   check    { outcome, elapsedMs, bbbv, bbbvSolved, clicks, digest } — outcome won, lost or
 //            abandoned; clicks { reveal, flag, chord } each { effective, wasted }; digest is
 //            cellStateDigest of the final state.
@@ -33,7 +34,8 @@
 //
 // Blob layout (all integers unsigned LEB128 varints unless noted; signed ones zigzag-encoded):
 //   envelope  'MSRP' · format version · body · CRC-32 of everything before it (4 bytes, LE)
-//   body v1   header: id, mode (length-prefixed UTF-8) · graph kind (byte) and its dimensions ·
+//   body v1   header: id, mode (length-prefixed UTF-8) · graph kind (byte: 0 square, 1 box) and
+//             its dimensions (width and height; x, y and z) ·
 //             noGuess (byte) · mine count, then mine gaps · profile id (string), version · seed ·
 //             generator version · end date (ms since the epoch) · movementEndedAt + 1 (0 = none)
 //             actions: count, then per action time delta, kind (byte), cell delta (signed)
@@ -43,7 +45,9 @@
 //             check: outcome (byte), elapsed, 3BV, 3BV solved, six click counts, digest (4 bytes)
 //   body v2   pauses: count, then per span its start less the previous span's end (0 before the
 //             first) and its length · then the v1 body
-// Format versions 1 and 2 are not compressed: the platform's compression stream saves about 20 to 40 % on
+//   body v3   the v2 body, its graph kind byte also 2 hex or 3 tri, each followed by width and
+//             height
+// Format versions 1 to 3 are not compressed: the platform's compression stream saves about 20 to 40 % on
 // measured replays (dev/measure-replays.mjs) of a few to a few tens of kilobytes, and would make
 // encoding and decoding asynchronous. A compressed body would be a new format version.
 // The envelope is the same for every format version, so a newer blob's checksum is verified and
@@ -52,25 +56,29 @@
 //
 // Decoding goes through one decoder per format version, kept by every later release, and then
 // the upgrade steps from that version to the current one in order: a version 1 replay becomes a
-// version 2 one with no pauses, keeping version 1's sampling intervals. A blob of a newer version
-// than this build's throws ReplayNewerVersionError; anything that is not a well-formed blob of a
-// known version throws ReplayUnreadableError. The encoder throws a RangeError on a replay it
+// version 2 one with no pauses, keeping version 1's sampling intervals, and a version 2 replay is a
+// version 3 one unchanged. A blob of a newer version than this build's, or a current-version blob
+// whose graph kind this build does not know, throws ReplayNewerVersionError; anything else that is
+// not a well-formed blob of a known version throws ReplayUnreadableError. The encoder throws a RangeError on a replay it
 // cannot write.
 
 import { CLICK_KINDS } from '../engine/metrics.js';
 import { createBoardIdentity, MODE_3D } from '../records/board.js';
 import { OUTCOMES } from '../records/summary.js';
 
-export const REPLAY_FORMAT_VERSION = 2;
+export const REPLAY_FORMAT_VERSION = 3;
 export const ACTION_KINDS = CLICK_KINDS;
 export const MOVEMENT_TYPES = Object.freeze(['sample', 'cursor', 'view']);
-export const SAMPLE_ARITY = Object.freeze({ square: 2, box: 5 });
+export const SAMPLE_ARITY = Object.freeze({ square: 2, box: 5, hex: 2, tri: 2 });
+// The graph kinds of a 2D board, each its board's grid with width and height.
+export const FLAT_KINDS = Object.freeze(['square', 'hex', 'tri']);
 
 // The movement sampling interval in ms each format version was recorded at, 2D and 3D: the
 // samplers' SAMPLE_INTERVAL_MS (js/replay/sampler-2d.js, js/replay/sampler-3d.js) at that version.
 const SAMPLE_INTERVALS_MS = Object.freeze({
   1: Object.freeze({ '2d': 50, '3d': 100 }),
   2: Object.freeze({ '2d': 50, '3d': 100 }),
+  3: Object.freeze({ '2d': 50, '3d': 100 }),
 });
 
 // The movement sampling interval of a replay of this mode stored at this format version, or
@@ -79,13 +87,18 @@ export function sampleIntervalMs(version, mode) {
   return SAMPLE_INTERVALS_MS[version]?.[mode === MODE_3D ? '3d' : '2d'];
 }
 
-const GRAPH_KINDS = ['square', 'box'];
+// The graph kinds each body version's kind byte indexes.
+const GRAPH_KINDS_V1 = Object.freeze(['square', 'box']);
+const GRAPH_KINDS_V3 = Object.freeze(['square', 'box', 'hex', 'tri']);
 const MAGIC = [0x4d, 0x53, 0x52, 0x50]; // 'MSRP'
 const TWO_32 = 2 ** 32;
 
 export class ReplayNewerVersionError extends Error {
-  constructor(storedVersion, currentVersion) {
-    super(`replay format version ${storedVersion} is newer than this build's ${currentVersion}`);
+  // `what`, when given, names what in a blob of a known version only a newer build writes.
+  constructor(storedVersion, currentVersion, what) {
+    super(what
+      ? `replay ${what} is from a version newer than this build's format version ${currentVersion}`
+      : `replay format version ${storedVersion} is newer than this build's ${currentVersion}`);
     this.name = 'ReplayNewerVersionError';
     this.storedVersion = storedVersion;
     this.currentVersion = currentVersion;
@@ -208,12 +221,12 @@ const nonEmpty = (name, v) => {
 
 function checkGraph(graph, board) {
   if (!graph || typeof graph !== 'object') throw new RangeError('replay graph must be an object');
-  if (graph.kind === 'square') {
-    if (board.mode === MODE_3D || board.grid !== 'square') throw new RangeError('a square graph needs a 2D square-grid board');
+  if (FLAT_KINDS.includes(graph.kind)) {
+    if (board.mode === MODE_3D || board.grid !== graph.kind) throw new RangeError(`a ${graph.kind} graph needs a 2D ${graph.kind}-grid board`);
     if (graph.width !== board.width || graph.height !== board.height) {
-      throw new RangeError(`the square graph is ${graph.width} × ${graph.height}, the board ${board.width} × ${board.height}`);
+      throw new RangeError(`the ${graph.kind} graph is ${graph.width} × ${graph.height}, the board ${board.width} × ${board.height}`);
     }
-    return { kind: 'square', width: graph.width, height: graph.height };
+    return { kind: graph.kind, width: graph.width, height: graph.height };
   }
   if (graph.kind === 'box') {
     if (board.mode !== MODE_3D) throw new RangeError('a box graph needs a 3D board');
@@ -222,7 +235,7 @@ function checkGraph(graph, board) {
     }
     return { kind: 'box', x: graph.x, y: graph.y, z: graph.z };
   }
-  throw new RangeError(`replay graph kind must be square or box, got ${JSON.stringify(graph.kind)}`);
+  throw new RangeError(`replay graph kind must be one of ${[...FLAT_KINDS, 'box'].join(', ')}, got ${JSON.stringify(graph.kind)}`);
 }
 
 const cellsOf = (board) => board.width * board.height * (board.depth ?? 1);
@@ -300,14 +313,17 @@ function checkPauses(pauses, elapsedMs) {
 
 // ---------- the encoder ----------
 
-function writeBodyV1(w, replay) {
+// The v1 body, its graph kind one of `kinds` (the v3 body is the same over GRAPH_KINDS_V3).
+function writeBodyV1(w, replay, kinds = GRAPH_KINDS_V1) {
   if (!replay || typeof replay !== 'object') throw new RangeError('replay must be an object');
   const h = checkHeader(replay.header);
   const cells = cellsOf(h.board);
+  const flat = FLAT_KINDS.includes(h.graph.kind);
+  if (!kinds.includes(h.graph.kind)) throw new RangeError(`this format version has no ${h.graph.kind} graph`);
   w.string(h.id);
   w.string(h.mode);
-  w.byte(GRAPH_KINDS.indexOf(h.graph.kind));
-  if (h.graph.kind === 'square') { w.uint(h.graph.width); w.uint(h.graph.height); } else { w.uint(h.graph.x); w.uint(h.graph.y); w.uint(h.graph.z); }
+  w.byte(kinds.indexOf(h.graph.kind));
+  if (flat) { w.uint(h.graph.width); w.uint(h.graph.height); } else { w.uint(h.graph.x); w.uint(h.graph.y); w.uint(h.graph.z); }
   w.byte(h.board.noGuess ? 1 : 0);
   w.uint(h.mines.length);
   let prev = -1;
@@ -349,7 +365,7 @@ function writeBodyV1(w, replay) {
         w.sint(v - last[i]); last[i] = v;
       }
     } else if (e.type === 'cursor') {
-      if (h.graph.kind !== 'square') throw new RangeError('a cursor event belongs to a 2D replay');
+      if (!flat) throw new RangeError('a cursor event belongs to a 2D replay');
       const c = int('cursor cell', e.cell, -1, cells - 1);
       w.sint(c - cell); cell = c;
     } else if (e.type === 'view') {
@@ -368,20 +384,23 @@ function writeBodyV1(w, replay) {
   w.u32(c.digest);
 }
 
-function writeBodyV2(w, replay) {
+function writeBodyV2(w, replay, kinds = GRAPH_KINDS_V1) {
   if (!replay || typeof replay !== 'object') throw new RangeError('replay must be an object');
   const pauses = checkPauses(replay.header?.pauses ?? [], checkCheck(replay.check).elapsedMs);
   w.uint(pauses.length);
   let prev = 0;
   for (const p of pauses) { w.uint(p.start - prev); w.uint(p.end - p.start); prev = p.end; }
-  writeBodyV1(w, replay);
+  writeBodyV1(w, replay, kinds);
 }
 
-const WRITERS = Object.freeze({ 1: writeBodyV1, 2: writeBodyV2 });
+const writeBodyV3 = (w, replay) => writeBodyV2(w, replay, GRAPH_KINDS_V3);
 
-// The replay as one blob, at the current format version. `version` writes another: version 1's
-// body (a replay without pauses, for tests of old replays), or the current body stamped with a
-// version this build has no writer for, for tests of the decoder's version handling only.
+const WRITERS = Object.freeze({ 1: (w, replay) => writeBodyV1(w, replay), 2: (w, replay) => writeBodyV2(w, replay), 3: writeBodyV3 });
+
+// The replay as one blob, at the current format version. `version` writes another: an older
+// version's body (version 1's a replay without pauses; versions 1 and 2 only square and box
+// graphs), for tests of old replays, or the current body stamped with a version this build has no
+// writer for, for tests of the decoder's version handling only.
 export function encodeReplay(replay, { version = REPLAY_FORMAT_VERSION } = {}) {
   const w = createWriter();
   for (const b of MAGIC) w.byte(b);
@@ -397,19 +416,21 @@ export function encodeReplay(replay, { version = REPLAY_FORMAT_VERSION } = {}) {
 
 // ---------- the decoders ----------
 
-function readBodyV1(r) {
+// The v1 body, its graph kind byte indexing `kinds`; `unknown(byte)` answers a byte past them.
+function readBodyV1(r, kinds = GRAPH_KINDS_V1, unknown = () => fail('unknown graph kind')) {
   const id = r.string();
   const mode = r.string();
-  const kind = GRAPH_KINDS[r.byte()];
+  const byte = r.byte();
+  const kind = kinds[byte];
   let graph, board;
-  if (kind === 'square') {
+  if (FLAT_KINDS.includes(kind)) {
     graph = { kind, width: r.uint(), height: r.uint() };
-    board = { mode, grid: 'square', width: graph.width, height: graph.height };
+    board = { mode, grid: kind, width: graph.width, height: graph.height };
   } else if (kind === 'box') {
     graph = { kind, x: r.uint(), y: r.uint(), z: r.uint() };
     board = { mode, width: graph.x, height: graph.y, depth: graph.z };
   } else {
-    fail('unknown graph kind');
+    unknown(byte);
   }
   const noGuess = r.byte();
   if (noGuess > 1) fail('bad noGuess flag');
@@ -452,7 +473,7 @@ function readBodyV1(r) {
     if (type === 'sample') {
       for (let i = 0; i < arity; i++) last[i] += r.sint();
       movement.push({ time: t, type, values: last.slice() });
-    } else if (type === 'cursor' && graph.kind === 'square') {
+    } else if (type === 'cursor' && FLAT_KINDS.includes(graph.kind)) {
       cell += r.sint();
       if (cell < -1 || cell >= cells) fail('cursor cell out of range');
       movement.push({ time: t, type, cell });
@@ -477,7 +498,7 @@ function readBodyV1(r) {
 }
 
 // Version 2: the pause spans, then a version 1 body.
-function readBodyV2(r) {
+function readBodyV2(r, kinds = GRAPH_KINDS_V1, unknown = undefined, version = 2) {
   const spans = [];
   let prev = 0;
   for (let n = r.uint(); n > 0; n--) {
@@ -485,15 +506,22 @@ function readBodyV2(r) {
     prev = start + r.uint();
     spans.push({ start, end: prev });
   }
-  const replay = readBodyV1(r);
+  const replay = readBodyV1(r, kinds, unknown);
   const pauses = checkPauses(spans, replay.check.elapsedMs);
-  return { ...replay, header: { ...replay.header, pauses }, sampleIntervalMs: sampleIntervalMs(2, replay.header.mode) };
+  return { ...replay, header: { ...replay.header, pauses }, sampleIntervalMs: sampleIntervalMs(version, replay.header.mode) };
 }
 
-const DECODERS = Object.freeze({ 1: readBodyV1, 2: readBodyV2 });
+// Version 3: the version 2 body over the hex and tri graph kinds too; a kind past them is a newer
+// build's.
+const readBodyV3 = (r) => readBodyV2(r, GRAPH_KINDS_V3, (byte) => {
+  throw new ReplayNewerVersionError(3, REPLAY_FORMAT_VERSION, `graph kind ${byte}`);
+}, 3);
+
+const DECODERS = Object.freeze({ 1: (r) => readBodyV1(r), 2: (r) => readBodyV2(r), 3: readBodyV3 });
 // version v → v + 1, one entry per format version below the current one
 const UPGRADES = Object.freeze({
   1: (replay) => ({ ...replay, header: { ...replay.header, pauses: [] } }),
+  2: (replay) => replay,
 });
 
 const toBytes = (blob) => {
@@ -526,7 +554,7 @@ export function createReplayDecoder({ current, decoders, upgrades }) {
       replay = read(head);
       for (let v = version; v < current; v++) replay = upgrades[v](replay);
     } catch (err) {
-      if (err instanceof ReplayUnreadableError) throw err;
+      if (err instanceof ReplayUnreadableError || err instanceof ReplayNewerVersionError) throw err;
       throw new ReplayUnreadableError(err.message, { cause: err });
     }
     return replay;

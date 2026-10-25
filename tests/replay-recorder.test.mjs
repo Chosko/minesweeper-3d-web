@@ -1,17 +1,21 @@
 // The recorder and sealer (js/replay/recorder.js): feeding actions and movement on the game
-// clock, de-duplicating samples, the movement cap, sealing a won, lost and abandoned 2D game and
-// a 3D game into a replay that decodes and reproduces, and a failure that drops the replay
-// without interrupting play.
+// clock, de-duplicating samples, the movement cap, sealing a won, lost and abandoned 2D game, a
+// Hexagon and a Triangle game and a 3D game into a replay that decodes and reproduces, and a
+// failure that drops the replay without interrupting play.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { startRecording, MOVEMENT_CAP_BYTES } from '../js/replay/recorder.js';
-import { decodeReplay, cellStateDigest } from '../js/replay/format.js';
+import { decodeReplay, cellStateDigest, sampleIntervalMs } from '../js/replay/format.js';
+import { SAMPLE_INTERVAL_MS } from '../js/replay/sampler-2d.js';
+import { codeOf } from '../js/records/board-code.js';
 import { createBoardIdentity, boardKey, MODE_3D } from '../js/records/board.js';
 import { buildSummary } from '../js/records/summary.js';
 import { REFERENCE_PROFILE, PROFILE_3D } from '../js/engine/profiles.js';
 import { createGame, createGameWithMines, PHASE } from '../js/engine/rules.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
 import { createBoxGrid } from '../js/engine/box-grid.js';
+import { createHexGrid } from '../js/engine/hex-grid.js';
+import { createTriGrid } from '../js/engine/tri-grid.js';
 
 const MINES_2D = [5, 10];
 const board2D = createBoardIdentity({ mode: 'classic-2d', grid: 'square', width: 4, height: 4, mines: 2, noGuess: false });
@@ -307,6 +311,73 @@ test('a 3D game: camera samples, view-mode changes and the hidden state in the d
   assert.equal(failures.length, 0);
 });
 
+test('a Hexagon and a Triangle game: actions, pauses, the cursor stream and pointer samples in board units, sealed with the board code in the listing', () => {
+  const flat = [
+    { mode: 'hexagon', grid: 'hex', build: createHexGrid },
+    { mode: 'triangle', grid: 'tri', build: createTriGrid },
+  ];
+  for (const { mode, grid, build } of flat) {
+    const W = 5, H = 4, mines = [0, 1, 2], start = W * H - 1;
+    const board = createBoardIdentity({ mode, grid, width: W, height: H, mines: mines.length, noGuess: false });
+    const failures = [];
+    const rec = startRecording({ mode, graph: { kind: grid, width: W, height: H }, board, profile: { id: REFERENCE_PROFILE, version: 1 } }, { onFailure: (e) => failures.push(e) });
+    const game = createGame({ graph: build(W, H).graph, profile: REFERENCE_PROFILE, version: 1, mineCount: mines.length, dimensions: { width: W, height: H } });
+    rec.action('reveal', start, 0);
+    game.reveal(start);
+    rec.boardArrived({ mines, seed: 99, generatorVersion: 1 });
+    game.supplyBoard(start, mines);
+    rec.sample([64, 96], 0); // board units in 1/64 steps, as the 2D sampler takes them
+    rec.sample([64, 96], 50);
+    rec.cursor(start, 60);
+    rec.action('flag', 0, 100);
+    game.toggleFlag(0);
+    rec.sample([-10, 300], 300); // after a pause from 150 to 250: off the board too
+    rec.cursor(-1, 310);
+    let t = 400;
+    for (let c = 0; c < W * H && game.phase === PHASE.PLAYING; c++) {
+      if (!mines.includes(c)) { rec.action('reveal', c, t); game.reveal(c); t += 10; }
+    }
+    assert.equal(game.phase, PHASE.WON, `${grid}: won`);
+    const spans = [{ start: 150, end: 250 }];
+    const summary = buildSummary({
+      engine: game.summary(), elapsedMs: t, board, seed: 99, generatorVersion: 1, startCell: start,
+      endedAt: new Date('2026-10-10T12:00:00.000Z'), id: `${grid}-game`, pauses: spans,
+    });
+    const sealed = rec.seal(summary, game, spans);
+    assert.ok(sealed, `${grid}: sealed`);
+    assert.equal(failures.length, 0, `${grid}: no failure`);
+    const replay = decodeReplay(sealed.blob);
+    assert.deepEqual(replay.header.graph, { kind: grid, width: W, height: H });
+    assert.equal(replay.header.mode, mode);
+    assert.deepEqual(replay.header.board, board);
+    assert.deepEqual(replay.header.pauses, spans);
+    assert.equal(replay.sampleIntervalMs, SAMPLE_INTERVAL_MS, 'Classic 2D\'s sampling interval');
+    assert.equal(sampleIntervalMs(3, mode), SAMPLE_INTERVAL_MS);
+    assert.deepEqual(replay.movement, [
+      { time: 0, type: 'sample', values: [64, 96] },
+      { time: 60, type: 'cursor', cell: -1 },
+      { time: 60, type: 'cursor', cell: start },
+      { time: 300, type: 'sample', values: [-10, 300] },
+      { time: 310, type: 'cursor', cell: -1 },
+    ]);
+    assert.deepEqual(replay.actions.slice(0, 2), [{ time: 0, kind: 'reveal', cell: start }, { time: 100, kind: 'flag', cell: 0 }]);
+    const again = createGameWithMines({ graph: build(W, H).graph, profile: REFERENCE_PROFILE, version: 1, mines: replay.header.mines });
+    for (const a of replay.actions) {
+      if (a.kind === 'reveal') again.reveal(a.cell);
+      else if (a.kind === 'flag') again.toggleFlag(a.cell);
+      else again.chord(a.cell);
+    }
+    assert.equal(cellStateDigest(again.state), replay.check.digest, `${grid}: the actions reproduce the final state`);
+    const code = codeOf(summary);
+    assert.equal(typeof code, 'string');
+    assert.deepEqual(sealed.listing, {
+      id: `${grid}-game`, boardKey: boardKey(board), mode, outcome: 'won', elapsedMs: t,
+      bbbvPerSecond: summary.bbbvPerSecond, efficiency: summary.efficiency,
+      endedAt: '2026-10-10T12:00:00.000Z', size: sealed.blob.length, code,
+    });
+  }
+});
+
 test('failure: a bad feed drops the replay, is reported once, and never throws into play', () => {
   const s = session2D();
   s.act('reveal', 0, 0);
@@ -341,8 +412,23 @@ test('failure: a summary for another board drops the replay', () => {
 test('failure: header fields that cannot be recorded give a dead recorder, not a throw', () => {
   const failures = [];
   let rec;
-  assert.doesNotThrow(() => { rec = startRecording({ mode: 'classic-2d', graph: { kind: 'hex' }, board: board2D, profile: { id: REFERENCE_PROFILE, version: 1 } }, { onFailure: (e) => failures.push(e) }); });
+  assert.doesNotThrow(() => { rec = startRecording({ mode: 'classic-2d', graph: { kind: 'ring' }, board: board2D, profile: { id: REFERENCE_PROFILE, version: 1 } }, { onFailure: (e) => failures.push(e) }); });
   assert.doesNotThrow(() => { rec.action('reveal', 0, 0); rec.sample([1, 1], 0); });
   assert.equal(rec.seal(null, null), null);
   assert.equal(failures.length, 1);
+});
+
+test('failure: a graph kind that is not the board\'s grid gives a dead recorder at once', () => {
+  const hexBoard = createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 4, height: 4, mines: 2, noGuess: false });
+  const cases = [
+    { mode: 'classic-2d', graph: { kind: 'hex', width: 4, height: 4 }, board: board2D },
+    { mode: 'hexagon', graph: { kind: 'tri', width: 4, height: 4 }, board: hexBoard },
+    { mode: 'hexagon', graph: { kind: 'square', width: 4, height: 4 }, board: hexBoard },
+  ];
+  for (const fields of cases) {
+    const failures = [];
+    const rec = startRecording({ ...fields, profile: { id: REFERENCE_PROFILE, version: 1 } }, { onFailure: (e) => failures.push(e) });
+    assert.equal(rec.failed, true, JSON.stringify(fields.graph));
+    assert.equal(failures.length, 1);
+  }
 });

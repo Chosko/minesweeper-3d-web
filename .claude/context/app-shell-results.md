@@ -56,9 +56,7 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   returns to `results`. Watch replay →
   `RESULTS.watch()` routes to `replay` with `{replay, returnTo: {screen:
   'results'}}` — the game's own sealed replay, so it plays whether or not
-  the library saved it; a Hexagon or Triangle game hands over no replay
-  ([classic2d-session.md](classic2d-session.md) § Recording), so Watch
-  replay is not offered after one. Watch best (only after a win that set no best) →
+  the library saved it. Watch best (only after a win that set no best) →
   `RESULTS.watchBest()` routes to `replay` with the best's `replayId`.
   Main menu and Back → `showMainMenu`. Returning to
   `results` without data shows `RESULTS.current` again.

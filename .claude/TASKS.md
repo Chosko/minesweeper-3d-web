@@ -1611,7 +1611,7 @@ Feature: flat-grid-records-replays
 
 ## 274. Replay format version with `hex` and `tri`, and the 2D recorder over them
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/format.js, js/replay/recorder.js, js/replay/sampler-2d.js, js/classic2d/session.js, tests/replay-format.test.mjs, tests/replay-recorder.test.mjs, tests/replay-handoff.test.mjs
 Preconditions: 254, 258, 269

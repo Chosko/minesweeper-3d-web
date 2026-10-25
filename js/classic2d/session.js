@@ -74,8 +74,8 @@
 // click counts the summary carries, 0 before the first click and unchanged once the game ended;
 // counts() is the engine's counts() (3BV, 3BV solved, the click counts by kind) the live figures read.
 //
-// Recording (js/replay/recorder.js): each closed board opens a recorder, and restart() and leave()
-// discard it. Every action the session hands to the engine while the game accepts actions is
+// Recording (js/replay/recorder.js): each closed board opens a recorder over its configuration's
+// graph — square, hex or tri, the board identity's grid — and restart() and leave() discard it. Every action the session hands to the engine while the game accepts actions is
 // recorded at that point, at the timer's elapsed time, paused spans included: the first reveal at
 // 0 (a flag or chord before it changes nothing and is not recorded), the rest while playing. The board's mines, seed
 // and generator version are added when it arrives, and a board played standard after a failure

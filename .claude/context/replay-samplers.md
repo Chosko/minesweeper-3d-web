@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-The player's movement in a replay: the Classic 2D pointer and cursor
+The player's movement in a replay: the flat modes' 2D pointer and cursor
 sampler and the 3D camera and view-mode sampler, each feeding its session's
 recorder on the game clock. The format, the recorder and the replay layer's
 map are in [replay.md](replay.md). DOM-free apart from the 2D sampler's
@@ -10,7 +10,7 @@ browser wiring.
 
 | File | Responsibility |
 | ---- | -------------- |
-| `js/replay/sampler-2d.js` | Classic 2D pointer and cursor sampler; `mountSampler2D` browser wiring. |
+| `js/replay/sampler-2d.js` | 2D pointer and cursor sampler of every flat mode; `mountSampler2D` browser wiring. |
 | `js/replay/sampler-3d.js` | 3D camera and view-mode sampler. |
 
 Wiring: the modes own their sampler — Classic 2D mounts `mountSampler2D`

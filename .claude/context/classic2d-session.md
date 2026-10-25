@@ -84,10 +84,8 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
   standard after a failure starts a new recording. `recording` is true
   while the game is started, unpaused and unfinished, and only then do
   `recordSample` and `recordCursor` record. The recorder's graph is the
-  board identity's grid; until replays cover the `hex` and `tri` graphs
-  ([replay.md](replay.md)) the recorder refuses them, and since recorder
-  failure never interrupts play a Hexagon or Triangle game ends with no
-  replay.
+  board identity's grid — square, hex or tri ([replay.md](replay.md)) — so
+  every flat mode's game ends with its replay.
 - **Timer.** The game clock starts when the board is ready, runs through
   pauses and keeps its time once stopped; `seconds()` is whole seconds for
   the overlay, `elapsedMs()` whole milliseconds for the result. A pause is
