@@ -66,7 +66,7 @@ Context:
 
 Done: 2026-10-25, commit `35561e8` (9 files, +841/-1). Fullscreen state is tracked from enter/leave events, because `isFullScreen()` always answers false for a transparent window on Windows; Electron is pinned at `44.9.3` with no lockfile.
 
-## [ ] 2. Implement task 85 — Steamworks capability adapter, unavailable implementation and the page bridge
+## [x] 2. Implement task 85 — Steamworks capability adapter, unavailable implementation and the page bridge
 
 Depends on: 1
 
@@ -77,6 +77,8 @@ Context:
 /task-implement 85 --review --rounds 2
 ```
 
+Done: 2026-10-25, commit `75b1764` (8 files, +955/-6). The page's global is `window.ms3dHost` (requests as `<group>.<request>`, events as subscribe functions under `ms3dHost.events`); a failed request rejects with a plain `{ code, message }` object, not an Error, because `contextBridge` drops custom Error properties.
+
 ## [ ] 3. Implement task 86 — Page platform selection, capability flags, overlay pause and the quit flush
 
 Depends on: 2
@@ -84,6 +86,7 @@ Depends on: 2
 Context:
 - 2026-10-23 (amend): task 86 was re-planned to drive the desktop window from the page (title bar drag region, Minimise, Fullscreen / Windowed, content size) and now waits on task 282, the m2b-themes title bar, which this runbook does not run.
 - 2026-10-25 (from step 1): the host calls `setMovable(false)` while fullscreen, unverified until the page marks its drag region; the window opens at a default content size of 1280×800 until the page reports its size; the page still draws its web backdrop around the desktop window until it knows it is on desktop.
+- 2026-10-25 (from step 2): the bridge is `window.ms3dHost` — `window.minimise/toggleFullscreen/setContentSize`, `quit.handshake/request`, events `steamStateChanged`, `overlayActivated`, `flushRequested`, `fullscreenChanged` (each a subscribe function returning its unsubscribe); failures reject with `{ code, message }`. Until the page answers `flushRequested`, closing the desktop window waits out the full `FLUSH_TIMEOUT_MS`.
 
 ```prompt
 /task-implement 86 --review --rounds 2
@@ -121,7 +124,8 @@ Depends on: 2, 3, 5
 
 Needs: agent+human
 
-Context: none
+Context:
+- 2026-10-25 (from step 2): the bridge carries Steam ids, leaderboard handles and shared-file handles as decimal strings.
 
 ```prompt
 /task-implement 89 --review --rounds 2
@@ -142,7 +146,8 @@ Context:
 
 Depends on: 2
 
-Context: none
+Context:
+- 2026-10-25 (from step 2): the bridge's `storage.read/write/setAside` and `blobs.put/get/delete/list` requests are empty slots that reject with `unavailable`; task 91 fills them with `bridge.register(...)`. The request and event lists live only in the main process — the sandboxed preload fetches them over one synchronous IPC call.
 
 ```prompt
 /task-implement 91 --review --rounds 2
