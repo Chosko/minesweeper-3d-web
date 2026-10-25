@@ -32,7 +32,7 @@ import { token, onThemeChange } from './tokens.js';
 import { themeApplier } from './themes/applier.js';
 import { bindBoardArt } from './shell/board-art.js';
 import { BOARD_ART } from './classic2d/tile-skin.js';
-import { storage, blobStore, capabilities } from './platform/index.js';
+import { storage, blobStore, capabilities, onOverlayActivated, addFlushHook, bindDesktopWindow } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
 import { countedClicks } from './records/summary.js';
@@ -44,7 +44,7 @@ import { panelRect, mountBoardView, BOARD_FRAME } from './classic2d/board-view.j
 import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent, resultsEnter, LOOK_REFUSED } from './results/view.js';
-import { copyBoardCode, applyIcons, applyLogos, bindWindowButtons } from './ui/components.js';
+import { copyBoardCode, applyIcons, applyLogos, bindWindowButtons, setButtonIcon } from './ui/components.js';
 import { DAILY_SCREEN, dailyModes, dailyPanel, createDailyBoards, bindDailyScreen, countedAttempt, dailyPreview } from './shell/daily.js';
 import { resolveCode, gameStart, freeStart, createChallengeLinks } from './shell/challenge.js';
 import { dailyGame, dateText } from './records/board-code.js';
@@ -430,9 +430,11 @@ ui.setTouch3D(COARSE_ONLY);
 // and the game logo of every title bar.
 applyIcons(document.body);
 applyLogos(document.body);
-// The title bar's window buttons: a desktop host the capability flags report gives them its actions;
+// The title bar's window buttons: a desktop host the capability flags report gives them its actions
+// — the desktop window's Minimise and Fullscreen / Windowed, its title bar the window's drag region;
 // the web build has none, so they press and do nothing.
-bindWindowButtons(document.body, { capabilities });
+const DESKTOP_WINDOW = bindDesktopWindow({ document, setIcon: setButtonIcon });
+bindWindowButtons(document.body, { capabilities, actions: DESKTOP_WINDOW.actions });
 
 // ---------- active device ----------
 // The controller while the last input came from a connected controller, else the keyboard and
@@ -908,6 +910,7 @@ const PAUSE = createPauseController({
   unrecorded: () => MODES.active === '3d' && mode3d.learn, // Learn 3D: nothing it abandons counts
 });
 window.addEventListener('blur', () => pauseGame('blur'));
+onOverlayActivated(() => pauseGame('blur')); // the Steam overlay opening is a window blur
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pauseGame('hidden'); });
 window.addEventListener('pagehide', () => { if (endDelay()) activeMode().finishNow(); PAUSE.pageHide(); }); // a game in its end delay is finished, not lost
 
@@ -1010,6 +1013,13 @@ const REPLAYS = createReplayLibrary({
   onNotSaved: () => ui.toast('Replays cannot be saved in this browser — this session\'s replays will not be kept.', 4000),
 });
 REPLAYS.load();
+// Before the desktop host quits: a game in play ends as closing the page ends it, and the host waits
+// (bounded by its own timeout) until every save that queued is written.
+addFlushHook(async () => {
+  if (endDelay()) activeMode().finishNow();
+  PAUSE.pageHide();
+  await Promise.all([RECORDS.settled(), REPLAYS.settled()]);
+});
 
 // ---------- reset all data ----------
 // The Settings page's Reset all data: every document, replay and carried-over key goes once the

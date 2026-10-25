@@ -2537,8 +2537,7 @@ test('bindWindowButtons: with no desktop host a window button presses and does n
   bindWindowButtons(root, { capabilities: { desktopHost: true } });
   press('quit');
   assert.equal(calls.length, 3, 'a host without that action does nothing');
-  assert.match(read('js/platform/index.js'), /\nexport const capabilities = Object\.freeze\(\{ desktopHost: false \}\);/, 'the web build reports no desktop host');
-  assert.match(read('js/main.js'), /bindWindowButtons\(document\.body, \{ capabilities \}\);/, 'the shell binds every title bar\'s window buttons to the platform\'s flags');
+  assert.match(read('js/main.js'), /bindWindowButtons\(document\.body, \{ capabilities, actions: DESKTOP_WINDOW\.actions \}\);/,'the shell binds every title bar\'s window buttons to the platform\'s flags');
 });
 
 test('main menu buttons: the play tile a native button with its icon, label, lock and own preview, a disabled one with its reason and its preview locked; the small entry its icon and label; the phone row; no Last played chip', () => {

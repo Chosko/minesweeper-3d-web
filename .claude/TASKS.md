@@ -26,7 +26,7 @@ Feature: steam-desktop-host
 
 ## 86. Page platform selection, capability flags, overlay pause and the quit flush
 
-Status: [MISSING]
+Status: [PARTIAL]
 Target: claude
 Files: js/platform/index.js, js/platform/capabilities.js, js/platform/bridge-client.js, js/platform/window-actions.js, js/shell/pause.js, js/main.js, desktop/closing.js, tests/platform-selection.test.mjs
 Preconditions: 85, 282

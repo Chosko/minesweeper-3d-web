@@ -1,14 +1,17 @@
-# Platform — storage interface, backends, blob store, start-up selection
+# Platform — storage interface, backends, blob store, start-up selection, host link
 
 ## OVERVIEW
 
-The storage half of the platform layer: the one API the game persists
-through. Named documents of plain data, each stored as the text of
-`{ version, data }`, over a backend chosen once at start-up; and named
-binary blobs too large for a document — sealed replays — through the blob
-store, over an implementation opened once at start-up. DOM-free apart from
-the browser backend's default `localStorage` getter and the IndexedDB
-implementation's default `indexedDB` factory.
+The platform layer: the one API the game persists through and the page's
+one link to the desktop host. Named documents of plain data, each stored as
+the text of `{ version, data }`, over a backend chosen once at start-up;
+named binary blobs too large for a document — sealed replays — through the
+blob store, over an implementation opened once at start-up; the capability
+flags, the host link (Steam state, the overlay, the quit flush) and the
+desktop window driven from the page. DOM-free apart from the browser
+backend's default `localStorage` getter, the IndexedDB implementation's
+default `indexedDB` factory and `window-actions.js`, which marks the
+document and adds the drag region's style on the desktop host.
 
 | File | Responsibility |
 | ---- | -------------- |
@@ -18,7 +21,10 @@ implementation's default `indexedDB` factory.
 | `js/platform/blob-store.js` | Blob store interface (`createBlobStore`), the fallback to memory. Header defines the blob implementation contract. |
 | `js/platform/memory-blob-store.js` | In-memory blob implementation: the contract's reference, the fallback, what tests use. |
 | `js/platform/indexeddb-blob-store.js` | The web build's blob implementation over IndexedDB. |
-| `js/platform/index.js` | The selector: builds the one `storage` and the one `blobStore`; re-exports the storage methods; the host's capability flags `capabilities`. |
+| `js/platform/index.js` | The selector (`selectPlatform`): looks for the page bridge once at start-up, fills each slot (`STEAM_SLOTS`: storage, blob store, leaderboards, achievements) with its Steam implementation or the browser one; re-exports the storage methods; the capability flags, the host link and the desktop window. |
+| `js/platform/capabilities.js` | The capability flags (`CAPABILITY_FLAGS`, `deriveFlags`, `createCapabilities`) and the latest Steam state. |
+| `js/platform/bridge-client.js` | The page's side of the page bridge: `findBridge`, the request client, `linkHost` — Steam state into the flags, overlay listeners, the quit flush. |
+| `js/platform/window-actions.js` | The desktop window driven from the page: drag region, Minimise and Fullscreen / Windowed with its icon, `reportSize`. |
 
 Document owners register here: settings ([settings.md](settings.md)),
 `shell.lastMode` and the board choice panel's pin `shell.boardPanel` ([app-shell-menu.md](app-shell-menu.md)), the live figures panel's open state `shell.liveFigures` ([app-shell-2d.md](app-shell-2d.md)) and `shell.firstUse` ([app-shell-help.md](app-shell-help.md)), the
@@ -34,11 +40,19 @@ document's browser key directly at start-up.
 
 Platform module (`js/platform/index.js`) — what callers import: `storage`
 and its methods `register`, `load`, `save`, `clear`, `available` by name;
-`blobStore`; `capabilities`, the frozen flags of what the host the page
-runs in offers — `desktopHost`, whether a desktop host gives the title
-bar's window buttons their actions (`bindWindowButtons`,
-[app-shell-kit-helpers.md](app-shell-kit-helpers.md)). The web build has no
-host, so every flag is off.
+`blobStore`; `leaderboards` and `achievements` (null until their features
+fill them); `capabilities`, the live flags of what the host offers —
+`desktopHost`, `steam`, `achievements`, `leaderboards`, `sharedFiles`,
+`cloud` — with a getter per flag, `snapshot()`, `steamState()` and
+`subscribe(listener)`, updated from the host's Steam state events (logged-on
+state never turns a flag off); `onOverlayActivated(listener)`, which the
+shell answers with the window blur's pause; `addFlushHook(hook)`, awaited
+before the page answers the host's flush request; `bindDesktopWindow({
+document, setIcon })` → `{ actions, reportSize, dispose }`, the actions
+`bindWindowButtons` ([app-shell-kit-helpers.md](app-shell-kit-helpers.md))
+presses. Nothing calls `reportSize`: the window keeps the host's
+default content size. The web build has no host: every flag is off, and no
+overlay, flush or window action ever happens.
 
 Storage interface (`js/platform/storage.js`)
 - `createStorage({ backend })` → `{ register, load, save, clear, available }`.
@@ -117,9 +131,13 @@ return a Promise and may throw.
   tab's version change closes the connection, so later calls fail.
 - **Start-up selection.** `index.js` is the only module that imports a
   backend or blob implementation; it selects once, when first evaluated,
-  falling back to the memory blob store when IndexedDB is missing or
-  refuses, and never follows a later change of the globals. Tests pin that
-  no other file under `js/` imports them.
+  from the page bridge (`findBridge(globalThis)`): with the bridge, each
+  slot a Steam feature filled in `STEAM_SLOTS` takes that implementation,
+  every other slot the browser one, the memory blob store standing in when
+  IndexedDB is missing or refuses; it never follows a later change of the
+  globals. Tests pin that no other file under `js/` imports an
+  implementation, and that no module outside `js/platform/` tests for
+  Electron or the bridge.
 
 ## DOMAIN DEPENDENCIES
 
@@ -129,13 +147,18 @@ return a Promise and may throw.
   — the replay store: named blobs, IndexedDB in the web build.
 - [../domain/technical-direction.md](../domain/technical-direction.md) —
   the platform layer as the one boundary to storage and Steam.
+- [../domain/features/steam-desktop-host.md](../domain/features/steam-desktop-host.md)
+  — platform selection with the bridge, the capability flags, the overlay
+  pause, the quit flush, the desktop window's actions.
 
 ## CROSS-REFERENCES
 
 - [testing.md](testing.md) — `tests/platform-storage.test.mjs`,
   `tests/platform-browser.test.mjs` (every platform browser test, the
   IndexedDB blob store's round trip among them),
-  `tests/platform-blob-store.test.mjs`.
+  `tests/platform-blob-store.test.mjs`, `tests/platform-selection.test.mjs`
+  (selection with a fake bridge, the flags, the host link, the desktop
+  window).
 - [replay-library.md](replay-library.md) — the blob store's one user.
 - [app-shell.md](app-shell.md) — the `ms3d.*` keys nothing reads.
 - [settings.md](settings.md) — the settings document, the legacy keys it
@@ -143,10 +166,11 @@ return a Promise and may throw.
 
 ## WHEN TO READ THE SOURCE
 
-- Adding a backend (the Steam implementation): the backend contract in the
-  `storage.js` header and `memory-backend.js`, then change the selection in
-  `index.js` only; a blob implementation likewise from the `blob-store.js`
-  header and `memory-blob-store.js`.
+- Adding a Steam implementation: the backend contract in the `storage.js`
+  header and `memory-backend.js` (a blob implementation likewise from the
+  `blob-store.js` header and `memory-blob-store.js`), then fill its slot in
+  `index.js`'s `STEAM_SLOTS` only — a factory of the bridge client
+  (`bridge-client.js`).
 - A blob store failing in the browser: `indexeddb-blob-store.js`'s
   `openDatabase` and `run`.
 - Changing the stored format or the failure rules: `storage.js`'s `parse`,
