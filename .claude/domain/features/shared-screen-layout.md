@@ -272,8 +272,8 @@ In scope (m2b-themes):
 - **Records screen** — the content `records-screen` gives, its tabs Recent
   games, Top 10, Replays and Leaderboards, the last showing its coming-soon
   panel with no pager. The frame is inset on the backdrop, not full
-  height, the 2D | 3D mode switch at the right of its *Records* body
-  heading. The left column's sections sit on the frame under section
+  height, the mode switch (its modes `flat-grid-records-replays`') at the
+  right of its *Records* body heading. The left column's sections sit on the frame under section
   labels, the overall block alone a muted panel; the bests are plain
   tiles with an inline *Watch* link, the counters sunk tiles. The board
   picker is one line, *Daily* among its options. An empty chart shows only
