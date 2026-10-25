@@ -111,8 +111,8 @@ Classic 2D mode and its shell wiring
 
 - **Flat mode configuration** — the values that differ between the three
   flat modes: mode id and display name, grid kind (graph provider and
-  geometry), standard sizes and custom limits, the last-choice document,
-  and the board-code token. The configuration has its own module,
+  geometry), standard sizes and custom limits, and the last-choice
+  document. The configuration has its own module,
   `js/flat-modes.js`. The Classic 2D mode, board setup and board choice
   binder take a configuration where they assume the square grid.
 - **One mode instance per flat mode** — each with its own session per game,
@@ -128,7 +128,7 @@ Classic 2D mode and its shell wiring
 - **Code resolution** — the shell's resolver tells a hexagon or triangle
   code apart by its token and routes it to its mode's forced start. The
   token is read from the board-code parser's own table of the 2D modes,
-  which the configuration's token matches.
+  the one place a flat mode's code token is held.
 
 ## Data and state
 
