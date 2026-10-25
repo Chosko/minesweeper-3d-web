@@ -372,7 +372,7 @@ Context:
 
 Done: 2026-10-24, commit `f16c098` (15 files, +389/-94). Decision: an unknown graph kind reads as "made by a newer version" only in a format-version-3 replay; the recorder refuses a graph kind that is not the board's grid at the start.
 
-## [ ] 28. Implement task 275 — Playback of Hexagon and Triangle replays
+## [x] 28. Implement task 275 — Playback of Hexagon and Triangle replays
 
 Depends on: 17, 27
 
@@ -384,6 +384,8 @@ Context:
 /task-implement 275 --review
 ```
 
+Done: 2026-10-24, commit `7831449` (12 files, +297/-31). Premise wrong: the 2D viewer, verifier and library were already grid-neutral; the replay strip names the mode only through the code chip's `H`/`T` token.
+
 ## [ ] 29. Implement task 276 — Update documentation for feature `flat-grid-records-replays`
 
 Depends on: 25, 26, 27, 28
@@ -392,6 +394,7 @@ Context:
 - 2026-10-24 (from step 25): task 272 already updated .claude/context/records.md and records-store.md — `RECORDS_VERSION` 5 (the 4→5 step reuses `upgradeRecords`), the mode-to-grid check in `createBoardIdentity`, `MODES` in menu order, boards played by mode using each grid's own standard list.
 - 2026-10-24 (from step 26): task 273 updated the Records context files; the older feature documents describing the original 2D | 3D switch (3d-results-records-screens, shared-screen-layout, leaderboard-screen) were left as they are. `EXPORT_MODES` is now `MODES` from js/records/model.js.
 - 2026-10-24 (from step 27): task 274 already updated the passages that said Hexagon and Triangle games record no replay, including the flat-grid-modes feature document and app-shell-results.md; replays are format version 3 (the version 1 and 2 writers refuse a hex or tri graph).
+- 2026-10-24 (from step 28): .claude/context/replay-viewer-screen.md and app-shell-replay.md still describe only the square and box viewers — js/main.js registers the 2D viewer for every flat grid kind through `FLAT_REPLAY_VIEWERS`, the simulator builds the `hex` and `tri` grids, and the replay title takes the mode's name from `MODE_NAMES`.
 
 ```prompt
 /task-implement 276 --review
