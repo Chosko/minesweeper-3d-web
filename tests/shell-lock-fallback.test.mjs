@@ -183,7 +183,7 @@ test('in a browser that refuses pointer lock, the second refusal offers drag-to-
     await page.click('#p-confirm-yes');
     assert.equal(await mode(), 'menu');
     assert.equal(await ms(() => globalThis.__ms.state.dragLook), false);
-    assert.equal(await body(), '');
+    assert.equal(await body(), 'scene-off', 'no play class remains; the menu turns the scene off');
     await ms(() => globalThis.__ms.start(6, 6, 6, 10));
     assert.equal(await mode(), 'ready');
     assert.equal(await shown('ready-blocked'), true, 'the offer shows at once');
