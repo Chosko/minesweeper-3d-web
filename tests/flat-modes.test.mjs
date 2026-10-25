@@ -28,12 +28,11 @@ const spec = (over = {}) => ({
   validateCustom: hexagon.validateCustom,
   maxMines: hexagon.maxMines,
   lastChoiceDoc: 'hexagon.lastChoice',
-  codeToken: 'H',
   ...over,
 });
 const HEX = defineFlatMode(spec());
 const TRI = defineFlatMode(spec({
-  id: triangle.MODE, name: 'Triangle', grid: triangle.GRID, standardSizes: triangle.STANDARD_SIZES, lastChoiceDoc: 'triangle.lastChoice', codeToken: 'T',
+  id: triangle.MODE, name: 'Triangle', grid: triangle.GRID, standardSizes: triangle.STANDARD_SIZES, lastChoiceDoc: 'triangle.lastChoice',
 }));
 const memoryStorage = (initial) => createStorage({ backend: createMemoryBackend({ initial }) });
 
@@ -47,7 +46,6 @@ test('flat modes: Classic 2D is the square configuration, from Classic 2D\'s boa
   assert.equal(CLASSIC_2D.validateCustom, classic2d.validateCustom);
   assert.equal(CLASSIC_2D.maxMines, classic2d.maxMines);
   assert.equal(CLASSIC_2D.lastChoiceDoc, classic2d.LAST_CHOICE_DOC);
-  assert.equal(CLASSIC_2D.codeToken, '');
   for (const field of ['id', 'grid', 'standardSizes', 'validateCustom', 'maxMines', 'lastChoiceDoc']) {
     assert.deepEqual(classic2d.SQUARE_SETUP[field], CLASSIC_2D[field], `board setup's square values: ${field}`);
   }
@@ -57,8 +55,8 @@ test('flat modes: Classic 2D is the square configuration, from Classic 2D\'s boa
   assert.equal(CLASSIC_2D.createGrid(9, 7).graph.count, 63);
 });
 
-test('flat modes: Hexagon and Triangle are the hex and tri configurations, from their board setups, each with its own last-choice document and code token', () => {
-  for (const [config, setup, name, doc, token] of [[HEXAGON, hexagon, 'Hexagon', 'hexagon.lastChoice', 'H'], [TRIANGLE, triangle, 'Triangle', 'triangle.lastChoice', 'T']]) {
+test('flat modes: Hexagon and Triangle are the hex and tri configurations, from their board setups, each with its own last-choice document', () => {
+  for (const [config, setup, name, doc] of [[HEXAGON, hexagon, 'Hexagon', 'hexagon.lastChoice'], [TRIANGLE, triangle, 'Triangle', 'triangle.lastChoice']]) {
     assert.equal(config.id, setup.MODE, 'the menu entry\'s id');
     assert.equal(config.name, name);
     assert.equal(config.grid, setup.GRID);
@@ -66,12 +64,13 @@ test('flat modes: Hexagon and Triangle are the hex and tri configurations, from 
     assert.equal(config.validateCustom, setup.validateCustom);
     assert.equal(config.maxMines, setup.maxMines);
     assert.equal(config.lastChoiceDoc, doc);
-    assert.equal(config.codeToken, token);
     assert.equal(config.createGeometry(4, 3).kind, setup.GRID);
   }
   assert.deepEqual(FLAT_MODES.map((c) => c.id), ['classic-2d', 'hexagon', 'triangle']);
   assert.equal(new Set(FLAT_MODES.map((c) => c.lastChoiceDoc)).size, 3, 'one document per mode');
   assert.ok(Object.isFrozen(FLAT_MODES));
+  // A board's code prefix is the board-code table's (js/records/board-code.js), not the configuration's.
+  for (const config of FLAT_MODES) assert.ok(!Object.hasOwn(config, 'codeToken'), `${config.id} carries no code token`);
 });
 
 test('flat modes: Hexagon\'s and Triangle\'s last board choices are stored in Classic 2D\'s shape; an invalid one reads as Beginner with no-guess on and is never saved', async () => {
@@ -130,10 +129,9 @@ test('flat modes: standard sizes outside the configuration\'s own custom limits 
   assert.throws(() => defineFlatMode(spec({ standardSizes: two })), RangeError);
 });
 
-test('flat modes: a configuration needs its id, name, limits, last-choice document and a code token of at most one capital', () => {
+test('flat modes: a configuration needs its id, name, limits, last-choice document', () => {
   for (const over of [
     { id: '' }, { name: '' }, { lastChoiceDoc: '' }, { validateCustom: null }, { maxMines: 'x' },
-    { codeToken: 'h' }, { codeToken: 'HX' }, { codeToken: null },
   ]) {
     assert.throws(() => defineFlatMode(spec(over)), RangeError, JSON.stringify(over));
   }

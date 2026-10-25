@@ -15,7 +15,7 @@ own on the same board setup, board choice, session and mode.
 
 | File | Responsibility | Context file |
 | --- | --- | --- |
-| `js/flat-modes.js` | The flat mode configuration — what differs between Classic 2D, Hexagon and Triangle: mode id and name, grid kind with its graph provider and geometry, standard sizes and custom limits, the last-choice document, the board-code token; the three configurations. DOM-free at import. | this file |
+| `js/flat-modes.js` | The flat mode configuration — what differs between Classic 2D, Hexagon and Triangle: mode id and name, grid kind with its graph provider and geometry, standard sizes and custom limits, the last-choice document; the three configurations. DOM-free at import. | this file |
 | `js/classic2d/board-setup.js` | Board choice → board request: standard sizes, custom limits and validation, grid and records identity of a choice, the last board choice document — each under a flat mode configuration, the square values by default. DOM-free. | this file |
 | `js/hexagon/board-setup.js` | The Hexagon mode's board setup values: its standard boards and Classic 2D's custom limits, read by the board-code parser and Hexagon's configuration. DOM-free. | this file |
 | `js/triangle/board-setup.js` | The Triangle mode's board setup values, in the same shape as Hexagon's. DOM-free. | this file |
@@ -37,7 +37,7 @@ own on the same board setup, board choice, session and mode.
 
 `js/flat-modes.js` (its head comment is the contract)
 - `defineFlatMode(spec)` → a frozen configuration `{id, name, grid,
-  standardSizes, validateCustom, maxMines, lastChoiceDoc, codeToken,
+  standardSizes, validateCustom, maxMines, lastChoiceDoc,
   createGrid(width, height), createGeometry(width, height)}` — `grid` a
   kind of `GRID_KINDS` ([geometry.md](geometry.md)), `standardSizes` copied
   and frozen, `createGrid` its graph provider ([engine.md](engine.md)),
@@ -47,9 +47,9 @@ own on the same board setup, board choice, session and mode.
   offers, in order.
 - `CLASSIC_2D` (the square configuration, from this board setup's values),
   `HEXAGON` and `TRIANGLE` (from their board setups, each with its own
-  last-choice document and code token), `FLAT_MODES` — the three in the
-  menu's order. `codeToken` is validated and held, and no code reads it:
-  board codes route through `js/records/board-code.js`'s own table
+  last-choice document), `FLAT_MODES` — the three in the menu's order. A
+  board's code prefix is not part of the configuration: board codes route
+  through `js/records/board-code.js`'s own table
   ([records-board-code.md](records-board-code.md)).
 
 `js/classic2d/board-setup.js`
@@ -74,7 +74,7 @@ own on the same board setup, board choice, session and mode.
   `createLastChoice({storage, config?})` → `{current, load(), save(choice)}`
   over the configuration's `lastChoiceDoc` ([platform.md](platform.md)).
 - `SQUARE_SETUP` — the square values in a configuration's shape, less its
-  name, code token and geometry: what `normaliseChoice`, `boardSetup`,
+  name and geometry: what `normaliseChoice`, `boardSetup`,
   `createLastChoice` and the board choice read with no configuration
   handed in.
 
