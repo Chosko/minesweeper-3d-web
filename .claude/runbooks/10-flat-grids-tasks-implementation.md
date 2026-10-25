@@ -415,7 +415,7 @@ Context:
 
 Done: 2026-10-25, commit `fc2dd5d` (15 files, +159/-79). Decision: a board preview names its grid as `{ kind: 'board', grid: 'square' | 'hex' | 'tri', ground: 'dark' }` and `demoBoard2D(grid)` builds that mode's seeded Intermediate board; no tile uses the badge preview any more.
 
-## [ ] 31. Implement task 278 — Menu routes, last mode played and Daily for Hexagon and Triangle
+## [x] 31. Implement task 278 — Menu routes, last mode played and Daily for Hexagon and Triangle
 
 Depends on: 21
 
@@ -426,11 +426,14 @@ Context:
 /task-implement 278 --review
 ```
 
+Done: 2026-10-25, commit `f5bcea6` (8 files, +92/-11). Premise wrong: the routes and the Daily list's *Coming soon* were already in place; decision: the Daily note for a mode with no daily board now reads "<Mode> has no daily board yet."
+
 ## [ ] 33. Implement task 280 — Hexagon and Triangle daily boards on the Daily screen
 
 Depends on: 23, 26, 30, 31
 
-Context: none
+Context:
+- 2026-10-25 (from step 31): the Daily list shows *Coming soon* for any mode with no daily board, with the note "<Mode> has no daily board yet." (task 278 changed it from "… gets its own daily board when the mode arrives.").
 
 ```prompt
 /task-implement 280 --review
@@ -442,6 +445,7 @@ Depends on: 30, 31
 
 Context:
 - 2026-10-25 (from step 30): task 277 already updated .claude/context/INDEX.md, app-shell-menu-preview.md, app-shell-markup.md, app-shell-kit.md and classic2d-board-view.md and the css/components.css catalogue — a board preview is `{ kind: 'board', grid, ground }`, `demoBoard2D(grid)` builds the seeded Intermediate board, and the badge preview is no longer used by any tile (the kit still accepts it).
+- 2026-10-25 (from step 31): `createLastMode`'s `load()` reads a stored mode the host has not registered as none (main.js passes `modes.has`) — already recorded in .claude/context/app-shell-menu.md; the Daily note for a mode with no daily board reads "<Mode> has no daily board yet."
 
 ```prompt
 /task-implement 279 --review
