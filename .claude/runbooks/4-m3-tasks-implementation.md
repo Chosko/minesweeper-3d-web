@@ -79,7 +79,7 @@ Context:
 
 Done: 2026-10-25, commit `75b1764` (8 files, +955/-6). The page's global is `window.ms3dHost` (requests as `<group>.<request>`, events as subscribe functions under `ms3dHost.events`); a failed request rejects with a plain `{ code, message }` object, not an Error, because `contextBridge` drops custom Error properties.
 
-## [ ] 3. Implement task 86 — Page platform selection, capability flags, overlay pause and the quit flush
+## [x] 3. Implement task 86 — Page platform selection, capability flags, overlay pause and the quit flush
 
 Depends on: 2
 
@@ -91,6 +91,8 @@ Context:
 ```prompt
 /task-implement 86 --review --rounds 2
 ```
+
+Done: 2026-10-25, commit `f7c592c` (11 files, +730/-46). Task 86 is left `[PARTIAL]`: by the user's choice the page does not report its content size (the window stays at 1280×800; the sender is built and tested but uncalled), because the page's layout follows the window's size and the two would feed back — the desktop layout and content size go to a follow-up. The capability flags ignore logged-on state, contrary to the feature document: logged-on state is kept beside them, so going offline switches no feature off.
 
 ## [ ] 4. Implement task 87 — Windows packaging and the SteamPipe private build
 
@@ -113,6 +115,7 @@ Needs: agent+human
 
 Context:
 - 2026-10-23 (amend): task 88 was re-planned: the overlay check now covers the frameless, transparent window, windowed and fullscreen.
+- 2026-10-25 (from step 3): not yet checked in a real desktop run — the overlay (Shift+Tab) pausing a started game, the title bar drag region, and `setMovable(false)` while fullscreen.
 
 ```prompt
 /task-implement 88 --review
@@ -126,6 +129,7 @@ Needs: agent+human
 
 Context:
 - 2026-10-25 (from step 2): the bridge carries Steam ids, leaderboard handles and shared-file handles as decimal strings.
+- 2026-10-25 (from step 3): task 86 is `[PARTIAL]` (content size deferred). The page's capability flags change only when Steam's state reports a different adapter or capability; logged-on state is kept beside them, and Steam calls reject with `offline` for callers to queue or degrade.
 
 ```prompt
 /task-implement 89 --review --rounds 2
@@ -137,6 +141,7 @@ Depends on: 1, 2, 3, 4, 5, 6
 
 Context:
 - 2026-10-25 (from step 1): `.claude/context/` has no entry yet for `desktop/` or the `desktop-` tests.
+- 2026-10-25 (from step 3): task 86 is `[PARTIAL]` — content size is not reported (desktop layout deferred to a follow-up); the capability flags ignore logged-on state, contrary to the feature document's wording.
 
 ```prompt
 /task-implement 90 --review
@@ -157,7 +162,8 @@ Context:
 
 Depends on: 3, 8
 
-Context: none
+Context:
+- 2026-10-25 (from step 3): task 86 is `[PARTIAL]` (content size deferred, nothing this step needs). The page already answers `flushRequested` once the records and replay saves finish; `desktop/closing.js` holds the host's bounded wait.
 
 ```prompt
 /task-implement 92 --review
@@ -223,7 +229,8 @@ Context:
 
 Depends on: 3, 12
 
-Context: none
+Context:
+- 2026-10-25 (from step 3): the page's leaderboards slot is null on the web build until this step fills it; task 86 is `[PARTIAL]` (content size deferred, nothing this step needs).
 
 ```prompt
 /task-implement 98 --review
@@ -254,7 +261,8 @@ Context:
 
 Depends on: 3, 17
 
-Context: none
+Context:
+- 2026-10-25 (from step 3): the page's achievements slot is null until its own feature fills it; task 86 is `[PARTIAL]` (content size deferred, nothing this step needs).
 
 ```prompt
 /task-implement 101 --review
