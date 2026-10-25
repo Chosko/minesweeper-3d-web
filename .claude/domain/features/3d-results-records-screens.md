@@ -4,7 +4,7 @@ The results screen and the Records screen for 3D games: when a 3D game ends,
 the end effect plays for an end delay that grows with the board and then
 the same results screen as Classic 2D shows over the dimmed 3D scene, from
 which the player can choose to look at the finished board; the Records
-screen gains a 2D | 3D switch that shows the 3D boards' bests, win rate,
+screen's mode switch offers 3D, showing the 3D boards' bests, win rate,
 streaks and history.
 
 ## Purpose
@@ -37,8 +37,9 @@ In scope (m2-3d-joins):
 - *Look at the board*: a read-only free flight over the frozen finished
   board, chosen from the results screen, until the player brings the
   screen back.
-- The Records screen's 2D | 3D switch, the 3D board picker, and the chosen
-  mode's overall figures.
+- The Records screen's mode switch with its 3D mode, the 3D board picker,
+  and the chosen mode's overall figures. The switch's full list of modes is
+  `flat-grid-records-replays`'.
 
 Non-goals:
 
@@ -94,8 +95,10 @@ described in [app-shell.md](../../context/app-shell.md) and
   already retires. After the results screen a 3D game is never returned
   to: *Play again* starts a new one, the other actions leave it, and the
   look is a view of the finished board, not a return to the game.
-- **Records mode switch.** `records-screen` gains a 2D | 3D segmented
-  choice above its board picker. The picker lists the chosen mode's boards
+- **Records mode switch.** `records-screen` gains a mode switch, a
+  segmented choice above its board picker, with Classic 2D and 3D among its
+  modes; its modes, their order, LT / RT stepping and the mode an unknown
+  one opens are `flat-grid-records-replays`'. The picker lists the chosen mode's boards
   from `3d-game-records`' mode-filtered listing, its named boards every one
   without no-guess, then every one with it, as the 2D picker does; 3D boards
   use the 3D labels. The figures panel shows the chosen board's figures, and under
