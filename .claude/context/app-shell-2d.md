@@ -40,8 +40,9 @@ mode configuration themselves are [classic2d.md](classic2d.md).
   `BOARD_FRAME`). The window hugs its board: `ui.sizeBoard2D` measures the
   room its chrome leaves with the window at its largest (`c2d--measure`)
   and sizes `#c2d-stage` to the view's `extent` there, giving back what
-  the body then overflows (below the kit breakpoint the figures row under the board
-  wraps at the board's width, never setting the window's) — at each fresh view
+  the body or the board column then overflows (below the kit breakpoint the figures row under the board
+  wraps at the board's width, never setting the window's), then fits the title
+  bar to the board column (`ui.fitTitle2D`; again when a font loads) — at each fresh view
   before its first fit (`mounted`), on every change of `#c2d`'s size (a
   `ResizeObserver`), and a frame after each refit (`sizeSoon2D`, never
   inside the board's own resize callback). Each refit places the frame through `layout`

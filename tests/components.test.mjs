@@ -9,7 +9,7 @@ import {
   bindSlider, bindSliderFill, sliderFill, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
   boardLink, copyBoardCode, createCodeChip, bindCodeChip, COPY_FALLBACK, COPIED, bindSelectOnHover, SELECT_ON_HOVER,
   bindFiguresLive, LIVE_FIGURES_INTERVAL, bindFigures, ICONS, iconMarkup, createIcon, setButtonIcon, createButton, applyIcons,
-  setNote, NOTE_TONES, LOGO_WORDS, drawLogo, applyLogos, WINDOW_BUTTONS, bindWindowButtons,
+  setNote, NOTE_TONES, LOGO_WORDS, drawLogo, applyLogos, LOGO_STEP, LOGO_FLOOR, logoScale, WINDOW_BUTTONS, bindWindowButtons,
 } from '../js/ui/components.js';
 import { KIT_CATALOGUE, REQUIRED_TOKENS } from '../js/ui/kit-catalogue.js';
 import { KEY_HINTS, keyHintKeys, reminderKeys } from '../js/settings/bindings.js';
@@ -1564,7 +1564,9 @@ test('the Classic 2D window hugs its content: the board column alone while the l
   assert.match(top('#c2d:not([data-figures="open"]) :is(#c2d-divider, #c2d-figures)'), /display:\s*none/, 'closed, neither the divider nor the panel');
   assert.match(top('#c2d:not([data-figures="open"]) #c2d-body'), /grid-template-columns:\s*minmax\(auto, 1fr\);/, 'closed, the board column alone: the window shrinks to the board');
   assert.match(top('#c2d.c2d--measure:not([data-figures="open"]) #c2d-body'), /grid-template-columns:\s*minmax\(0, 1fr\);/, 'and is measured so');
-  assert.doesNotMatch(STYLE, /#c2d-frame > \.ui-frame__head \{/, 'the title bar is the kit\'s, its sides equal');
+  assert.equal(top('#c2d-frame > .ui-frame__head').trim(), 'contain: inline-size;', 'the title bar is the kit\'s, never setting the window\'s width');
+  assert.match(top('#c2d:not(.c2d--measure) #c2d-main'), /justify-self:\s*center/, 'a window widened to its title bar centres the board column');
+  assert.match(read('js/ui.js'), /this\.fitTitle2D\(\);\n\s*return stage\.style\.width/, 'the title bar fitted each time the board area is sized');
   assert.doesNotMatch(STYLE, /#c2d-frame > \.ui-frame__heading/, 'no heading to hide');
   // The foot line: the mode and board ellipsised in the room its tools leave, never setting the window's width.
   assert.match(top('#c2d-frame > .ui-frame__foot'), /flex-wrap:\s*nowrap/);
@@ -2459,6 +2461,20 @@ test('drawLogo draws MINESWEEPER and 3D letter by letter, hidden from assistive 
   root.append(a);
   applyLogos(root);
   assert.equal(a.children.length, 2, 'applyLogos draws every logo under the root');
+});
+
+test('logoScale: the largest tenth of the logo that fits its room, never above full size; under the 0.5 floor, hidden', () => {
+  assert.deepEqual([LOGO_STEP, LOGO_FLOOR], [0.1, 0.5]);
+  assert.equal(logoScale(500, 364.3), 1, 'room to spare: full size');
+  assert.equal(logoScale(364.3, 364.3), 1, 'an exact fit: full size');
+  // J-Game2D-l and -m: Intermediate's 498 and 494 px board columns leave 282 and 278 px between Pause and the window buttons.
+  assert.equal(logoScale(282, 364.3), 0.7, '1366 × 768: 70 %, as J-Game2D-l draws it');
+  assert.equal(logoScale(278, 364.3), 0.7, '1024 × 768: 70 %, as J-Game2D-m draws it');
+  assert.equal(logoScale(296, 451.8), 0.6, 'Beginner at 1920 × 1080: 60 %');
+  assert.equal(logoScale(0.5 * 364.3, 364.3), 0.5, 'the floor itself');
+  assert.equal(logoScale(0.49 * 364.3, 364.3), 0, 'under the floor: hidden');
+  assert.equal(logoScale(-12, 364.3), 0, 'no room at all: hidden');
+  assert.equal(logoScale(100, 0), 1, 'an undrawn logo is left at full size');
 });
 
 test('the logo in Joyful tiles: MINESWEEPER a game colour per letter — blue, coral, teal, violet, green, orange, repeating — 3D in yellow; a white outline and a short darker extrusion, sized with the frame\'s steps', () => {
@@ -3457,9 +3473,9 @@ for (const [size, device, place] of WINDOW_SIZES) {
 const ARTBOARDS_2D = [
   // Each artboard's window is short of its own board under its title bar and its foot of 38 px buttons, so the
   // fit rule leaves the board a tile step smaller: 41 px at 1920 × 1080, 27 px at 1366 and 1024 wide.
-  ['xl', { viewport: { width: 1920, height: 1080 } }, { window: [425, 1070, 964], column: 768, board: 724, tile: [41, 4], figures: 300, padding: '22px 26px', digits: '34px', value: '28px', bbbv: '16px', figure: '11px' }],
-  ['l', { viewport: { width: 1366, height: 768 } }, { window: [303, 760, 680], column: 498, board: 466, tile: [27, 2], figures: 260, padding: '16px 20px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
-  ['m', { viewport: { width: 1024, height: 768 } }, { window: [148, 728, 676], column: 494, board: 466, tile: [27, 2], figures: 232, padding: '14px 18px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
+  ['xl', { viewport: { width: 1920, height: 1080 } }, { window: [425, 1070, 964], column: 768, logo: 1, board: 724, tile: [41, 4], figures: 300, padding: '22px 26px', digits: '34px', value: '28px', bbbv: '16px', figure: '11px' }],
+  ['l', { viewport: { width: 1366, height: 768 } }, { window: [303, 760, 680], column: 498, logo: 0.7, board: 466, tile: [27, 2], figures: 260, padding: '16px 20px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
+  ['m', { viewport: { width: 1024, height: 768 } }, { window: [148, 728, 676], column: 494, logo: 0.7, board: 466, tile: [27, 2], figures: 232, padding: '14px 18px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
   ['narrow', { viewport: { width: 1000, height: 700 } }, { digits: '28px', under: true }],
   ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { digits: '26px' }],
   ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, { digits: '26px' }],
@@ -3500,16 +3516,25 @@ for (const [size, device, want] of ARTBOARDS_2D) {
       }
       await settle();
       const desktop = !device.hasTouch && !want.under;
-      // The title bar's own width: its logo between its two equal sides (Pause; the window buttons), gaps and padding.
+      // The title bar's least width: Pause, the logo as scaled and the window buttons, with its gaps and padding.
       const headWidth = () => ms(() => {
         const h = document.getElementById('c2d-frame').querySelector('.ui-frame__head');
         const c = getComputedStyle(h);
         const side = (sel) => [...h.querySelector(sel).querySelectorAll('.ui-button')].filter((e) => e.getClientRects().length > 0)
           .reduce((sum, e, i) => sum + e.getBoundingClientRect().width + (i ? 8 : 0), 0);
-        return 2 * Math.max(side('.ui-frame__start'), side('.ui-frame__end')) + h.querySelector('.ui-frame__logo').getBoundingClientRect().width
+        return side('.ui-frame__start') + side('.ui-frame__end') + h.querySelector('.ui-frame__logo').getBoundingClientRect().width
           + 2 * parseFloat(c.columnGap) + parseFloat(c.paddingLeft) + parseFloat(c.paddingRight);
       });
       const near = (a, b, slack = 1) => Math.abs(a - b) <= slack;
+      // The title bar's parts and the logo's scale.
+      const titleBar = () => ms(() => {
+        const box = (el) => el.getBoundingClientRect().toJSON();
+        const f = document.getElementById('c2d-frame');
+        const h = f.querySelector('.ui-frame__head');
+        const logo = h.querySelector('.ui-frame__logo');
+        return { frame: box(f), pause: box(document.getElementById('c2d-pause')), logo: box(logo), end: box(h.querySelector('.ui-frame__window')),
+          scale: logo.offsetWidth === 0 ? 0 : Number(getComputedStyle(logo).zoom), hidden: h.dataset.logo === 'hidden', overflow: h.scrollWidth > h.clientWidth };
+      });
       const toggle = () => ms(() => {
         const b = document.getElementById('c2d-figures-toggle');
         return { shown: getComputedStyle(b).display !== 'none', pressed: b.getAttribute('aria-pressed'), panel: getComputedStyle(document.getElementById('c2d-figures')).display !== 'none' };
@@ -3519,12 +3544,16 @@ for (const [size, device, want] of ARTBOARDS_2D) {
       if (want.window) {
         const closed = await ms(() => ({ frame: document.getElementById('c2d-frame').getBoundingClientRect().toJSON(), main: document.getElementById('c2d-main').getBoundingClientRect().toJSON(), stage: document.getElementById('c2d-stage').getBoundingClientRect().toJSON(), tile: globalThis.__ms.board2D.layout.tile }));
         const head = await headWidth();
-        // The compact title bar, its logo centred between Pause and the window buttons, is wider than Intermediate's board
-        // column: there the window takes the title bar's width, the board column at its start.
-        const width = Math.max(want.column, head);
+        // The window is its board column's width; the title bar fits inside it, its logo scaled down as the artboards draw it.
         assert.ok(near(closed.main.width, want.column) && near(closed.main.x, closed.frame.x), `${size}: closed, the board column ${want.column} px at the window's start (${closed.main.width})`);
-        assert.ok(near(closed.frame.width, width) && near(closed.frame.x, (device.viewport.width - width) / 2), `${size}: closed, the window as wide as its board column (or its title bar) and centred (${closed.frame.x}, ${closed.frame.width}, ${head})`);
+        assert.ok(near(closed.frame.width, want.column) && near(closed.frame.x, (device.viewport.width - want.column) / 2), `${size}: closed, the window as wide as its board column and centred (${closed.frame.x}, ${closed.frame.width})`);
         assert.equal(closed.tile, want.tile[0], `${size}: the board's tile closed as open`);
+        const bar = await titleBar();
+        assert.equal(bar.scale, want.logo, `${size}: the logo at ${want.logo * 100} %`);
+        assert.ok(head <= bar.frame.width + 0.5 && !bar.overflow && !bar.hidden, `${size}: the title bar fits the window, nothing overflowing (${head}, ${bar.frame.width})`);
+        assert.ok(bar.pause.x >= bar.frame.x && bar.pause.right <= bar.logo.x && bar.logo.right <= bar.end.x && bar.end.right <= bar.frame.right, `${size}: Pause, the logo and the window buttons in a row inside the window`);
+        assert.deepEqual([bar.pause.width, bar.end.width], [38, 130], `${size}: Pause and the window buttons keep their size`);
+        if (want.logo < 1) assert.ok(bar.logo.x + bar.logo.width / 2 < bar.frame.x + bar.frame.width / 2 - 20, `${size}: the logo off-centre, between Pause and the window buttons`);
       }
       if (desktop) {
         await page.click('#c2d-figures-toggle');
@@ -3579,12 +3608,8 @@ for (const [size, device, want] of ARTBOARDS_2D) {
       if (size !== 'ls') assert.ok(near(g.stage.y, g.strip.bottom + 12, 0.5), `${size}: the board 12 px under the counter strip (${g.stage.y}, ${g.strip.bottom})`);
       if (want.window) {
         const [left, width, height] = want.window;
-        // Open, as the states board's second frame draws it: the window hugs its board and figures, or its
-        // title bar where that is the wider.
-        const hug = want.column + 2 + want.figures;
-        const wide = g.head > hug + 1 ? g.head : null;
-        assert.ok(wide ? near(g.frame.width, wide) && near(g.frame.x, (device.viewport.width - wide) / 2)
-          : near(g.frame.x, left) && near(g.frame.width, width), `${size}: the window ${width} px wide at ${left}, or its title bar's width (${g.frame.x}, ${g.frame.width}, ${g.head})`);
+        // Open, as the states board's second frame draws it: the window hugs its board and figures.
+        assert.ok(near(g.frame.x, left) && near(g.frame.width, width), `${size}: the window ${width} px wide at ${left} (${g.frame.x}, ${g.frame.width})`);
         assert.ok(g.frame.height <= height + 1 && g.frame.height >= height - 16, `${size}: the window hugs its content, about ${height} px tall (${g.frame.height})`);
         assert.ok(near(g.frame.y + g.frame.height / 2, (device.viewport.height - 50) / 2, 2), `${size}: centred in the room above the HUD strip (${g.frame.y})`);
         assert.ok(near(g.main.width, want.column) && near(g.main.x, g.frame.x), `${size}: the board column ${want.column} px at the window's start (${g.main.width})`);
@@ -3600,7 +3625,7 @@ for (const [size, device, want] of ARTBOARDS_2D) {
       } else if (want.under) {
         // Below 1024 px the figures row wraps under the board: the board column still sets the window's width.
         assert.ok(g.figures.y >= g.stage.bottom - 0.5, `${size}: the figures under the board`);
-        assert.ok(near(g.frame.width, g.main.width) && g.frame.width <= Math.max(g.stage.width + 28, g.head) + 1, `${size}: the window as wide as its board column or its head, never its figures row (${g.frame.width}, ${g.stage.width}, ${g.head})`);
+        assert.ok(near(g.frame.width, g.main.width) && g.frame.width <= g.stage.width + 28 + 1, `${size}: the window as wide as its board column, never its figures row or its head (${g.frame.width}, ${g.stage.width}, ${g.head})`);
         assert.ok(g.frame.bottom <= device.viewport.height && g.foot.bottom <= g.frame.bottom + 0.5, `${size}: the window whole on the screen`);
       } else if (size === 'p') {
         assert.deepEqual([g.frame.x, g.frame.y, g.frame.width, g.frame.height], [0, 0, 390, 844], `${size}: the window full-bleed`);
@@ -3645,6 +3670,73 @@ for (const [size, device, want] of ARTBOARDS_2D) {
     }
   });
 }
+
+// The narrow boards at 1366 × 768: the window still hugs its board column, the logo scaling down in tenths to its floor,
+// hidden under it; only a board column narrower than Pause and the window buttons widens the window, the column centred.
+test('in a browser, the Classic 2D window at 1366 × 768 hugs a narrow board: Beginner and custom 8, 6 and 2 columns wide, the logo scaled, then hidden, then the window widened to Pause and the window buttons', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
+  try {
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(noWebGL);
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    await ms(async () => {
+      const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+      while (!BOARD_ART.current()) await new Promise((r) => setTimeout(r, 20));
+      await document.fonts.ready;
+    });
+    const near = (a, b, slack = 1) => Math.abs(a - b) <= slack;
+    const boards = [
+      ['Beginner', { size: 'beginner' }, 0.7],
+      ['8 × 9', { size: 'custom', custom: { width: 8, height: 9, mines: 10 } }, 0.6],
+      ['6 × 9', { size: 'custom', custom: { width: 6, height: 9, mines: 10 } }, 0],
+      ['2 × 9', { size: 'custom', custom: { width: 2, height: 9, mines: 3 } }, 0],
+    ];
+    for (const [name, choice, scale] of boards) {
+      await ms((c) => { globalThis.__lastStage = null; globalThis.__ms.modes.start('classic-2d', { ...c, noGuess: false }); }, choice);
+      await page.waitForFunction(() => {
+        const now = JSON.stringify([document.getElementById('c2d-stage').getBoundingClientRect(), document.getElementById('c2d-frame').getBoundingClientRect(), globalThis.__ms.board2D?.layout]);
+        const same = globalThis.__lastStage === now;
+        globalThis.__lastStage = now;
+        return same && !!globalThis.__ms.board2D;
+      }, null, { polling: 'raf' });
+      const g = await ms(() => {
+        const box = (el) => el.getBoundingClientRect().toJSON();
+        const f = document.getElementById('c2d-frame');
+        const h = f.querySelector('.ui-frame__head');
+        const logo = h.querySelector('.ui-frame__logo');
+        return { frame: box(f), main: box(document.getElementById('c2d-main')), stage: box(document.getElementById('c2d-stage')), pause: box(document.getElementById('c2d-pause')),
+          logo: box(logo), end: box(h.querySelector('.ui-frame__window')), hidden: h.dataset.logo === 'hidden', zoom: Number(getComputedStyle(logo).zoom),
+          overflow: h.scrollWidth > h.clientWidth, pad: parseFloat(getComputedStyle(h).paddingLeft), gap: parseFloat(getComputedStyle(h).columnGap) };
+      });
+      const least = g.pad * 2 + g.gap * 2 + g.pause.width + g.end.width;
+      assert.deepEqual([g.pause.width, g.end.width], [38, 130], `${name}: Pause and the window buttons keep their size`);
+      assert.ok(!g.overflow && g.pause.x >= g.frame.x && g.end.right <= g.frame.right + 0.5, `${name}: nothing in the title bar overflows the window`);
+      if (scale) {
+        assert.ok(near(g.frame.width, g.main.width), `${name}: the window as wide as its board column (${g.frame.width}, ${g.main.width})`);
+        assert.deepEqual([g.hidden, g.zoom], [false, scale], `${name}: the logo at ${scale * 100} %`);
+        assert.ok(g.pause.right <= g.logo.x && g.logo.right <= g.end.x, `${name}: the logo between Pause and the window buttons`);
+      } else {
+        assert.equal(g.hidden, true, `${name}: under the floor, the logo hidden`);
+        assert.equal(g.logo.width, 0, `${name}: the hidden logo takes no room`);
+        if (g.main.width >= least) assert.ok(near(g.frame.width, g.main.width), `${name}: the window still hugs its board column (${g.frame.width}, ${g.main.width})`);
+        else {
+          assert.ok(near(g.frame.width, least), `${name}: the window widened to Pause and the window buttons (${g.frame.width}, ${least})`);
+          assert.ok(near(g.stage.x - g.frame.x, g.frame.right - g.stage.right), `${name}: the board centred in the window`);
+        }
+      }
+    }
+    assert.deepEqual(errors, [], 'no page errors');
+  } finally {
+    await context.close();
+  }
+});
 
 // ---------------------------------------------------------------- form controls as J-Components draws them
 

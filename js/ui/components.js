@@ -615,6 +615,46 @@ export function applyLogos(root) {
   for (const logo of root.querySelectorAll('.ui-logo')) drawLogo(logo);
 }
 
+/** The steps the title bar's logo scales down by, and the least it takes before it hides. */
+export const LOGO_STEP = 0.1;
+export const LOGO_FLOOR = 0.5;
+
+/**
+ * The title bar logo's scale in `room` CSS pixels, `natural` its width at full size: the largest
+ * LOGO_STEP that fits, never above 1, or 0 (hidden) under LOGO_FLOOR. An undrawn logo stays at 1.
+ */
+export function logoScale(room, natural) {
+  if (!(natural > 0)) return 1;
+  const steps = Math.floor(Math.min(1, room / natural) / LOGO_STEP + 1e-6);
+  const scale = Math.round(steps * LOGO_STEP * 10) / 10;
+  return scale >= LOGO_FLOOR ? scale : 0;
+}
+
+/**
+ * Fits a title bar (`.ui-frame__head`) holding the logo to its own width: the logo scaled
+ * (its zoom, logoScale) into the room its start and end leave, or hidden under the floor
+ * (data-logo="hidden"). Returns the least width the head needs with the logo hidden — its
+ * padding, gaps, start and end — or null with no logo.
+ */
+export function fitTitleBar(head) {
+  const logo = head.querySelector(':scope > .ui-frame__logo');
+  if (!logo) return null;
+  const win = head.ownerDocument.defaultView;
+  const width = (el) => (el ? el.getBoundingClientRect().width : 0);
+  logo.style.zoom = '';
+  delete head.dataset.logo;
+  head.style.gridTemplateColumns = 'auto auto auto';
+  const c = win.getComputedStyle(head);
+  const least = parseFloat(c.paddingLeft) + parseFloat(c.paddingRight) + 2 * (parseFloat(c.columnGap) || 0)
+    + width(head.querySelector(':scope > .ui-frame__start')) + width(head.querySelector(':scope > .ui-frame__end'));
+  const natural = width(logo);
+  head.style.gridTemplateColumns = '';
+  const scale = logoScale(head.getBoundingClientRect().width - least, natural);
+  if (scale === 0) head.dataset.logo = 'hidden';
+  else if (scale < 1) logo.style.zoom = String(scale);
+  return least;
+}
+
 // ---------------------------------------------------------------- the title bar's window buttons
 
 /** The title bar's window buttons, by their data-window name, in their order at the head's end. */

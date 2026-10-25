@@ -426,9 +426,11 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 #c2d:not([data-figures="open"]) #c2d-body { grid-template-columns: minmax(auto, 1fr); }
 #c2d.c2d--measure:not([data-figures="open"]) #c2d-body { grid-template-columns: minmax(0, 1fr); }
 #c2d-main { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; min-height: 0; padding: 22px; }
-/* A title bar wider than the board column widens the window: the board column keeps its board's width at
-   the start; below the kit's breakpoint it fills the window over its figures. */
-#c2d:not(.c2d--measure) #c2d-main { justify-self: start; }
+/* The title bar never sets the window's width: its logo fits the board column (UI.fitTitle2D). A board
+   column narrower than Pause and the window buttons alone widens the window to them (its min-width), the
+   column centred; below the kit's breakpoint the column fills the window over its figures. */
+#c2d-frame > .ui-frame__head { contain: inline-size; }
+#c2d:not(.c2d--measure) #c2d-main { justify-self: center; }
 #c2d-counters { flex: none; }
 #c2d-stage { position: relative; flex: none; align-self: flex-start; }
 #c2d-board { position: absolute; inset: 0; overflow: hidden; }

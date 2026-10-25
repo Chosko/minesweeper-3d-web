@@ -32,9 +32,14 @@ In scope (m2b-themes):
     desktop window — the main menu, every board choice, Daily, Records,
     Settings, the replay viewer, the placeholder and the in-game windows:
     Back on the left as an arrow icon (none on the main menu), the **game
-    logo** in the centre, and Minimise, Fullscreen / Windowed and Quit on
-    the right, every one icon-only with a tooltip and an accessible name.
-    On a phone the head holds only Back and the logo. The screen's name is
+    logo** between them, centred while both sides fit at equal width, and
+    Minimise, Fullscreen / Windowed and Quit on the right, every one
+    icon-only with a tooltip and an accessible name. A window sized by its
+    content below the title bar (the Classic 2D game window, `in-game-layout`)
+    fits the title bar to that width: Back's side gives way first, moving the
+    logo off-centre, then the logo scales down in steps to a legible floor,
+    and below the floor it hides; Back and the window buttons keep their
+    size. On a phone the head holds only Back and the logo. The screen's name is
     a **body heading** at the top of the window's body, a control the
     screen puts beside its name sitting at the heading's right; the main
     menu has no body heading, the logo naming it;

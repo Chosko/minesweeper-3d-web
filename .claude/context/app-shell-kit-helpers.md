@@ -66,7 +66,10 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
 - The game logo: `LOGO_WORDS` (MINESWEEPER and 3D), `drawLogo(logo)` (fills
   a `.ui-logo` heading with one `aria-hidden` `ui-logo__word` per word, a
   `ui-logo__letter` per letter; once), `applyLogos(root)` (every
-  `.ui-logo` under `root`).
+  `.ui-logo` under `root`); `logoScale(room, natural)` (the largest
+  `LOGO_STEP` of the logo that fits, at most 1, 0 under `LOGO_FLOOR`) and
+  `fitTitleBar(head)` (the head's logo zoomed to it, or `data-logo="hidden"`
+  under the floor; → the head's least width with no logo, or null).
 - The title bar's window buttons: `WINDOW_BUTTONS` (`minimise`,
   `fullscreen`, `quit`, their order), `bindWindowButtons(root,
   {capabilities, actions})` — one delegated listener for every
