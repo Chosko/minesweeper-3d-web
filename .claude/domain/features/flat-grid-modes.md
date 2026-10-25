@@ -69,7 +69,9 @@ In scope (m2c-flat-grids), for each of Hexagon and Triangle:
 - **Help and hints**: the controls list on the pause card, the H panel and
   the HUD strip follow the active device. The first-use hint strip and the
   one-time scroll hint share Classic 2D's first-use record, because the
-  controls are the same.
+  controls are the same; a new record is seeded from the recorded games of
+  all three flat modes, so a player who has played only Hexagon or
+  Triangle is not taught again.
 - **Sound, rumble, end delay and end effect**: Classic 2D's per action. The
   win wave and confetti and the loss wave from the exploded tile spread by
   distance between tile centres.

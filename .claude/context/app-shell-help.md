@@ -56,7 +56,8 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   (`updatePadUi`); its change calls `ui.setDevice`.
 - **First-use hints.** `FIRST_USE` (`createFirstUse` over storage and
   `RECORDS`) loads once the records have, seeding a new `shell.firstUse`
-  from them. A Hexagon or Triangle game shares Classic 2D's record
+  from them, each record from the recorded games of every mode sharing it.
+  A Hexagon or Triangle game shares Classic 2D's record
   (`FIRST_USE_RECORD`): its games count toward Classic 2D's, its strip and
   dismissal are Classic 2D's, and `refreshHints` draws the active flat
   mode's strip as Classic 2D's. It counts a game at the host's `started` and a finished 3D game
