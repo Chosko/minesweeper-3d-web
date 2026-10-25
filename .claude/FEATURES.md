@@ -301,7 +301,7 @@ Tasks: 188, 189
 
 ## flat-grid-geometry — Flat grid geometry: Classic 2D's board, inputs, sampler and 2D viewer over a grid geometry
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/flat-grid-geometry.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
 Tasks: 248, 249, 250, 251, 252, 253
@@ -310,7 +310,7 @@ Tasks: 248, 249, 250, 251, 252, 253
 
 ## hexagon-grid — Hexagon grid: graph, generation kind, geometry, standard boards, limits, identity and code token
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/hexagon-grid.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
 Tasks: 254, 255, 256, 257
@@ -319,7 +319,7 @@ Tasks: 254, 255, 256, 257
 
 ## triangle-grid — Triangle grid: graph, generation kind, geometry, standard boards, limits, identity and code token
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/triangle-grid.md
 Source: product-design.md § Triangle (m2c-flat-grids)
 Tasks: 258, 259, 260, 261
@@ -328,7 +328,7 @@ Tasks: 258, 259, 260, 261
 
 ## hex-tri-board-art — Hexagon and triangle tiles in the board module and tile recipe, with Joyful tiles' values
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/hex-tri-board-art.md
 Source: product-design.md § Visual design system (m2c-flat-grids)
 Tasks: 262, 263, 264, 265, 266
@@ -337,7 +337,7 @@ Tasks: 262, 263, 264, 265, 266
 
 ## flat-grid-modes — Hexagon and Triangle modes: board choice, last choice, session, game window, inputs and results
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/flat-grid-modes.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
 Tasks: 267, 268, 269, 270, 271
@@ -346,7 +346,7 @@ Tasks: 267, 268, 269, 270, 271
 
 ## flat-grid-records-replays — Hexagon and Triangle in records, the Records mode switch, and their replays
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/flat-grid-records-replays.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
 Tasks: 272, 273, 274, 275, 276
@@ -355,7 +355,7 @@ Tasks: 272, 273, 274, 275, 276
 
 ## flat-grid-menu-entries — Hexagon and Triangle menu entries open their modes, with previews and the last mode played
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/flat-grid-menu-entries.md
 Source: product-design.md § Main menu and game shell (m2c-flat-grids)
 Tasks: 277, 278, 279, 280
