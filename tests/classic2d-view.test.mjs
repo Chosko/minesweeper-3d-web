@@ -28,6 +28,7 @@ import { END_DELAY_MS } from '../js/classic2d/mode.js';
 import { createSession } from '../js/classic2d/session.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { createGeometry } from '../js/geometry/index.js';
+import { growOutline } from '../js/tile-art.js';
 import { createMotionLayer } from '../js/classic2d/motion-layer.js';
 import { demoBoard2D, dailyBoard2D } from '../js/shell/menu-preview.js';
 import { dailyPreview } from '../js/shell/daily.js';
@@ -1169,31 +1170,34 @@ const SHAPED_MODULE = Object.freeze({
   style2d: { name: 'flat', params: { radius: 0.15, gap: 0.09, frameRadius: 0 }, grids: { hex: { gap: 0.2, radius: 0.05 }, tri: { gap: 0.25, radius: 0.06 } } },
   palette: { boardGround: '#fefefe', faces2d: { marked: { ring: '#123456' } } },
   cursor: { color: '#0a0a0a', inner: '#f0f0f0', width: 3, innerWidth: 2, radius: { tile: 0.15, px: 3 } },
+  end2d: { light: '#fefefd', win: { scale: 1.2, mix: 0.4 }, loss: { scale: 0.55, flash: 0.55 } },
   motion: { reveal: { duration: 100, easing: 'linear', tracks: [{ property: 'brightness', keyframes: [{ at: 0, value: 1.5 }, { at: 100, value: 1 }] }] } },
 });
 
-// A 4 × 3 view of a `kind` geometry drawing SHAPED_MODULE, with a motion layer whose frames run by
-// hand; the skin records each tile with the canvas it went to and the cell shape it was handed.
-function shapedView(kind) {
+// A 4 × 3 view of a `kind` geometry drawing SHAPED_MODULE (`board`, null for none), with a motion
+// layer whose frames run by hand; the skin records each tile with the canvas it went to and the
+// cell shape it was handed.
+function shapedView(kind, board = SHAPED_MODULE) {
   const grid = createSquareGrid(4, 3);
   const geometry = createGeometry(kind, 4, 3);
   const canvas = fakeCanvas();
   const layer = fakeCanvas();
+  const overlay = fakeCanvas();
   const draws = [];
   let tick = null;
   const createSkin = () => ({
     drawTile(ctx, x, y, size, state, number, ratio, depth, cell) { draws.push({ layer: ctx === layer.ctx, x, y, size, state, cell }); },
-    board: () => SHAPED_MODULE,
+    ...(board ? { board: () => board } : {}),
     dispose() {},
   });
   const view = createBoardView({
-    canvas, grid, geometry, createSkin, scale: '100', layer, overlay: fakeCanvas(), token: tokenMap({}),
+    canvas, grid, geometry, createSkin, scale: '100', layer, overlay, token: tokenMap({ '--color-tile-cursor': '#0000ff' }),
     frames: { request: (fn) => { tick = fn; return 1; }, cancel: () => { tick = null; } }, now: () => 0,
   });
   view.resize(600, 500, 1);
   const game = createGameWithMines({ graph: grid.graph, ...REF, mines: [grid.index(0, 1)], dimensions: { width: 4, height: 3 } });
   view.setGame(game);
-  return { grid, geometry, canvas, layer, draws, view, game, frame: () => tick?.() };
+  return { grid, geometry, canvas, layer, overlay, draws, view, game, frame: () => tick?.() };
 }
 
 test('a grid\'s shape fractions are of its tile\'s height: GRID_UNIT is each geometry\'s outline height per tile, and the board checks read their floors in it', () => {
@@ -1270,6 +1274,100 @@ test('the marked start cell\'s pulse on a hexagon or triangle board draws its ri
     const at = moves.reduce((p, [x, y]) => [p[0] + x, p[1] + y], [0, 0]);
     assert.ok(Math.abs(at[0] + arc.args[0] - (l.offsetX + g.x + g.width / 2)) < 1e-6 && Math.abs(at[1] + arc.args[1] - (l.offsetY + g.y + g.height / 2)) < 1e-6, `${kind}: the ring centred in the glyph box`);
     assert.ok(arc.args[2] < S / 2, `${kind}: the ring inside the glyph box`);
+  }
+});
+
+// Each stroke on a canvas with the corners (arcTo's or lineTo's) of the path before it.
+function strokedPaths(canvas) {
+  const out = [];
+  let path = [];
+  for (const c of canvas.ctx.calls) {
+    if (c.op === 'beginPath') path = [];
+    else if (c.op === 'arcTo' || c.op === 'lineTo' || c.op === 'moveTo') path.push(c);
+    else if (c.op === 'stroke') out.push({ stroke: c.stroke, path });
+  }
+  return out;
+}
+const round6 = (p) => p.map((v) => Math.round(v * 1e6) / 1e6);
+
+test('on a hexagon or triangle board the module\'s cursor ring traces the cell\'s outline outside it, its corners concentric from the outline\'s height, never its box', () => {
+  for (const [kind, cells] of [['hex', [5, 6]], ['tri', [5, 6]]]) {
+    const { view, overlay, canvas, geometry } = shapedView(kind);
+    const l = view.layout;
+    const look = SHAPED_MODULE.cursor;
+    for (const c of cells) {
+      overlay.ctx.calls.length = 0;
+      canvas.ctx.calls.length = 0;
+      view.setCursor(c);
+      assert.equal(canvas.ctx.calls.length, 0, `${kind} ${c}: the board canvas is untouched`);
+      assert.ok(!overlay.ctx.calls.some((x) => x.op === 'strokeRect'), `${kind} ${c}: no square ring`);
+      const o = geometry.outline(c, l.tile, l.gap);
+      const pts = o.points.map(([x, y]) => [l.offsetX + x, l.offsetY + y]);
+      const strokes = strokedPaths(overlay);
+      assert.deepEqual(strokes.map((s) => s.stroke), [look.color, look.inner], `${kind} ${c}: the ring, then its band inside it`);
+      const widths = overlay.ctx.calls.filter((x) => x.op === 'set:lineWidth').map((x) => x.args[0]);
+      assert.deepEqual(widths, [look.width, look.innerWidth]);
+      const corner = o.height * look.radius.tile + look.radius.px;
+      for (const [s, d] of [[strokes[0], look.width / 2], [strokes[1], -look.innerWidth / 2]]) {
+        const arcs = s.path.filter((x) => x.op === 'arcTo');
+        assert.equal(arcs.length, pts.length, `${kind} ${c}: one corner per corner of the outline`);
+        const want = growOutline(pts, look.radius.px + d);
+        assert.deepEqual(arcs.map((x) => round6(x.args.slice(0, 2))), want.map(round6), `${kind} ${c}: the outline grown ${look.radius.px + d} px`);
+        assert.ok(arcs.every((x) => x.args[4] <= corner + d + 1e-9), `${kind} ${c}: corners at most the outline's height × radius.tile + px, concentric`);
+      }
+    }
+  }
+});
+
+test('on a hexagon or triangle board with no module the fallback ring is the cell\'s outline grown by half its width, in the cursor token', () => {
+  for (const kind of ['hex', 'tri']) {
+    const { view, overlay, geometry } = shapedView(kind, null);
+    const l = view.layout;
+    overlay.ctx.calls.length = 0;
+    view.setCursor(5);
+    const o = geometry.outline(5, l.tile, l.gap);
+    const w = Math.max(2, Math.round(l.tile / 12));
+    const [s, ...more] = strokedPaths(overlay);
+    assert.equal(more.length, 0, `${kind}: one ring`);
+    assert.equal(s.stroke, '#0000ff', `${kind}: in ${CURSOR_RING}`);
+    assert.equal(overlay.ctx.calls.filter((x) => x.op === 'set:lineWidth').at(-1).args[0], w);
+    const want = growOutline(o.points.map(([x, y]) => [l.offsetX + x, l.offsetY + y]), w / 2);
+    assert.deepEqual(s.path.map((x) => round6(x.args)), want.map(round6), `${kind}: straight round the outline, half its width out`);
+    assert.ok(!overlay.ctx.calls.some((x) => x.op === 'strokeRect'), `${kind}: no square ring`);
+  }
+});
+
+test('on a hexagon or triangle board the end effect scales each tile about its geometry\'s centre and fills its light in the cell\'s outline, never its box', () => {
+  for (const kind of ['hex', 'tri']) {
+    const { view, canvas, geometry, grid } = shapedView(kind);
+    const l = view.layout;
+    const c = grid.index(1, 1);
+    const effect = createEndEffect({ kind: WIN, geometry, origin: c, duration: END_DELAY_MS, random: () => 0.5 });
+    canvas.ctx.calls.length = 0;
+    view.showEffect(effect, 140);
+    const calls = canvas.ctx.calls;
+    const o = geometry.outline(c, l.tile, l.gap);
+    const centre = geometry.centre(c, l.tile, l.gap);
+    const pts = o.points.map(([x, y]) => [l.offsetX + x, l.offsetY + y]);
+    // Each fill of the light, with the corners of its path and the translate that scaled it.
+    const lit = [];
+    let path = [];
+    let about = null;
+    for (const x of calls) {
+      if (x.op === 'beginPath') path = [];
+      else if (x.op === 'arcTo') path.push(x.args);
+      else if (x.op === 'translate' && about === null) about = x.args;
+      else if (x.op === 'restore') about = null;
+      if (x.op === 'fill' && x.fill === SHAPED_MODULE.end2d.light) lit.push({ corners: path.map((a) => round6(a.slice(0, 2))), radius: path.map((a) => a[4]), about });
+    }
+    assert.ok(lit.length > 0, `${kind}: the wave lights tiles`);
+    assert.ok(lit.every((f) => f.corners.length === pts.length), `${kind}: every light fills an outline of the grid's corners, never a box`);
+    const here = lit.find((f) => JSON.stringify(f.corners) === JSON.stringify(pts.map(round6)));
+    assert.ok(here, `${kind}: the origin lit in its own outline`);
+    const radius = o.height * SHAPED_MODULE.style2d.grids[kind].radius;
+    assert.ok(here.radius.every((r) => r <= radius + 1e-9), `${kind}: rounded at most the grid's corner radius × the outline's height`);
+    assert.deepEqual(round6(here.about), round6([l.offsetX + centre.x, l.offsetY + centre.y]), `${kind}: scaled about the geometry's centre`);
+    assert.equal(calls.some((x) => x.op === 'fillRect' && x.fill === SHAPED_MODULE.end2d.light), false, `${kind}: no box of light`);
   }
 });
 

@@ -34,7 +34,9 @@
 //               (a bevel side is a shade from -1 to 1 or a `#rrggbb` colour — js/tile-art.js)
 //   cursor      the Classic 2D cursor ring, drawn outside the tile: color and width in px (the ring,
 //               round a band of inner (any CSS colour) innerWidth px wide), radius { tile, px } — the
-//               band's outer edge is px outside the tile, its corner radius tile × size + px
+//               band's outer edge is px outside the tile, its corner radius tile × size + px (on a
+//               hexagon or triangle tile, the band follows the cell's outline, its corner radius
+//               tile × the outline's height + px)
 //   selection   the 3D aimed cube: outline, width { face, px } — max(face × the face, px) —, glow
 //               (the line inside the outline), glowWidth in px, tint [r, g, b] multiplying the
 //               selected face's colour

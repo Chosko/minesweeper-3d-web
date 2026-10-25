@@ -493,6 +493,46 @@ test('the recipe names its outlines, square first, and gives each its box and co
   }
 });
 
+test('an outline grown by a distance keeps every edge parallel that distance out, and its path is the one a face is clipped by', async () => {
+  const art = await artModule();
+  const S = 48;
+  // The distance from a point to the line through a and b.
+  const off = ([x, y], [ax, ay], [bx, by]) => Math.abs((bx - ax) * (ay - y) - (ax - x) * (by - ay)) / Math.hypot(bx - ax, by - ay);
+  for (const outline of ['square', 'hexagon', 'triangle-up', 'triangle-down']) {
+    const pts = art.outlinePoints(outline, S);
+    for (const d of [3, 4.5, -2]) {
+      const grown = art.growOutline(pts, d);
+      assert.equal(grown.length, pts.length, `${outline} ${d}: one corner per corner`);
+      for (let i = 0; i < pts.length; i++) {
+        const j = (i + 1) % pts.length;
+        assert.ok(near(off(grown[i], pts[i], pts[j]), Math.abs(d), 1e-9) && near(off(grown[j], pts[i], pts[j]), Math.abs(d), 1e-9), `${outline} ${d}: edge ${i} moved ${d} out, parallel`);
+      }
+      const area = (p) => p.reduce((a, [x, y], i) => { const [u, v] = p[(i + 1) % p.length]; return a + x * v - u * y; }, 0) / 2;
+      assert.ok(d > 0 ? Math.abs(area(grown)) > Math.abs(area(pts)) : Math.abs(area(grown)) < Math.abs(area(pts)), `${outline} ${d}: grown outward for a positive distance`);
+    }
+    assert.deepEqual(art.growOutline(pts, 0), pts, `${outline}: no distance, the outline itself`);
+  }
+  const sq = art.growOutline(art.outlinePoints('square', S), 3);
+  assert.deepEqual(sq.map((p) => p.map((v) => Math.round(v * 1e9) / 1e9)), [[-3, -3], [S + 3, -3], [S + 3, S + 3], [-3, S + 3]], 'a square grows to the square 3 px out');
+  // The path: straight corners with no radius, one arc per corner with one.
+  const flat = fakeContext();
+  art.outlinePath(flat, art.outlinePoints('hexagon', S), 0);
+  assert.deepEqual(flat.calls.filter((c) => c.op === 'moveTo' || c.op === 'lineTo').map((c) => c.args), art.outlinePoints('hexagon', S), 'the corners in order');
+  assert.ok(flat.calls.some((c) => c.op === 'closePath'));
+  const round = fakeContext();
+  art.outlinePath(round, art.outlinePoints('triangle-up', S), 5);
+  const arcs = round.calls.filter((c) => c.op === 'arcTo');
+  assert.equal(arcs.length, 3, 'one arc per corner');
+  assert.ok(arcs.every((c) => c.args[4] === 5), 'at the radius asked');
+  const clip = fakeContext();
+  art.drawFace(clip, S, 'revealed', { style: 'flat', params: { radius: 0.1 }, palette: REVEALED, outline: 'hexagon' });
+  const want = fakeContext();
+  art.outlinePath(want, art.outlinePoints('hexagon', S), S * 0.1);
+  const first = clip.calls.findIndex((c) => c.op === 'clip');
+  const clipPath = clip.calls.slice(0, first).filter((c) => c.op === 'moveTo' || c.op === 'arcTo').map((c) => c.args);
+  assert.deepEqual(clipPath, want.calls.filter((c) => c.op === 'moveTo' || c.op === 'arcTo').map((c) => c.args), 'the path a hexagon face is clipped by');
+});
+
 test('the square outline draws exactly the face drawn with no outline, in both styles, every face and depth', async () => {
   const art = await artModule();
   for (const style of ['bevel', 'flat']) {

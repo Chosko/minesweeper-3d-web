@@ -38,13 +38,17 @@
 //                                    the tile and gap when not given; color indexes the module's
 //                                    confetti colours, wrapping round
 // done(effect, t)                    the effect has played out: t ≥ duration
-// drawWave(ctx, x, y, size, wave, board, paint)  one tile at x, y under its wave: paint() draws the
-//                                    tile, scaled about its centre, then the light over it, clipped
-//                                    to the tile's rounded corners (the module's style2d radius)
+// drawWave(ctx, x, y, size, wave, board, paint, outline?)  one tile at x, y under its wave: paint()
+//                                    draws the tile, scaled about its centre, then the light over it,
+//                                    clipped to the tile's rounded corners (the module's style2d
+//                                    radius); a hexagon or triangle tile's `outline` { points,
+//                                    centre: [x, y], radius } in the same pixels puts the scale's
+//                                    centre and the light's shape — its corners rounded by radius
+//                                    px — on the cell's outline instead of the size × size box
 // drawConfetti(ctx, pieces, colours, x, y)  the pieces in `colours`, the board's corner at x, y
 
 import { CELL } from '../engine/rules.js';
-import { roundRect } from '../tile-art.js';
+import { roundRect, outlinePath } from '../tile-art.js';
 import { createGeometry } from '../geometry/index.js';
 
 export const WIN = 'win';
@@ -174,13 +178,14 @@ export function confettiAt(effect, t, { tile, gap = 0, width, height }) {
 /**
  * One tile at x, y, `size` px under its wave (waveAt; null for none): paint() draws the tile, scaled
  * about its centre, then the module's light at the wave's share over it, clipped to the tile's
- * rounded corners (the module's style2d radius), never over its corners or the ground.
+ * rounded corners (the module's style2d radius), never over its corners or the ground. A hexagon or
+ * triangle tile's `outline` ({ points, centre, radius }) is its shape: scaled about the outline's
+ * centre, the light filled in the outline rounded by its radius.
  */
-export function drawWave(ctx, x, y, size, wave, board, paint) {
+export function drawWave(ctx, x, y, size, wave, board, paint, outline = null) {
   ctx.save();
   if (wave) {
-    const cx = x + size / 2;
-    const cy = y + size / 2;
+    const [cx, cy] = outline ? outline.centre : [x + size / 2, y + size / 2];
     ctx.translate(cx, cy);
     ctx.scale(wave.scale, wave.scale);
     ctx.translate(-cx, -cy);
@@ -189,7 +194,8 @@ export function drawWave(ctx, x, y, size, wave, board, paint) {
   if (wave?.flash > 0 && board?.end2d) {
     ctx.globalAlpha = wave.flash;
     ctx.fillStyle = board.end2d.light;
-    roundRect(ctx, x, y, size, size, size * (board.style2d?.params?.radius ?? 0));
+    if (outline) outlinePath(ctx, outline.points, outline.radius);
+    else roundRect(ctx, x, y, size, size, size * (board.style2d?.params?.radius ?? 0));
     ctx.fill();
   }
   ctx.restore();

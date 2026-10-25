@@ -755,7 +755,79 @@ async function mountGame() {
   globalThis.__play = { session, view, cursor, mines };
 }
 
-test('in a browser, the cursor ring an arrow key moves is the board module\'s and stands out from the closed tile it sits on', async (t) => {
+// Runs in the page: for a hexagon and a triangle board, a 5 × 4 board view of the grid's geometry
+// with a mine on cell (1, 1), whose upper-left slanted edge faces a tile drawn before it, the cursor
+// on it, then the mine revealed and the loss's end effect drawn at the moment its tile is back at
+// full size. Reads the ring layer and the board along the normal of that slanted edge — the
+// neighbour's face across the gap lies inside the tile's box, where a square flash would light it —
+// and where a square ring round the tile's box would stand.
+async function shapedBoards() {
+  const { mountBoardView } = await import('/js/classic2d/board-view.js');
+  const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+  const { createHexGrid } = await import('/js/engine/hex-grid.js');
+  const { createTriGrid } = await import('/js/engine/tri-grid.js');
+  const { createGeometry } = await import('/js/geometry/index.js');
+  const { createGameWithMines } = await import('/js/engine/rules.js');
+  const { REFERENCE_PROFILE } = await import('/js/engine/profiles.js');
+  const { createEndEffect, LOSS, LOSS_SNAP_MS } = await import('/js/classic2d/end-effect.js');
+  const { cursor, palette } = BOARD_ART.current().board;
+  const out = {};
+  for (const [kind, make] of [['hex', createHexGrid], ['tri', createTriGrid]]) {
+    const host = document.createElement('div');
+    Object.assign(host.style, { position: 'fixed', left: '16px', top: '96px', width: '900px', height: '600px', zIndex: 10000 });
+    document.body.append(host);
+    const grid = make(5, 4);
+    const geometry = createGeometry(kind, 5, 4);
+    const view = mountBoardView({ container: host, grid, geometry });
+    while (!(view.layout.width > 0)) await new Promise(requestAnimationFrame);
+    const c = grid.index(1, 1);
+    const game = createGameWithMines({ graph: grid.graph, profile: REFERENCE_PROFILE, mines: [c], dimensions: { width: 5, height: 4 } });
+    view.setGame(game);
+    view.setCursor(c);
+    const l = view.layout;
+    const o = geometry.outline(c, l.tile, l.gap);
+    const pts = o.points.map(([x, y]) => [l.offsetX + x - view.scroll.x, l.offsetY + y - view.scroll.y]);
+    // The slanted edge facing up and left (the corners run clockwise): its midpoint and outward normal.
+    let edge = null;
+    pts.forEach((a, i) => {
+      const b = pts[(i + 1) % pts.length];
+      const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      if (a[0] !== b[0] && a[1] !== b[1] && (!edge || m[0] + m[1] < edge.m[0] + edge.m[1])) {
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        edge = { m, n: [(b[1] - a[1]) / len, (a[0] - b[0]) / len] };
+      }
+    });
+    const along = (d) => [edge.m[0] + edge.n[0] * d, edge.m[1] + edge.n[1] * d];
+    const ratio = view.pixelRatio;
+    // The pixel whose centre is nearest the point, so a 3 px stroke through the point covers all of it.
+    const at = (ctx, [x, y]) => [...ctx.getImageData(Math.round(x * ratio - 0.5), Math.round(y * ratio - 0.5), 1, 1).data];
+    const ring = view.overlay.getContext('2d');
+    const board = view.canvas.getContext('2d');
+    const reach = cursor.radius.px + cursor.width / 2;
+    const seen = {
+      tile: l.tile,
+      ring: at(ring, along(reach)),
+      onFace: at(ring, along(-2)),
+      squareRing: at(ring, [l.offsetX + o.x - reach, edge.m[1]]),
+    };
+    view.update(game.reveal(c).changed);
+    const effect = createEndEffect({ kind: LOSS, geometry, origin: c, duration: 1000 });
+    view.showEffect(effect, LOSS_SNAP_MS * (1 - 1.2 / 2.2)); // the snap's overshoot curve at scale 1, its flash still lit
+    seen.litIn = at(board, along(-4));
+    seen.litOut = at(board, along(l.gap + 3));
+    view.showEffect(null);
+    seen.plainIn = at(board, along(-4));
+    seen.plainOut = at(board, along(l.gap + 3));
+    seen.colour = [1, 3, 5].map((i) => parseInt(cursor.color.slice(i, i + 2), 16));
+    seen.ground = [1, 3, 5].map((i) => parseInt(palette.boardGround.slice(i, i + 2), 16));
+    out[kind] = seen;
+    view.destroy();
+    host.remove();
+  }
+  return out;
+}
+
+test('in a browser, the cursor ring an arrow key moves is the board module\'s and stands out from the closed tile it sits on; on a hexagon and a triangle board the ring and the end effect\'s flash trace the tile\'s outline', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -808,6 +880,16 @@ test('in a browser, the cursor ring an arrow key moves is the board module\'s an
       assert.equal(seen.at.onFace[3], 0, `${theme}: the ring covers none of the tile's face`);
       assert.deepEqual(seen.at.face, seen.face, `${theme}: the cursor's tile shows its own face to its edge`);
       assert.equal(seen.neighbour.ring[3], 0, `${theme}: no ring round the neighbour`);
+      const shaped = await page.evaluate(shapedBoards);
+      const near = (a, b, tol = 10) => a.every((v, i) => Math.abs(v - b[i]) <= tol);
+      for (const [kind, s] of Object.entries(shaped)) {
+        assert.ok(near(s.ring.slice(0, 3), s.colour) && s.ring[3] === 255, `${theme} ${kind}: the ring runs outside the tile's slanted edge (${s.ring}, tile ${s.tile})`);
+        assert.equal(s.onFace[3], 0, `${theme} ${kind}: covering none of the face inside it`);
+        assert.equal(s.squareRing[3], 0, `${theme} ${kind}: and none where a ring round the tile's box would stand (${s.squareRing})`);
+        assert.ok(s.litIn.slice(0, 3).reduce((a, v) => a + v, 0) > s.plainIn.slice(0, 3).reduce((a, v) => a + v, 0) + 30, `${theme} ${kind}: the loss's flash lights the tile inside its slanted edge (${s.litIn} over ${s.plainIn})`);
+        assert.ok(!near(s.plainOut.slice(0, 3), s.ground, 2), `${theme} ${kind}: across the gap from the slanted edge, inside the tile's box, is the neighbour's face (${s.plainOut})`);
+        assert.ok(near(s.litOut.slice(0, 3), s.plainOut.slice(0, 3), 2), `${theme} ${kind}: which the flash leaves unlit (${s.litOut} vs ${s.plainOut})`);
+      }
       assert.deepEqual(errors, []);
       await page.close();
     }

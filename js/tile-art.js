@@ -136,10 +136,9 @@ function edges(points) {
   });
 }
 
-// A convex polygon's corners moved `d` in from every edge.
-function inset(points, d) {
-  if (!(d > 0)) return points;
-  const lines = edges(points).map(({ from, u, out }) => ({ p: [from[0] - out[0] * d, from[1] - out[1] * d], u }));
+// A convex polygon's corners with every edge moved `d` out (in for a negative d).
+function shift(points, d) {
+  const lines = edges(points).map(({ from, u, out }) => ({ p: [from[0] + out[0] * d, from[1] + out[1] * d], u }));
   return lines.map((b, i) => {
     const a = lines[(i + lines.length - 1) % lines.length];
     const t = ((b.p[0] - a.p[0]) * b.u[1] - (b.p[1] - a.p[1]) * b.u[0]) / (a.u[0] * b.u[1] - a.u[1] * b.u[0]);
@@ -147,9 +146,21 @@ function inset(points, d) {
   });
 }
 
-// The polygon's path, its corners rounded by `r` when above zero, each
-// corner's arc no longer than half its shorter edge allows.
-function polygonPath(ctx, points, r) {
+// A convex polygon's corners moved `d` in from every edge.
+function inset(points, d) {
+  return d > 0 ? shift(points, -d) : points;
+}
+
+// An outline's corners (outlinePoints, or any convex polygon's) with every
+// edge moved `d` outward, parallel to itself — inward for a negative d.
+export function growOutline(points, d) {
+  return d ? shift(points, d) : points;
+}
+
+// The polygon's path — an outline's, the path a hexagon or triangle face is
+// clipped by — its corners rounded by `r` when above zero, each corner's arc
+// no longer than half its shorter edge allows.
+export function outlinePath(ctx, points, r) {
   const n = points.length;
   ctx.beginPath();
   if (!(r > 0)) {
@@ -170,7 +181,7 @@ function polygonPath(ctx, points, r) {
 
 function fillPolygon(ctx, points, style, r = 0) {
   ctx.fillStyle = style;
-  polygonPath(ctx, points, r);
+  outlinePath(ctx, points, r);
   ctx.fill();
 }
 
@@ -189,7 +200,7 @@ function tileOf(outline, size) {
 // rounded by the style's radius, a fraction of the height.
 function outlined(ctx, tile, radius, draw) {
   ctx.save();
-  polygonPath(ctx, tile.points, radius > 0 ? tile.height * radius : 0);
+  outlinePath(ctx, tile.points, radius > 0 ? tile.height * radius : 0);
   ctx.clip();
   draw();
   ctx.restore();
@@ -330,7 +341,7 @@ function bevelRaisedIn(ctx, tile, q, p, depth, px, sign) {
     gl.addColorStop(0, p.gloss);
     gl.addColorStop(1, p.glossFade);
     ctx.save();
-    polygonPath(ctx, shine, 0);
+    outlinePath(ctx, shine, 0);
     ctx.clip();
     ctx.fillStyle = gl;
     ctx.fillRect(0, from, tile.width, Math.min(H * 0.32, H - from));

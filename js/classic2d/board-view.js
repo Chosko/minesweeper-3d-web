@@ -95,7 +95,8 @@
 //   motion               the motion layer (has, cells, frame), or null without one.
 //   setCursor(c)         the keyboard and controller cursor (js/classic2d/cursor-input.js), drawn
 //                        as a focus ring outside cell c's tile on the ring layer — the board module's
-//                        ring round its inner band, its corners following the tile's — covering none
+//                        ring round its inner band, its corners following the tile's, along the
+//                        cell's outline on a hexagon or triangle board — covering none
 //                        of the tile's face and moving without redrawing a cell; -1 for none.
 //   setMark(c)           the marked start cell a pre-generated board waits for: while closed, cell c
 //                        is drawn as the skin's marked tile (the module's marked face under its
@@ -117,7 +118,7 @@
 import { MIN_TILE_SIZE, createTileSkin } from './tile-skin.js';
 import { createMotionLayer, changeEvent } from './motion-layer.js';
 import { token as readerToken } from '../tokens.js';
-import { roundRect, drawMarkRing, inGlyphBox } from '../tile-art.js';
+import { roundRect, drawMarkRing, inGlyphBox, outlinePath, growOutline } from '../tile-art.js';
 import { CELL, PHASE } from '../engine/rules.js';
 import { createGeometry } from '../geometry/index.js';
 import {
@@ -495,10 +496,19 @@ export function createBoardView({
 
   const ground = () => boardOf()?.palette?.boardGround ?? token(BOARD_BACKGROUND);
 
+  // Cell c's outline corners in canvas CSS pixels.
+  function outlineAt(c) {
+    const o = outline(c);
+    const { x, y } = tileBox(c);
+    return o.points.map(([px, py]) => [x - o.x + px, y - o.y + py]);
+  }
+
   // The ring layer: cleared, then the cursor's ring drawn round its tile while the board shows it —
   // the board module's ring, `width` px wide with its outer band of `inner` innerWidth px inside it,
   // the band's outer edge radius.px outside the tile and its corners tile × radius.tile + radius.px,
-  // or, without a module, a square ring in CURSOR_RING a twelfth of the tile wide just outside it —
+  // or, without a module, a square ring in CURSOR_RING a twelfth of the tile wide just outside it;
+  // round a hexagon or triangle tile, either follows the cell's outline grown outward, its corners
+  // measured on the outline's height (the module's) or straight (the fallback's) —
   // clipped to the view on a board that scrolls.
   function drawRing() {
     if (!octx || !sized) return;
@@ -506,6 +516,8 @@ export function createBoardView({
     octx.clearRect(0, 0, layout.width, layout.height);
     if (hidden || !game || cursor < 0 || !inView(cursor)) return;
     const { x, y, size: t } = cellRect(cursor);
+    const o = outline(cursor);
+    const points = o.shape === 'square' ? null : outlineAt(cursor);
     octx.save();
     if (layout.scrolls) {
       octx.beginPath();
@@ -517,21 +529,38 @@ export function createBoardView({
       const w = Math.max(2, Math.round(t / 12));
       octx.strokeStyle = token(CURSOR_RING);
       octx.lineWidth = w;
-      octx.strokeRect(x - w / 2, y - w / 2, t + w, t + w);
+      if (points) {
+        outlinePath(octx, growOutline(points, w / 2), 0);
+        octx.stroke();
+      } else {
+        octx.strokeRect(x - w / 2, y - w / 2, t + w, t + w);
+      }
     } else {
       const out = look.radius.px;
-      const corner = t * look.radius.tile + out;
+      const corner = (points ? o.height : t) * look.radius.tile + out;
       // A band whose centre line runs `d` px out from the band's box (negative: inside it).
       const band = (d, width, style) => {
         octx.strokeStyle = style;
         octx.lineWidth = width;
-        roundRect(octx, x - out - d, y - out - d, t + 2 * (out + d), t + 2 * (out + d), Math.max(0, corner + d));
+        if (points) outlinePath(octx, growOutline(points, out + d), Math.max(0, corner + d));
+        else roundRect(octx, x - out - d, y - out - d, t + 2 * (out + d), t + 2 * (out + d), Math.max(0, corner + d));
         octx.stroke();
       };
       band(look.width / 2, look.width, look.color);
       band(-look.innerWidth / 2, look.innerWidth, look.inner);
     }
     octx.restore();
+  }
+
+  // A hexagon or triangle cell's shape for the end effect's wave: its outline, the geometry's centre
+  // and the face's corner radius (the grid's radius × the outline's height), in canvas CSS pixels.
+  function waveOutline(c) {
+    const centre = geometry.centre(c, layout.tile, layout.gap);
+    return {
+      points: outlineAt(c),
+      centre: [layout.offsetX + centre.x - scroll.x, layout.offsetY + centre.y - scroll.y],
+      radius: outline(c).height * (shapeOf2d()?.radius ?? 0),
+    };
   }
 
   // Paints cell c's tile (the marked tile for the closed start cell, its ring wide while it pulses);
@@ -553,9 +582,7 @@ export function createBoardView({
     if (moving || shaped || shapeOf2d()?.radius > 0) {
       ctx.fillStyle = ground();
       if (shaped) {
-        ctx.beginPath();
-        o.points.forEach(([px, py], i) => (i ? ctx.lineTo(x - o.x + px, y - o.y + py) : ctx.moveTo(x - o.x + px, y - o.y + py)));
-        ctx.closePath();
+        outlinePath(ctx, outlineAt(c), 0);
         ctx.fill();
       } else {
         ctx.fillRect(x, y, t, t);
@@ -566,7 +593,7 @@ export function createBoardView({
       if (state === CELL.CLOSED && pressed.has(c)) shown = PRESSED;
       else if (state === CELL.CLOSED && c === mark && !effect) shown = MARKED;
       const paint = () => skin.drawTile(ctx, x, y, t, shown, game.cellNumber(c), ratio, null, shapeOf(c));
-      if (effect) drawWave(ctx, x, y, t, waveAt(effect, c, now, effectT, boardOf()?.end2d), boardOf(), paint);
+      if (effect) drawWave(ctx, x, y, t, waveAt(effect, c, now, effectT, boardOf()?.end2d), boardOf(), paint, shaped ? waveOutline(c) : null);
       else paint();
       const ring = boardOf()?.palette?.faces2d?.marked?.ring;
       if (shown === MARKED && markPulse && ring) {
