@@ -144,7 +144,7 @@ export function dailyModes({ records, replays = null, now = new Date(), unavaila
     if (!row) {
       return {
         mode, label, daily: null, line: COMING_SOON, title: `${label} · daily`, summary: `Daily · ${label} · coming soon`,
-        note: `${label} gets its own daily board when the mode arrives.`, canPlay: false,
+        note: `${label} has no daily board yet.`, canPlay: false,
       };
     }
     // The board named by its label unless the records' label already names it ("Expert · no-guess").

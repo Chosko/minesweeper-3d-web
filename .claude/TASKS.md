@@ -1651,7 +1651,7 @@ Feature: flat-grid-menu-entries
 
 ## 278. Menu routes, last mode played and Daily for Hexagon and Triangle
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/menu.js, js/shell/returning.js, js/shell/daily.js, js/main.js, tests/shell-menu.test.mjs, tests/shell-returning.test.mjs, tests/shell-daily.test.mjs
 Preconditions: 268, 283

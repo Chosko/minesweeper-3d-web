@@ -64,6 +64,9 @@ test('Hexagon, Triangle and Surface are enabled and open the placeholder titled 
 test('the menu opens on the last mode played; the first entry when nothing was played or that entry cannot open here', () => {
   assert.equal(openingEntry(null), 'classic-2d', 'nothing played: the first entry');
   assert.equal(openingEntry('3d'), '3d');
+  assert.equal(openingEntry('hexagon'), 'hexagon', 'Hexagon, a mode of its own');
+  assert.equal(openingEntry('triangle'), 'triangle', 'Triangle, a mode of its own');
+  assert.equal(openingEntry('triangle', { missing: ['webgl2'] }), 'triangle', 'Triangle needs no WebGL 2');
   assert.equal(openingEntry('classic-2d', { missing: ['webgl2'] }), 'classic-2d');
   assert.equal(openingEntry('3d', { missing: ['webgl2'] }), 'classic-2d', '3D without WebGL 2: Classic 2D, the first enabled entry');
   assert.equal(openingEntry(null, { missing: ['webgl2'] }), 'classic-2d', 'a fresh profile without WebGL 2: Classic 2D');
@@ -292,6 +295,36 @@ test('opening an entry asks the mode host for a board choice, or routes through 
   assert.throws(() => menu.open('campaign'), /unknown menu entry/);
 });
 
+test('Hexagon and Triangle, registered, take the mode route to their board choice; Surface, not registered, stays on Coming soon', () => {
+  const modes = createModeHost();
+  const fakes = { 'classic-2d': fakeMode(), hexagon: fakeMode(), triangle: fakeMode(), '3d': fakeMode() };
+  for (const [id, f] of Object.entries(fakes)) modes.register(id, f.factory);
+  const router = fakeRouter(['menu', 'coming-soon', 'daily', 'records', 'settings']);
+  const menu = createMenu({ router, modes, missing: ['webgl2'] });
+  assert.deepEqual(menu.open('hexagon'), { mode: 'hexagon' });
+  assert.deepEqual(menu.open('triangle'), { mode: 'triangle' });
+  assert.deepEqual([fakes.hexagon.calls, fakes.triangle.calls], [['openBoardChoice'], ['openBoardChoice']], 'each opens its own board choice');
+  assert.equal(modes.active, null, 'opening a board choice starts no game');
+  assert.deepEqual(menu.open('surface'), { screen: PLACEHOLDER_SCREEN, data: { entry: 'surface', title: 'Surface' } });
+  assert.equal(menu.open('3d'), null, 'an unavailable entry still opens nothing');
+  assert.deepEqual(fakes['3d'].calls, []);
+  assert.deepEqual(router.went, [['coming-soon', { entry: 'surface', title: 'Surface' }]], 'only Surface reaches the router');
+});
+
+test('the shell registers Hexagon and Triangle on the mode host, so their entries take the mode route, each board choice opened on its last board', () => {
+  const main = read('js/main.js');
+  assert.match(main, /const MODES = createModeHost\(\);[\s\S]*const MENU = createMenu\(\{ router: SHELL, modes: MODES, missing: MISSING \}\);/);
+  assert.match(main, /const mode = MODES\.register\(config\.id, /, 'each flat mode registered under its configuration\'s id');
+  assert.match(main, /const HEX_MODE = flatMode\(HEXAGON, 'hex'\);\nconst TRI_MODE = flatMode\(TRIANGLE, 'tri'\);/);
+  for (const [screen, binder] of [['hexagon-choice', 'HEX_MODE'], ['triangle-choice', 'TRI_MODE']]) {
+    assert.match(main, new RegExp(`'${screen}': \\{[^\\n]*${binder}\\.show\\(d\\.choice \\?\\? ${binder}\\.lastChoice\\.current, from\\)`),
+      `${screen} shows the choice handed in, else the mode's last board`);
+  }
+  assert.match(read('js/classic2d/mode.js'), /openBoardChoice\(\) \{ flow\.openBoardChoice\(lastChoice\.current\); \}/, 'the mode offers its last board choice');
+  assert.match(main, /const LAST_MODE = createLastMode\(\{ storage, modes: \{ has: \(m\) => MODES\.has\(m\), on: /,
+    'the last mode reads a stored mode against the registered ones');
+});
+
 // ---------------------------------------------------------------- an entry the browser cannot run
 
 test('the 3D entry needs WebGL 2; without it the entry is unavailable with its reason and routes nowhere', () => {
@@ -353,7 +386,7 @@ test('a game started in any mode records that mode', async () => {
   const backend = createMemoryBackend();
   const storage = createStorage({ backend });
   const modes = createModeHost();
-  const fakes = { '3d': fakeMode(), 'classic-2d': fakeMode() };
+  const fakes = { '3d': fakeMode(), 'classic-2d': fakeMode(), hexagon: fakeMode(), triangle: fakeMode() };
   for (const [id, f] of Object.entries(fakes)) modes.register(id, f.factory);
   const last = createLastMode({ storage, modes });
   assert.equal(last.current, null);
@@ -369,17 +402,32 @@ test('a game started in any mode records that mode', async () => {
   await settle();
   assert.equal(last.current, 'classic-2d');
   assert.deepEqual(JSON.parse(backend.documents.get(LAST_MODE_DOC)), { version: 1, data: { mode: 'classic-2d' } });
+
+  for (const id of ['hexagon', 'triangle']) {
+    modes.start(id, {});
+    fakes[id].click();
+    await settle();
+    assert.equal(last.current, id, `${id} is a mode of its own`);
+    assert.deepEqual(JSON.parse(backend.documents.get(LAST_MODE_DOC)), { version: 1, data: { mode: id } });
+    assert.equal(openingEntry(last.current), id, 'and the menu opens on it');
+  }
 });
 
 test('the last mode is read back at start-up; nothing stored or a malformed document reads as none', async () => {
   const stored = (data) => createMemoryBackend({ initial: { [LAST_MODE_DOC]: JSON.stringify({ version: 1, data }) } });
   const loadFrom = async (backend) => {
-    const last = createLastMode({ storage: createStorage({ backend }), modes: createModeHost() });
+    const modes = createModeHost();
+    for (const id of ['classic-2d', 'hexagon', 'triangle', '3d']) modes.register(id, fakeMode().factory);
+    const last = createLastMode({ storage: createStorage({ backend }), modes });
     const mode = await last.load();
     assert.equal(last.current, mode);
     return mode;
   };
   assert.equal(await loadFrom(stored({ mode: '3d' })), '3d');
+  assert.equal(await loadFrom(stored({ mode: 'hexagon' })), 'hexagon');
+  assert.equal(await loadFrom(stored({ mode: 'triangle' })), 'triangle');
+  assert.equal(await loadFrom(stored({ mode: 'surface' })), null, 'a mode not registered reads as none');
+  assert.equal(await loadFrom(stored({ mode: 'campaign' })), null, 'an unknown mode reads as none');
   assert.equal(await loadFrom(createMemoryBackend()), null);
   assert.equal(await loadFrom(stored({ mode: 7 })), null);
   assert.equal(await loadFrom(stored('3d')), null);

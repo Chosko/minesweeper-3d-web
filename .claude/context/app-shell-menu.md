@@ -41,7 +41,8 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   ([app-shell-menu-preview.md](app-shell-menu-preview.md)).
 - `LAST_MODE_DOC` = `'shell.lastMode'`, `LAST_MODE_VERSION` = 1;
   `createLastMode({storage, modes})` → `current`, `record(mode)`, `load()`
-  (null for nothing or a malformed document), `dispose()`.
+  (null for nothing, a malformed document or a mode `modes.has` does not
+  know), `dispose()`.
 - `createLastBoardChoice({storage, doc, version?, normalise, fallback})` →
   `current` (`fallback` until loaded or saved), `load()`,
   `save(choice)` (`RangeError` on a choice `normalise` refuses); the 3D mode

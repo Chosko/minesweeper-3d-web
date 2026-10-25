@@ -62,6 +62,25 @@ test('the board\'s bests: time, 3BV/s and efficiency in the results formats, eac
   assert.deepEqual(rows(boardBests(CUBE_INT, cube)), none);
 });
 
+test('Hexagon\'s and Triangle\'s board choices read their own boards\' bests: a hexagon or triangle board is not the square board of its size', () => {
+  const hex = createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 16, height: 16, mines: 40, noGuess: false });
+  const tri = createBoardIdentity({ mode: 'triangle', grid: 'tri', width: 16, height: 16, mines: 40, noGuess: false });
+  const sq = square(16, 16, 40);
+  const m = model([{ board: hex, ms: 30000, endedAt: new Date(2026, 9, 20, 12) }]);
+  const values = (board) => boardBests(board, m).map((b) => b.value);
+  assert.deepEqual(values(hex), ['30.000 s', '0.67', '100.0%'], 'the hexagon board\'s best');
+  assert.deepEqual(values(tri), ['—', '—', '—'], 'the triangle board of that size has none');
+  assert.deepEqual(values(sq), ['—', '—', '—'], 'nor the square one');
+});
+
+test('the shell hands Hexagon\'s and Triangle\'s board choices the bests and the pin, each shown on the mode\'s last board', () => {
+  const main = read('js/main.js');
+  const flat = main.slice(main.indexOf('function flatMode('), main.indexOf('const HEX_MODE = flatMode('));
+  assert.match(flat, /const lastChoice = createLastChoice\(\{ storage, config \}\);/, 'each flat mode keeps its own last board choice');
+  assert.match(flat, /bests: \(identity\) => boardBests\(identity, RECORDS\),\n    config,\n    pin: BOARD_PANEL,/);
+  assert.match(main, /for \(const m of \[HEX_MODE, TRI_MODE\]\) m\.mode\.loadChoice\(\)/, 'their last boards are read at start-up');
+});
+
 // ---------------------------------------------------------------- the board choice panel's pin
 
 const doc = (version, data) => JSON.stringify({ version, data });

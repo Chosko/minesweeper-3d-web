@@ -1340,7 +1340,7 @@ for (const entry of MENU.entries) {
   if (MENU.unavailable(entry.id)) ui.setEntryUnavailable(entry.id, entryReason(entry, MISSING), entryShortReason(entry, MISSING));
 }
 // The guided board is never the last mode played: its game started is not passed on.
-const LAST_MODE = createLastMode({ storage, modes: { on: (type, fn) => MODES.on(type, (e) => { if (!learnGame()) fn(e); }) } });
+const LAST_MODE = createLastMode({ storage, modes: { has: (m) => MODES.has(m), on: (type, fn) => MODES.on(type, (e) => { if (!learnGame()) fn(e); }) } });
 MODES.on('started', ({ mode }) => { FIRST_USE.gameStarted(mode, learnGame()); menuOpened = null; });
 
 /**

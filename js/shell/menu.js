@@ -168,8 +168,9 @@ export function createLastBoardChoice({ storage, doc, version = 1, normalise, fa
 /**
  * The last mode played, kept in the `shell.lastMode` document. Registers the document with
  * `storage` (the platform-storage interface) and records the mode each time the mode host
- * reports a game started. `load()` reads the stored mode (null when there is none or it is
- * malformed, keeping what this session already recorded); `current` is the latest known.
+ * (`modes`: { has, on }) reports a game started. `load()` reads the stored mode (null when there
+ * is none, it is malformed or it names a mode the host has not registered, keeping what this
+ * session already recorded); `current` is the latest known.
  */
 export function createLastMode({ storage, modes }) {
   storage.register(LAST_MODE_DOC, LAST_MODE_VERSION);
@@ -184,7 +185,7 @@ export function createLastMode({ storage, modes }) {
     record,
     async load() {
       const data = await storage.load(LAST_MODE_DOC);
-      if (data && typeof data === 'object' && typeof data.mode === 'string' && data.mode) current = data.mode;
+      if (data && typeof data === 'object' && typeof data.mode === 'string' && modes.has(data.mode)) current = data.mode;
       return current;
     },
     dispose: off,

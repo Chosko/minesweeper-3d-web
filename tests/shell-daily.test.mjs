@@ -127,9 +127,21 @@ test('daily modes: every mode in menu order; Classic 2D and 3D with their board,
     'Daily · Classic 2D · Expert · no-guess', 'Daily · Hexagon · coming soon', 'Daily · Triangle · coming soon', 'Daily · Surface · coming soon',
     'Daily · 3D · Cube 8 × 8 × 8 · 40 mines · no-guess',
   ]);
-  assert.equal(modes[1].note, 'Hexagon gets its own daily board when the mode arrives.');
+  assert.equal(modes[1].note, 'Hexagon has no daily board yet.');
   assert.equal(modes[0].note, null);
   assert.deepEqual(modes.map((m) => m.canPlay), [true, false, false, false, true], 'a coming-soon mode cannot be played');
+});
+
+test('daily modes: Hexagon and Triangle, registered modes, read Coming soon and are never playable while they have no daily board', () => {
+  for (const unavailable of [{}, { '3d': UNAVAILABLE_REASONS.webgl2 }]) {
+    const modes = dailyModes({ records: store(), now: TODAY, unavailable });
+    for (const [mode, label] of [['hexagon', 'Hexagon'], ['triangle', 'Triangle']]) {
+      const entry = modes.find((m) => m.mode === mode);
+      assert.deepEqual([entry.daily, entry.line, entry.canPlay], [null, COMING_SOON, false], `${label}: Coming soon, not playable`);
+      assert.equal(entry.note, `${label} has no daily board yet.`, 'the note claims no mode still to come');
+    }
+  }
+  assert.ok(!dailyRows({ records: store(), now: TODAY }).some((r) => ['hexagon', 'triangle'].includes(r.mode)), 'no daily board of theirs yet');
 });
 
 test('daily modes: a played row says so in the summary; 3D without WebGL 2 reads its reason and cannot be played', () => {
@@ -320,7 +332,7 @@ test('the Daily screen: Play plays the selected mode\'s board, Watch replay only
   assert.equal(at(root, '[data-code-group]').classes.has('hidden'), true, 'nor its label');
   assert.equal(at(root, '[data-status]').classes.has('hidden'), true, 'no state, no days in a row');
   assert.equal(at(root, '[data-note]').classes.has('hidden'), false);
-  assert.equal(at(root, '[data-note]').textContent, 'Hexagon gets its own daily board when the mode arrives.');
+  assert.equal(at(root, '[data-note]').textContent, 'Hexagon has no daily board yet.');
   assert.equal(at(root, '[data-summary]').textContent, 'Daily · Hexagon · coming soon');
   at(root, '[data-back]').click();
   assert.deepEqual(calls, [['play', 'cube'], ['watch', won.id], ['back']]);
