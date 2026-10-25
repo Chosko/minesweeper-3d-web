@@ -1,6 +1,7 @@
 // The Electron main process: one game window loading the web game's files over the game protocol,
-// a single-instance lock, the window state file, the crash log and the closing sequence.
-import { app, BrowserWindow, protocol, screen } from 'electron';
+// a single-instance lock, the window state file, the crash log, the closing sequence, the Steam
+// adapter and the page bridge.
+import { app, BrowserWindow, ipcMain, protocol, screen } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -9,6 +10,8 @@ import { WINDOW_STATE_FILE, placeOnScreen, readWindowState, writeWindowState } f
 import { captureMainErrors, capturePageErrors, createCrashLog } from './crash-log.js';
 import { createClosing } from './closing.js';
 import { DEFAULT_CONTENT_SIZE, createGameWindow } from './window.js';
+import { createUnavailableAdapter } from './adapter/unavailable.js';
+import { createBridge } from './bridge.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -19,11 +22,17 @@ const crashLog = createCrashLog(app.getPath('userData'));
 captureMainErrors(crashLog);
 registerGameScheme(protocol);
 
-/** The closing sequence; later tasks set its flush and shutdown hooks. */
+/** The closing sequence; the bridge sets its flush and shutdown hooks. */
 export const closing = createClosing({ exit: () => app.exit(0), onError: (error) => crashLog.write('main', error) });
+
+/** The Steam adapter: the unavailable implementation until the Steam implementation exists. */
+export const adapter = createUnavailableAdapter();
 
 /** The game window and its actions, once created. */
 export let game = null;
+
+/** The page bridge, once the game window exists. */
+export let bridge = null;
 
 if (!app.requestSingleInstanceLock()) {
   app.exit(0);
@@ -41,8 +50,12 @@ if (!app.requestSingleInstanceLock()) {
     const stateFile = path.join(app.getPath('userData'), WINDOW_STATE_FILE);
     const workAreas = screen.getAllDisplays().map((display) => display.workArea);
     const state = placeOnScreen(readWindowState(stateFile), workAreas, DEFAULT_CONTENT_SIZE);
-    game = createGameWindow({ BrowserWindow, state, save: (next) => writeWindowState(stateFile, next) });
+    game = createGameWindow({
+      BrowserWindow, state, save: (next) => writeWindowState(stateFile, next), preload: path.join(HERE, 'preload.js'),
+    });
     capturePageErrors(crashLog, game.win.webContents);
+    bridge = createBridge({ adapter, window: game.actions, closing });
+    bridge.attach({ ipcMain, webContents: game.win.webContents });
     game.win.on('close', (event) => {
       event.preventDefault();
       closing.run();

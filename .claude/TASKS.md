@@ -16,7 +16,7 @@ Feature: steam-desktop-host
 
 ## 85. Steamworks capability adapter, unavailable implementation and the page bridge
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: desktop/adapter/interface.js, desktop/adapter/unavailable.js, desktop/preload.js, desktop/bridge.js, desktop/main.js, desktop/closing.js, tests/desktop-bridge.test.mjs
 Preconditions: 84

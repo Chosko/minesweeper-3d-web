@@ -1,6 +1,7 @@
 // The closing sequence every quit path shares — closing the window, and the page's quit request:
 // ask for a flush (the flush hook, bounded by a timeout), shut down (the shutdown hook), exit.
-// Later tasks fill the hooks; with none it simply exits. It runs once, however often it is asked.
+// The page bridge fills the hooks — the page's flush hand-shake and the Steam adapter's shutdown;
+// with none it simply exits. It runs once, however often it is asked.
 
 export const FLUSH_TIMEOUT_MS = 3000;
 
