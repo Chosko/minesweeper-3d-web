@@ -395,16 +395,28 @@ kit are described in [app-shell.md](../../context/app-shell.md),
   programmatic value changes; the controls list reads its rows from the
   bindings source, so rebinding updates every list.
 - **Size steps.** The frame's head and foot, the buttons and the type
-  resolve per window-size step — desktop, compact, touch — each step's
-  values held by the theme stylesheet.
+  resolve per size step — desktop, compact, touch — chosen from the
+  available area (below), never from the desktop window's own size; each
+  step's values held by the theme stylesheet.
 - **Screen frame.** Every screen's outer composition, the in-game windows'
-  included: the frame sits on the backdrop at a size bounded by the window
-  — sized to its content where the screen says so — its head the title
-  bar, its body opening with the screen's heading and the control beside
-  it; its body scrolls when the content is taller than the window, head
-  and foot staying in view. The title bar's window buttons reach the
-  desktop host through the platform layer's capability flags and the page
-  bridge (`steam-desktop-host`); with no host they do nothing.
+  included. Each screen has a **natural size**: the size its desktop
+  artboard on the canvas draws or, where the screen says so, its
+  content's — the game window's is its board at the board scale's tile
+  plus its chrome (`in-game-layout`). The frame takes its natural size
+  within the **available area** — the browser window on the web, the work
+  area (the monitor less the taskbar) of the display the window is on at
+  the desktop host — and its content shrinks to fit when the natural size
+  does not, never growing past it. On the web and in desktop fullscreen
+  the frame sits centred on the backdrop; in the desktop's windowed mode
+  there is no backdrop and the frame is the window, its size reported to
+  the host on every screen change and every change of the frame's size
+  (`steam-desktop-host`). The frame's head is the title bar, its body
+  opening with the screen's heading and the control beside it; its body
+  scrolls when the content is taller than the available area, head and
+  foot staying in view. At the touch step the frame keeps the layout its
+  phone artboards draw. The title bar's window buttons reach the desktop
+  host through the platform layer's capability flags and the page bridge
+  (`steam-desktop-host`); with no host they do nothing.
 - **Screen compositions.** The menu, board choice, Daily, pause, results,
   Records, Settings, replay viewer, cards, confirmations and messages
   composed inside the frame from kit components, on the element ids,
@@ -508,7 +520,9 @@ kit are described in [app-shell.md](../../context/app-shell.md),
   stable across the screen compositions, so the shell's navigation and the
   browser tests keep their footing.
 - **Window sizes** — no screen scrolls horizontally at any supported window
-  size; the frame's body scrolls vertically when needed. On a narrow or
+  size; the frame's body scrolls vertically when needed; a frame never
+  exceeds the available area, and on the desktop host nothing in its
+  layout reads the window's own size (§ Architecture, **Screen frame**). On a narrow or
   mobile window a screen may hide its non-vital parts, such as the in-game
   live figures panel, as its phone artboards show.
 

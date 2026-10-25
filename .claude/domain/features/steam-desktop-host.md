@@ -80,11 +80,17 @@ rules engine imports Electron or the binding.
   frame and is transparent, so the game draws the whole window, rounded
   corners included, in its title bar's style; the page marks its title
   bar as the drag region, and the window is dragged by it like any other
-  window. The player cannot resize it: the page reports its window's
-  content size over the bridge whenever it changes — the board choice
-  window grows when its panel opens — and the host resizes the window to
-  it. It is windowed by default. Fullscreen renders the game full-screen on
-  its backdrop, still drawn as a window, as the canvas shows it, neither
+  window. The player cannot resize it: windowed, there is no backdrop and
+  the window is the screen's frame at its natural size, laid out against
+  the work area of the display the window is on — never against the
+  window's own size, which would feed back on itself — and the page reports
+  that size over the bridge on every screen change and every change of the
+  frame's size (the board choice window grows when its panel opens); the
+  host resizes the window to it, never past the work area
+  ([shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Screen frame**). It is windowed by default. Fullscreen renders the game
+  full-screen on its backdrop, the frame at its natural size, as the canvas
+  shows it, neither
   draggable nor resizable; the title bar's button then shows the Windowed
   icon, and pressing it returns to the floating window as it was, the
   button showing the Fullscreen icon again. Minimise minimises the game to

@@ -141,10 +141,12 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
 
 - **Game window composition.** The Classic 2D layer becomes the framed
   window: title bar, counter strip, board area, side panel, foot. The board area
-  keeps the board view's fit rule, minimum tile size and scrolling; the
-  window's chrome reduces the space the fit rule works in, measured with
-  the window at its largest, and the board area takes the board's extent
-  there, so the window hugs the board and follows its size, the side
+  keeps the board view's fit rule, minimum tile size and scrolling; the fit
+  rule works in the available area
+  ([shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Screen frame**) less the window's chrome — the board scale's tile at
+  100 % and 125 %, the largest tile the area holds at Fit — and the board
+  area takes the board's extent there, so the window hugs the board and follows its size, the side
   panel widening it only while open and the title bar never; the open panel moves under the
   board, its figures in a row, below 1024 px wide, and is hidden on a phone — narrower than 720 px, or held sideways at
   500 px high or less
