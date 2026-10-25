@@ -5,8 +5,8 @@
 The replay viewer screen (`js/replay/viewer.js`) opens a replay, verifies
 it through the simulator ([replay-playback.md](replay-playback.md)) and
 plays it back. `js/main.js` builds the one viewer (`REPLAY_VIEWER`) on the
-router's `replay` screen, with the 2D viewer for square graphs and the 3D
-viewer over its own scene and camera for box graphs
+router's `replay` screen, with the 2D viewer for every flat graph (square,
+hex, tri) and the 3D viewer over its own scene and camera for box graphs
 ([replay-viewers.md](replay-viewers.md)); the results screen's *Watch
 replay*, the Records screen's Watch best and library Watch, and Open
 replay file open it ([app-shell-replay.md](app-shell-replay.md),
@@ -36,7 +36,9 @@ The `#replay` binder (`createReplayView`) is
 - `replayCode(replay)` → the game's board code in its game form, from the
   header's board, seed and generator version and the first reveal action
   (no format change), or null; `replayTitle(replay)` → the frame's title,
-  "Replay · Classic 2D · Intermediate" (the board as the records name it);
+  "Replay · Hexagon · Beginner" (the mode as `MODE_NAMES` names it,
+  [app-shell-daily.md](app-shell-daily.md), Classic 2D for an unknown one; the board as
+  the records name it);
   both handed to `view.ready({ …, code, title })`.
 - `clockText(ms)` (`"13.342"`, seconds to the thousandth, truncated),
   `overlayFigures(frame, ms)` (the strip's clock, mines, 3BV and 3BV/s),
@@ -53,8 +55,8 @@ The `#replay` binder (`createReplayView`) is
   `command`, `seek`, `setSpeed`, `download()`, `openFile(file)`, `key`,
   `pad`, `back()`, `defaultFocus()` (Play once ready, the failure card's
   Back once failed, the frame's Back while opening), `setScale`, `state`.
-  `viewers` maps a graph kind to a mount; default `{square:
-  mountViewer2D}`; `sound` is the sfx sink, `files.save(bytes, name)` the
+  `viewers` maps a graph kind to a mount; default `mountViewer2D`
+  for `square`, `hex` and `tri`; `sound` is the sfx sink, `files.save(bytes, name)` the
   download, `bests(board)` the board's bests (`RECORDS.bests`);
   `state.live` is `replayFigures` at the playback position.
 - `createReplayView` — the `#replay` binder the viewer drives

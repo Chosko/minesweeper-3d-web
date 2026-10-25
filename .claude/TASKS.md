@@ -1631,7 +1631,7 @@ Feature: flat-grid-records-replays
 
 ## 276. Update documentation for feature `flat-grid-records-replays`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/records.md, .claude/context/records-store.md, .claude/context/records-screen.md, .claude/context/records-screen-view.md, .claude/context/records-library-view.md, .claude/context/replay.md, .claude/context/replay-samplers.md, .claude/context/replay-playback.md, .claude/context/replay-viewers.md, .claude/context/replay-viewer-screen.md, .claude/context/replay-library.md, .claude/context/app-shell-replay.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-records-replays.md
 Preconditions: 272, 273, 274, 275

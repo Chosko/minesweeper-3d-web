@@ -19,8 +19,9 @@ are listed in [app-shell.md](app-shell.md) § PUBLIC API.
 
 - **Replay viewer route.** `REPLAY_VIEWER` (`createReplayViewer` over
   `REPLAYS` and `SHELL`, `sound: sfx`, `files: REPLAY_FILES`, view bound to
-  `#replay`, viewers `{square: mountReplay2D, box: mountReplay3D}` — box
-  only with WebGL 2, else a 3D replay says why it cannot play) is the
+  `#replay`, viewers `FLAT_REPLAY_VIEWERS` (`mountReplay2D` for `square`, `hex` and
+  `tri`) plus `box: mountReplay3D` — box only with WebGL 2, else a 3D
+  replay says why it cannot play) is the
   router's `replay` screen. It is opened by Watch replay (with the replay),
   the results screen's Watch best (`RESULTS.watchBest()`, a replay id), the
   Records screen's Watch best and library Watch (`RECORDS_PAGE.watch`,

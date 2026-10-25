@@ -23,8 +23,9 @@ viewers [replay-viewers.md](replay-viewers.md).
 - `openReplay(input)` → `{ok: true, replay}` or `{ok: false, reason,
   message}` (`NEWER` for a newer format, profile or rules version).
 - `createSimulator(input, opts?)` → `{replay, grid, game, duration, length,
-  seek(t), seekIndex(i), indexAt(t), outcome(i), stats()}`; `game`
-  read-only, always the same object. A frame is `{time, index, phase,
+  seek(t), seekIndex(i), indexAt(t), outcome(i), stats()}`; `grid` the
+  square, hexagon, triangle or box grid built from the header's graph
+  kind; `game` read-only, always the same object. A frame is `{time, index, phase,
   minesLeft, explodedCell, bbbv, bbbvSolved, clicks, state, game,
   changed}`, `changed` an ascending `Int32Array`. `outcome(i)` →
   `{changed, count, before, after}` once playback applied action `i`

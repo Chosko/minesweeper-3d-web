@@ -7,7 +7,8 @@ mounts for a replay's graph kind: each draws simulator frames, places the
 recorded pointer or camera, shows press rings and Show 3BV's tints. Both are
 DOM-free at import.
 
-- `js/replay/viewer-2d.js` — read-only Classic 2D board view with the
+- `js/replay/viewer-2d.js` — read-only flat board view (Classic 2D,
+  Hexagon or Triangle, over the grid's geometry) with the
   recorded pointer and its trail, the recorded cursor, press rings and Show
   3BV's paint; `mountViewer2D`.
 - `js/replay/viewer-3d.js` — the 3D state view with the recorded camera and

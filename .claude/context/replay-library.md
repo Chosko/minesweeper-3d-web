@@ -48,7 +48,7 @@ pins ([records-library-view.md](records-library-view.md)), and the viewer reads 
   retention. A failed blob write leaves no entry, is reported once and keeps
   the bytes for `bytes(id)` this session.
 - **Retention.** After each add and unpin, unpinned entries beyond the
-  newest `RETAINED_UNPINNED` by end date, across both modes, leave the index,
+  newest `RETAINED_UNPINNED` by end date, across every mode, leave the index,
   then their blobs are deleted, oldest first; a failed delete leaves an
   orphan the next start-up deletes, as after a `remove`. Pinned replays are
   never removed by retention or a storage failure, only by `remove`; a best
