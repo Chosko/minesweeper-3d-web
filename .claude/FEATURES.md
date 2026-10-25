@@ -173,7 +173,7 @@ Tasks: 61, 62, 63, 64
 
 ---
 
-## 3d-results-records-screens — 3D results screen after the end effect, and the Records 2D | 3D switch
+## 3d-results-records-screens — 3D results screen after the end effect, and the Records mode switch (Classic 2D, Hexagon, Triangle, 3D)
 
 Status: [DONE]
 Doc: .claude/domain/features/3d-results-records-screens.md
