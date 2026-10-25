@@ -402,7 +402,7 @@ Context:
 
 Done: 2026-10-25, commit `5030421` (9 files, +30/-24).
 
-## [ ] 30. Implement task 277 — Menu previews for Hexagon and Triangle
+## [x] 30. Implement task 277 — Menu previews for Hexagon and Triangle
 
 Depends on: 17, 21
 
@@ -412,6 +412,8 @@ Context:
 ```prompt
 /task-implement 277 --review
 ```
+
+Done: 2026-10-25, commit `fc2dd5d` (15 files, +159/-79). Decision: a board preview names its grid as `{ kind: 'board', grid: 'square' | 'hex' | 'tri', ground: 'dark' }` and `demoBoard2D(grid)` builds that mode's seeded Intermediate board; no tile uses the badge preview any more.
 
 ## [ ] 31. Implement task 278 — Menu routes, last mode played and Daily for Hexagon and Triangle
 
@@ -438,7 +440,8 @@ Context: none
 
 Depends on: 30, 31
 
-Context: none
+Context:
+- 2026-10-25 (from step 30): task 277 already updated .claude/context/INDEX.md, app-shell-menu-preview.md, app-shell-markup.md, app-shell-kit.md and classic2d-board-view.md and the css/components.css catalogue — a board preview is `{ kind: 'board', grid, ground }`, `demoBoard2D(grid)` builds the seeded Intermediate board, and the badge preview is no longer used by any tile (the kit still accepts it).
 
 ```prompt
 /task-implement 279 --review
