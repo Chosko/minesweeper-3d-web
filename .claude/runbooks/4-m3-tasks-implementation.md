@@ -1,7 +1,7 @@
 # Runbook: m3-tasks-implementation
 
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 17) · Model: opus
-Last step number: 35
+Last step number: 41
 
 ## [x] 32. Implement task 115 — Three cube 3D presets and no no-guess on a side of 2
 
@@ -94,6 +94,68 @@ Context:
 
 Done: 2026-10-25, commit `f7c592c` (11 files, +730/-46). Task 86 is left `[PARTIAL]`: by the user's choice the page does not report its content size (the window stays at 1280×800; the sender is built and tested but uncalled), because the page's layout follows the window's size and the two would feed back — the desktop layout and content size go to a follow-up. The capability flags ignore logged-on state, contrary to the feature document: logged-on state is kept beside them, so going offline switches no feature off.
 
+## [ ] 36. Implement task 289 — Size steps from the available area
+
+Depends on: 3
+
+Context: none
+
+```prompt
+/task-implement 289 --review --rounds 2
+```
+
+## [ ] 37. Implement task 290 — Natural screen sizes
+
+Depends on: 36
+
+Context: none
+
+```prompt
+/task-implement 290 --review --rounds 2
+```
+
+## [ ] 38. Implement task 291 — Game windows against the available area
+
+Depends on: 36
+
+Context: none
+
+```prompt
+/task-implement 291 --review
+```
+
+## [ ] 39. Implement task 292 — Update documentation for feature `shared-screen-layout`
+
+Depends on: 36, 37
+
+Context: none
+
+```prompt
+/task-implement 292 --review
+```
+
+## [ ] 40. Implement task 293 — Update documentation for feature `in-game-layout`
+
+Depends on: 38
+
+Context: none
+
+```prompt
+/task-implement 293 --review
+```
+
+## [ ] 41. Finish task 86 — Desktop window sized to the screen's natural frame
+
+Depends on: 3, 36, 37, 38
+
+Needs: agent+human
+
+Context: none
+
+```prompt
+/task-implement 86 --review --rounds 2
+```
+
 ## [ ] 4. Implement task 87 — Windows packaging and the SteamPipe private build
 
 Depends on: 1
@@ -142,6 +204,7 @@ Depends on: 1, 2, 3, 4, 5, 6
 Context:
 - 2026-10-25 (from step 1): `.claude/context/` has no entry yet for `desktop/` or the `desktop-` tests.
 - 2026-10-25 (from step 3): task 86 is `[PARTIAL]` — content size is not reported (desktop layout deferred to a follow-up); the capability flags ignore logged-on state, contrary to the feature document's wording.
+- 2026-10-26 (amend): task 86 was re-planned for natural screen sizes and is finished by step 41 (inserted after step 3); this step also waits on step 41.
 
 ```prompt
 /task-implement 90 --review
