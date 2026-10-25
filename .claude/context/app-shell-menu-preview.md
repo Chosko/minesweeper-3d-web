@@ -26,7 +26,8 @@ Daily screen's use of the binder is
   the Intermediate game in progress of the flat mode on that grid kind
   (`js/flat-modes.js`) and its geometry — the Classic 2D, Hexagon or
   Triangle tile's —, the same on every load; `dailyBoard2D(daily)` → `{grid, geometry, game, mark}`,
-  today's daily Expert board closed with its start cell; `demoBoard3D(random?)`
+  `daily` the shell's `dailyPreview(now, grid)`: a flat mode's daily board
+  of today on its own grid, closed with its start cell; `demoBoard3D(random?)`
   → the 3D game of the menu screens' backdrop (a `DEMO_BOARD_3D` box, some
   shell cells revealed, a few mines flagged; `Math.random` by default, the
   gallery's seeded) and `DEMO_SPACING_3D`, the spacing it is drawn at.
@@ -37,10 +38,13 @@ Daily screen's use of the binder is
   mount that throws leaves the preview its plain ground (`data-failed`).
 - `bindMenuPreview({panel, stage, tag, iconOf, mountBoard, boardOf})` →
   `{show(preview), shown}` over a `ui-scene-panel`: a board view per board
-  kind, mounted once (`mountBoard({container, grid, geometry})`) and kept
-  in its own `[data-preview]` layer; the panel `ui-scene-panel--live` only
-  for `scene` and carrying the kind as `data-shows`; a card (badge, name,
-  note) for `badge`. The Daily screen uses it.
+  kind and grid, mounted once (`mountBoard({container, grid, geometry})`)
+  over `boardOf(kind, grid)` and kept in its own `[data-preview]` layer
+  (`data-grid` its grid kind); the panel `ui-scene-panel--live` only for
+  `scene` and carrying the kind shown as `data-shows`; a card (badge, name,
+  note) for `badge`, and for a board preview whose view fails to mount —
+  the card of the preview's `entry` and `label`. The Daily screen uses
+  it.
 
 ## INTERNAL PATTERNS
 

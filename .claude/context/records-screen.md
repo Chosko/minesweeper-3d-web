@@ -29,7 +29,8 @@ Records screen (`js/records/screen.js`)
   named boards, every one without no-guess, then every one with it (for
   Classic 2D, Hexagon and Triangle their grid's standard boards, for 3D the
   four cube presets, Cube Intro to Cube Expert), its Daily board (labelled
-  `DAILY_OPTION`, "Daily"; a mode without a daily board lists none), then its custom boards
+  `DAILY_OPTION`, "Daily"; listed whether or not it was played, a mode
+  without a daily board listing none), then its custom boards
   in `boardsPlayed(mode)` order; a game played on a former First box preset
   is listed there as a custom board ([records.md](records.md)). The content's
   `board.label` is always the board's `boardLabel`.

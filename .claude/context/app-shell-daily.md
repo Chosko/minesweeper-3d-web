@@ -3,8 +3,9 @@
 ## OVERVIEW
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
-Covers `js/shell/daily.js` (the Daily screen listing every mode, its
-pre-generated boards and counted attempts), `js/shell/challenge.js` (board
+Covers `js/shell/daily.js` (the Daily screen listing every mode, a daily
+board each for Classic 2D, Hexagon, Triangle and 3D, their pre-generated
+boards and counted attempts), `js/shell/challenge.js` (board
 codes typed into the board choices and `#board=` links, for every mode), and their wiring
 in `js/main.js`. The main menu, its play tiles' previews and the board choices' wiring
 are [app-shell-menu.md](app-shell-menu.md). The Daily screen's composition
@@ -25,10 +26,15 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   the state chip (*Won*) and the time apart from it.
 - `dailyModes({records, replays?, now?, unavailable?, entries?})` → one
   entry per mode of `MENU_ENTRIES` in menu order, `{mode, label, daily,
-  line, title, summary, note, canPlay}`, `daily` null (*Coming soon*) for a
-  mode with no daily board; `dailyPanel(entry, {missing?})` → its preview
-  (`daily`, `scene`, `still` or `badge`); `dailyPreview(now?)` → the Daily
-  screen's Classic 2D preview `{board, startCell, date, dateLabel, tag}`.
+  line, title, summary, note, canPlay}`, `daily` null for a mode with no
+  daily board — Surface, the one *Coming soon* row, its note saying it has
+  no daily board yet —; `dailyPanel(entry, {missing?})` → its preview:
+  `daily` with the row's `grid` and the entry and label of the card a
+  failed mount shows (Classic 2D, Hexagon, Triangle), `scene` or `still`
+  (3D), `badge` (*Coming soon*); `dailyPreview(now?, grid?)` → the closed
+  daily board of the flat mode on grid kind `grid` (`'square'` by default,
+  `'hex'`, `'tri'`; a grid with no daily board throws a `RangeError`)
+  `{board, startCell, date, dateLabel, tag}`.
 - `createDailyBoards({clients})` → `{prepare(records, now?), take(code),
   has(code)}`: today's unused boards pre-generated through each mode's
   client, held by code; `take` hands one over once.
@@ -53,8 +59,8 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   and step rules in `css/style.css` (the window under the title bar, the window widths,
   the denser rows of the smaller desktop windows, the phone's full-bleed
   column with its pinned bar), with its own fixed-width mode column per
-  size; the Classic 2D preview keeps the panel's proportions, the 3D scene
-  and a coming-soon card a fixed-height plain panel (`#daily-preview`,
+  size; a flat mode's daily board keeps the panel's proportions, the 3D
+  scene and a card a fixed-height plain panel (`#daily-preview`,
   styled in the theme). Back and Play carry key hints (`#daily` is one of
   `js/ui.js`'s `showKeyHints` roots); the code chip is Daily's own markup
   under its "Board code" section label (`#daily-code-group`). The parts and
@@ -62,17 +68,23 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   (*Daily*).
 
 - **Daily and challenges in `js/main.js`.** `DAILY_BOARDS_HELD` (clients:
-  `mode2d.client`, `GEN_3D` given WebGL 2) is prepared on every menu show;
+  each mode's one warm client — `mode2d.client`, `HEX_MODE`'s and
+  `TRI_MODE`'s, `GEN_3D` given WebGL 2) is prepared on every menu show and
+  never waited for;
   `DAILY_VIEW` fills `#daily` on its router screen (`DAILY_SCREEN`, default
   focus the selected mode's entry, the first playable one on a first show);
   each selection shows `DAILY_PREVIEW` (`bindMenuPreview` over
-  `#daily-preview`, [app-shell-menu-preview.md](app-shell-menu-preview.md)): the Classic 2D
-  board in its board frame on the screen's body, the panel showing none of
-  itself (`#daily-preview[data-shows="daily"]`), and the 3D one
+  `#daily-preview`, [app-shell-menu-preview.md](app-shell-menu-preview.md)): a flat mode's
+  closed daily board with its marked start cell, drawn by the flat board
+  view over the row's grid (`boardOf(kind, grid)` → `dailyPreview(now,
+  grid)`) in its board frame on the screen's body, the panel showing none
+  of itself (`#daily-preview[data-shows="daily"]`) — one board view per
+  grid, the mode's card when its view fails to mount —, and the 3D one
   puts today's closed cube with its marked start cube in the renderer
   (`showDailyScene`), drawn in front of the frame through its scene panel.
-  `playDaily` refuses a used attempt, takes the held board and starts
-  through `startForced` (`MODES.start`, then `enterPlay3D` for 3D);
+  `playDaily` refuses a used attempt, takes the held board (or generates
+  it) and starts it in its own mode through `gameStart` and `startForced`
+  (`MODES.start`, then `enterPlay3D` for 3D);
   `playChallenge` the same from a parsed code. A code names its mode:
   `parseBoardCode` reads a hexagon or triangle board from its `H` or `T`
   token ([records-board-code.md](records-board-code.md)), so a challenge
@@ -88,10 +100,7 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   no last choice; the results flow's Play again after one, once its mode
   was left, starts `freeStart(summary.board)`, whose 2D choice carries
   `remember: false`, so it saves none either. A challenge route's parse has
-  no `daily`: another day's daily code is a challenge. Hexagon and
-  Triangle have no daily board: their Daily rows stay *Coming soon*, and
-  the daily boards are prepared through Classic 2D's and 3D's clients
-  only.
+  no `daily`: another day's daily code is a challenge in its mode.
 
 ## DOMAIN DEPENDENCIES
 
@@ -112,13 +121,16 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   reads.
 - [generation.md](generation.md) — the clients the daily boards are
   pre-generated through.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (daily — Hexagon
-  and Triangle still *Coming soon* —, challenge — a hexagon or triangle
-  code and `#board=` link among them).
+- [testing.md](testing.md) — `tests/shell-*.test.mjs` (daily — the
+  Hexagon and Triangle rows, panels and previews, and today's Hexagon daily
+  played in a browser among them —, challenge — a hexagon or triangle code
+  and `#board=` link, today's and another day's Hexagon daily code among
+  them).
 
 ## WHEN TO READ THE SOURCE
 
 - Changing the Daily screen: the head comment of `js/shell/daily.js`.
-- Changing what the Daily preview shows: `dailyPanel`.
+- Changing what the Daily preview shows: `dailyPanel` and
+  `dailyPreview`.
 - Changing how a typed code or a `#board=` link starts a game
   (`resolveCode`, `gameStart`, `createChallengeLinks`).

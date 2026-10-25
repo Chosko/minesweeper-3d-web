@@ -67,10 +67,11 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
 
 - **Entries.** Each button — a `ui-play-tile` or a `ui-small-entry`
   (`#menu-entry-<id>`, `data-entry`) — is clicked through `onMenuEntry` →
-  `MENU.open(id)`: a registered mode opens its board choice through the
-  host, a registered screen is routed to (Records opens on the last board
-  played and its mode), anything else — Surface, whose mode is not
-  registered — goes to `coming-soon`, titled with the entry's label. `MISSING` is `webgl2` without WebGL 2; each unavailable
+  `MENU.open(id)`: a registered mode — Classic 2D, Hexagon, Triangle, 3D —
+  opens its board choice through the host, a registered screen is routed
+  to (Records opens on the last board played and its mode), anything else
+  — Surface, whose mode is not registered — goes to `coming-soon`, titled
+  with the entry's label. `MISSING` is `webgl2` without WebGL 2; each unavailable
   tile gets `ui.setEntryUnavailable(id, entryReason(…),
   entryShortReason(…))` (aria-disabled, the lock, its reason twice — the
   long one and the phone row's — and its preview locked) and stays
@@ -79,9 +80,12 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   the entry last opened from the menu (`menuOpened`, kept while Back
   returns to it, forgotten when a game starts), else
   `openingEntry(LAST_MODE.current)`. `LAST_MODE` records the mode of every
-  started game but Learn 3D; at boot, once `LAST_MODE.load()` settles, the
-  menu refocuses if the player has not moved yet. That mode's board choice
-  opens on its last board, so Enter then Play replays it.
+  started game but Learn 3D, Hexagon and Triangle as modes of their own,
+  and `main.js` hands it `MODES.has`, so a stored mode the host has not
+  registered loads as none; at boot, once `LAST_MODE.load()` settles, the
+  menu refocuses if the player has not moved yet. No tile marks the last
+  mode played. That mode's board choice opens on its last board, so Enter
+  then Play replays it.
 - **Layout.** `#menu` (`css/style.css`) holds each window size's fixed
   values from the J-Menu artboards — xl, and l, m and p at the shell's
   breakpoints: the frame's width centred and its inset filling the page's
@@ -130,7 +134,9 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
 - [records-store.md](records-store.md) — the bests the board choices read.
 - [app-shell-kit.md](app-shell-kit.md) — the play tile, the small entry and
   board option components.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (menu, returning).
+- [testing.md](testing.md) — `tests/shell-*.test.mjs` (menu — the
+  Hexagon and Triangle routes and the last mode played among them —,
+  returning).
 
 ## WHEN TO READ THE SOURCE
 

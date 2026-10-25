@@ -1671,7 +1671,7 @@ Feature: flat-grid-menu-entries
 
 ## 279. Update documentation for feature `flat-grid-menu-entries`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell-menu.md, .claude/context/app-shell-daily.md, .claude/context/records-board-code.md, .claude/context/records-screen.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/flat-grid-menu-entries.md
 Preconditions: 277, 278, 280

@@ -3,13 +3,14 @@
 ## OVERVIEW
 
 The text that rebuilds any board — its identity, seed, start cell and
-generator version — and the daily seed with the two daily boards. Board
+generator version — and the daily seed with the daily boards, one per
+playable mode. Board
 identity, the summary record and the records layer's map are in
 [records.md](records.md). DOM-free.
 
 | File | Responsibility |
 | ---- | -------------- |
-| `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the two daily boards. |
+| `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the daily boards. |
 
 ## PUBLIC API
 
@@ -27,8 +28,12 @@ grammar)
 - `boardToken`, `graphOf(identity)` (the `square`, `hex`, `tri` or `box`
   description), `fnv1a`, `dailySeed(date, token)`,
   `dateText(now)` (the local date), `isDateText`.
-- `DAILY_BOARDS` (`expert` EN, `cube` 8X8X8M40N), `dailyBoardOf(identity)`,
-  `dailyGame(id, date)` → `{ board, seed, startCell, code, request, … }`.
+- `DAILY_BOARDS` — one per mode in the menu's order: `expert` (Classic
+  2D), `hex-expert` (Hexagon), `tri-expert` (Triangle), each its grid's
+  Expert board with no-guess, and `cube` (3D) — `dailyBoardOf(identity)`,
+  `dailyGame(id, date)` → `{ board, seed, startCell, code, request, … }`
+  (the request on the board's `square`, `hex`, `tri` or `box`
+  description).
 
 ## INTERNAL PATTERNS
 
@@ -36,6 +41,12 @@ grammar)
   change meaning; a code of another `GENERATOR_VERSION` is refused, never
   approximated. A code starting with `H` is a hexagon board's and one
   starting with `T` a triangle board's; no other code starts with either.
+- **Daily boards by their dimensions.** Each daily board is named by its
+  dimensions, never by a preset, so a preset re-tune changes no daily seed
+  or code; its daily code is the daily form over the board's own token
+  (`board-code.js`'s header spells each), its seed the daily seed over that
+  token. A new mode's daily board is a new entry, and the others'
+  seeds and codes stay as they are.
 - **One table of the 2D modes.** Each 2D mode is one row of `board-code.js`'s
   table — its token prefix (`''` for Classic 2D, `H`, `T`), mode, grid,
   custom-limit validation and standard boards by name — which encoding,

@@ -95,12 +95,17 @@ shipped menu, preview and Daily wiring in place
   preview names, cropped to the tile. One view layer per tile, kept
   mounted, as for Classic 2D.
 - **Daily boards** — the daily board list gains a Hexagon and a Triangle
-  entry, each named by its dimensions like the existing ones, so the daily
-  game, its code and its generation request come from the same rule.
+  entry, each named by its dimensions like the existing ones, one per mode
+  in the menu's order, so the daily game, its code and its generation
+  request come from the same rule and the Classic 2D and 3D boards keep
+  their seeds and codes.
 - **Daily list** — one entry per menu mode. A mode with no daily board
-  reads *Coming soon*, whether or not it is registered. The held daily
-  boards are prepared through each mode's generation client, and the Daily
-  preview mounts the flat board view for the selected row's grid.
+  reads *Coming soon*, whether or not it is registered, its note saying it
+  has no daily board yet; Surface is the only one. The held daily boards
+  are prepared through each mode's generation client, and Play generates
+  a board none holds. The Daily preview mounts the flat board view for the
+  selected row's grid, one view per grid kept mounted, as the menu's
+  tiles do.
 
 ## Data and state
 
@@ -116,11 +121,12 @@ shipped menu, preview and Daily wiring in place
 - **Menu** — `open(id)` for `hexagon` or `triangle` takes the mode route.
   An unavailable entry still opens nothing.
 - **Preview** — gives the board kind with a grid and a game for the two
-  entries. A preview that fails to mount shows the panel's card, as for any
-  preview.
+  entries. A Daily preview that fails to mount shows the mode's card in the
+  panel; a play tile's leaves its plain ground.
 - **Daily** — a mode with no daily board is listed and never playable. A
   Hexagon or Triangle daily follows the shipped daily rules: one counted
-  attempt per date, a forced marked start, no last choice saved.
+  attempt per date, a forced marked start, no last choice saved. Its mode's
+  Records picker lists its Daily board whether or not it was played.
 
 ## Dependencies
 

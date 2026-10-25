@@ -13,7 +13,7 @@ chart, which draws on the canvas it is handed.
 | File | Responsibility | Detail in |
 | ---- | -------------- | --------- |
 | `js/records/board.js` | Board identity (2D and 3D forms, the 2D one Classic 2D's, Hexagon's or Triangle's), key, parser, label, the square, hexagon and triangle standard boards, cube 3D presets. Imports nothing. | here |
-| `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the two daily boards. | [records-board-code.md](records-board-code.md) |
+| `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the daily boards. | [records-board-code.md](records-board-code.md) |
 | `js/records/summary.js` | Summary builder, derived stats, best eligibility. | here |
 | `js/records/model.js` | Records model: bests, per-mode counters, history, comparison, the records format step. No storage. | [records-store.md](records-store.md) |
 | `js/records/store.js` | Records store: the only writer of the personal records and the game-in-progress marker; storage handed in. | [records-store.md](records-store.md) |
