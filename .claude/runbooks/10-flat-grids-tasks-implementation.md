@@ -441,7 +441,7 @@ Context:
 
 Done: 2026-10-25, commit `d958c28` (11 files, +416/-125). Decision: the new daily boards are `hex-expert` (30 × 16, 100 mines) and `tri-expert` (41 × 17, 103 mines), both no-guess, listed in menu order; `dailyPreview(now, grid)` takes a grid and `PREVIEW_DAILY` is gone.
 
-## [ ] 32. Implement task 279 — Update documentation for feature `flat-grid-menu-entries`
+## [x] 32. Implement task 279 — Update documentation for feature `flat-grid-menu-entries`
 
 Depends on: 30, 31
 
@@ -453,6 +453,8 @@ Context:
 ```prompt
 /task-implement 279 --review
 ```
+
+Done: 2026-10-25, commit `c9cc0d0` (10 files, +97/-57).
 
 ## Do not re-propose
 
