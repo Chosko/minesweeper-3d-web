@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 288
+Last task number: 293
 
 ---
 
@@ -26,10 +26,10 @@ Feature: steam-desktop-host
 
 ## 86. Page platform selection, capability flags, overlay pause and the quit flush
 
-Status: [STALE]
+Status: [MISSING]
 Target: claude
-Files: js/platform/index.js, js/platform/capabilities.js, js/platform/bridge-client.js, js/platform/window-actions.js, js/shell/pause.js, js/main.js, desktop/closing.js, tests/platform-selection.test.mjs
-Preconditions: 85, 282
+Files: js/platform/index.js, js/platform/capabilities.js, js/platform/bridge-client.js, js/platform/window-actions.js, js/shell/pause.js, js/main.js, desktop/closing.js, tests/platform-selection.test.mjs, css/style.css, desktop/window.js, desktop/bridge.js
+Preconditions: 85, 282, 289, 290, 291
 Feature: steam-desktop-host
 
 ---
@@ -1755,6 +1755,56 @@ Status: [DONE]
 Target: claude
 Files: .claude/context/classic2d-mode.md, .claude/context/app-shell-2d.md, .claude/context/app-shell-hud.md, .claude/context/app-shell-ui.md, .claude/context/app-shell-3d.md, .claude/context/mode3d-learn.md, .claude/context/platform.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/in-game-layout.md
 Preconditions: 286, 287
+Feature: in-game-layout
+
+---
+
+## 289. Size steps from the available area
+
+Status: [MISSING]
+Target: claude
+Files: css/style.css, css/components.css, css/tokens.css, themes/joyful-tiles/theme.css, index.html, js/main.js, tests/components.test.mjs
+Preconditions: none
+Feature: shared-screen-layout
+
+---
+
+## 290. Natural screen sizes
+
+Status: [MISSING]
+Target: claude
+Files: css/style.css, css/components.css, themes/joyful-tiles/theme.css, index.html, js/shell/menu.js, tests/components.test.mjs
+Preconditions: 289
+Feature: shared-screen-layout
+
+---
+
+## 291. Game windows against the available area
+
+Status: [MISSING]
+Target: claude
+Files: js/ui.js, js/main.js, css/style.css, js/classic2d/board-view.js, .claude/domain/features/in-game-layout.md
+Preconditions: 289
+Feature: in-game-layout
+
+---
+
+## 292. Update documentation for feature `shared-screen-layout`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell-kit-layout.md, .claude/context/app-shell-kit.md, .claude/context/app-shell-menu.md, .claude/context/records-screen-view.md, .claude/context/settings-page.md, .claude/context/replay-viewer-view.md, .claude/context/platform.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 289, 290
+Feature: shared-screen-layout
+
+---
+
+## 293. Update documentation for feature `in-game-layout`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell-2d.md, .claude/context/app-shell-3d.md, .claude/context/classic2d-board-view.md, .claude/context/app-shell-hud.md, .claude/context/INDEX.md
+Preconditions: 291
 Feature: in-game-layout
 
 ---
