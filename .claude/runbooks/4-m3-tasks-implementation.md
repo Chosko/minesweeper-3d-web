@@ -94,7 +94,7 @@ Context:
 
 Done: 2026-10-25, commit `f7c592c` (11 files, +730/-46). Task 86 is left `[PARTIAL]`: by the user's choice the page does not report its content size (the window stays at 1280×800; the sender is built and tested but uncalled), because the page's layout follows the window's size and the two would feed back — the desktop layout and content size go to a follow-up. The capability flags ignore logged-on state, contrary to the feature document: logged-on state is kept beside them, so going offline switches no feature off.
 
-## [ ] 36. Implement task 289 — Size steps from the available area
+## [x] 36. Implement task 289 — Size steps from the available area
 
 Depends on: 3
 
@@ -104,11 +104,14 @@ Context: none
 /task-implement 289 --review --rounds 2
 ```
 
+Done: 2026-10-27, commit `a7af289` (19 files, +505/-103). The premise that a desktop work area is never phone-sized was wrong, because media queries measure the window. By the user's choice the web keeps its phone layout on window-size media queries, and the desktop host never gets it: `bindAreaMedia` in `js/platform/window-actions.js` evaluates every window-size `@media` rule against the work area. The other size steps are container queries on the root area, which is the work area when windowed and the whole screen in fullscreen. The 3D canvas still uses the window's size.
+
 ## [ ] 37. Implement task 290 — Natural screen sizes
 
 Depends on: 36
 
-Context: none
+Context:
+- 2026-10-27 (from step 36): size steps other than the phone layout are container queries on the root element's area (work area when windowed, whole screen in fullscreen); phone rules stay on window-size media queries, which `bindAreaMedia` (`js/platform/window-actions.js`) gates against the work area at the desktop host so the desktop never gets the phone layout.
 
 ```prompt
 /task-implement 290 --review --rounds 2
@@ -118,7 +121,8 @@ Context: none
 
 Depends on: 36
 
-Context: none
+Context:
+- 2026-10-27 (from step 36): the root area (work area when windowed, whole screen in fullscreen) drives the size steps through container queries on the root element; the 3D canvas still sizes from the window (`js/render.js`), and the desktop host never gets the phone layout (`bindAreaMedia`, `js/platform/window-actions.js`).
 
 ```prompt
 /task-implement 291 --review
@@ -128,7 +132,8 @@ Context: none
 
 Depends on: 36, 37
 
-Context: none
+Context:
+- 2026-10-27 (from step 36): `platform.md` and `app-shell-kit-layout.md` do not yet describe the root-area behaviour (container queries on the root element, `bindAreaMedia` gating the phone media queries at the desktop host); the touch-step decision in task 289 and the Size steps bullet of `shared-screen-layout.md` were reworded to say the desktop host never gets the phone layout, and `theme-system.md` gained the rule for writing a step-dependent value.
 
 ```prompt
 /task-implement 292 --review
@@ -150,7 +155,8 @@ Depends on: 3, 36, 37, 38
 
 Needs: agent+human
 
-Context: none
+Context:
+- 2026-10-27 (from step 36): until this step resizes the desktop window to its frame, screens are laid out and centred in the work area and look off-centre in the default 1280×800 window — expected, not a defect. The desktop host never gets the phone layout (`bindAreaMedia`, `js/platform/window-actions.js`), so a narrow frame no longer changes layout shape.
 
 ```prompt
 /task-implement 86 --review --rounds 2
