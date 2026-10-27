@@ -224,9 +224,10 @@ renews.
 | Q | Invoice / receipt | Drive link, Gmail permalink, or blank -- see "Invoices". |
 | R | Notes | |
 
-The categories in `Lists!F` come from the studio's budget reports: Art,
+The categories in `Lists!F` come from the studio's budget reports -- Art,
 Software, Music, SFX, Hardware, QA, Localization, Marketing, Platform Fee,
-Legal, Business, Events.
+Legal, Business, Events -- plus AI, which holds every AI service (Claude
+included) rather than Software.
 
 **`Status` does not change any total.** Every Dashboard figure sums `Amount EUR`
 over whatever rows exist, so a `Pending` row counts as spend the moment it is
@@ -345,6 +346,12 @@ adds a `Project` column, sorted by date.
 | P | Subscription status |
 | R | Ledger status |
 
+**Adding a category:** append it to `Lists!F` (the dropdowns read `F2:F15`),
+give the Dashboard's by-category block one more row before `Total`, and extend
+the `Total` sums, the gradient on `B:C` and both doughnut charts' ranges. Row 35
+is the last free row above the charts on row 36, so one more category fits; the
+one after needs an `insertDimension`, which moves the charts.
+
 ## Dashboard
 
 Derived on every read; nothing here is stored.
@@ -353,7 +360,7 @@ Derived on every read; nothing here is stored.
 | --- | --- | --- |
 | Headline | `B4:B11` | Monthly run-rate, annual run-rate, committed for the rest of this year, spent all time / this year / last 30 days, spent net of VAT, earned. |
 | By project | `A13:F18` | Run-rate, spent, earnings, net, to break even, and a total row. |
-| By category | `A20:D33` | `SUMIF` over `Subscriptions!D` and `Ledger!E`. |
+| By category | `A20:D34` | `SUMIF` over `Subscriptions!D` and `Ledger!E`. |
 | Partner balance | `H5:J11` | See below. |
 | Fund | `H14:K17`, runway `I18` | Committed, contributed and remaining per partner, and the total; runway is remaining over the monthly run-rate, in months. |
 | By month, last 12 | `H20:L33` | Spent, net of VAT, earnings, and the monthly run-rate repeated on every row as the charts' reference line. |
@@ -383,8 +390,8 @@ red for money out, green for money in, the same chart types and sizes.
 | Anchor | Chart | Data |
 | --- | --- | --- |
 | `A36` | Spent and earned per month vs run-rate: red columns for spend, green for earnings, a dashed red run-rate line | `H20:L32` |
-| `D36` (+70 px) | Spent to date by category, doughnut | `A21:A32`, `C21:C32` |
-| `H36` (+175 px) | Monthly run-rate by category, doughnut | `A21:A32`, `B21:B32` |
+| `D36` (+70 px) | Spent to date by category, doughnut | `A21:A33`, `C21:C33` |
+| `H36` (+175 px) | Monthly run-rate by category, doughnut | `A21:A33`, `B21:B33` |
 | `H59` | Remaining commitment, actual then projected | `A59:E167` |
 | `H80` | Spent and earned to date by project: red and green columns | `A13:A17`, `C13:D17` |
 
@@ -428,7 +435,7 @@ of it as Pelle's own Claude plan costs:
 
 - one `Subscriptions` row for the Pelion share, with the billing cycle and list
   price of Pelle's plan, and one `Ledger` row per billing period, both with
-  Project `Pelion` and Paid by `Chosko`;
+  Project `Pelion`, Category `AI` and Paid by `Chosko`;
 - the Second Run workbook nets that amount out of the Max charges it records.
 
 **The share's rows are the only record of it in this workbook.** The Max itself
