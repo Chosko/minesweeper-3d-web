@@ -497,7 +497,7 @@ test('each window size stacks the sections in its own independent columns: three
     assert.doesNotMatch(sheet, /#settings-columns > \.ui-column \{[^}]*display: contents/, 'each stack is a box of its own');
   }
   const ui = read('js/ui.js');
-  assert.match(ui, /\$\('settings-body'\)\.innerHTML = settingsPageHtml\(\);\n[^\n]*\n\s*bindSettingsLayout\(\$\('settings-columns'\)\);/, 'the shell places the sections for the window');
+  assert.match(ui, /\$\('settings-body'\)\.innerHTML = settingsPageHtml\(\);\n[^\n]*\n\s*bindSettingsLayout\(\$\('settings-columns'\), \{ matchMedia: matchRootArea\(document\) \}\);/, 'the shell places the sections for the root area, never the window');
 });
 
 // ---------------------------------------------------------------- the Data panel and Reset all data
@@ -985,7 +985,7 @@ test('the Settings frame takes each window step\'s canvas size and inset, its bo
   const rules = css.slice(css.indexOf('#settings {'), css.indexOf('@media (max-width: 719px)', css.indexOf('#settings {')));
   assert.match(rules, /^#settings \{ align-items: flex-start; padding: 66px 24px 24px; \}\n#settings-frame \{ width: 1640px; height: 940px; \}\n#settings-body \{ padding: 24px; \}/, 'xl: 1640 × 940 at 66 from the top, centred');
   assert.match(rules, /#settings-columns, #settings-columns > \.ui-column \{ gap: 24px; \}/, 'xl: the stack gap equal to the column gap');
-  const step = (max) => { const at = rules.indexOf(`@media (max-width: ${max}px) {`); assert.ok(at > 0, `a ${max} px step`); return rules.slice(at, rules.indexOf('\n}', at)); };
+  const step = (max) => { const at = rules.indexOf(`@container root (max-width: ${max}px) {`); assert.ok(at > 0, `a ${max} px step`); return rules.slice(at, rules.indexOf('\n}', at)); };
   assert.match(step(1439), /#settings \{ padding-top: 24px; \}\s*#settings-frame \{ width: 1302px; height: 712px; \}\s*#settings-body \{ padding: 18px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 18px; \}/, 'l: 1302 × 712 at 32 / 24, 18 apart');
   assert.match(step(1199), /#settings \{ padding: 16px 20px 20px; \}\s*#settings-frame \{ width: 984px; height: 728px; \}\s*#settings-body \{ padding: 14px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 14px; \}/, 'm: 984 × 728 at 20 / 16, 14 apart');
 });

@@ -655,6 +655,54 @@ export function fitTitleBar(head) {
   return least;
 }
 
+// ---------------------------------------------------------------- the root area
+
+const AREA_FEATURE = /\((min|max)-(width|height):\s*(\d+(?:\.\d+)?)px\)/g;
+
+/**
+ * matchMedia over the root area (css/components.css): `matchRootArea(doc)(query)` → { matches,
+ * addEventListener('change', listener), removeEventListener }, the query's `(min|max)-(width|height):
+ * <n>px` features joined by `and` matched against the root element's box — the browser window on
+ * the web, the work area at the desktop host — never the window's own size; a change of that box
+ * that flips the match calls each listener with { matches }. Any other query throws a RangeError.
+ */
+export function matchRootArea(doc, { ResizeObserver: Observer = doc.defaultView?.ResizeObserver } = {}) {
+  const root = doc.documentElement;
+  return (query) => {
+    const features = [...query.matchAll(AREA_FEATURE)];
+    if (!features.length || query.replace(AREA_FEATURE, '').replace(/\band\b/g, '').trim()) throw new RangeError(`not a root-area query: ${query}`);
+    const test = () => {
+      const box = root.getBoundingClientRect();
+      return features.every(([, bound, axis, px]) => (bound === 'min' ? box[axis] >= Number(px) : box[axis] <= Number(px)));
+    };
+    const listeners = new Set();
+    let last = test();
+    let observer = null;
+    const check = () => {
+      const now = test();
+      if (now === last) return;
+      last = now;
+      for (const listener of [...listeners]) listener({ matches: now });
+    };
+    return {
+      get matches() { return test(); },
+      addEventListener(type, listener) {
+        if (type !== 'change') return;
+        listeners.add(listener);
+        if (!observer && Observer) {
+          last = test();
+          observer = new Observer(check);
+          observer.observe(root);
+        }
+      },
+      removeEventListener(type, listener) {
+        listeners.delete(listener);
+        if (!listeners.size && observer) { observer.disconnect(); observer = null; }
+      },
+    };
+  };
+}
+
 // ---------------------------------------------------------------- the title bar's window buttons
 
 /** The title bar's window buttons, by their data-window name, in their order at the head's end. */

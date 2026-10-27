@@ -17,6 +17,9 @@ The default theme's folder is the model for every file's shape.
   then the DOM animation — each rule's selectors starting with
   `:root[data-theme="<id>"]`.
 - `@keyframes` named `<id>-<name>`.
+- A value that changes with the size step is written as the default theme's
+  are, against the root area (`.claude/domain/features/theme-system.md`
+  § Interfaces and contracts, **Theme stylesheet contract**).
 - No `@media (prefers-reduced-motion …)`, no `!important` on an animation or
   transition, no `@import`, and no remote URL anywhere but inside a comment —
   the canvas URL in the header is a comment.

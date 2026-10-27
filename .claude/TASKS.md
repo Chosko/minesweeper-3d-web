@@ -1761,7 +1761,7 @@ Feature: in-game-layout
 
 ## 289. Size steps from the available area
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/style.css, css/components.css, css/tokens.css, themes/joyful-tiles/theme.css, index.html, js/main.js, tests/components.test.mjs
 Preconditions: none

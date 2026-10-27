@@ -41,15 +41,15 @@
 //                                control whose label is its section's title is named by the section
 //                                label. The columns are the widest window's, and a section
 //                                SETTINGS_COLUMNS does not list joins the last column.
-// SETTINGS_LAYOUTS             → the page's columns by window size, widest first: each { media,
-//                                columns }, media the query a window matches (null: any window),
+// SETTINGS_LAYOUTS             → the page's columns by root area size, widest first: each { media,
+//                                columns }, media the query the area matches (null: any area),
 //                                columns a stack of section ids per column.
 // settingsColumnsFor(matches)  → the columns of the first layout whose media matches(media) holds.
 // placeSettingsSections(root, columns) → moves root's sections (#settings-columns) into one
 //                                ui-column per stack, in order: independent stacks, never shared
 //                                rows. A section the columns do not list joins the last column; a
 //                                focused control inside keeps the focus.
-// bindSettingsLayout(root, { matchMedia? }) → unbind: places the sections for the window now and on
+// bindSettingsLayout(root, { matchMedia? }) → unbind: places the sections for the area now and on
 //                                every change of a layout's media.
 // bindingsSectionHtml(glyphs?, camera?, { mode?, device? }) → the bindings list (dl.ui-controls) of one
 //                                mode (default Classic 2D) for one input device (default the keyboard;

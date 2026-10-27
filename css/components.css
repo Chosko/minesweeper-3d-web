@@ -54,6 +54,16 @@
    Each Back that Esc triggers carries its back ui-key-hint inside it,
    but the title bar's, which shows its icon alone.
 
+   The root area. The page's root element is the size container `root`,
+   sized to the available area: the browser window on the web, the work
+   area of the display the window is on at the desktop host (css/style.css,
+   js/platform/window-actions.js). The desktop and compact size steps and
+   every rule sized from the window resolve against it — `@container root`
+   queries and container units (cqw, cqh), never window queries or
+   viewport units. The touch step (a phone upright or sideways) keeps its
+   `@media` queries on the window, and the desktop host never takes it:
+   there they are settled against the work area, never phone-sized.
+
    ui-button--primary — the screen's main action, always in one of its two
    colours (the button colour rule):
    ui-button--go — the green button that confirms or goes forward: Play
@@ -433,7 +443,7 @@
               as plain figures, LED digits on black or anything between.
      Values:  as the overlay bar's (formatMineCount, formatOverlayTime);
               data-negative on the counter marks a count below zero.
-     Steps:   the digits follow the window-size steps the theme holds
+     Steps:   the digits follow the size steps the theme holds
               (ui-frame), in the Classic 2D window and the 3D overlay alike.
 
    ui-counter-strip — mines left, Restart and the timer
@@ -488,7 +498,7 @@
      Foot:    optional: the board's main bindings for the active device as
               ui-key-hint, each with its label.
      Steps:   the title, the figures and their spacing follow the
-              window-size steps the theme holds (ui-frame).
+              size steps the theme holds (ui-frame).
      Live:    the figures themselves are never announced; the live part,
               hidden by the base, is what a screen reader hears, written by
               bindFiguresLive(panel).announce(text) at most once a second
@@ -538,7 +548,7 @@
      Look:    one line, centred: each letter of MINESWEEPER in a game colour
               (blue, coral, teal, violet, green, orange, repeating), 3D in
               yellow; a white outline and a short darker extrusion, sized
-              with the window-size steps the theme holds. Its bouncy version
+              with the size steps the theme holds (ui-frame). Its bouncy version
               (a game-start animation) is not built.
 
    ui-backdrop — the page behind a screen (Joyful tiles' dotted paper)
@@ -611,10 +621,10 @@
               head of its own: the outcome title between the trophy and the
               rank (ui-frame__start, ui-frame__title, ui-frame__end).
      Steps:   the head, the logo, the heading and foot, their titles and the
-              small buttons follow the window-size steps the theme holds —
-              desktop, compact (the smaller desktop windows) and touch (a
-              phone upright or sideways); the title stays on one line at
-              every step.
+              small buttons follow the size steps the theme holds —
+              desktop, compact (the smaller desktop areas) and touch (a
+              phone upright or sideways), read from the root area; the
+              title stays on one line at every step.
      Slot:    window-chrome, the frame's title-bar decoration, hidden unless
               a theme draws it.
      Layout:  sized to its content, never wider or taller than its
@@ -1816,7 +1826,10 @@
 /* ---------- decoration slots: hidden unless a theme styles one into view ---------- */
 [data-slot] { display: none; }
 
-/* ---------- page backdrop and screen frame ---------- */
+/* ---------- the root area, page backdrop and screen frame ---------- */
+/* The root area every size step and window-sized rule reads: the page's root element, as tall as the
+   browser window unless the desktop host sizes it to its work area. */
+html { container: root / size; height: 100%; }
 .ui-backdrop {
   display: flex;
   align-items: center;
@@ -2323,8 +2336,8 @@
 /* The pause card at each window step's width (J-Pause-xl, -l, -m; full width on a phone), its title
    block (the title, then the board line and the status line under it), its actions and settings rows. */
 #pause-card { width: min(920px, 100%); padding: 26px 28px; }
-@media (max-width: 1439px) { #pause-card { width: min(880px, 100%); } }
-@media (max-width: 1199px) { #pause-card { width: min(860px, 100%); } }
+@container root (max-width: 1439px) { #pause-card { width: min(880px, 100%); } }
+@container root (max-width: 1199px) { #pause-card { width: min(860px, 100%); } }
 #pause-card > .ui-columns--two { gap: 26px; }
 #pause-card .ui-column { gap: 14px; }
 #pause-title { margin: 0; font-size: 34px; line-height: 1.1; }
@@ -2336,7 +2349,7 @@
 #pause-card .ui-slider__label { font-weight: var(--font-weight-bold); }
 #pause-list { padding: 18px 20px; }
 /* The kit's one breakpoint: the column layout of Records, Settings and the pause card. */
-@media (min-width: 1024px) {
+@container root (min-width: 1024px) {
   .ui-screen--columns { width: min(1280px, 100%); }
   .ui-columns { grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-8) * 9)), 1fr)); }
   .ui-columns--two { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }

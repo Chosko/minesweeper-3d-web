@@ -4,7 +4,7 @@
 // (js/settings/bindings.js) for the active mode and the active device (the controller in the
 // connected controller's glyphs).
 import {
-  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote, setButtonIcon, fitTitleBar,
+  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote, setButtonIcon, fitTitleBar, matchRootArea,
 } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
 import { helpListHtml, readyListHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys, reminderKeys } from './settings/bindings.js';
@@ -133,8 +133,8 @@ export class UI {
     for (const id of ['coming-soon-back', 'coming-soon-menu', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
     // The Settings page's controls are generated from the settings schema and bound by the shell.
     $('settings-body').innerHTML = settingsPageHtml();
-    // Its sections in the window size's columns, each an independent stack.
-    bindSettingsLayout($('settings-columns'));
+    // Its sections in the root area's columns, each an independent stack.
+    bindSettingsLayout($('settings-columns'), { matchMedia: matchRootArea(document) });
     this.el.settingsBindings = $('settings-bindings');
     // Its bindings panel: one mode's list for one device, each picked by its choice; the device opens on the active one.
     this._settingsBind = { mode: 'classic-2d', device: 'keyboard' };

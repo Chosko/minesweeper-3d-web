@@ -606,7 +606,7 @@ test('the generating and failed-board cards: the spinner beside the title and pr
     assert.ok(card.indexOf(`id="${p}-status-text"`) < card.indexOf(`id="${p}-wait"`), 'the failure line above the actions');
   }
   const css = read('css/style.css');
-  assert.match(css, /#c2d-status, #m3d-status \{[^}]*width: min\(480px, calc\(100vw - 2 \* var\(--space-4\)\)\)/, 'as wide as the canvas draws them, inside a phone');
+  assert.match(css, /#c2d-status, #m3d-status \{[^}]*width: min\(480px, calc\(100cqw - 2 \* var\(--space-4\)\)\)/, 'as wide as the canvas draws them, inside a phone');
 });
 
 // ---------------------------------------------------------------- browser: pause / resume / restart / menu in 3D

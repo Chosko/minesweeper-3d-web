@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { selectPlatform, STEAM_SLOTS } from '../js/platform/index.js';
 import { CAPABILITY_FLAGS, createCapabilities, deriveFlags } from '../js/platform/capabilities.js';
 import { BRIDGE_GLOBAL, BRIDGE_EVENTS, findBridge, createBridgeClient, linkHost } from '../js/platform/bridge-client.js';
-import { bindWindowActions, WINDOW_STATES, DRAG_REGION_CSS } from '../js/platform/window-actions.js';
+import { bindWindowActions, bindAvailableArea, bindAreaMedia, areaMatches, WINDOW_STATES, DRAG_REGION_CSS } from '../js/platform/window-actions.js';
 import { BRIDGE_GLOBAL as HOST_GLOBAL, BRIDGE_EVENTS as HOST_EVENTS } from '../desktop/bridge.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -277,7 +277,18 @@ test('the host waits for the page\'s flush answer, bounded by a short timeout', 
 
 // ---------------------------------------------------------------- the desktop window
 
-function fakeDocument({ fullscreenButtons = 2, innerWidth = 1280, innerHeight = 800, screen = { width: 1920, height: 1080 } } = {}) {
+// An object with addEventListener / removeEventListener, its listeners kept by type and fired by emit(type).
+function withListeners(target) {
+  const listeners = new Map();
+  return Object.assign(target, {
+    listeners,
+    addEventListener: (type, fn) => listeners.set(type, new Set([...(listeners.get(type) ?? []), fn])),
+    removeEventListener: (type, fn) => listeners.get(type)?.delete(fn),
+    emit: (type) => { for (const fn of [...(listeners.get(type) ?? [])]) fn(); },
+  });
+}
+
+function fakeDocument({ fullscreenButtons = 2, innerWidth = 1280, innerHeight = 800, screen = { width: 1920, height: 1080, availWidth: 1920, availHeight: 1040 } } = {}) {
   const appended = [];
   const button = () => {
     const attrs = new Map([['data-window', 'fullscreen'], ['data-icon', 'fullscreen'], ['aria-label', 'Fullscreen'], ['title', 'Fullscreen']]);
@@ -285,11 +296,11 @@ function fakeDocument({ fullscreenButtons = 2, innerWidth = 1280, innerHeight = 
   };
   const buttons = Array.from({ length: fullscreenButtons }, button);
   const doc = {
-    documentElement: { dataset: {} },
+    documentElement: { dataset: {}, style: {} },
     head: { append: (el) => appended.push(el) },
     createElement: (tag) => ({ tagName: tag.toUpperCase(), textContent: '' }),
     querySelectorAll: (selector) => (selector === '[data-window="fullscreen"]' ? buttons : []),
-    defaultView: { innerWidth, innerHeight, screen },
+    defaultView: { innerWidth, innerHeight, screen: withListeners(screen), ...withListeners({}) },
   };
   return { doc, buttons, appended };
 }
@@ -383,8 +394,76 @@ test('the web build: no window actions, nothing marked, no size reported', () =>
   win.reportSize(800, 600);
   win.dispose();
   assert.deepEqual(doc.documentElement.dataset, {});
+  assert.deepEqual(doc.documentElement.style, {}, 'the root area stays the browser window');
   assert.equal(appended.length, 0);
   assert.equal(buttons[0].getAttribute('data-icon'), 'fullscreen');
+});
+
+test('on the desktop host the root area is the work area of the window\'s display, never the window, following its changes until disposed', () => {
+  const bridge = fakeBridge();
+  const { doc } = fakeDocument({ innerWidth: 1000, innerHeight: 700 });
+  const win = bindWindowActions({ client: createBridgeClient(bridge.host), document: doc, setIcon: () => {} });
+  const root = doc.documentElement;
+  assert.deepEqual([root.style.width, root.style.height], ['1920px', '1040px'], 'the work area, not the 1000 × 700 window');
+  const { screen } = doc.defaultView;
+  Object.assign(screen, { availWidth: 1366, availHeight: 728 });
+  screen.emit('change');
+  assert.deepEqual([root.style.width, root.style.height], ['1366px', '728px'], 'the window moved to another display');
+  Object.assign(screen, { availWidth: 1366, availHeight: 768 });
+  doc.defaultView.emit('resize');
+  assert.deepEqual([root.style.width, root.style.height], ['1366px', '768px'], 'read again on a resize');
+  win.dispose();
+  assert.equal(screen.listeners.get('change').size + doc.defaultView.listeners.get('resize').size, 0, 'disposed, it stops following');
+});
+
+test('in desktop fullscreen the root area is the whole screen, the work area again once windowed', () => {
+  const bridge = fakeBridge();
+  const { doc } = fakeDocument();
+  bindWindowActions({ client: createBridgeClient(bridge.host), document: doc, setIcon: () => {} });
+  const root = doc.documentElement;
+  bridge.emit('fullscreenChanged', true);
+  assert.deepEqual([root.style.width, root.style.height], ['1920px', '1080px'], 'the screen, taskbar included');
+  bridge.emit('fullscreenChanged', false);
+  assert.deepEqual([root.style.width, root.style.height], ['1920px', '1040px'], 'the work area');
+  const opened = fakeDocument({ innerWidth: 1920, innerHeight: 1080 });
+  bindWindowActions({ client: createBridgeClient(fakeBridge().host), document: opened.doc, setIcon: () => {} });
+  assert.deepEqual([opened.doc.documentElement.style.width, opened.doc.documentElement.style.height], ['1920px', '1080px'], 'a window opened full screen');
+});
+
+test('a window-size media query is settled by an area: the touch step\'s never holds for a desktop work area, its complement always does', () => {
+  const desk = { width: 1920, height: 1040 };
+  const TOUCH = '(max-width: 719px), (max-height: 500px) and (orientation: landscape)';
+  assert.equal(areaMatches(TOUCH, desk), false);
+  assert.equal(areaMatches('(max-width: 719px)', desk), false);
+  assert.equal(areaMatches('(min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait)', desk), true);
+  assert.equal(areaMatches('(min-height: 501px) and (max-width: 719px), (orientation: portrait) and (max-width: 719px)', desk), false);
+  assert.equal(areaMatches(TOUCH, { width: 390, height: 844 }), true, 'a phone-sized area would take it');
+  assert.equal(areaMatches(TOUCH, { width: 844, height: 390 }), true, 'and sideways');
+  assert.equal(areaMatches('(pointer: coarse)', desk), null, 'not the area\'s to decide');
+  assert.equal(areaMatches('(prefers-reduced-motion: reduce)', desk), null);
+  assert.equal(areaMatches('(max-width: 719px), (pointer: coarse)', desk), null);
+});
+
+test('the desktop host settles every window-size media rule against the area, keeps the others, and can settle again', () => {
+  const rule = (mediaText) => ({ conditionText: mediaText, media: { mediaText } });
+  const touch = rule('(max-width: 719px)');
+  const wide = rule('(min-width: 720px)');
+  const coarse = rule('(pointer: coarse)');
+  const container = { conditionText: 'root (max-width: 1439px)' };
+  const doc = { styleSheets: [{ cssRules: [touch, wide, coarse, container] }, { get cssRules() { throw new Error('cross-origin'); } }], head: {}, defaultView: {} };
+  const media = bindAreaMedia(doc);
+  assert.equal(touch.media.mediaText, '(max-width: 719px)', 'nothing settled before an area');
+  media.settle({ width: 1920, height: 1040 });
+  assert.deepEqual([touch.media.mediaText, wide.media.mediaText, coarse.media.mediaText], ['not all', 'all', '(pointer: coarse)']);
+  media.settle({ width: 600, height: 900 });
+  assert.deepEqual([touch.media.mediaText, wide.media.mediaText], ['all', 'not all'], 'settled again from each rule\'s own query');
+  media.dispose();
+});
+
+test('the root area needs a screen to read: without one it is left as it is', () => {
+  const doc = { documentElement: { style: {} }, defaultView: {} };
+  bindAvailableArea(doc).dispose();
+  assert.deepEqual(doc.documentElement.style, {});
 });
 
 test('the shell hands the title bar\'s window buttons the desktop window\'s actions', () => {

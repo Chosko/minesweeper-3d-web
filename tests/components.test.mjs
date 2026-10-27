@@ -9,7 +9,7 @@ import {
   bindSlider, bindSliderFill, sliderFill, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
   boardLink, copyBoardCode, createCodeChip, bindCodeChip, COPY_FALLBACK, COPIED, bindSelectOnHover, SELECT_ON_HOVER,
   bindFiguresLive, LIVE_FIGURES_INTERVAL, bindFigures, ICONS, iconMarkup, createIcon, setButtonIcon, createButton, applyIcons,
-  setNote, NOTE_TONES, LOGO_WORDS, drawLogo, applyLogos, LOGO_STEP, LOGO_FLOOR, logoScale, WINDOW_BUTTONS, bindWindowButtons,
+  setNote, NOTE_TONES, LOGO_WORDS, drawLogo, applyLogos, LOGO_STEP, LOGO_FLOOR, logoScale, WINDOW_BUTTONS, bindWindowButtons, matchRootArea,
 } from '../js/ui/components.js';
 import { KIT_CATALOGUE, REQUIRED_TOKENS } from '../js/ui/kit-catalogue.js';
 import { KEY_HINTS, keyHintKeys, reminderKeys } from '../js/settings/bindings.js';
@@ -1441,13 +1441,13 @@ test('the pager: 38 px buttons, radius 10, bold, a 3 px edge, 6 px apart; the cu
 });
 
 test('the column composition has one breakpoint, 1024 px, stated once, used by Records and Settings', async () => {
-  const breakpoints = [...CSS.matchAll(/@media[^{]*min-width:\s*(\d+)px/g)].map((m) => m[1]);
+  const breakpoints = [...CSS.matchAll(/@(?:media|container)[^{]*min-width:\s*(\d+)px/g)].map((m) => m[1]);
   assert.deepEqual(breakpoints, ['1024'], 'one breakpoint block in the kit');
   assert.doesNotMatch(read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, ''), /min-width:\s*1024px/, 'no second copy in the shell stylesheet');
   const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
   assert.match(head, /ui-columns[\s\S]*1024 px/, 'the catalogue states the breakpoint');
   assert.match(INDEX, /<section class="ui-frame" id="records-frame" aria-labelledby="records-title">[\s\S]*?<div class="ui-columns ui-columns--two" id="records-columns">/);
-  const block = CSS.slice(CSS.indexOf('@media (min-width: 1024px)'));
+  const block = CSS.slice(CSS.indexOf('@container root (min-width: 1024px)'));
   assert.match(block.slice(0, block.indexOf('\n}')), /#records-columns \{ grid-template-columns: [^}]+ auto [^}]+; \}/, 'Records\' rule between its columns, inside the one breakpoint');
   assert.match(INDEX, /<section class="ui-frame" id="settings-frame" aria-labelledby="settings-title">[\s\S]*?<div class="ui-frame__body" id="settings-body"><\/div>/);
   const { SETTINGS_LAYOUTS } = await import('../js/settings/page.js');
@@ -1486,7 +1486,7 @@ test('the gallery shows the stat tile, the pager in each state and the column co
 });
 
 test('the equal pair of columns sits inside the one breakpoint and is catalogued; Records lays its two charts in it', () => {
-  const block = CSS.slice(CSS.indexOf('@media (min-width: 1024px)'));
+  const block = CSS.slice(CSS.indexOf('@container root (min-width: 1024px)'));
   assert.match(block.slice(0, block.indexOf('\n}')), /\.ui-columns--pair \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
   const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
   assert.match(head, /ui-columns--pair in\s+two equal ones/);
@@ -1517,13 +1517,13 @@ function coarseBlocks(css) {
   }
   return out.join('\n');
 }
-// The rules outside every @media block.
+// The rules outside every @media and @container block.
 function topLevel(css) {
   let out = '';
   let depth = 0;
   let inMedia = 0;
   for (let i = 0; i < css.length; i++) {
-    if (css.startsWith('@media', i) && depth === 0) inMedia = 1;
+    if ((css.startsWith('@media', i) || css.startsWith('@container', i)) && depth === 0) inMedia = 1;
     const ch = css[i];
     if (ch === '{') depth += 1;
     if (!inMedia) out += ch;
@@ -1549,7 +1549,7 @@ test('coarse pointers get 44 px switch and slider targets inside (pointer: coars
   assert.ok(styleCoarse.some(([sel, body]) => sel.trim() === '#hud-swap' && /display:\s*none/.test(body)), 'no Swap clicks on a coarse-only device');
 });
 
-// The bodies of the rules of `css` whose selector is exactly `sel`: at the top level, or in every @media block of exactly `query`.
+// The bodies of the rules of `css` whose selector is exactly `sel`: at the top level, or in every block of exactly `query` (mediaRules).
 const ruleIn = (css, query = null) => {
   const list = query ? mediaRules(css, query) : rules(topLevel(css)).map(([x, body]) => [x.split(SCOPE).join('').trim(), body]);
   return (sel) => list.filter(([x]) => x === sel).map(([, body]) => body).join(';');
@@ -1590,13 +1590,13 @@ test('the Classic 2D window hugs its content: the board column alone while the l
   assert.match(compact('#c2d-body'), /grid-template-columns:\s*minmax\(auto, 1fr\) auto 260px/);
   assert.match(compact('#c2d-main'), /padding:\s*var\(--space-4\)/, 'main padding 16 at l');
   assert.match(compact('#c2d-figures .ui-figures__body'), /padding:\s*var\(--space-4\) var\(--space-5\)/, 'figures padding 16px 20px at l');
-  const m = ruleIn(STYLE, '(max-width: 1199px)');
+  const m = ruleIn(STYLE, '@container root (max-width: 1199px)');
   assert.match(m('#c2d-body'), /grid-template-columns:\s*minmax\(auto, 1fr\) auto 232px/);
   assert.match(m('#c2d-main'), /padding:\s*14px/, 'main padding 14 at m');
   assert.match(m('#c2d-figures .ui-figures__body'), /padding:\s*14px 18px/);
-  assert.match(ruleIn(STYLE, '(max-height: 820px)')('#c2d'), /padding-top:\s*13px;\s*padding-bottom:\s*64px/);
+  assert.match(ruleIn(STYLE, '@container root (max-height: 820px)')('#c2d'), /padding-top:\s*13px;\s*padding-bottom:\s*64px/);
   assert.doesNotMatch(STYLE, /#c2d-counters \{[^}]*padding-block/, 'the counter strip keeps the kit\'s 8px 14px');
-  assert.match(STYLE, /@media \(max-width: 1023px\) \{[^@]*#c2d-body, #c2d\.c2d--measure #c2d-body \{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/, 'one column below the kit\'s breakpoint: the panel under the board');
+  assert.match(STYLE, /@container root \(max-width: 1023px\) \{[^@]*#c2d-body, #c2d\.c2d--measure #c2d-body \{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/, 'one column below the kit\'s breakpoint: the panel under the board');
   // A phone: full-bleed, no figures; held sideways the board at the left, then mines, time, Restart and the switch.
   const phone = ruleIn(STYLE, TOUCH_QUERY);
   assert.match(phone('#c2d-figures, #c2d-divider, #c2d-figures-toggle, #hud.hud--2d .hud-tools'), /display:\s*none/, 'a phone hides the panel and its toggle so the board keeps its room');
@@ -1623,7 +1623,7 @@ test('the in-game readouts follow the frame\'s size steps in Joyful tiles, in th
   assert.match(phone('.ui-figures__title'), /font-size:\s*16px/);
   // The steps come after the rules they step, so they win at equal weight.
   const at = (needle) => THEME_CSS.indexOf(needle);
-  assert.ok(at(`@media ${COMPACT_STEP} {\n  :root[data-theme="joyful-tiles"] .ui-counter__digits`) > at(':root[data-theme="joyful-tiles"] .ui-figure--progress .ui-figure__value {'), 'the readouts\' steps after the readouts');
+  assert.ok(at(`${COMPACT_STEP} {\n  :root[data-theme="joyful-tiles"] .ui-counter__digits`) > at(':root[data-theme="joyful-tiles"] .ui-figure--progress .ui-figure__value {'), 'the readouts\' steps after the readouts');
   assert.doesNotMatch(STYLE, /\.ui-counter__digits \{[^}]*font-size/, 'no counter size of the page\'s own');
   assert.doesNotMatch(STYLE, /\.hud-figures \.ui-figures__title \{[^}]*font-size/, 'no title size of the page\'s own');
   assert.match(themeRulesFor('#c2d-figures').map(([, b]) => b).join(';'), /background:\s*none;\s*box-shadow:\s*none/, 'the Classic 2D figures column has no surface of its own');
@@ -2994,7 +2994,7 @@ test('the toast and the message card\'s badge are catalogued, structured in the 
   assert.match(place[1], /z-index: var\(--z-fatal\);/);
   assert.match(place[1], /padding: 12px;/);
   assert.match(STYLE, /:is\(\.fatal, \.noscript, \.not-found\) > \.ui-card \{ width: min\(560px, 100%\); \}/);
-  assert.match(STYLE, /\.toast \{[^}]*width: max-content; max-width: min\(640px, calc\(100vw - 32px\)\);/, 'the toast at most 640 px, wrapping inside a phone');
+  assert.match(STYLE, /\.toast \{[^}]*width: max-content; max-width: min\(640px, calc\(100cqw - 32px\)\);/, 'the toast at most 640 px, wrapping inside a phone');
   assert.match(STYLE, /\.toast \{\s*position: fixed; left: 50%; bottom: 28px;/, 'centred 28 px above the page\'s bottom, under a window\'s foot');
 });
 
@@ -3910,12 +3910,12 @@ test('in a browser, a board choice opened by the mouse keeps its chosen option a
 
 // The canvas's window-size steps: compact for the smaller desktop windows (1366 × 768, 1024 × 768),
 // touch for the phone sizes upright or sideways.
-const COMPACT_STEP = '(max-width: 1439px), (max-height: 820px)';
+const COMPACT_STEP = '@container root (max-width: 1439px) or (max-height: 820px)';
 const TOUCH_QUERY = TOUCH_STEP.slice('@media '.length);
-// The rules of every @media block of exactly `query` in `css`, as [selector, body] pairs, the theme's scope taken off.
+// The rules of every block of exactly `query` in `css` (a bare media query, or a whole `@container root …` prelude), as [selector, body] pairs, the theme's scope taken off.
 function mediaRules(css, query) {
   const out = [];
-  const opener = `@media ${query} {`;
+  const opener = `${query.startsWith('@') ? query : `@media ${query}`} {`;
   for (let i = css.indexOf(opener); i >= 0; i = css.indexOf(opener, i + 1)) {
     let depth = 1;
     let j = i + opener.length;
@@ -3962,7 +3962,7 @@ test('the frame\'s head and foot follow the canvas\'s size steps — desktop, co
   assert.match(bodyOf(touch, '.ui-frame__head'), /min-height: 60px;\s*padding: 8px 10px;/, 'the touch head');
   assert.match(bodyOf(touch, '.ui-frame__title'), /font-size: 17px;/);
   assert.match(bodyOf(touch, '.ui-button--sm'), /min-height: 44px;/, 'a small button a finger tall; the md button already is');
-  assert.ok(THEME_CSS.indexOf(`@media ${COMPACT_STEP}`) >= 0 && THEME_CSS.indexOf(`@media ${COMPACT_STEP}`) < THEME_CSS.lastIndexOf(`@media ${TOUCH_QUERY}`),
+  assert.ok(THEME_CSS.indexOf(`${COMPACT_STEP}`) >= 0 && THEME_CSS.indexOf(`${COMPACT_STEP}`) < THEME_CSS.lastIndexOf(`@media ${TOUCH_QUERY}`),
     'the touch step comes after the compact one, so a phone held sideways takes it');
   const title = bodyOf(RULES, '.ui-frame__title');
   assert.match(title, /white-space: nowrap;/, 'the title on one line at every step');
@@ -4047,7 +4047,7 @@ test('the board status cards: centred on the board column, the canvas\'s spinner
   assert.match(ui, /setButtonIcon\(menu, fixed \? 'arrow-left' : null\)/, 'a fixed board\'s Back carries the arrow icon, Main menu none');
   assert.match(ui, /_centreStatus2D\(\)/, 'the Classic 2D card is placed on the board column');
   // In 3D: a scrim over the scene, and no HUD, figures or hint strip behind the card.
-  assert.match(bodyOf(THEME_RULES, '#m3d-status'), /0 0 0 100vmax var\(--color-backdrop\)/);
+  assert.match(bodyOf(THEME_RULES, '#m3d-status'), /0 0 0 100cqmax var\(--color-backdrop\)/);
   assert.match(bodyOf(rules(STYLE), 'body:has(> #m3d-status:not(.hidden)) #hud'), /visibility: hidden;/);
 });
 
@@ -4216,6 +4216,149 @@ test('in a browser, the gallery beside J-Components: no part overlaps another, e
       assert.deepEqual(errors, []);
       await page.close();
     }
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------- the root area
+
+// Every stylesheet the page loads: the kit's base, the shell's and each theme's.
+const ROOT_AREA_SHEETS = () => [['css/components.css', CSS], ['css/style.css', STYLE], ['themes/joyful-tiles/theme.css', THEME_CSS]];
+// The touch step's queries (a phone upright or sideways, or the sizes above it): the only window queries left.
+const TOUCH_MEDIA = /^\(?(\((min|max)-(width|height): (719|720|500|501)px\)|\(orientation: (portrait|landscape)\)|and|,|\s)+$/;
+
+test('one root area: the page\'s root element is the size container root, the desktop host contains the layout in it', () => {
+  assert.match(CSS, /\nhtml \{ container: root \/ size; height: 100%; \}/, 'the kit declares it, so the gallery has it too');
+  assert.match(STYLE, /\n:root\[data-host="desktop"\] \{ contain: layout; \}/, 'fixed layers sized by the work area at the desktop host');
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  assert.match(head, /The root area\.[\s\S]*@container root[\s\S]*touch step[\s\S]*@media/, 'the catalogue states the rule');
+});
+
+test('the desktop and compact steps and every window-sized rule read the root area: no window query but the touch step\'s, no viewport unit but the 3D scene\'s canvas', () => {
+  for (const [file, css] of ROOT_AREA_SHEETS()) {
+    const media = [...css.matchAll(/@media ([^{]+)\{/g)].map((m) => m[1].trim())
+      .filter((q) => !/^\((pointer|prefers-reduced-motion): [a-z]+\)$/.test(q));
+    assert.deepEqual(media.filter((q) => !TOUCH_MEDIA.test(q)), [], `${file}: a window query outside the touch step`);
+    const units = [...css.matchAll(/[^{}]*\{[^{}]*\b\d*\.?\d+(vw|vh|vmin|vmax|dvh|svh|lvh|dvw|svw|lvw)\b[^{}]*\}/g)].map((m) => m[0].trim().split('{')[0].trim());
+    assert.deepEqual(units, file === 'css/style.css' ? ['#scene'] : [], `${file}: a viewport unit outside the scene's canvas`);
+    for (const m of css.matchAll(/@container ([^{]+)\{/g)) assert.match(m[1], /^root \(/, `${file}: every container query names the root area (${m[1].trim()})`);
+  }
+  assert.ok([...STYLE.matchAll(/@container root/g)].length > 20 && THEME_CSS.includes(`${COMPACT_STEP} {`), 'the steps moved, not dropped');
+});
+
+test('matchRootArea matches width and height queries against the root element\'s box and reports each flip once', () => {
+  let box = { width: 1920, height: 1040 };
+  let observed = null;
+  class Observer { constructor(cb) { this.cb = cb; observed = this; } observe(el) { this.el = el; } disconnect() { observed = null; } }
+  const doc = { documentElement: { getBoundingClientRect: () => box }, defaultView: {} };
+  const match = matchRootArea(doc, { ResizeObserver: Observer });
+  const wide = match('(min-width: 1600px)');
+  assert.equal(wide.matches, true);
+  assert.equal(match('(min-width: 1024px) and (max-height: 820px)').matches, false);
+  const seen = [];
+  const listener = (e) => seen.push(e.matches);
+  wide.addEventListener('change', listener);
+  assert.equal(observed.el, doc.documentElement, 'it watches the root element');
+  box = { width: 1366, height: 728 };
+  observed.cb();
+  observed.cb();
+  box = { width: 1700, height: 900 };
+  observed.cb();
+  assert.deepEqual(seen, [false, true], 'one call per flip');
+  wide.removeEventListener('change', listener);
+  assert.equal(observed, null, 'no listener, no observer');
+  assert.throws(() => match('(orientation: portrait)'), RangeError);
+  assert.throws(() => match('(min-width: 50em)'), RangeError);
+});
+
+// A desktop host for the page: the bridge the platform layer looks for, inert, and a work area of `area`.
+const desktopHost = (area) => {
+  Object.defineProperty(Screen.prototype, 'availWidth', { configurable: true, get: () => area.width });
+  Object.defineProperty(Screen.prototype, 'availHeight', { configurable: true, get: () => area.height });
+  Object.defineProperty(Screen.prototype, 'width', { configurable: true, get: () => area.width });
+  Object.defineProperty(Screen.prototype, 'height', { configurable: true, get: () => area.height + 40 });
+  const off = () => () => {};
+  globalThis.ms3dHost = {
+    steam: { state: () => new Promise(() => {}) },
+    quit: { handshake: () => Promise.resolve() },
+    window: { minimise: async () => {}, toggleFullscreen: async () => {}, setContentSize: async () => {} },
+    events: { steamStateChanged: off, overlayActivated: off, flushRequested: off, fullscreenChanged: off },
+  };
+};
+
+test('in a browser, on the desktop host a screen laid out in a work area larger than the window takes the work area\'s step and frame size', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(desktopHost, { width: 1920, height: 1040 });
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const frames = () => ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    assert.equal(await ms(() => document.documentElement.dataset.host), 'desktop');
+    const root = await ms(() => { const r = document.documentElement.getBoundingClientRect(); return [r.width, r.height]; });
+    assert.deepEqual(root, [1920, 1040], 'the root area is the work area, not the 1000 × 700 window');
+    // Records: its desktop artboard's frame (J-Records-xl), not the 984 × 728 a 1000 × 700 window steps it to.
+    await ms(() => document.querySelector('#menu [data-entry="records"]').click());
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'records');
+    await frames();
+    const records = await ms(() => {
+      const r = document.getElementById('records-frame').getBoundingClientRect();
+      return { size: [r.width, r.height], body: getComputedStyle(document.getElementById('records-body')).padding, title: getComputedStyle(document.querySelector('#records-frame .ui-frame__heading > .ui-frame__title')).fontSize };
+    });
+    assert.deepEqual(records.size, [1640, 940], 'the desktop step\'s frame, larger than the window');
+    assert.equal(records.body, '18px 24px', 'the desktop step\'s body padding');
+    assert.equal(records.title, '30px', 'the desktop step\'s heading');
+    // Settings: three stacks, the work area being at least 1600 px wide.
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'menu');
+    await ms(() => document.querySelector('#menu [data-entry="settings"]').click());
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'settings');
+    await frames();
+    const settings = await ms(() => ({
+      size: (() => { const r = document.getElementById('settings-frame').getBoundingClientRect(); return [r.width, r.height]; })(),
+      stacks: document.querySelectorAll('#settings-columns > .ui-column').length,
+    }));
+    assert.deepEqual(settings, { size: [1640, 940], stacks: 3 }, 'the desktop frame and the widest area\'s three stacks');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, on the desktop host a window narrower than a phone\'s bound never takes the phone layout, and a theme switch keeps it so', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 600, height: 700 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(desktopHost, { width: 1920, height: 1040 });
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    const look = () => page.evaluate(() => ({
+      windowButtons: getComputedStyle(document.querySelector('#menu-frame .ui-frame__window')).display,
+      columns: getComputedStyle(document.querySelector('#menu-entries .ui-mode-list__tiles')).gridTemplateColumns.split(' ').length,
+      radius: getComputedStyle(document.getElementById('menu-frame')).borderTopLeftRadius,
+    }));
+    const desktop = await look();
+    assert.notEqual(desktop.windowButtons, 'none', 'the title bar keeps its window buttons');
+    assert.equal(desktop.columns, 2, 'the play tiles two by two, not the phone rows');
+    assert.notEqual(desktop.radius, '0px', 'the frame keeps its corners, not full-bleed');
+    // A stylesheet added later — a theme switch — is settled the same way.
+    await page.evaluate(() => new Promise((resolve) => {
+      const link = Object.assign(document.createElement('link'), { rel: 'stylesheet', href: 'themes/joyful-tiles/theme.css?again' });
+      link.addEventListener('load', () => setTimeout(resolve, 0), { once: true });
+      document.head.append(link);
+    }));
+    assert.deepEqual(await look(), desktop, 'the added stylesheet takes no phone rule either');
+    assert.deepEqual(errors, []);
   } finally {
     await browser.close();
   }

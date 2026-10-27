@@ -987,7 +987,7 @@
   border-top: 2px solid var(--color-line);
   background: var(--color-surface);
 }
-@media (max-width: 1439px) { :root[data-theme="joyful-tiles"] #menu-foot { padding: 8px 20px 10px; } }
+@container root (max-width: 1439px) { :root[data-theme="joyful-tiles"] #menu-foot { padding: 8px 20px 10px; } }
 /* on a phone the touch note and the build label close the body, no line above them */
 @media (max-width: 719px) { :root[data-theme="joyful-tiles"] #menu-foot { padding: 0 18px 18px; border-top: 0; } }
 /* the white action foot of a screen's actions (board choices, Daily, results): the surface under a ruled line */
@@ -1026,7 +1026,7 @@
 :root[data-theme="joyful-tiles"] #results-details th { color: var(--color-ink); }
 :root[data-theme="joyful-tiles"] #results-actions { padding: 16px 28px 20px; }
 /* the frame's size steps: compact on the smaller desktop windows, touch on a phone upright or sideways */
-@media (max-width: 1439px), (max-height: 820px) {
+@container root (max-width: 1439px) or (max-height: 820px) {
   :root[data-theme="joyful-tiles"] .ui-frame__head {
     min-height: 56px;
     padding: 8px 14px;
@@ -1517,7 +1517,7 @@
   background: var(--color-teal-edge);
 }
 /* the in-game readouts follow the frame's size steps, in the Classic 2D window and the 3D overlay alike */
-@media (max-width: 1439px), (max-height: 820px) {
+@container root (max-width: 1439px) or (max-height: 820px) {
   :root[data-theme="joyful-tiles"] .ui-counter__digits { font-size: 28px; }
   :root[data-theme="joyful-tiles"] .ui-figure { padding: 8px 0; }
   :root[data-theme="joyful-tiles"] .ui-figure:first-child { padding-top: 0; }
@@ -1589,7 +1589,7 @@
 /* overlays laid over the game: one plain navy scrim, unblurred, over 2D and 3D alike; the menu screens sit on the scene itself */
 :root[data-theme="joyful-tiles"] :is(#pause, #ready, #results, #learn-end, #ctx-lost) { background: var(--color-backdrop); }
 /* the 3D board status card lays the scrim over the scene around it */
-:root[data-theme="joyful-tiles"] #m3d-status { box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2), 0 0 0 100vmax var(--color-backdrop); }
+:root[data-theme="joyful-tiles"] #m3d-status { box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2), 0 0 0 100cqmax var(--color-backdrop); }
 /* a board status card's progress line in the mono face */
 :root[data-theme="joyful-tiles"] :is(#c2d-progress, #m3d-progress) { font-family: var(--font-family-mono); }
 /* the pause card's status line in the mono face */

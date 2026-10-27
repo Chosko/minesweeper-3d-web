@@ -768,8 +768,8 @@ test('the results layout: one column sized to its content; on a phone the tiles 
   const style = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.match(style, /#results-frame\s*\{[^}]*width:\s*min\(/, 'the frame is sized to its content, never past the window');
   assert.match(style, /#results-tiles\s*\{[^}]*grid-template-columns:\s*repeat\(4,/, 'four tiles in a row');
-  const narrow = style.slice(style.indexOf('@media (max-width: 999px)', style.indexOf('#results-frame')));
-  assert.match(narrow, /^@media \(max-width: 999px\) \{\s*#results-tiles\s*\{[^}]*grid-template-columns:\s*repeat\(2,/, 'two by two below a 1000 px window, and so on a phone');
+  const narrow = style.slice(style.indexOf('@container root (max-width: 999px)', style.indexOf('#results-frame')));
+  assert.match(narrow, /^@container root \(max-width: 999px\) \{\s*#results-tiles\s*\{[^}]*grid-template-columns:\s*repeat\(2,/, 'two by two below a 1000 px window, and so on a phone');
   const phone = style.slice(style.indexOf('@media (max-width: 719px)', style.indexOf('#results-frame')));
   assert.match(phone, /#r-again\s*\{[^}]*grid-column:\s*1 \/ -1[^}]*order:\s*-1/, 'Play again full width, first');
   assert.match(phone, /#r-menu\s*\{[^}]*grid-column:\s*1 \/ -1/, 'Main menu full width, last');
@@ -782,7 +782,7 @@ test('the results card to the canvas: its width by window size, the head, the lo
   const rule = (css, sel) => css.match(new RegExp(`(?:^|[}\\s])${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`, 'm'))?.[1] ?? '';
   const J = ':root[data-theme="joyful-tiles"] ';
   // 1040 px wide on the largest windows, 1000 px below 1440 px, 960 px below 1200 px.
-  assert.match(style, /#results-frame \{ width: min\(1040px, 100%\); \}\s*@media \(max-width: 1439px\) \{ #results-frame \{ width: min\(1000px, 100%\); \} \}\s*@media \(max-width: 1199px\) \{ #results-frame \{ width: min\(960px, 100%\); \} \}/);
+  assert.match(style, /#results-frame \{ width: min\(1040px, 100%\); \}\s*@container root \(max-width: 1439px\) \{ #results-frame \{ width: min\(1000px, 100%\); \} \}\s*@container root \(max-width: 1199px\) \{ #results-frame \{ width: min\(960px, 100%\); \} \}/);
   assert.match(rule(theme, `${J}#results-frame`), /border-radius: 22px;[\s\S]*box-shadow: inset 0 -2px 0 var\(--color-line\), 0 8px 0 var\(--color-head-edge\), var\(--elevation-2\);/, 'radius 22 on an 8 px head-edge drop');
   // The head: 22 × 28 px padding, the title 40 px, the board line 16 px bold, the trophy in a 56 px white tile on the head's edge.
   assert.match(rule(style, '#results-head'), /gap: 16px; padding: 22px 28px;/);
