@@ -193,7 +193,7 @@ Context:
 
 Done: 2026-10-27, commit `6a41a20` (8 files, +563/-2). Electron 44.9.3 has no postinstall, so `npm run package` fetches the binary through Electron's `install.js`. Steamworks needed setup the task did not foresee: no private branch can exist until `default` has a build, and SteamPipe refused `SetLive "default"` from a script, so a one-file placeholder (BuildID 26249414, no game content) is live on `default` by hand. The game build (26249108) is live on the password-protected branch `internal`, and a Windows launch option `Minesweeper3D.exe` was added and published. The installed run reached the menu and played offline. The window's X button did not quit (Alt+F4 did), and Shift+Tab showed no overlay.
 
-## [ ] 5. Implement task 88 — Steamworks binding spike
+## [x] 5. Implement task 88 — Steamworks binding spike
 
 Depends on: 2, 4
 
@@ -208,6 +208,8 @@ Context:
 /task-implement 88 --review
 ```
 
+Done: 2026-10-28, commit `321c54a` (6 files, +41/-20). The binding is steamworks-ffi-node 0.11.3, which covered every capability in two rounds of user runs from Steam. steamworks.js 0.4.0 has no leaderboard, shared-file or overlay-event calls. The overlay draws over the transparent window only with `in-process-gpu`, `disable-direct-composition` and `ui-disable-partial-swap`. While it is open, the page behind turns semi-transparent. An opaque window avoids that but loses the transparent corners, and its fullscreen sometimes keeps the windowed bounds. The choice between the two is left to `/architect amend feature=steam-desktop-host`. Two premises were wrong: an improved score upload clears the entry's attachment, and replacing a shared file under the same name is safe, because each share gets a new handle.
+
 ## [ ] 6. Implement task 89 — Steam adapter implementation on the chosen binding
 
 Depends on: 2, 3, 5
@@ -217,6 +219,7 @@ Needs: agent+human
 Context:
 - 2026-10-25 (from step 2): the bridge carries Steam ids, leaderboard handles and shared-file handles as decimal strings.
 - 2026-10-25 (from step 3): task 86 is `[PARTIAL]` (content size deferred). The page's capability flags change only when Steam's state reports a different adapter or capability; logged-on state is kept beside them, and Steam calls reject with `offline` for callers to queue or degrade.
+- 2026-10-28 (from step 5): the binding is steamworks-ffi-node, pinned at 0.11.3 in `desktop/package.json`; the spike code was deleted. The overlay switches `in-process-gpu`, `disable-direct-composition` and `ui-disable-partial-swap` go in `desktop/main.js`. The shared-file share/download calls and the overlay activation callback must be declared on the binding's own library handle. The binding decodes a downloaded entry's details wrongly, so the adapter reads the details array itself. The binding looks for the Steam API library under a `steamworks_sdk/redistributable_bin` layout or a path you set, and its init writes `steam_appid.txt` to the working directory. `buildWindows` copies only top-level runtime dependencies, so `koffi` and `@koromix/koffi-win32-x64` would be missing from the package. `desktop/node_modules` was installed with `--ignore-scripts`, because a plain install was refused by the permission check. There is no lock file. The window choice (transparent or opaque) is open, pending `/architect amend feature=steam-desktop-host`.
 
 ```prompt
 /task-implement 89 --review --rounds 2
@@ -230,6 +233,7 @@ Context:
 - 2026-10-25 (from step 1): `.claude/context/` has no entry yet for `desktop/` or the `desktop-` tests.
 - 2026-10-25 (from step 3): task 86 is `[PARTIAL]` — content size is not reported (desktop layout deferred to a follow-up); the capability flags ignore logged-on state, contrary to the feature document's wording.
 - 2026-10-26 (amend): task 86 was re-planned for natural screen sizes and is finished by step 41 (inserted after step 3); this step also waits on step 41.
+- 2026-10-28 (from step 5): the binding's capability table, by candidate, exists only in step 5's report, because the spike code is deleted. steamworks-ffi-node has all of them. steamworks.js 0.4.0 has only identity (its own id and name) and achievements.
 
 ```prompt
 /task-implement 90 --review
@@ -265,6 +269,7 @@ Needs: agent+human
 
 Context:
 - 2026-10-27 (from step 4): Steamworks settings changes reach the client only after Publish, which the user does by hand after reading the pending-changes list; the user asked that nothing else in Steamworks be touched and nothing made public. The game build lives on the password-protected branch `internal`, and `default` holds only a placeholder build.
+- 2026-10-28 (from step 5): the user set a Steam Cloud byte quota and file count for the spike's shared-file checks. The values were not recorded, so check them against this task's quota.
 
 ```prompt
 /task-implement 93 --review
@@ -309,6 +314,7 @@ Needs: agent+human
 
 Context:
 - 2026-10-11 (amend): task 97 was re-planned for 12 leaderboards, not 18, after the double-layer 3D presets were dropped.
+- 2026-10-28 (from step 5): an improved score upload clears the entry's attachment, so the attach must follow every improved upload. Replacing a shared file under the same name is safe, because each share gets a new handle and the old handle keeps returning the old file. The binding decodes downloaded details wrongly, so they are read from the raw array. The spike left a test leaderboard `SPIKE_PROBE` in Steamworks.
 
 ```prompt
 /task-implement 97 --review --rounds 2
@@ -363,7 +369,8 @@ Depends on: 4, 6, 18
 
 Needs: agent+human
 
-Context: none
+Context:
+- 2026-10-28 (from step 5): the user added a test achievement with API name `SPIKE_PROBE` in Steamworks for the spike, and it unlocked on the user's account. It is not part of the catalogue. The overlay showed only with the switches step 6 adds to `desktop/main.js`.
 
 ```prompt
 /task-implement 102 --review
