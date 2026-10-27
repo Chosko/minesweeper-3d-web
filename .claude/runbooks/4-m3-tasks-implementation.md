@@ -146,7 +146,7 @@ Context:
 
 Done: 2026-10-27, commit `5954e8f` (11 files, +115/-54).
 
-## [ ] 40. Implement task 293 — Update documentation for feature `in-game-layout`
+## [x] 40. Implement task 293 — Update documentation for feature `in-game-layout`
 
 Depends on: 38
 
@@ -156,6 +156,8 @@ Context:
 ```prompt
 /task-implement 293 --review
 ```
+
+Done: 2026-10-27, commit `66c3bbf` (6 files, +33/-18).
 
 ## [ ] 41. Finish task 86 — Desktop window sized to the screen's natural frame
 
@@ -167,6 +169,7 @@ Context:
 - 2026-10-27 (from step 36): until this step resizes the desktop window to its frame, screens are laid out and centred in the work area and look off-centre in the default 1280×800 window — expected, not a defect. The desktop host never gets the phone layout (`bindAreaMedia`, `js/platform/window-actions.js`), so a narrow frame no longer changes layout shape.
 - 2026-10-27 (from step 37): every screen now has a fixed natural size from its artboard (desktop step J-*-xl, compact step J-*-l, 1199 px and below J-*-m); the frame steps on width only, at 1439 px and 1199 px.
 - 2026-10-27 (from step 38): nothing calls `reportSize` yet, so this step is what makes the window take the whole work area during 3D play, as `in-game-layout.md` now says.
+- 2026-10-27 (from step 40): `in-game-layout.md` § Architecture says the desktop window takes the whole work area during 3D play, but no code does it yet: `desktop/window.js` creates the window with `maximizable: false`, nothing resizes it for 3D play, and `js/render.js` sizes the canvas from `window.innerWidth`/`innerHeight`. The context files make no such claim.
 
 ```prompt
 /task-implement 86 --review --rounds 2
