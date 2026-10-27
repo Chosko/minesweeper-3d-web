@@ -15,7 +15,7 @@
 // the host offers (js/platform/capabilities.js), with the latest Steam state. From the host link
 // (linkHost, js/platform/bridge-client.js): `onOverlayActivated(listener)`, called when the Steam
 // overlay opens, and `addFlushHook(hook)`, a hook the host's flush before quitting awaits; and
-// `bindDesktopWindow({ document, setIcon })`, the desktop window driven from the page
+// `bindDesktopWindow({ document, setIcon, fullArea })`, the desktop window driven from the page
 // (js/platform/window-actions.js). The web build has no host: every flag is off, no overlay or
 // flush ever comes, and the desktop window does nothing.
 
@@ -72,6 +72,6 @@ export const capabilities = PLATFORM.capabilities;
 export const { onOverlayActivated, addFlushHook } = linkHost({ client: PLATFORM.client, capabilities });
 
 /** The desktop window driven from the page; nothing on the web. */
-export function bindDesktopWindow({ document, setIcon }) {
-  return bindWindowActions({ client: PLATFORM.client, document, setIcon });
+export function bindDesktopWindow({ document, setIcon, fullArea }) {
+  return bindWindowActions({ client: PLATFORM.client, document, setIcon, fullArea });
 }

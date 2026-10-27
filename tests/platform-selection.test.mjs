@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { selectPlatform, STEAM_SLOTS } from '../js/platform/index.js';
 import { CAPABILITY_FLAGS, createCapabilities, deriveFlags } from '../js/platform/capabilities.js';
 import { BRIDGE_GLOBAL, BRIDGE_EVENTS, findBridge, createBridgeClient, linkHost } from '../js/platform/bridge-client.js';
-import { bindWindowActions, bindAvailableArea, bindAreaMedia, areaMatches, WINDOW_STATES, DRAG_REGION_CSS } from '../js/platform/window-actions.js';
+import { bindWindowActions, bindAvailableArea, bindAreaMedia, areaMatches, WINDOW_STATES, DRAG_REGION_CSS, SCREEN_FRAMES } from '../js/platform/window-actions.js';
 import { BRIDGE_GLOBAL as HOST_GLOBAL, BRIDGE_EVENTS as HOST_EVENTS } from '../desktop/bridge.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -288,21 +288,55 @@ function withListeners(target) {
   });
 }
 
+/**
+ * A screen's frame laid out in the root area at `box` ({ left, top, width, height }), shown while
+ * `shown`: the page reads it shifted by the root's `--window-x` / `--window-y`, as a browser does.
+ */
+function fakeFrame(root, box, shown = true) {
+  const shift = (name) => parseFloat(root.style[name] ?? '0') || 0;
+  return {
+    box,
+    shown,
+    getClientRects() { return this.shown ? [this.box] : []; },
+    getBoundingClientRect() {
+      const left = this.box.left - shift('--window-x');
+      const top = this.box.top - shift('--window-y');
+      return { left, top, right: left + this.box.width, bottom: top + this.box.height, width: this.box.width, height: this.box.height };
+    },
+  };
+}
+
 function fakeDocument({ fullscreenButtons = 2, innerWidth = 1280, innerHeight = 800, screen = { width: 1920, height: 1080, availWidth: 1920, availHeight: 1040 } } = {}) {
   const appended = [];
+  const frames = [];
+  const observers = [];
+  class ResizeObserver {
+    constructor(callback) { this.callback = callback; this.targets = new Set(); observers.push(this); }
+    observe(target) { this.targets.add(target); }
+    unobserve(target) { this.targets.delete(target); }
+    disconnect() { this.targets.clear(); }
+  }
+  const resized = (frame) => { for (const o of observers) if (o.targets.has(frame)) o.callback([{ target: frame }]); };
+  const style = {};
+  Object.defineProperty(style, 'setProperty', { value: (name, value) => { style[name] = value; } });
   const button = () => {
     const attrs = new Map([['data-window', 'fullscreen'], ['data-icon', 'fullscreen'], ['aria-label', 'Fullscreen'], ['title', 'Fullscreen']]);
     return { attrs, getAttribute: (n) => attrs.get(n) ?? null, setAttribute: (n, v) => attrs.set(n, String(v)) };
   };
   const buttons = Array.from({ length: fullscreenButtons }, button);
   const doc = {
-    documentElement: { dataset: {}, style: {} },
+    documentElement: { dataset: {}, style },
     head: { append: (el) => appended.push(el) },
     createElement: (tag) => ({ tagName: tag.toUpperCase(), textContent: '' }),
-    querySelectorAll: (selector) => (selector === '[data-window="fullscreen"]' ? buttons : []),
-    defaultView: { innerWidth, innerHeight, screen: withListeners(screen), ...withListeners({}) },
+    querySelectorAll: (selector) => {
+      if (selector === '[data-window="fullscreen"]') return buttons;
+      if (selector === SCREEN_FRAMES) return frames;
+      return [];
+    },
+    defaultView: { innerWidth, innerHeight, screen: withListeners(screen), ResizeObserver, ...withListeners({}) },
   };
-  return { doc, buttons, appended };
+  const addFrame = (box, shown) => { const frame = fakeFrame(doc.documentElement, box, shown); frames.push(frame); return frame; };
+  return { doc, buttons, appended, addFrame, resized };
 }
 
 test('the window buttons\' two looks: Fullscreen while windowed, Windowed while full screen', () => {
@@ -387,11 +421,96 @@ test('the page reports its content size to the host, whole pixels, once per chan
     [['window.setContentSize', 1303, 712], ['window.setContentSize', 984, 728]]);
 });
 
+const sizeReports = (bridge) => bridge.calls.filter(([op]) => op === 'window.setContentSize').map(([, w, h]) => [w, h]);
+const shiftOf = (doc) => [doc.documentElement.style['--window-x'], doc.documentElement.style['--window-y']];
+
+test('windowed, the window is the shown screen\'s frame: its size reported on every screen change, the frame at the window\'s edges', async () => {
+  const bridge = fakeBridge();
+  const { doc, addFrame } = fakeDocument();
+  const menu = addFrame({ left: 470, top: 44, width: 980, height: 952 });
+  const choice = addFrame({ left: 360, top: 120, width: 1200, height: 800 }, false);
+  const win = bindWindowActions({ client: createBridgeClient(bridge.host), document: doc, setIcon: () => {} });
+  assert.equal(doc.documentElement.dataset.windowState, 'windowed');
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [], 'nothing before the first screen shows');
+  win.screenChanged();
+  assert.deepEqual(shiftOf(doc), ['470px', '44px'], 'the frame moved to the window\'s top-left corner');
+  menu.shown = false;
+  choice.shown = true;
+  win.screenChanged();
+  assert.deepEqual(shiftOf(doc), ['360px', '120px']);
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [[980, 952], [1200, 800]]);
+});
+
+test('a change of the frame\'s size is reported: the board choice panel opening, a board loading, a card over the game', async () => {
+  const bridge = fakeBridge();
+  const { doc, addFrame, resized } = fakeDocument();
+  const game = addFrame({ left: 660, top: 220, width: 600, height: 600 });
+  const win = bindWindowActions({ client: createBridgeClient(bridge.host), document: doc, setIcon: () => {} });
+  win.screenChanged();
+  game.box = { left: 560, top: 170, width: 800, height: 700 };
+  resized(game);
+  const card = addFrame({ left: 710, top: 370, width: 500, height: 300 });
+  win.screenChanged();
+  const results = addFrame({ left: 440, top: 300, width: 1040, height: 440 });
+  win.screenChanged();
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [[600, 600], [800, 700], [1040, 700]],
+    'the card inside the game window changes nothing; the wider results take the window with them');
+  assert.deepEqual(shiftOf(doc), ['440px', '170px']);
+  assert.ok(card && results);
+});
+
+test('during 3D play the window is the whole work area', async () => {
+  const bridge = fakeBridge();
+  const { doc, addFrame } = fakeDocument();
+  addFrame({ left: 470, top: 44, width: 980, height: 952 });
+  let play = false;
+  const win = bindWindowActions({ client: createBridgeClient(bridge.host), document: doc, setIcon: () => {}, fullArea: () => play });
+  win.screenChanged();
+  play = true;
+  win.screenChanged();
+  assert.deepEqual(shiftOf(doc), ['0px', '0px']);
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [[980, 952], [1920, 1040]]);
+});
+
+test('fullscreen reports no size; leaving it restores the windowed size for the current screen', async () => {
+  const bridge = fakeBridge();
+  const { doc, addFrame } = fakeDocument();
+  const menu = addFrame({ left: 470, top: 44, width: 980, height: 952 });
+  const win = bindWindowActions({ client: createBridgeClient(bridge.host), document: doc, setIcon: () => {} });
+  win.screenChanged();
+  bridge.emit('fullscreenChanged', true);
+  assert.equal(doc.documentElement.dataset.windowState, 'fullscreen');
+  assert.equal(doc.documentElement.dataset.window, undefined, 'the root is never taken for a window button ([data-window])');
+  menu.shown = false;
+  addFrame({ left: 360, top: 120, width: 1200, height: 800 });
+  win.screenChanged();
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [[980, 952]], 'the frame on the backdrop, the window full screen');
+  bridge.emit('fullscreenChanged', false);
+  assert.equal(doc.documentElement.dataset.windowState, 'windowed');
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [[980, 952], [1200, 800]]);
+});
+
+test('the shell tells the desktop window of every screen change, and 3D play takes the whole area', () => {
+  const main = read('js/main.js');
+  assert.match(main, /bindDesktopWindow\(\{ document, setIcon: setButtonIcon, fullArea: \(\) => /);
+  assert.match(main, /onChange: \(\) => \{[^\n]*DESKTOP_WINDOW\.screenChanged\(\);/);
+  const style = read('css/style.css');
+  assert.match(style, /:root\[data-host="desktop"\]\[data-window-state="windowed"\] :is\(body, \.ui-backdrop\) \{ background: none; \}/,
+    'windowed, the page draws no backdrop');
+});
+
 test('the web build: no window actions, nothing marked, no size reported', () => {
   const { doc, appended, buttons } = fakeDocument();
   const win = bindWindowActions({ client: null, document: doc, setIcon: () => { throw new Error('no icon change on the web'); } });
   assert.deepEqual(win.actions, {});
   win.reportSize(800, 600);
+  win.screenChanged();
   win.dispose();
   assert.deepEqual(doc.documentElement.dataset, {});
   assert.deepEqual(doc.documentElement.style, {}, 'the root area stays the browser window');

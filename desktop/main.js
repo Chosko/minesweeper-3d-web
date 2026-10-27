@@ -51,7 +51,7 @@ if (!app.requestSingleInstanceLock()) {
     const workAreas = screen.getAllDisplays().map((display) => display.workArea);
     const state = placeOnScreen(readWindowState(stateFile), workAreas, DEFAULT_CONTENT_SIZE);
     game = createGameWindow({
-      BrowserWindow, state, save: (next) => writeWindowState(stateFile, next), preload: path.join(HERE, 'preload.js'),
+      BrowserWindow, state, screen, save: (next) => writeWindowState(stateFile, next), preload: path.join(HERE, 'preload.js'),
     });
     capturePageErrors(crashLog, game.win.webContents);
     bridge = createBridge({ adapter, window: game.actions, closing });

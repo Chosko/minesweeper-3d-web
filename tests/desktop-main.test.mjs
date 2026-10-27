@@ -138,6 +138,8 @@ class FakeWindow extends EventEmitter {
   setMovable(on) { this.movable = on; }
   setContentSize(w, h) { this.calls.push(['setContentSize', w, h]); this.contentSize = [w, h]; }
   getPosition() { return [...this.position]; }
+  setPosition(x, y) { this.calls.push(['setPosition', x, y]); this.position = [x, y]; }
+  getBounds() { return { x: this.position[0], y: this.position[1], width: this.contentSize[0], height: this.contentSize[1] }; }
   once(name, fn) { return super.once(name, fn); }
   show() { this.calls.push(['show']); }
 }
@@ -200,6 +202,60 @@ test('window actions: content size, fullscreen toggle with its events, minimise'
   assert.equal(fromState.isFullscreen(), true, 'a window opened fullscreen starts fullscreen');
   fromState.toggleFullscreen();
   assert.equal(opened.fullscreen, false);
+});
+
+// Two displays side by side, each with its work area; a window is on the display its centre is over.
+const fakeScreen = (workAreas) => ({
+  getDisplayMatching({ x, y, width, height }) {
+    const cx = x + width / 2;
+    const cy = y + height / 2;
+    const inside = (a) => cx >= a.x && cx < a.x + a.width && cy >= a.y && cy < a.y + a.height;
+    return { workArea: workAreas.find(inside) ?? workAreas[0] };
+  },
+});
+
+test('the host sizes the window to the reported size, never past the work area of the display it is on', () => {
+  const win = new FakeWindow({ width: 1280, height: 800 });
+  const screen = fakeScreen([{ x: 0, y: 0, width: 1920, height: 1040 }, { x: 1920, y: 0, width: 1366, height: 728 }]);
+  const actions = windowActions(win, { screen });
+  actions.setContentSize(980, 952);
+  assert.deepEqual(win.contentSize, [980, 952]);
+  assert.deepEqual(win.position, [100, 50], 'inside the work area it keeps its place');
+  actions.setContentSize(1920, 1040);
+  assert.deepEqual(win.contentSize, [1920, 1040], 'the whole work area, as during 3D play');
+  assert.deepEqual(win.position, [0, 0], 'moved into the work area, never past it');
+  actions.setContentSize(2400, 1200);
+  assert.deepEqual(win.contentSize, [1920, 1040], 'capped at the work area');
+  actions.setContentSize(1200, 700);
+  win.position = [1950, 20];
+  win.emit('moved');
+  assert.deepEqual(win.contentSize, [1200, 700], 'it fits the other display as it is');
+  win.position = [300, 20];
+  actions.setContentSize(1600, 900);
+  win.position = [1500, 20];
+  win.emit('moved');
+  assert.deepEqual(win.contentSize, [1366, 728], 'moved to the smaller display, resized to its work area');
+  assert.deepEqual(win.position, [1920, 0], 'and laid inside it');
+});
+
+test('a size reported while fullscreen is capped by the work area on leaving fullscreen', () => {
+  const win = new FakeWindow({ width: 1280, height: 800 });
+  const actions = windowActions(win, { screen: fakeScreen([{ x: 0, y: 0, width: 1366, height: 728 }]) });
+  actions.toggleFullscreen();
+  actions.setContentSize(1920, 1040);
+  assert.deepEqual(win.contentSize, [1280, 800]);
+  actions.toggleFullscreen();
+  assert.deepEqual(win.contentSize, [1366, 728]);
+  assert.deepEqual(win.position, [0, 0]);
+});
+
+test('the game window takes the display layout it is sized against', () => {
+  let made = null;
+  const BrowserWindow = function (options) { made = new FakeWindow(options); return made; };
+  const { actions } = createGameWindow({ BrowserWindow, state: { x: 10, y: 20, fullscreen: false }, screen: fakeScreen([{ x: 0, y: 0, width: 800, height: 600 }]) });
+  actions.setContentSize(1000, 700);
+  assert.deepEqual(made.contentSize, [800, 600]);
+  assert.match(readFileSync(path.join(ROOT, 'desktop/main.js'), 'utf8'), /createGameWindow\(\{[^}]*\bscreen\b/);
 });
 
 test('the game window loads nothing outside the game and opens no other window', () => {

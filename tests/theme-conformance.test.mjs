@@ -486,17 +486,21 @@ test('the fill contrast check passes readable go and stop buttons and flags a fa
 const walk = (dir) => readdirSync(join(ROOT, dir), { withFileTypes: true })
   .flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.js') ? [`${dir}/${e.name}`] : []));
 
+// Custom properties no theme declares: the menu entries' own accent slots, and the desktop window's
+// corner in the root area the page sets (js/platform/window-actions.js).
+const PAGE_SET = ['--f', '--e', '--o', '--window-x', '--window-y'];
+
 test('the required token set is what the base stylesheets and the screens read, plus the contrast roles', () => {
   const structural = new Set([...read('css/tokens.css').matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));
   const reads = new Set();
   for (const f of ['css/components.css', 'css/style.css']) {
     for (const [, name] of stripComments(read(f)).matchAll(/var\((--[\w-]+)/g)) {
-      if (!structural.has(name) && !['--f', '--e', '--o'].includes(name)) reads.add(name); // the menu entries' own accent slots
+      if (!structural.has(name) && !PAGE_SET.includes(name)) reads.add(name);
     }
   }
   for (const f of walk('js')) {
     const src = read(f);
-    for (const [, name] of src.matchAll(/'(--[a-z][\w-]*)'/g)) reads.add(name);
+    for (const [, name] of src.matchAll(/'(--[a-z][\w-]*)'/g)) if (!PAGE_SET.includes(name)) reads.add(name);
     for (const [, name] of src.matchAll(/\b(?:color|raised|revealed)\(token, '([\w-]+)'\)/g)) reads.add(`--color-${name}`);
   }
   for (const list of Object.values(CONTRAST_ROLES)) for (const name of list) reads.add(name);

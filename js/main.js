@@ -432,8 +432,9 @@ applyIcons(document.body);
 applyLogos(document.body);
 // The title bar's window buttons: a desktop host the capability flags report gives them its actions
 // — the desktop window's Minimise and Fullscreen / Windowed, its title bar the window's drag region;
-// the web build has none, so they press and do nothing.
-const DESKTOP_WINDOW = bindDesktopWindow({ document, setIcon: setButtonIcon });
+// the web build has none, so they press and do nothing. Windowed, the desktop window is the shown
+// screen's frame, told of every screen change (SHELL), and the whole work area during a 3D game.
+const DESKTOP_WINDOW = bindDesktopWindow({ document, setIcon: setButtonIcon, fullArea: () => MODES.active === '3d' && S.mode !== REPLAY_SCREEN });
 bindWindowButtons(document.body, { capabilities, actions: DESKTOP_WINDOW.actions });
 
 // ---------- active device ----------
@@ -515,7 +516,7 @@ const SHELL = createRouter({
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
-  onChange: () => { layerChanged(); needRender = true; syncScenePanel(); sync3D(); syncTouch3D(); showStatus2D(); refreshHints(); HISTORY.sync(); },
+  onChange: () => { layerChanged(); needRender = true; syncScenePanel(); sync3D(); syncTouch3D(); showStatus2D(); refreshHints(); HISTORY.sync(); DESKTOP_WINDOW.screenChanged(); },
 });
 // end of screen table
 Object.defineProperty(S, 'mode', { get: () => SHELL.current, enumerable: true });

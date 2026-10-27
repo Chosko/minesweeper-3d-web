@@ -1,6 +1,7 @@
 // The game window: frameless and transparent, so the page draws the whole window in its title bar's
 // style; moved by the drag region the page marks; never resized by the player — it takes the
-// content size the page reports. The window actions here are what the page bridge calls.
+// content size the page reports, never past the work area of the display it is on. The window
+// actions here are what the page bridge calls.
 import { GAME_ORIGIN } from './protocol.js';
 
 /** The content size the window opens at, before the page reports its own. */
@@ -34,16 +35,36 @@ export function windowOptions(state, { preload } = {}) {
 }
 
 /**
- * The window actions: set the content size (the window keeps its place; a size reported while
- * fullscreen applies on leaving it), toggle fullscreen, minimise, and listen to fullscreen changes.
- * The fullscreen state follows the window's enter and leave events, never `isFullScreen()`, which
- * a transparent window on Windows always answers false.
+ * The window actions: set the content size, toggle fullscreen, minimise, and listen to fullscreen
+ * changes. A content size never goes past the work area of the display the window is on (`screen`,
+ * Electron's, finds it; without one the size is taken as given): it is capped there and the window
+ * moved inside it, again whenever the window is moved — to another display, it is laid out against
+ * that one's work area. A size reported while fullscreen applies on leaving it. The fullscreen state
+ * follows the window's enter and leave events, never `isFullScreen()`, which a transparent window on
+ * Windows always answers false.
  */
-export function windowActions(win, { fullscreen = false } = {}) {
+export function windowActions(win, { fullscreen = false, screen = null } = {}) {
   const listeners = new Set();
   let isFullscreen = Boolean(fullscreen);
-  let pendingSize = null;
+  let size = null;
   const notify = (on) => { for (const listener of listeners) listener(on); };
+  const fit = () => {
+    if (!size || isFullscreen) return;
+    const area = screen?.getDisplayMatching(win.getBounds()).workArea;
+    if (!area) {
+      win.setContentSize(...size);
+      return;
+    }
+    const width = Math.min(size[0], area.width);
+    const height = Math.min(size[1], area.height);
+    win.setContentSize(width, height);
+    const [x, y] = win.getPosition();
+    const inside = [
+      Math.min(Math.max(x, area.x), area.x + area.width - width),
+      Math.min(Math.max(y, area.y), area.y + area.height - height),
+    ];
+    if (inside[0] !== x || inside[1] !== y) win.setPosition(...inside);
+  };
   win.on('enter-full-screen', () => {
     isFullscreen = true;
     win.setMovable(false);
@@ -52,17 +73,14 @@ export function windowActions(win, { fullscreen = false } = {}) {
   win.on('leave-full-screen', () => {
     isFullscreen = false;
     win.setMovable(true);
-    if (pendingSize) {
-      win.setContentSize(...pendingSize);
-      pendingSize = null;
-    }
+    fit();
     notify(false);
   });
+  if (screen) win.on('moved', fit);
   return {
     setContentSize(width, height) {
-      const size = [Math.round(width), Math.round(height)];
-      if (isFullscreen) pendingSize = size;
-      else win.setContentSize(...size);
+      size = [Math.round(width), Math.round(height)];
+      fit();
     },
     toggleFullscreen() { win.setFullScreen(!isFullscreen); },
     minimise() { win.minimize(); },
@@ -100,10 +118,10 @@ function trackState(win, actions, initial, save) {
   win.on('leave-full-screen', update);
 }
 
-/** Creates the game window from the stored state; shown once its first frame is ready. */
-export function createGameWindow({ BrowserWindow, state, save = () => {}, preload }) {
+/** Creates the game window from the stored state, sized against `screen`'s work areas; shown once its first frame is ready. */
+export function createGameWindow({ BrowserWindow, state, save = () => {}, preload, screen = null }) {
   const win = new BrowserWindow(windowOptions(state, { preload }));
-  const actions = windowActions(win, { fullscreen: state.fullscreen });
+  const actions = windowActions(win, { fullscreen: state.fullscreen, screen });
   trackState(win, actions, state, save);
   lockNavigation(win.webContents);
   win.once('ready-to-show', () => win.show());

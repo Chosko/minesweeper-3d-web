@@ -12,7 +12,8 @@ desktop window driven from the page. DOM-free apart from the browser
 backend's default `localStorage` getter, the IndexedDB implementation's
 default `indexedDB` factory and `window-actions.js`, which on the desktop
 host marks the document, adds the drag region's style, sizes the page's
-root area and settles the touch step's media queries.
+root area, settles the touch step's media queries and, windowed, shifts the
+page to the shown screen's frame.
 
 | File | Responsibility |
 | ---- | -------------- |
@@ -25,7 +26,7 @@ root area and settles the touch step's media queries.
 | `js/platform/index.js` | The selector (`selectPlatform`): looks for the page bridge once at start-up, fills each slot (`STEAM_SLOTS`: storage, blob store, leaderboards, achievements) with its Steam implementation or the browser one; re-exports the storage methods; the capability flags, the host link and the desktop window. |
 | `js/platform/capabilities.js` | The capability flags (`CAPABILITY_FLAGS`, `deriveFlags`, `createCapabilities`) and the latest Steam state. |
 | `js/platform/bridge-client.js` | The page's side of the page bridge: `findBridge`, the request client, `linkHost` — Steam state into the flags, overlay listeners, the quit flush. |
-| `js/platform/window-actions.js` | The desktop window driven from the page: drag region, Minimise and Fullscreen / Windowed with its icon, the root area sized to the available area (`bindAvailableArea`), the window-size media queries settled against it (`areaMatches`, `bindAreaMedia`), `reportSize`. |
+| `js/platform/window-actions.js` | The desktop window driven from the page: drag region, Minimise and Fullscreen / Windowed with its icon, the root area sized to the available area (`bindAvailableArea`), the window-size media queries settled against it (`areaMatches`, `bindAreaMedia`), the windowed window's size from the shown screen frames (`SCREEN_FRAMES`, `bindScreenSize`), `reportSize`. |
 
 Document owners register here: settings ([settings.md](settings.md)),
 `shell.lastMode` and the board choice panel's pin `shell.boardPanel` ([app-shell-menu.md](app-shell-menu.md)), the live figures panel's open state `shell.liveFigures` ([app-shell-2d.md](app-shell-2d.md)) and `shell.firstUse` ([app-shell-help.md](app-shell-help.md)), the
@@ -49,10 +50,12 @@ fill them); `capabilities`, the live flags of what the host offers —
 state never turns a flag off); `onOverlayActivated(listener)`, which the
 shell answers with the window blur's pause; `addFlushHook(hook)`, awaited
 before the page answers the host's flush request; `bindDesktopWindow({
-document, setIcon })` → `{ actions, reportSize, dispose }`, the actions
-`bindWindowButtons` ([app-shell-kit-helpers.md](app-shell-kit-helpers.md))
-presses. Nothing calls `reportSize`: the window keeps the host's
-default content size. The web build has no host: every flag is off, and no
+document, setIcon, fullArea })` → `{ actions, reportSize, screenChanged,
+dispose }`, the actions `bindWindowButtons`
+([app-shell-kit-helpers.md](app-shell-kit-helpers.md)) presses;
+`screenChanged()`, which the shell's router calls on every screen change,
+reports the windowed window's size, `fullArea()` — a 3D game outside the
+replay viewer — making it the whole work area. The web build has no host: every flag is off, and no
 overlay, flush or window action ever happens.
 
 Storage interface (`js/platform/storage.js`)
@@ -156,6 +159,21 @@ return a Promise and may throw.
   pointer, a motion preference) is left to the browser. On the web none
   of this runs: the root area is the browser window and the touch step
   follows it.
+- **The windowed window.** Windowed at the desktop host the window is the
+  shown screen's frame (`bindScreenSize`): the screens lay out in the
+  available area as everywhere, the box around every shown `SCREEN_FRAMES`
+  element — a card over the game window widening it — is measured, the root
+  element shifted by its corner (`--window-x`, `--window-y`, which
+  `css/style.css` applies while the root carries `data-window-state="windowed"`,
+  the 3D scene's canvas shifted back onto the window, no backdrop drawn)
+  and its size sent through `reportSize`, deduplicated, on every screen
+  change, every change of a frame's size (a `ResizeObserver`) and every
+  change of the available area; during 3D play the size is the whole
+  available area. Nothing is measured before the first screen change nor in
+  fullscreen, where the frame sits on the backdrop; leaving fullscreen
+  measures again. The host (`desktop/window.js`) caps the size at the work
+  area of the display the window is on and moves the window inside it,
+  again whenever the window is moved.
 
 ## DOMAIN DEPENDENCIES
 

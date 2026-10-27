@@ -7,8 +7,10 @@
 // the host's fullscreen event, sizes the page's root area to the available area of the display the
 // window is on — its work area while windowed, the whole screen in fullscreen (bindAvailableArea) —,
 // settles the stylesheets' window-size media queries — the touch step's — against that area, so the
-// desktop host never takes the phone layout (bindAreaMedia), and reports the content size the host
-// sizes the window to. With no host (the web build) it does nothing: the root area is the browser
+// desktop host never takes the phone layout (bindAreaMedia), and — windowed — makes the window the
+// shown screen's frame: the frames laid out in the available area as everywhere, the page shifted so
+// their box sits at the window's edges and that box's size reported to the host on every screen change
+// and every change of a frame's size, the whole available area during 3D play (bindScreenSize). With no host (the web build) it does nothing: the root area is the browser
 // window and the touch step follows the window. Quit is not the desktop window's: the title bar's
 // Quit reaches the host through the feature that owns quitting.
 
@@ -22,7 +24,10 @@ export const WINDOW_STATES = Object.freeze({
 export const DRAG_REGION_CSS = '.ui-frame__head { -webkit-app-region: drag; }\n'
   + '.ui-frame__head :is(button, a, input, select, [tabindex]) { -webkit-app-region: no-drag; }\n';
 
-const NONE = Object.freeze({ actions: Object.freeze({}), reportSize() {}, dispose() {} });
+const NONE = Object.freeze({ actions: Object.freeze({}), reportSize() {}, screenChanged() {}, dispose() {} });
+
+/** The screens' frames: every screen's ui-frame and every card shown as a screen of its own. */
+export const SCREEN_FRAMES = '.ui-frame, .ui-screen';
 
 /** Whether the window fills its screen: a window opened full screen, before any fullscreen event. */
 const fillsScreen = (win) => Boolean(win?.screen) && win.innerWidth >= win.screen.width && win.innerHeight >= win.screen.height;
@@ -123,13 +128,73 @@ export function bindAreaMedia(doc) {
 }
 
 /**
+ * The windowed window's size, from the screens of `document` laid out in the available area `area()`
+ * ({ width, height }): while `fullArea()` holds (3D play) the whole area, else the box around every
+ * shown screen frame (SCREEN_FRAMES) — a card over the game window included. The root element is
+ * shifted by that box's corner (`--window-x`, `--window-y`, which the stylesheet applies while
+ * windowed), so the box sits at the window's edges, and `report(width, height)` gets its size; every
+ * frame is watched for a change of its size. Nothing is measured before the first `screenChanged()`,
+ * nor while `paused()` (fullscreen). Returns { measure(), screenChanged(), dispose() }.
+ */
+export function bindScreenSize(doc, { area, report, fullArea = () => false, paused = () => false }) {
+  const root = doc.documentElement;
+  const Observer = doc.defaultView?.ResizeObserver;
+  const observer = Observer && new Observer(() => measure());
+  const watched = new Set();
+  let started = false;
+  let shift = { x: 0, y: 0 };
+  const setShift = (x, y) => {
+    shift = { x, y };
+    root.style.setProperty('--window-x', `${x}px`);
+    root.style.setProperty('--window-y', `${y}px`);
+  };
+  function measure() {
+    if (!started || paused()) return;
+    if (fullArea()) {
+      const { width, height } = area();
+      setShift(0, 0);
+      report(width, height);
+      return;
+    }
+    let box = null;
+    for (const frame of doc.querySelectorAll(SCREEN_FRAMES)) {
+      if (!frame.getClientRects().length) continue;
+      const r = frame.getBoundingClientRect();
+      const left = r.left + shift.x;
+      const top = r.top + shift.y;
+      box = box
+        ? { left: Math.min(box.left, left), top: Math.min(box.top, top), right: Math.max(box.right, left + r.width), bottom: Math.max(box.bottom, top + r.height) }
+        : { left, top, right: left + r.width, bottom: top + r.height };
+    }
+    if (!box) return;
+    setShift(Math.round(box.left), Math.round(box.top));
+    report(box.right - box.left, box.bottom - box.top);
+  }
+  return {
+    measure,
+    screenChanged() {
+      for (const frame of doc.querySelectorAll(SCREEN_FRAMES)) {
+        if (watched.has(frame)) continue;
+        watched.add(frame);
+        observer?.observe(frame);
+      }
+      started = true;
+      measure();
+    },
+    dispose() { observer?.disconnect(); watched.clear(); },
+  };
+}
+
+/**
  * Binds the desktop window over the bridge `client` (null on the web) in `document`; `setIcon(button,
  * name)` redraws a button's icon (setButtonIcon, js/ui/components.js). `fullscreen` is the state
- * at start-up, read from the window's size when left out. Returns { actions, reportSize(width,
- * height), dispose() }: `actions` for bindWindowButtons, `reportSize` sending the content size in
- * whole pixels, rounded up, when it changed.
+ * at start-up, read from the window's size when left out; `fullArea()` holds during 3D play, when the
+ * window takes the whole available area. Returns { actions, reportSize(width, height),
+ * screenChanged(), dispose() }: `actions` for bindWindowButtons, `reportSize` sending the content
+ * size in whole pixels, rounded up, when it changed, `screenChanged` — after every screen change —
+ * reporting the windowed window's size (bindScreenSize).
  */
-export function bindWindowActions({ client, document: doc, setIcon, fullscreen = fillsScreen(doc?.defaultView) }) {
+export function bindWindowActions({ client, document: doc, setIcon, fullscreen = fillsScreen(doc?.defaultView), fullArea = () => false }) {
   if (!client) return NONE;
 
   doc.documentElement.dataset.host = 'desktop';
@@ -137,11 +202,25 @@ export function bindWindowActions({ client, document: doc, setIcon, fullscreen =
   style.textContent = DRAG_REGION_CSS;
   doc.head.append(style);
   let full = fullscreen;
+  let reported = null;
+  let current = null;
+  const reportSize = (width, height) => {
+    const size = [Math.ceil(width), Math.ceil(height)];
+    if (!size.every((side) => Number.isFinite(side) && side >= 1)) return;
+    if (reported && reported[0] === size[0] && reported[1] === size[1]) return;
+    reported = size;
+    client.setContentSize(...size).catch(() => {});
+  };
   const media = bindAreaMedia(doc);
-  const area = bindAvailableArea(doc, { fullscreen: () => full, onChange: media.settle });
+  const frames = bindScreenSize(doc, { area: () => current, report: reportSize, fullArea, paused: () => full });
+  const area = bindAvailableArea(doc, {
+    fullscreen: () => full,
+    onChange: (size) => { current = size; media.settle(size); frames.measure(); },
+  });
 
   const showFullscreen = (on) => {
     full = on;
+    doc.documentElement.dataset.windowState = on ? 'fullscreen' : 'windowed';
     area.refresh();
     const { icon, label } = on ? WINDOW_STATES.fullscreen : WINDOW_STATES.windowed;
     for (const button of doc.querySelectorAll('[data-window="fullscreen"]')) {
@@ -155,17 +234,11 @@ export function bindWindowActions({ client, document: doc, setIcon, fullscreen =
   const offFullscreen = client.on('fullscreenChanged', (on) => showFullscreen(on === true));
 
   const quiet = (request) => () => { request().catch(() => {}); };
-  let reported = null;
 
   return {
     actions: Object.freeze({ minimise: quiet(client.minimise), fullscreen: quiet(client.toggleFullscreen) }),
-    reportSize(width, height) {
-      const size = [Math.ceil(width), Math.ceil(height)];
-      if (!size.every((side) => Number.isFinite(side) && side >= 1)) return;
-      if (reported && reported[0] === size[0] && reported[1] === size[1]) return;
-      reported = size;
-      client.setContentSize(...size).catch(() => {});
-    },
-    dispose() { offFullscreen(); area.dispose(); media.dispose(); },
+    reportSize,
+    screenChanged: frames.screenChanged,
+    dispose() { offFullscreen(); area.dispose(); media.dispose(); frames.dispose(); },
   };
 }
