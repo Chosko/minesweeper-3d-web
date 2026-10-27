@@ -106,7 +106,7 @@ Context: none
 
 Done: 2026-10-27, commit `a7af289` (19 files, +505/-103). The premise that a desktop work area is never phone-sized was wrong, because media queries measure the window. By the user's choice the web keeps its phone layout on window-size media queries, and the desktop host never gets it: `bindAreaMedia` in `js/platform/window-actions.js` evaluates every window-size `@media` rule against the work area. The other size steps are container queries on the root area, which is the work area when windowed and the whole screen in fullscreen. The 3D canvas still uses the window's size.
 
-## [ ] 37. Implement task 290 — Natural screen sizes
+## [x] 37. Implement task 290 — Natural screen sizes
 
 Depends on: 36
 
@@ -116,6 +116,8 @@ Context:
 ```prompt
 /task-implement 290 --review --rounds 2
 ```
+
+Done: 2026-10-27, commit `9968800` (9 files, +173/-43). Every screen but the main menu already had its artboard's size; the menu now has a fixed natural size, and Records and Settings centre on the backdrop. The desktop step uses the J-*-xl artboards, the compact step J-*-l, and windows of 1199 px and below keep J-*-m. The frame steps on width only, while the theme's compact title bar also switches at 820 px of height, so a wide short area pairs the compact title bar with the desktop frame — left as is.
 
 ## [ ] 38. Implement task 291 — Game windows against the available area
 
@@ -134,6 +136,7 @@ Depends on: 36, 37
 
 Context:
 - 2026-10-27 (from step 36): `platform.md` and `app-shell-kit-layout.md` do not yet describe the root-area behaviour (container queries on the root element, `bindAreaMedia` gating the phone media queries at the desktop host); the touch-step decision in task 289 and the Size steps bullet of `shared-screen-layout.md` were reworded to say the desktop host never gets the phone layout, and `theme-system.md` gained the rule for writing a step-dependent value.
+- 2026-10-27 (from step 37): the main menu has a fixed natural size per step, and Records and Settings centre on the backdrop like the replay viewer; the desktop step uses the J-*-xl artboards, the compact step J-*-l, and windows of 1199 px and below keep J-*-m. The frame steps on width only (1439 px, 1199 px), while the theme's compact title bar also switches at 820 px of height.
 
 ```prompt
 /task-implement 292 --review
@@ -157,6 +160,7 @@ Needs: agent+human
 
 Context:
 - 2026-10-27 (from step 36): until this step resizes the desktop window to its frame, screens are laid out and centred in the work area and look off-centre in the default 1280×800 window — expected, not a defect. The desktop host never gets the phone layout (`bindAreaMedia`, `js/platform/window-actions.js`), so a narrow frame no longer changes layout shape.
+- 2026-10-27 (from step 37): every screen now has a fixed natural size from its artboard (desktop step J-*-xl, compact step J-*-l, 1199 px and below J-*-m); the frame steps on width only, at 1439 px and 1199 px.
 
 ```prompt
 /task-implement 86 --review --rounds 2
