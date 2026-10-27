@@ -177,7 +177,7 @@ Context:
 
 Done: 2026-10-27, commit `be4fb9c` (14 files, +356/-59). Windowed, the root is shifted by `--window-x`/`--window-y` (state attribute `data-window-state`, since `data-window` on `<html>` made every fullscreen click leave fullscreen) and the frame box is reported through `setContentSize`; the host caps the window at its display's work area. No Electron was available, so the desktop-run checks are unverified; a toast can fall outside the frame-sized window.
 
-## [ ] 4. Implement task 87 — Windows packaging and the SteamPipe private build
+## [x] 4. Implement task 87 — Windows packaging and the SteamPipe private build
 
 Depends on: 1
 
@@ -191,6 +191,8 @@ Context:
 /task-implement 87 --review
 ```
 
+Done: 2026-10-27, commit `6a41a20` (8 files, +563/-2). Electron 44.9.3 has no postinstall, so `npm run package` fetches the binary through Electron's `install.js`. Steamworks needed setup the task did not foresee: no private branch can exist until `default` has a build, and SteamPipe refused `SetLive "default"` from a script, so a one-file placeholder (BuildID 26249414, no game content) is live on `default` by hand. The game build (26249108) is live on the password-protected branch `internal`, and a Windows launch option `Minesweeper3D.exe` was added and published. The installed run reached the menu and played offline. The window's X button did not quit (Alt+F4 did), and Shift+Tab showed no overlay.
+
 ## [ ] 5. Implement task 88 — Steamworks binding spike
 
 Depends on: 2, 4
@@ -200,6 +202,7 @@ Needs: agent+human
 Context:
 - 2026-10-23 (amend): task 88 was re-planned: the overlay check now covers the frameless, transparent window, windowed and fullscreen.
 - 2026-10-25 (from step 3): not yet checked in a real desktop run — the overlay (Shift+Tab) pausing a started game, the title bar drag region, and `setMovable(false)` while fullscreen.
+- 2026-10-27 (from step 4): the first installed run from Steam (branch `internal`, build 26249108) showed no overlay on Shift+Tab, with no binding or `steam_api64.dll` yet; dragging by the title bar and clicks in fullscreen worked. The API library's slot is `desktop/redist/steam_api64.dll`, copied beside the exe, and the binding's slot is the host's runtime `dependencies` under `resources/app/node_modules`. Upload with `npm run package`, then `npm run steampipe`, which sets the build live on `internal` from the git-ignored `desktop/steampipe/config.json`, then the user runs SteamCMD: the agent's permission check refuses to run it as a production deploy. The user runs SteamCMD from `C:\steamworks_sdk_165\sdk\tools\ContentBuilder\builder\` with cached login `choskoxteam`.
 
 ```prompt
 /task-implement 88 --review
@@ -260,7 +263,8 @@ Depends on: 4, 9
 
 Needs: agent+human
 
-Context: none
+Context:
+- 2026-10-27 (from step 4): Steamworks settings changes reach the client only after Publish, which the user does by hand after reading the pending-changes list; the user asked that nothing else in Steamworks be touched and nothing made public. The game build lives on the password-protected branch `internal`, and `default` holds only a placeholder build.
 
 ```prompt
 /task-implement 93 --review
