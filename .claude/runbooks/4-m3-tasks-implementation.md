@@ -159,7 +159,7 @@ Context:
 
 Done: 2026-10-27, commit `66c3bbf` (6 files, +33/-18).
 
-## [ ] 41. Finish task 86 — Desktop window sized to the screen's natural frame
+## [x] 41. Finish task 86 — Desktop window sized to the screen's natural frame
 
 Depends on: 3, 36, 37, 38
 
@@ -175,6 +175,8 @@ Context:
 /task-implement 86 --review --rounds 2
 ```
 
+Done: 2026-10-27, commit `be4fb9c` (14 files, +356/-59). Windowed, the root is shifted by `--window-x`/`--window-y` (state attribute `data-window-state`, since `data-window` on `<html>` made every fullscreen click leave fullscreen) and the frame box is reported through `setContentSize`; the host caps the window at its display's work area. No Electron was available, so the desktop-run checks are unverified; a toast can fall outside the frame-sized window.
+
 ## [ ] 4. Implement task 87 — Windows packaging and the SteamPipe private build
 
 Depends on: 1
@@ -183,6 +185,7 @@ Needs: agent+human
 
 Context:
 - 2026-10-25 (from step 1): `desktop/node_modules` is not git-ignored yet (only the root `node_modules` is) — task 87 should add it to `.gitignore`; Electron is pinned at `44.9.3` with no lockfile; the game protocol reads the game files from `resources/game` in the packaged build, so packaging must place `index.html`, `css`, `js`, `themes`, `assets` and `vendor` there.
+- 2026-10-27 (from step 41): task 86's desktop-run checks were never made, because no Electron was installed: the window following the menu, the board choice panel opening, a game and 3D play with no shrinking step down, the overlay pausing a game, a click in fullscreen not leaving fullscreen, and drag regions working with the shifted root. The first packaged run is the place to check them.
 
 ```prompt
 /task-implement 87 --review
