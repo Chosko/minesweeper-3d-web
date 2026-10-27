@@ -15,6 +15,12 @@ For product and domain knowledge — what this product is, how its features
 are designed, and why the architecture is what it is — read
 `.claude/domain/INDEX.md`, then only the domain files relevant to your task.
 
+## Running costs
+
+Pelion Games' costs, earnings and partner balance live in a Google Sheet, never
+in this repo. Read `docs/running-costs.md` before answering a question about
+spend or writing to the sheet.
+
 ## Tasks implementation
 
 Testing policy for /task-implement: full-tdd
