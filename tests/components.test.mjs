@@ -4363,3 +4363,119 @@ test('in a browser, on the desktop host a window narrower than a phone\'s bound 
     await browser.close();
   }
 });
+
+test('in a browser, every screen takes its artboard\'s frame size at the desktop and compact steps, centred, shrinking to fit and never growing', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  // The canvas's frame sizes (J-*-xl at the desktop step, J-*-l at the compact one): [width, height], a null
+  // height where the screen's content sets it.
+  const DESKTOP = [1920, 1080];
+  const COMPACT = [1366, 768];
+  const LARGE = [2560, 1440];
+  const SMALL = [1200, 640];
+  const SIZES = {
+    menu: [[980, 952], [760, 712]], records: [[1640, 940], [1302, 712]], settings: [[1640, 940], [1302, 712]],
+    replay: [[1640, 940], [1302, 712]], 'coming-soon': [[900, 560], [820, 520]], daily: [[1120, null], [1080, null]],
+    'c2d-choice': [[1120, null], [1080, null]], 'hex-choice': [[1120, null], [1080, null]], 'tri-choice': [[1120, null], [1080, null]],
+    'board-choice': [[1120, null], [1080, null]], pause: [[920, null], [880, null]], ready: [[640, null], [580, null]],
+    results: [[1040, null], [1000, null]], 'ctx-lost': [[480, null], [480, null]], 'learn-end': [[560, null], [560, null]],
+    'm3d-status': [[480, null], [480, null]], 'c2d-status': [[480, null], [480, null]], 'not-found': [[560, null], [560, null]],
+  };
+  const FRAMES = {
+    menu: '#menu-frame', records: '#records-frame', settings: '#settings-frame', replay: '#replay-frame', 'coming-soon': '#coming-soon-frame',
+    daily: '#daily-frame', 'c2d-choice': '#c2d-choice-frame', 'hex-choice': '#hex-choice-frame', 'tri-choice': '#tri-choice-frame',
+    'board-choice': '#board-choice-frame', pause: '#pause-card', ready: '#ready > .ready-body', results: '#results-frame',
+    'ctx-lost': '#ctx-lost > .ui-card', 'learn-end': '#learn-end > .ui-card', 'm3d-status': '#m3d-status',
+    'c2d-status': '#c2d-status', 'not-found': '.not-found > .ui-card',
+  };
+  const CARDS = new Set(['pause', 'ready', 'ctx-lost', 'learn-end', 'm3d-status', 'c2d-status', 'not-found']);
+  try {
+    const page = await browser.newPage({ viewport: { width: DESKTOP[0], height: DESKTOP[1] } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    // The cards' entrance motion moves their boxes: measured at rest.
+    await page.addStyleTag({ content: '*, *::before, *::after { transition: none !important; animation: none !important; }' });
+    const frames = () => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const box = (sel) => page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; }, sel);
+    const at = async ([width, height]) => { await page.setViewportSize({ width, height }); await frames(); };
+    // Each area in turn for the screen showing now: its natural size at the desktop and compact steps, centred, the
+    // same on a larger area, and within a smaller one.
+    const measure = async (screen) => {
+      const sel = FRAMES[screen];
+      const got = {};
+      for (const [step, area] of [['desktop', DESKTOP], ['compact', COMPACT]]) {
+        await at(area);
+        const r = await box(sel);
+        const [w, h] = SIZES[screen][step === 'desktop' ? 0 : 1];
+        assert.equal(Math.round(r.w), w, `${screen} at the ${step} step: the artboard's width`);
+        if (h !== null) assert.equal(Math.round(r.h), h, `${screen} at the ${step} step: the artboard's height`);
+        assert.ok(Math.abs(r.x + r.w / 2 - area[0] / 2) <= 1, `${screen} at the ${step} step: centred across (${r.x})`);
+        assert.ok(Math.abs(r.y + r.h / 2 - area[1] / 2) <= 4.5, `${screen} at the ${step} step: centred down (${r.y})`);
+        got[step] = r;
+      }
+      await at(LARGE);
+      const large = await box(sel);
+      assert.deepEqual([Math.round(large.w), Math.round(large.h)], [Math.round(got.desktop.w), Math.round(got.desktop.h)], `${screen}: no larger on a larger area`);
+      await at(SMALL);
+      const small = await box(sel);
+      assert.ok(small.x >= 0 && small.x + small.w <= SMALL[0] + 0.5, `${screen}: shrinks to fit a smaller area's width`);
+      // A frame shrinks to the area's height, its body scrolling; a card too tall scrolls in its layer.
+      const scrolls = await page.evaluate((s) => { const layer = document.querySelector(s).closest('.overlay'); return !!layer && getComputedStyle(layer).overflowY === 'auto' && layer.scrollHeight > layer.clientHeight; }, sel);
+      assert.ok((small.y >= 0 && small.y + small.h <= SMALL[1] + 0.5) || (CARDS.has(screen) && scrolls), `${screen}: shrinks to fit a smaller area's height`);
+      await at(DESKTOP);
+    };
+    const open = async (entry, mode) => {
+      await page.click(`#menu-entry-${entry}`);
+      await page.waitForFunction((m) => globalThis.__ms.state.mode === m, mode);
+      await frames();
+    };
+    const back = async () => {
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'menu');
+    };
+
+    await measure('menu');
+    for (const [entry, mode, screen] of [['records', 'records', 'records'], ['settings', 'settings', 'settings'], ['daily', 'daily', 'daily']]) {
+      await open(entry, mode);
+      await measure(screen);
+      await back();
+    }
+    // Each board choice with its panel open, the window widened for it.
+    for (const [entry, screen, custom] of [['classic-2d', 'c2d-choice', '[data-size="custom"]'], ['hexagon', 'hex-choice', '[data-size="custom"]'],
+      ['triangle', 'tri-choice', '[data-size="custom"]'], ['3d', 'board-choice', '[data-preset="custom"]']]) {
+      await page.click(`#menu-entry-${entry}`);
+      await page.waitForSelector(`#${screen}:not(.hidden)`);
+      await page.click(`#${screen} ${custom}`);
+      await frames();
+      await measure(screen);
+      await back();
+    }
+    await page.click('#menu-entry-surface');
+    await page.waitForSelector('#coming-soon:not(.hidden)');
+    await measure('coming-soon');
+    await back();
+    await page.evaluate(async () => {
+      const bytes = new Uint8Array(await (await fetch('/tests/fixtures/replays/2d-beginner-won.msrp')).arrayBuffer());
+      globalThis.__ms.watch({ replay: bytes, returnTo: { screen: 'menu' } });
+    });
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    await measure('replay');
+    await back();
+    // The cards and the results frame, each shown alone over the menu: their widths are the steps' own.
+    for (const screen of ['pause', 'ready', 'results', 'ctx-lost', 'learn-end', 'm3d-status', 'c2d-status']) {
+      await page.evaluate((l) => document.querySelector(l).classList.remove('hidden'), `#${screen}`);
+      await measure(screen);
+      await page.evaluate((l) => document.querySelector(l).classList.add('hidden'), `#${screen}`);
+    }
+    // The 404 page's message card, on its own page.
+    await page.goto(`${base}/404.html`);
+    await page.evaluate(() => document.fonts.ready);
+    await measure('not-found');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});

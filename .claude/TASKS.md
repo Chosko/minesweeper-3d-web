@@ -1771,7 +1771,7 @@ Feature: shared-screen-layout
 
 ## 290. Natural screen sizes
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/style.css, css/components.css, themes/joyful-tiles/theme.css, index.html, js/shell/menu.js, tests/components.test.mjs
 Preconditions: 289

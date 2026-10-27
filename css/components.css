@@ -627,9 +627,12 @@
               title stays on one line at every step.
      Slot:    window-chrome, the frame's title-bar decoration, hidden unless
               a theme draws it.
-     Layout:  sized to its content, never wider or taller than its
-              backdrop; head, heading and foot stay in view while the body
-              scrolls vertically. The logo sits between Back and the window
+     Layout:  at its screen's natural size (the size the screen's
+              artboard draws at the size step, or its content's), never
+              wider or taller than its backdrop: it shrinks to fit a
+              smaller area and never grows past that size on a larger one;
+              head, heading and foot stay in view while the body scrolls
+              vertically. The logo sits between Back and the window
               buttons, centred while both sides fit equal; a head fitted to
               its width (fitTitleBar, js/ui/components.js: the Classic 2D
               game window, which its board column sizes) scales the logo
@@ -910,7 +913,7 @@
      ui-list           the list of ui-list-row, its columns shared.
 
    Main menu (index.html #menu): on the page's own backdrop, a ui-frame
-     filling the window's height whose head is the title bar with no Back
+     at its natural size, centred, whose head is the title bar with no Back
      and whose body has no heading, the logo naming it, Quit its window
      button and no entry; its body holds one ui-mode-list filling it: the
      ui-play-tile of Classic 2D and Hexagon, Triangle and Surface, 3D and
@@ -978,8 +981,8 @@
      ui-text line and Back (secondary, led by the arrow-left icon, with
      its back key hint). On a phone the frame is full-bleed. Default focus:
      Back.
-   Records (index.html #records): ui-backdrop holding a ui-frame inset on
-     it, not full height (the title bar's Back, named "Back to Main menu"
+   Records (index.html #records): ui-backdrop holding a ui-frame at its
+     natural size, centred (the title bar's Back, named "Back to Main menu"
      when it returns to the menu and "Back" otherwise, returning one step;
      the heading, with the mode switch at its right as a ui-segmented
      choice (#records-mode, its four options in the markup — Classic 2D,

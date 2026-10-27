@@ -88,8 +88,8 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   then Play replays it.
 - **Layout.** `#menu` (`css/style.css`) holds each window size's fixed
   values from the J-Menu artboards — xl, and l, m and p at the shell's
-  breakpoints: the frame's width centred and its inset filling the page's
-  height, the body's padding, the buttons' gaps, the preview square, each
+  breakpoints: the frame's natural size, centred and shrinking to fit a
+  smaller area (filling the height of a phone held sideways), the body's padding, the buttons' gaps, the preview square, each
   art's size, the tiles' and small entries' labels and icon boxes; the
   kit's base sizes are the largest window's. The `ui-mode-list` fills the
   body: its tiles grid shares the height left over by the small entries,

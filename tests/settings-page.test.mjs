@@ -980,14 +980,14 @@ test('Settings\' Back is the title bar\'s arrow, named for where it goes, and it
   assert.doesNotMatch(css, /#settings-back \[data-label/, 'one Back at every size');
 });
 
-test('the Settings frame takes each window step\'s canvas size and inset, its body\'s padding and gaps the step\'s', () => {
+test('the Settings frame takes each window step\'s natural size, 4 px above the backdrop\'s centre, its body\'s padding and gaps the step\'s', () => {
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   const rules = css.slice(css.indexOf('#settings {'), css.indexOf('@media (max-width: 719px)', css.indexOf('#settings {')));
-  assert.match(rules, /^#settings \{ align-items: flex-start; padding: 66px 24px 24px; \}\n#settings-frame \{ width: 1640px; height: 940px; \}\n#settings-body \{ padding: 24px; \}/, 'xl: 1640 × 940 at 66 from the top, centred');
+  assert.match(rules, /^#settings \{ padding: 8px 16px; \}\n#settings-frame \{ width: 1640px; height: 940px; margin-top: -8px; \}\n#settings-body \{ padding: 24px; \}/, 'xl: 1640 × 940, 4 px above the centre');
   assert.match(rules, /#settings-columns, #settings-columns > \.ui-column \{ gap: 24px; \}/, 'xl: the stack gap equal to the column gap');
   const step = (max) => { const at = rules.indexOf(`@container root (max-width: ${max}px) {`); assert.ok(at > 0, `a ${max} px step`); return rules.slice(at, rules.indexOf('\n}', at)); };
-  assert.match(step(1439), /#settings \{ padding-top: 24px; \}\s*#settings-frame \{ width: 1302px; height: 712px; \}\s*#settings-body \{ padding: 18px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 18px; \}/, 'l: 1302 × 712 at 32 / 24, 18 apart');
-  assert.match(step(1199), /#settings \{ padding: 16px 20px 20px; \}\s*#settings-frame \{ width: 984px; height: 728px; \}\s*#settings-body \{ padding: 14px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 14px; \}/, 'm: 984 × 728 at 20 / 16, 14 apart');
+  assert.match(step(1439), /\{\s*#settings-frame \{ width: 1302px; height: 712px; \}\s*#settings-body \{ padding: 18px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 18px; \}/, 'l: 1302 × 712, 18 apart');
+  assert.match(step(1199), /\{\s*#settings-frame \{ width: 984px; height: 728px; \}\s*#settings-body \{ padding: 14px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 14px; \}/, 'm: 984 × 728, 14 apart');
 });
 
 test('each setting row is ruled above, 10 px over and under, its name 16 px bold and the "3D" note 13 px muted', () => {
@@ -1025,7 +1025,7 @@ test('on a phone the frame is full-bleed, the bindings device choice spans the w
   const phone = css.slice(css.indexOf('@media (max-width: 719px) {', css.indexOf('#settings-frame')));
   const block = phone.slice(0, phone.indexOf('\n}'));
   assert.match(block, /#settings \{ padding: 0; \}/);
-  assert.match(block, /#settings-frame \{ width: 100%; height: 100%; border-radius: 0; box-shadow: none; \}/);
+  assert.match(block, /#settings-frame \{ width: 100%; height: 100%; margin-top: 0; border-radius: 0; box-shadow: none; \}/);
   assert.match(block, /#settings-body \{ padding: 14px 14px 30px; \}/);
   assert.match(block, /#settings-columns, #settings-columns > \.ui-column \{ gap: 16px; \}/);
   assert.match(block, /#set-bind-device \{ display: flex; width: 100%; \}/);

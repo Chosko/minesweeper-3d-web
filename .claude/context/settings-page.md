@@ -90,8 +90,8 @@ Page (`js/settings/page.js`)
 ## INTERNAL PATTERNS
 
 - **The page** (`css/components.css` head comment, *Settings page*) is a
-  `ui-frame` inset on the backdrop at each window step's canvas size
-  (`css/style.css`), Back (`#settings-back`, its arrow alone, named "Back
+  `ui-frame` centred on the backdrop at each window step's natural size
+  (J-Settings-xl, -l, -m; `css/style.css`), Back (`#settings-back`, its arrow alone, named "Back
   to Main menu") in its title bar, the heading "Settings" and no foot. The sections stand in independent
   stacks, one `ui-column` each, placed for the window by
   `bindSettingsLayout`, so no section shares a grid row with its

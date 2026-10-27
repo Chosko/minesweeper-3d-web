@@ -43,8 +43,8 @@ Export (`js/records/export.js`)
 ## INTERNAL PATTERNS
 
 - **Layout** (`css/components.css` head comment, *Records*; `css/style.css`
-  places it). `#records` is a `ui-frame` inset on the backdrop at each
-  window step's canvas size (J-Records-xl, -l, -m), not full height: the
+  places it). `#records` is a `ui-frame` centred on the backdrop at each
+  window step's natural size (J-Records-xl, -l, -m): the
   title bar's Back (its arrow alone, named "Back to Main menu" when it
   returns to the menu, else "Back"), the heading "Records" with the mode
   switch (Classic 2D, Hexagon, Triangle, 3D) at its right, the picker one line across the top of its body, scrolling sideways under a

@@ -40,15 +40,16 @@ kbd {
   z-index: var(--z-overlay);
   overflow-y: auto;
 }
-/* The main menu, on the page's backdrop, in its window: the frame centred at each window size's fixed
-   width (the J-Menu artboards), filling the page's height, the title bar its head; the body holds the
+/* The main menu, on the page's backdrop, in its window: the frame centred at each size step's natural
+   size (the J-Menu artboards), shrinking to fit a smaller area, the title bar its head; the body holds the
    main menu buttons — the play tiles two by two, all of one height, then the small entries — and the
    foot the build label. Each size sets the tiles' preview square, its art's scale, the labels, the
    icon boxes and the list's gap; a tile is never shorter than its preview needs, below which a short
    window scrolls the body. On a phone the window is full-bleed, the phone rows in one column sharing
-   the body above the small entries, the foot the touch note over the build label. */
-#menu { padding: 64px max(16px, calc((100% - 980px) / 2)); overflow: hidden; }
-#menu-frame { width: 100%; height: 100%; }
+   the body above the small entries, the foot the touch note over the build label; held sideways, the
+   window fills the phone's height. */
+#menu { overflow: hidden; }
+#menu-frame { width: 980px; height: 952px; }
 #menu-body { display: flex; flex-direction: column; padding: 22px 26px; }
 #menu-entries { flex: 1 1 auto; }
 #menu-foot { gap: var(--space-2) var(--space-6); justify-content: flex-end; }
@@ -59,7 +60,7 @@ kbd {
 #touch-note > .ui-icon { width: 20px; height: 20px; }
 /* the smaller windows: each tile's art at two thirds of the largest window's */
 @container root (max-width: 1439px) {
-  #menu { padding: 28px max(16px, calc((100% - 760px) / 2)); }
+  #menu-frame { width: 760px; height: 712px; }
   #menu-body { padding: 16px 22px; }
   #menu-entries { gap: 20px; }
   #menu-entries > .ui-mode-list__tiles, #menu-entries > .ui-mode-list__places { gap: 10px; }
@@ -79,9 +80,13 @@ kbd {
   #menu-entries .ui-play-tile__still[data-still="3d"] { width: 98px; height: 99px; }
   #menu-entries .ui-play-tile__calendar { width: 100px; height: 88px; }
 }
+@media (max-height: 500px) and (orientation: landscape) {
+  #menu { padding: 28px max(16px, calc((100% - 760px) / 2)); }
+  #menu-frame { width: 100%; height: 100%; }
+}
 @media (max-width: 719px) {
   #menu { padding: 0; }
-  #menu-frame { border-radius: 0; box-shadow: none; }
+  #menu-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
   #menu-body { padding: 16px 18px 18px; }
   #menu-entries { gap: 16px; }
   #menu-entries > .ui-mode-list__tiles, #menu-entries > .ui-mode-list__places { gap: 8px; }
@@ -100,8 +105,8 @@ kbd {
   #menu-entries .ui-play-tile__calendar { width: 68px; height: 60px; }
   #menu-foot { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
 }
-/* The Records screen (#records): its window inset on the backdrop at each window step's canvas size
-   (J-Records-xl, -l, -m), the title and the switch in its heading; the picker one line across
+/* The Records screen (#records): its window at each window step's natural size (J-Records-xl, -l,
+   -m), 4 px above the backdrop's centre and shrinking to fit a smaller area, the title and the switch in its heading; the picker one line across
    the body over the two columns — the board's sections at a fixed width, a rule, the history —, each
    column scrolling on its own from the kit breakpoint; one column below it, the body scrolling. The
    picker scrolls sideways under a fade at its end, its controller glyphs taking no room while hidden.
@@ -109,9 +114,10 @@ kbd {
    shrinking with its tile below it to stay on one line; the counters a grid of tiles, four across, two on a phone. Each table keeps one line per row
    and scrolls sideways in its own box when narrower than its row, and shows its Board code column on
    the largest window only. On a phone the window is full-bleed, the heading holds the title alone,
-   the switch is a full-width bar under it, and each averages row is a card. */
-#records { align-items: flex-start; padding: 66px 24px 24px; }
-#records-frame { width: 1640px; height: 940px; }
+   the switch is a full-width bar under it, and each averages row is a card; held sideways, the window
+   sits at the phone's top. */
+#records { padding: 8px 16px; }
+#records-frame { width: 1640px; height: 940px; margin-top: -8px; }
 #records-body { display: flex; flex-direction: column; gap: 14px; padding: 18px 24px; }
 #records-body > p { margin: 0; }
 #records-mode-touch { display: none; }
@@ -171,7 +177,6 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 #records-replays-table [data-pinned] > .ui-icon { width: 18px; height: 18px; }
 #records-export-note { flex-basis: 100%; }
 @container root (max-width: 1439px) {
-  #records { padding-top: 24px; }
   #records-frame { width: 1302px; height: 712px; }
   #records-body { padding: 14px 18px; }
   #records-columns { gap: 16px; grid-template-columns: 470px auto minmax(0, 1fr); }
@@ -179,7 +184,6 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
   :is(#records-games, #records-top-table, #records-replays-table) [data-label="Board code"] { display: none; }
 }
 @container root (max-width: 1199px) {
-  #records { padding: 16px 20px 20px; }
   #records-frame { width: 984px; height: 728px; }
   #records-columns { grid-template-columns: 400px auto minmax(0, 1fr); }
   #records-charts { grid-template-columns: minmax(0, 1fr); }
@@ -188,9 +192,13 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
   #records-columns { grid-template-columns: minmax(0, 1fr); }
   #records-columns > .ui-divider--vertical { display: none; }
 }
+@media (max-height: 500px) and (orientation: landscape) {
+  #records { align-items: flex-start; padding: 16px 20px 20px; }
+  #records-frame { margin-top: 0; }
+}
 @media (max-width: 719px) {
   #records { padding: 0; }
-  #records-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+  #records-frame { width: 100%; height: 100%; margin-top: 0; border-radius: 0; box-shadow: none; }
   #records-frame .ui-frame__action > * { display: none; }
   #records-body { gap: 16px; padding: 14px 16px 30px; }
   #records-mode-touch { display: flex; }
@@ -204,9 +212,9 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
   #records-averages-table th { grid-column: 1 / -1; font-weight: var(--font-weight-heavy); }
   #records-averages-table td[data-label]::before { content: attr(data-label); display: block; }
 }
-/* The Settings page (#settings): its window inset on the backdrop at each window step's canvas size
-   (J-Settings-xl, -l, -m), the title in its heading, the body scrolling on a window too
-   short for it. The sections stand in independent stacks, one ui-column each, which
+/* The Settings page (#settings): its window at each window step's natural size (J-Settings-xl, -l,
+   -m), 4 px above the backdrop's centre and shrinking to fit a smaller area (at a phone's top, held
+   sideways), the title in its heading, the body scrolling on a window too short for it. The sections stand in independent stacks, one ui-column each, which
    js/settings/page.js places for the window (SETTINGS_LAYOUTS): three on the widest windows, two from
    the kit breakpoint, one below it in the phone's order; the stack gap is the column gap. Each
    setting is a row ruled above (its theme draws the rule), its name (and note) at the start and its
@@ -214,8 +222,8 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
    the focus moves. Its choices' options take their text's height, as the canvas draws them (40 px
    on a phone, upright or sideways). On a phone the window is full-bleed, the bindings device choice spans the panel,
    each option wrapping its label, and the exports stack. */
-#settings { align-items: flex-start; padding: 66px 24px 24px; }
-#settings-frame { width: 1640px; height: 940px; }
+#settings { padding: 8px 16px; }
+#settings-frame { width: 1640px; height: 940px; margin-top: -8px; }
 #settings-body { padding: 24px; }
 #settings-columns { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 #settings-columns, #settings-columns > .ui-column { gap: 24px; }
@@ -236,13 +244,11 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 #set-data-body > .ui-button { align-self: flex-start; }
 #set-export-actions { gap: 10px; }
 @container root (max-width: 1439px) {
-  #settings { padding-top: 24px; }
   #settings-frame { width: 1302px; height: 712px; }
   #settings-body { padding: 18px; }
   #settings-columns, #settings-columns > .ui-column { gap: 18px; }
 }
 @container root (max-width: 1199px) {
-  #settings { padding: 16px 20px 20px; }
   #settings-frame { width: 984px; height: 728px; }
   #settings-body { padding: 14px; }
   #settings-columns, #settings-columns > .ui-column { gap: 14px; }
@@ -250,9 +256,13 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 @media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
   #settings-columns .ui-segmented__option { min-height: 40px; }
 }
+@media (max-height: 500px) and (orientation: landscape) {
+  #settings { align-items: flex-start; padding: 16px 20px 20px; }
+  #settings-frame { margin-top: 0; }
+}
 @media (max-width: 719px) {
   #settings { padding: 0; }
-  #settings-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+  #settings-frame { width: 100%; height: 100%; margin-top: 0; border-radius: 0; box-shadow: none; }
   #settings-body { padding: 14px 14px 30px; }
   #settings-columns, #settings-columns > .ui-column { gap: 16px; }
   #settings-columns [data-setting-row] .ui-slider__input { width: 170px; }

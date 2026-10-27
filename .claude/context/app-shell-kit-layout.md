@@ -69,8 +69,9 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   sets on the input; the kit's slider binder and the Settings and pause
   controls' binder both install it.
 - **The screen frame.** Every non-game screen and the Classic 2D game
-  window is a `ui-frame` on a `ui-backdrop`, sized to its content and never
-  larger than the window. Its head is the game's title bar on every one but
+  window is a `ui-frame` on a `ui-backdrop`, centred at its natural size —
+  the size its artboard draws at the size step, or its content's — shrinking
+  to fit a smaller root area and never growing past it on a larger one. Its head is the game's title bar on every one but
   the results card, which keeps a head of its own: Back at the start as
   its arrow icon alone (none on the main menu; the game window holds its
   own controls there, [app-shell-hud.md](app-shell-hud.md)), the game logo
