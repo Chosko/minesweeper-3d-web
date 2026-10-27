@@ -21,10 +21,11 @@ Page (`js/settings/page.js`)
   `renderResolution`, `boardScale` "2D board scale", `aimReadout` "3D
   neighbour count", `fieldOfView` "Field of view"), Theme (`theme`), Audio
   (`muted`, `volume`); `SETTING_LABELS` (`muted` reads Sound),
-  `CHOICE_LABELS`; `SETTINGS_COLUMNS` — the widest window's columns, each a
+  `CHOICE_LABELS`; `SETTINGS_COLUMNS` — the desktop step's columns, each a
   stack of section ids (Controls and Audio, Graphics and Theme, Bindings
-  and Data); `SETTINGS_LAYOUTS` — the columns by window size, widest
-  first, each `{ media, columns }` (three stacks on the widest windows,
+  and Data); `SETTINGS_LAYOUTS` — the columns by root area size, widest
+  first, each `{ media, columns }`, `media` the query the area matches
+  (three stacks on the widest areas,
   Controls, Graphics, Audio beside Theme, Data, Bindings from the kit
   breakpoint, one stack in the phone's order below it);
   `SETTING_NOTES` — the settings noted "3D" under their name.
@@ -66,8 +67,11 @@ Page (`js/settings/page.js`)
   `placeSettingsSections(root, columns)` moves `#settings-columns`'s
   sections into one `ui-column` per stack (a section none lists joins the
   last; a focused control keeps the focus); `bindSettingsLayout(root, {
-  matchMedia? })` → unbind places them for the window now and on every
-  change of a layout's media — `UI` binds it once the page is generated.
+  matchMedia? })` → unbind places them for the area now and on every
+  change of a layout's media — `UI` binds it once the page is generated,
+  with `matchRootArea(document)` as its `matchMedia`, so the layout reads
+  the root area, never the window
+  ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)).
 - `bindResetPanel` — the Data panel's confirmation
   ([settings-reset.md](settings-reset.md)).
 - `bindSettingControls(elements, store, { onUserChange?, theme?,
@@ -90,10 +94,13 @@ Page (`js/settings/page.js`)
 ## INTERNAL PATTERNS
 
 - **The page** (`css/components.css` head comment, *Settings page*) is a
-  `ui-frame` centred on the backdrop at each window step's natural size
-  (J-Settings-xl, -l, -m; `css/style.css`), Back (`#settings-back`, its arrow alone, named "Back
+  `ui-frame` centred on the backdrop at its natural size for the size step
+  the root area takes ([app-shell-kit-layout.md](app-shell-kit-layout.md)
+  § The root area) — J-Settings-xl at the desktop step, -l at the compact
+  step, -m on the narrowest desktop areas (`css/style.css`) —, shrinking
+  to fit a smaller area, Back (`#settings-back`, its arrow alone, named "Back
   to Main menu") in its title bar, the heading "Settings" and no foot. The sections stand in independent
-  stacks, one `ui-column` each, placed for the window by
+  stacks, one `ui-column` each, placed for the root area by
   `bindSettingsLayout`, so no section shares a grid row with its
   neighbour; each setting row is ruled above by the theme. On a phone the
   Device choice spans the panel, each option wrapping its label, and the

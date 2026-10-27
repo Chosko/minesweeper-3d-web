@@ -43,13 +43,16 @@ Export (`js/records/export.js`)
 ## INTERNAL PATTERNS
 
 - **Layout** (`css/components.css` head comment, *Records*; `css/style.css`
-  places it). `#records` is a `ui-frame` centred on the backdrop at each
-  window step's natural size (J-Records-xl, -l, -m): the
+  places it). `#records` is a `ui-frame` centred on the backdrop at its
+  natural size for the size step the root area takes
+  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area) —
+  J-Records-xl at the desktop step, -l at the compact step, -m on the
+  narrowest desktop areas —, shrinking to fit a smaller area: the
   title bar's Back (its arrow alone, named "Back to Main menu" when it
   returns to the menu, else "Back"), the heading "Records" with the mode
   switch (Classic 2D, Hexagon, Triangle, 3D) at its right, the picker one line across the top of its body, scrolling sideways under a
   fade, then a `ui-columns--two` — the left column at a fixed width per
-  window step, its sections on the frame under section labels (the bests
+  size step, its sections on the frame under section labels (the bests
   as three `ui-stat--tile`s across at every size, each figure shrinking
   with its tile to stay on one line; the counters as a grid of sunk tiles,
   two across on a phone; the averages table and the win rate line), the
@@ -64,7 +67,7 @@ Export (`js/records/export.js`)
   win rate line hides. Each table keeps one line per row, scrolling
   sideways in its own box (`#records-games-scroll`, `#records-top-scroll`,
   `#records-replays-scroll`) when narrower, and shows its Board code column
-  on the largest window step only. On a phone the frame is full-bleed, the
+  at the desktop step only. On a phone the frame is full-bleed, the
   head holds Back and the logo, `#records-mode-touch` is the full-width
   switch under the heading and each averages row is a card; a time never wraps.
 - **Export.** `js/main.js` builds one `RECORDS_EXPORT` over the store and
@@ -104,6 +107,6 @@ Export (`js/records/export.js`)
 ## WHEN TO READ THE SOURCE
 
 - Changing the screen's layout: its markup is `#records` in `index.html`,
-  catalogued in `css/components.css`; its placement per window step is
+  catalogued in `css/components.css`; its placement per size step is
   `css/style.css`'s Records block, its colours `themes/<id>/theme.css`.
 - Changing the export's columns or files: the head comment of `export.js`.

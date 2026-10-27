@@ -86,12 +86,15 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   menu refocuses if the player has not moved yet. No tile marks the last
   mode played. That mode's board choice opens on its last board, so Enter
   then Play replays it.
-- **Layout.** `#menu` (`css/style.css`) holds each window size's fixed
-  values from the J-Menu artboards — xl, and l, m and p at the shell's
-  breakpoints: the frame's natural size, centred and shrinking to fit a
-  smaller area (filling the height of a phone held sideways), the body's padding, the buttons' gaps, the preview square, each
-  art's size, the tiles' and small entries' labels and icon boxes; the
-  kit's base sizes are the largest window's. The `ui-mode-list` fills the
+- **Layout.** `#menu` (`css/style.css`) holds each size step's fixed
+  values from the J-Menu artboards — xl at the desktop step, l at the
+  compact step, read from the root area
+  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area),
+  and p at the touch step: the frame's natural size, centred and shrinking
+  to fit a smaller area (full-bleed on a phone, filling its height held
+  sideways), the body's padding, the buttons' gaps, the preview square,
+  each art's size, the tiles' and small entries' labels and icon boxes;
+  the kit's base sizes are the desktop step's. The `ui-mode-list` fills the
   body: its tiles grid shares the height left over by the small entries,
   every tile one height and never shorter than its content, below which
   the body scrolls. At phone widths every tile is a phone row in one

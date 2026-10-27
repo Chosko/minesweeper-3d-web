@@ -10,8 +10,9 @@ blob store, over an implementation opened once at start-up; the capability
 flags, the host link (Steam state, the overlay, the quit flush) and the
 desktop window driven from the page. DOM-free apart from the browser
 backend's default `localStorage` getter, the IndexedDB implementation's
-default `indexedDB` factory and `window-actions.js`, which marks the
-document and adds the drag region's style on the desktop host.
+default `indexedDB` factory and `window-actions.js`, which on the desktop
+host marks the document, adds the drag region's style, sizes the page's
+root area and settles the touch step's media queries.
 
 | File | Responsibility |
 | ---- | -------------- |
@@ -24,7 +25,7 @@ document and adds the drag region's style on the desktop host.
 | `js/platform/index.js` | The selector (`selectPlatform`): looks for the page bridge once at start-up, fills each slot (`STEAM_SLOTS`: storage, blob store, leaderboards, achievements) with its Steam implementation or the browser one; re-exports the storage methods; the capability flags, the host link and the desktop window. |
 | `js/platform/capabilities.js` | The capability flags (`CAPABILITY_FLAGS`, `deriveFlags`, `createCapabilities`) and the latest Steam state. |
 | `js/platform/bridge-client.js` | The page's side of the page bridge: `findBridge`, the request client, `linkHost` — Steam state into the flags, overlay listeners, the quit flush. |
-| `js/platform/window-actions.js` | The desktop window driven from the page: drag region, Minimise and Fullscreen / Windowed with its icon, `reportSize`. |
+| `js/platform/window-actions.js` | The desktop window driven from the page: drag region, Minimise and Fullscreen / Windowed with its icon, the root area sized to the available area (`bindAvailableArea`), the window-size media queries settled against it (`areaMatches`, `bindAreaMedia`), `reportSize`. |
 
 Document owners register here: settings ([settings.md](settings.md)),
 `shell.lastMode` and the board choice panel's pin `shell.boardPanel` ([app-shell-menu.md](app-shell-menu.md)), the live figures panel's open state `shell.liveFigures` ([app-shell-2d.md](app-shell-2d.md)) and `shell.firstUse` ([app-shell-help.md](app-shell-help.md)), the
@@ -138,6 +139,23 @@ return a Promise and may throw.
   globals. Tests pin that no other file under `js/` imports an
   implementation, and that no module outside `js/platform/` tests for
   Electron or the bridge.
+- **The available area.** At the desktop host `bindDesktopWindow` sizes the
+  page's root element — the size container every size step reads
+  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area) —
+  to the available area of the display the window is on: its work area
+  (`screen.availWidth` × `screen.availHeight`) while windowed, the whole
+  screen in fullscreen, again on every display change, window resize and
+  fullscreen event (`bindAvailableArea`), so the layout never reads the
+  window's own size. It then settles every window-size `@media` rule of the
+  page's stylesheets — a query list made only of width, height and
+  orientation features, the touch step's — against that area, rewriting
+  each to `all` or `not all` and keeping its text to settle again, a
+  stylesheet added later (a theme switch) once it loads (`areaMatches`,
+  `bindAreaMedia`): a desktop work area is never phone-sized, so the
+  desktop host never takes the phone layout. Any other media query (a
+  pointer, a motion preference) is left to the browser. On the web none
+  of this runs: the root area is the browser window and the touch step
+  follows it.
 
 ## DOMAIN DEPENDENCIES
 
@@ -158,7 +176,7 @@ return a Promise and may throw.
   IndexedDB blob store's round trip among them),
   `tests/platform-blob-store.test.mjs`, `tests/platform-selection.test.mjs`
   (selection with a fake bridge, the flags, the host link, the desktop
-  window).
+  window and its available area).
 - [replay-library.md](replay-library.md) — the blob store's one user.
 - [app-shell.md](app-shell.md) — the `ms3d.*` keys nothing reads.
 - [settings.md](settings.md) — the settings document, the legacy keys it

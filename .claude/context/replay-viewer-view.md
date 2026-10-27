@@ -7,7 +7,7 @@ The replay viewer screen's page side: `createReplayView` in
 with the figures panel beside it, the controls and the key line — and hands
 the screen's commands back to the viewer
 ([replay-viewer-screen.md](replay-viewer-screen.md)), which drives it.
-`viewer.js`'s head comment lists the ids; the composition, by window size,
+`viewer.js`'s head comment lists the ids; the composition, by size step,
 is the head comment of `css/components.css` (*Replay viewer*) and the
 `#replay` rules of `css/style.css`.
 
@@ -17,8 +17,10 @@ is the head comment of `css/components.css` (*Replay viewer*) and the
 
 - `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack,
   onDownload?, onOpen?, onCopy?})` → the `#replay` binder (its ids in the
-  head comment): a `ui-frame` inset on the backdrop at the canvas's size
-  (`#replay-frame`; Back `#rp-back`, its arrow alone, in its title bar and
+  head comment): a `ui-frame` centred on the backdrop at its natural size
+  for the size step the root area takes
+  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area),
+  shrinking to fit a smaller area (`#replay-frame`; Back `#rp-back`, its arrow alone, in its title bar and
   the title `#replay-title` its heading), whose body holds the strip across it — the
   figures inline and unlabelled with the code chip `#rp-code` (Copy and
   Copy link call `onCopy`; hidden while loading, failed or with no code) —,
@@ -26,7 +28,7 @@ is the head comment of `css/components.css` (*Replay viewer*) and the
   the strip, the panel and the controls leave, with the message card over
   it, and beside it, down to its bottom, the figures panel `#rp-figures`
   (`bindFigures`, `bindFiguresLive`; dashes while no replay plays; hidden
-  with the code chip on the narrower windows); then the controls: the seek
+  with the code chip on the narrower areas); then the controls: the seek
   bar alone on its row (named Position, its played part following its
   value through `bindSliderFill`, ticks above the track, hatched pause marks
   on it), the tools row (transport — Play's icon follows its label: play,
@@ -45,7 +47,7 @@ is the head comment of `css/components.css` (*Replay viewer*) and the
   board area, the frame keeping its white body
   ([app-shell-replay.md](app-shell-replay.md)), and the free-camera notice
   `#rp-free-note`, on the layer over the scene, shows while the camera is
-  free. The composition, by window size, is the head comment of
+  free. The composition, by size step, is the head comment of
   `css/components.css` (*Replay viewer*) and the `#replay` rules of
   `css/style.css`.
 
@@ -57,7 +59,7 @@ is the head comment of `css/components.css` (*Replay viewer*) and the
 - **3D in the same frame.** A 3D replay changes only the board area, which
   the shell's scene shows through; the frame, strip and controls are the
   2D ones, `#rp-camera` added.
-- **Narrow windows** hide the figures panel and the code chip; the board
+- **Narrow areas** hide the figures panel and the code chip; the board
   area takes the room they leave.
 
 ## DOMAIN DEPENDENCIES
@@ -82,5 +84,5 @@ is the head comment of `css/components.css` (*Replay viewer*) and the
 
 - Changing the frame, the strip, the controls' layout or the key line: the
   head comment of `viewer.js` and `createReplayView`; the panel's place by
-  window size, the `#replay-main` and `#rp-figures` rules of
+  size step, the `#replay-main` and `#rp-figures` rules of
   `css/style.css`.

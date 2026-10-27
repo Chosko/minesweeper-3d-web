@@ -1791,7 +1791,7 @@ Feature: in-game-layout
 
 ## 292. Update documentation for feature `shared-screen-layout`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell-kit-layout.md, .claude/context/app-shell-kit.md, .claude/context/app-shell-menu.md, .claude/context/records-screen-view.md, .claude/context/settings-page.md, .claude/context/replay-viewer-view.md, .claude/context/platform.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 289, 290

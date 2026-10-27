@@ -5,8 +5,8 @@
 The component kit's behaviour (`js/ui/components.js`): the counter formats,
 the binders of sliders, segmented choices, tabs, the one selected control,
 key hints, the pager, the icon set with the button's leading icon, the game
-logo, the title bar's window buttons, the code chip and the figures panel. The catalogue
-those binders follow is [app-shell-kit.md](app-shell-kit.md).
+logo, the title bar's window buttons, the root area's `matchMedia`, the
+code chip and the figures panel. The catalogue those binders follow is [app-shell-kit.md](app-shell-kit.md).
 
 | File | Responsibility |
 | ---- | -------------- |
@@ -76,6 +76,14 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   `[data-window]` under `root`, calling `actions[name]` only while
   `capabilities.desktopHost` ([platform.md](platform.md)); with no host a
   press does nothing. Returns the unbind.
+- The root area: `matchRootArea(doc, { ResizeObserver? })` → a `matchMedia`
+  over the root area ([app-shell-kit-layout.md](app-shell-kit-layout.md)
+  § The root area): `(query)` → `{ matches, addEventListener('change',
+  listener), removeEventListener }`, the query's `(min|max)-(width|height)`
+  pixel features joined by `and` tested against the root element's box,
+  each flip of the match reported once to the listeners through a
+  `ResizeObserver` on it; any other query throws a `RangeError`. The
+  Settings page's layout reads it ([settings-page.md](settings-page.md)).
 - The note: `setNote(el, text, {tone?, icon?})` writes `text` into `el`'s
   `.ui-note__text` after its leading icon (making the text part on first
   use, in place of any plain text), `tone` (`NOTE_TONES`: `'warn'`,
