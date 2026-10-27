@@ -132,7 +132,7 @@ Context:
 
 Done: 2026-10-27, commit `18795db` (9 files, +162/-14). The premise that `ui.sizeBoard2D` measured the desktop window was wrong: task 289's root sizing with `contain: layout` already made the game windows measure the work area, so the code changes are comments only. The commit adds browser tests that pin this behaviour, and `in-game-layout.md` now says 3D play's natural size is the whole available area. A browser test in `tests/tile-skin.test.mjs` ("Expert at 1024 px wide keeps the fit rule …", the triangle "1" glyph ink) was already failing on HEAD before this step.
 
-## [ ] 39. Implement task 292 — Update documentation for feature `shared-screen-layout`
+## [x] 39. Implement task 292 — Update documentation for feature `shared-screen-layout`
 
 Depends on: 36, 37
 
@@ -143,6 +143,8 @@ Context:
 ```prompt
 /task-implement 292 --review
 ```
+
+Done: 2026-10-27, commit `5954e8f` (11 files, +115/-54).
 
 ## [ ] 40. Implement task 293 — Update documentation for feature `in-game-layout`
 
