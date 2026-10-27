@@ -46,7 +46,7 @@ Feature: steam-desktop-host
 
 ## 88. Steamworks binding spike
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude+human
 Files: desktop/spike/, desktop/package.json, .claude/domain/features/steam-desktop-host.md, .claude/domain/features/steam-leaderboards.md
 Preconditions: 85, 87

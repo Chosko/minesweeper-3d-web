@@ -25,7 +25,6 @@ test('the host has its own package: Electron as a dev dependency, a start script
   assert.equal(pkg.type, 'module');
   assert.equal(pkg.main, 'main.js');
   assert.ok(pkg.devDependencies?.electron, 'Electron is a dev dependency');
-  assert.equal(pkg.dependencies, undefined, 'the host ships no runtime dependency yet');
   assert.match(pkg.scripts?.start ?? '', /\belectron\b/);
   assert.ok(!existsSync(path.join(ROOT, 'package.json')), 'the web build at the root stays dependency-free');
 });

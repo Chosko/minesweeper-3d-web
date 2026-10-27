@@ -76,6 +76,12 @@ test('the host package runs the build path from one script each', () => {
   assert.equal(pkg.scripts?.appid, 'node build/package.mjs appid');
 });
 
+test('the host\'s one runtime dependency is the chosen Steamworks binding, at an exact version', () => {
+  const pkg = JSON.parse(readFileSync(path.join(DESKTOP, 'package.json'), 'utf8'));
+  assert.deepEqual(Object.keys(pkg.dependencies ?? {}), ['steamworks-ffi-node']);
+  assert.match(pkg.dependencies['steamworks-ffi-node'], /^\d+\.\d+\.\d+$/);
+});
+
 test('the repository ignores the host\'s installs, builds, local Steam config and app id file', () => {
   const lines = readFileSync(path.join(ROOT, '.gitignore'), 'utf8').split(/\r?\n/).map((line) => line.trim());
   for (const entry of ['/node_modules/', '/desktop/node_modules/', '/desktop/out/', '/desktop/redist/',

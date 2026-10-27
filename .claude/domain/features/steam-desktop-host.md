@@ -213,16 +213,31 @@ rules engine imports Electron or the binding.
   library shipped with the build, and the upload tool.
 - An Electron packaging tool — produces the unpacked Windows build.
 
-## Open questions
+## Binding and overlay settings
 
-- Which Steamworks binding the adapter's Steam implementation uses —
-  steamworks.js extended with leaderboard and shared-file calls, or another
-  binding. Decided by the spike; blocks the Steam implementation of the
-  adapter and therefore every leaderboard task, but none of the page-side
-  design. The spike records the chosen binding in this document, in place
-  of this question.
-- Whether the Steam overlay renders reliably over the frameless,
-  transparent Electron window on the chosen binding, and which window and
-  GPU settings it needs. Checked
-  by the spike; blocks the achievement exit criterion's "shows in Steam's
-  overlay".
+- **Binding: steamworks-ffi-node.** It calls the Steam API library through
+  Koffi, so there is no native module to build against Electron's runtime.
+  It covers identity, presence, achievements and leaderboards: find,
+  upload with details keeping the best, the global, friends and
+  around-the-player ranges, and named players. It lacks only the remote
+  storage share, the shared-file download and the overlay activation
+  callback. The adapter declares those Steam API calls on the binding's
+  own library handle, as the binding declares its own, so every capability
+  is available and none is reported unavailable. The binding's own
+  decoding of a downloaded entry's details is wrong, so the adapter reads
+  the details array itself. steamworks.js was not chosen: it has no
+  leaderboards, shared files, other players' names, logged-on state or
+  overlay event, and adding them means extending and building its native
+  module.
+- **Overlay settings.** Steam draws the overlay only when Chromium's GPU
+  work runs in the main process. The host appends the switches
+  `in-process-gpu` and `disable-direct-composition`, and also
+  `ui-disable-partial-swap`, without which the overlay flickers whenever
+  the page redraws. With those switches, the overlay draws over the
+  frameless, transparent window, windowed and fullscreen, without flicker.
+  Its activation event arrives, so the host's overlay signal pauses the
+  game, and the window keeps its rounded look. While the overlay is open, the game behind it turns
+  semi-transparent: the desktop shows through everywhere except opaque
+  panels. An opaque window removes that see-through, but it loses the
+  transparent rounded corners, and its fullscreen sometimes keeps the
+  windowed size until the window is refocused.
