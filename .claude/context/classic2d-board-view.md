@@ -96,11 +96,14 @@ its own layer, the marked start cell, cell motion, the end effect — is
   rounded at the theme's `--board-viewport-radius` (set on
   `[data-board-clipped]`). In play the fit rule works in the room the game
   window's chrome — the head, the counter strip, the figures panel beside
-  or under the board, the foot line — leaves, so a board that fits a bare
-  window may scroll in it (Expert does in the smaller desktop windows);
-  the window hugs its board, its board area `#c2d-stage` (which the view's
-  container `#c2d-board` fills) sized to the board's extent in that room,
-  so a board that fits sits at the area's corner with nothing to centre ([app-shell-2d.md](app-shell-2d.md)).
+  or under the board, the foot line — leaves in the available area (the
+  root area: the browser window on the web, the work area at the desktop
+  host, [app-shell-kit-layout.md](app-shell-kit-layout.md) § The root
+  area), so a board that fits a bare area may scroll in it (Expert does at
+  the smaller desktop sizes); the window hugs its board, its board area
+  `#c2d-stage` (which the view's container `#c2d-board` fills) sized to the
+  board's extent in that room, so a board that fits sits at the area's
+  corner with nothing to centre ([app-shell-2d.md](app-shell-2d.md)).
 - **Board frame.** Every Classic 2D board — the game, the Daily preview
   and the replay viewer; not the main menu's play tiles, whose boards
   are mounted unframed and cropped from their middle — sits in the kit's board frame

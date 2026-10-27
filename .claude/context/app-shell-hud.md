@@ -58,7 +58,8 @@ the aimed-cell readout. The `UI` methods that write them are
   never reaches the board. The panel `#c2d-figures` shows while the
   stored preference (`createFiguresPanel`, the `shell.liveFigures`
   document, closed when nothing is stored) is open (`setFigures2D`). Its layout:
-  [classic2d-mode.md](classic2d-mode.md) § Game window.
+  [classic2d-mode.md](classic2d-mode.md) § Game window; how it hugs its
+  board in the available area: [app-shell-2d.md](app-shell-2d.md).
 - **HUD density.** The counter digits, the figures' values and spacing, the
   panel titles and the touch buttons follow the frame's size steps
   (desktop, compact, touch) in the Classic 2D window and the 3D overlay
@@ -77,9 +78,13 @@ the aimed-cell readout. The `UI` methods that write them are
   of the floating controls. Learn 3D's overlay (`hud--learn`, from
   `setLearn`) is its own layout: no timer, no figures panel and no toggle,
   Pause over the counter strip at the top left —
-  [mode3d-learn.md](mode3d-learn.md) § Learn 3D's screens. Start pauses through
+  [mode3d-learn.md](mode3d-learn.md) § Learn 3D's screens. Both fill the
+  available area — `#hud` covers the root area, the work area at the
+  desktop host, never the desktop window's own size
+  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area).
+  Start pauses through
   `#hud-pause` (`#c2d-pause` in Classic 2D); the controller's View button
-  presses the mode's live-figures toggle while it shows. Layouts by window size:
+  presses the mode's live-figures toggle while it shows. Layouts by size step:
   `css/components.css`'s head comment (*3D game overlay*).
 - **Behind a card.** While the 3D ready card (not pending), the pause card
   or the results show, `#hud` is hidden — the 3D overlay, the key strip,
@@ -111,11 +116,13 @@ the aimed-cell readout. The `UI` methods that write them are
   window's layout and feed; [mode3d-session.md](mode3d-session.md) — the 3D
   overlay's feed; [mode3d-learn.md](mode3d-learn.md) — Learn 3D's overlay.
 - [testing.md](testing.md) — `tests/components.test.mjs`,
-  `tests/components-game3d.test.mjs`, `tests/live-figures.test.mjs`.
+  `tests/components-game3d.test.mjs`, `tests/components-game-area.test.mjs`
+  (the game windows and the 3D overlay against a desktop work area),
+  `tests/live-figures.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
 - Changing a figure's wording or format: the head comment of
   `js/shell/live-figures.js`.
-- Changing a readout's size step or its layout by window size: the theme
+- Changing a readout's size step or its layout by size step: the theme
   stylesheet's in-game readouts and `css/components.css`'s head comment.

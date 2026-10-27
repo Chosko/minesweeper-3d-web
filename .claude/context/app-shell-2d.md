@@ -39,7 +39,8 @@ mode configuration themselves are [classic2d.md](classic2d.md).
   view's container `#c2d-board`; the board opens at the `boardScale` setting (`scale`) inside the board frame (`frame`,
   `BOARD_FRAME`). The window hugs its board: `ui.sizeBoard2D` measures the
   room its chrome leaves in the available area — the root area, the work
-  area at the desktop host, never the desktop window's own size — with the
+  area at the desktop host, never the desktop window's own size
+  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area) — with the
   window filling it (`c2d--measure`) and sizes `#c2d-stage` to the view's `extent` there, giving back what
   the body or the board column then overflows (below the kit breakpoint the figures row under the board
   wraps at the board's width, never setting the window's), then fits the title

@@ -100,8 +100,12 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
   small box." on the success fill, with `#ready-learn-btn` → `startLearn`,
   outside the Click to play button) while `FIRST_USE.rules3D`; neither on
   the guided board's own card, and the line only before the game started.
-  The card's width follows the window's size step (J-Ready-xl, -l, -m,
-  -p), its board line in the mono face; its buttons carry the canvas's
+  The ready layer `#ready` covers the available area — the root area, the
+  work area at the desktop host, never the desktop window's own size
+  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area),
+  while the scene's canvas keeps the window's size — and the card's width
+  follows the root area's size step (J-Ready-xl, -l, -m, -p), its board
+  line in the mono face; its buttons carry the canvas's
   icons (Back the arrow, Click to play the mouse — `ui.setTouch3D` swaps
   in the hand for Tap to play —, Learn 3D the cube, drag-to-look the
   hand), and the blocked offer's controller line names A as text. On a
