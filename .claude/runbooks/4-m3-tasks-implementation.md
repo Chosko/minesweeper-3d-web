@@ -119,7 +119,7 @@ Context:
 
 Done: 2026-10-27, commit `9968800` (9 files, +173/-43). Every screen but the main menu already had its artboard's size; the menu now has a fixed natural size, and Records and Settings centre on the backdrop. The desktop step uses the J-*-xl artboards, the compact step J-*-l, and windows of 1199 px and below keep J-*-m. The frame steps on width only, while the theme's compact title bar also switches at 820 px of height, so a wide short area pairs the compact title bar with the desktop frame — left as is.
 
-## [ ] 38. Implement task 291 — Game windows against the available area
+## [x] 38. Implement task 291 — Game windows against the available area
 
 Depends on: 36
 
@@ -129,6 +129,8 @@ Context:
 ```prompt
 /task-implement 291 --review
 ```
+
+Done: 2026-10-27, commit `18795db` (9 files, +162/-14). The premise that `ui.sizeBoard2D` measured the desktop window was wrong: task 289's root sizing with `contain: layout` already made the game windows measure the work area, so the code changes are comments only. The commit adds browser tests that pin this behaviour, and `in-game-layout.md` now says 3D play's natural size is the whole available area. A browser test in `tests/tile-skin.test.mjs` ("Expert at 1024 px wide keeps the fit rule …", the triangle "1" glyph ink) was already failing on HEAD before this step.
 
 ## [ ] 39. Implement task 292 — Update documentation for feature `shared-screen-layout`
 
@@ -146,7 +148,8 @@ Context:
 
 Depends on: 38
 
-Context: none
+Context:
+- 2026-10-27 (from step 38): task 291 made no behaviour change: the game windows already measured the work area through the root element's `contain: layout` (task 289). `in-game-layout.md` § Architecture, `app-shell-2d.md` and `testing.md` were already updated in that commit; the 3D canvas still sizes from the window (`js/render.js`).
 
 ```prompt
 /task-implement 293 --review
@@ -161,6 +164,7 @@ Needs: agent+human
 Context:
 - 2026-10-27 (from step 36): until this step resizes the desktop window to its frame, screens are laid out and centred in the work area and look off-centre in the default 1280×800 window — expected, not a defect. The desktop host never gets the phone layout (`bindAreaMedia`, `js/platform/window-actions.js`), so a narrow frame no longer changes layout shape.
 - 2026-10-27 (from step 37): every screen now has a fixed natural size from its artboard (desktop step J-*-xl, compact step J-*-l, 1199 px and below J-*-m); the frame steps on width only, at 1439 px and 1199 px.
+- 2026-10-27 (from step 38): nothing calls `reportSize` yet, so this step is what makes the window take the whole work area during 3D play, as `in-game-layout.md` now says.
 
 ```prompt
 /task-implement 86 --review --rounds 2
