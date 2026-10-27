@@ -424,8 +424,8 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 /* ---------- Classic 2D game window ---------- */
 /* The window covers the 3D scene on its backdrop and hugs its content, centred in the room above the
    HUD strip: its body is the board column — the counter strip, then the board area 12 px under it,
-   left-aligned and sized to the board's extent (UI.sizeBoard2D, measured with the window at its
-   largest under #c2d.c2d--measure, where the area takes the room the chrome leaves) — and, while the
+   left-aligned and sized to the board's extent (UI.sizeBoard2D, measured with the window filling the
+   root area under #c2d.c2d--measure, where the board area takes the room the chrome leaves) — and, while the
    live figures are open (data-figures="open", UI.setFigures2D), a divider and the flat figures
    column; closed, the window shrinks to the board column. Below the kit's 1024 px breakpoint the
    open figures move under the board, and on a phone they hide with their toggle and the window is

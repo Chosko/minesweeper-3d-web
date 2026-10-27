@@ -456,10 +456,11 @@ export class UI {
   }
   /**
    * The Classic 2D window hugs its board: the board area (#c2d-stage) takes the board's extent in
-   * the room the window's chrome leaves it, `extent(width, height)` the board view's
-   * (board-view.js). The room is measured with the window at its largest (#c2d.c2d--measure, the
-   * area taking what the chrome leaves) and the area sized at once, in one task, so nothing paints
-   * in between. Measured at its largest, the window's chrome can be shorter than at the
+   * the room the window's chrome leaves it in the available area — the root area (css/components.css),
+   * the work area at the desktop host, never the desktop window's own size —, `extent(width, height)`
+   * the board view's (board-view.js). The room is measured with the game window filling the available
+   * area (#c2d.c2d--measure, the board area taking what the chrome leaves) and the area sized at once,
+   * in one task, so nothing paints in between. Measured at its largest, the window's chrome can be shorter than at the
    * board's width (the figures row under the board wraps more): the area gives back what the body,
    * or the board column, then overflows. Returns whether the area's size changed; a hidden window is left as it is.
    */

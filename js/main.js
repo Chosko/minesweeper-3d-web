@@ -668,8 +668,8 @@ const FLOW_2D = {
   hint: (text) => ui.toast(text, 2500), // a first reveal off a daily's or a challenge's marked start cell
   padCue: (kind) => padRumble(kind === 'flag' ? PAD_FLAG : PAD_PRESS), // a trigger's press cue, a flag's double pulse
 };
-// The game window hugs its board (UI.sizeBoard2D): its board area is sized as each board view
-// opens, whenever the window's room changes, and a frame after a refit, which may change the
+// The game window hugs its board (UI.sizeBoard2D), measured in the available area (the root area):
+// its board area is sized as each board view opens, whenever that room changes, and a frame after a refit, which may change the
 // board's extent (a board scale, a theme's gap) — never inside the board's own resize callback.
 const size2D = () => { const v = flat2D()?.boardView; if (v) ui.sizeBoard2D((width, height) => v.extent(width, height)); };
 let sizing2D = 0;

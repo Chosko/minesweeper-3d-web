@@ -172,7 +172,11 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
   surfaces so they stay readable over any sky; the crosshair and its readout, the off-screen
   arrow, the view chips, the HUD key strip, the first-use hints, the toast
   and the touch controls take the places the 3D game's artboards draw — a
-  hint stands above a view chip shown with it.
+  hint stands above a view chip shown with it. 3D play's natural size
+  ([shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Screen frame**) is the available area: the scene and its overlay fill
+  it, so on the desktop host the window takes the whole work area during
+  3D play.
 - **Design source.** Every in-game screen is drawn on the canvas — the
   Classic 2D window, the 3D game and the replay viewer at every supported
   window size with their states — and is built from those artboards, as

@@ -1781,7 +1781,7 @@ Feature: shared-screen-layout
 
 ## 291. Game windows against the available area
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/ui.js, js/main.js, css/style.css, js/classic2d/board-view.js, .claude/domain/features/in-game-layout.md
 Preconditions: 289

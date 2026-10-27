@@ -282,7 +282,7 @@ export function panelRect(layout, frame) {
  * The room a layout's board takes of its area, in CSS pixels: the view and the frame's inset on
  * each side — the frame's rectangle of a board that fits, the view alone of one that scrolls. An
  * area of exactly that size lays the board out at the same tile with nothing left over, so a
- * window that hugs its board sizes the board's area to it (js/ui.js sizeBoard2D).
+ * window that hugs its board sizes the board's area to it, in the available area (js/ui.js sizeBoard2D).
  */
 export function boardExtent(layout) {
   const { inset } = layout;
