@@ -7,7 +7,10 @@
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "package": "node build/package.mjs",
+    "steampipe": "node build/package.mjs steampipe",
+    "appid": "node build/package.mjs appid"
   },
   "devDependencies": {
     "electron": "44.9.3"

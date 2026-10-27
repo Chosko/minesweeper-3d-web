@@ -36,7 +36,7 @@ Feature: steam-desktop-host
 
 ## 87. Windows packaging and the SteamPipe private build
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude+human
 Files: desktop/package.json, desktop/build/package.mjs, desktop/steampipe/app_build.vdf, desktop/steampipe/depot_build.vdf, desktop/steampipe/config.example.json, .gitignore
 Preconditions: 84

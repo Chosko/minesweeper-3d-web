@@ -1,0 +1,6 @@
+/node_modules/
+/desktop/node_modules/
+/desktop/out/
+/desktop/redist/
+/desktop/steam_appid.txt
+/desktop/steampipe/config.json
