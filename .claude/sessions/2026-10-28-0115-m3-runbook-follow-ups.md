@@ -73,7 +73,7 @@ Milestone m3-on-steam, through runbook 4 `m3-tasks-implementation`. This run fin
 
 ## Exact next step
 
-Answer the closing report's follow-ups (handles 1–10, in the run's last chat message; the substance is the three sections above): say which feature slugs to flip, then run `/architect amend feature=steam-desktop-host` for the window choice and overlay rules. Resume the runbook with `/runbook-run 4 --attended --no-dashboard`; add `--to 9` to run only the agent-only steps 7, 8 and 9 and stop before step 10 (task 93, needs the user at the partner site).
+Answer the closing report's follow-ups (handles 1–10, verbatim in the last section of this file; a reply by number is `follow-ups-resolve`'s job): say which feature slugs to flip, then run `/architect amend feature=steam-desktop-host` for the window choice and overlay rules. Resume the runbook with `/runbook-run 4 --attended --no-dashboard`; add `--to 9` to run only the agent-only steps 7, 8 and 9 and stop before step 10 (task 93, needs the user at the partner site).
 
 ## Environment and setup notes
 
@@ -83,3 +83,16 @@ Answer the closing report's follow-ups (handles 1–10, in the run's last chat m
 - The Steam client's Launch Options may still hold the spike's `--probe-…` switches; clear them before a normal run.
 - Logs: `%APPDATA%\Minesweeper 3D\crash.log` (none written so far), spike logs `spike-probe.log` and `spike-probe-round1.log` beside it.
 - Browser tests run only through `.claude/external/run-*.sh` scripts, one Chromium at a time.
+
+## Follow-ups (verbatim from the run's closing report)
+
+1. Flip to `[DONE]` in FEATURES.md? Candidates: `shared-screen-layout`, `in-game-layout`. Name the slugs, or say all / none.
+2. `/architect amend feature=steam-desktop-host` — settle the window: transparent (page semi-transparent behind the overlay, corners kept) or opaque (user's preference; loses transparent corners, fullscreen sometimes keeps windowed bounds, never tested with `ui-disable-partial-swap`). Also document the overlay switches and the keep-repainting rule while Steam runs, which the feature doc lacks (task 90 may absorb the doc part).
+3. Desktop window glitches from the installed runs, no task yet: bottom border radius wrong on most screens; in-game board windows square-cornered; in-game results popup widens the window and shows the fullscreen background; a toast can fall outside the frame-sized window. Likely `/task-add` under `in-game-layout` / `shared-screen-layout`.
+4. Title bar Quit and in-game quit do nothing on desktop — task 107 (step 24) territory, waits on task 282 from another runbook; confirm it covers in-game quit too, else `/task-add`.
+5. Steamworks leftovers from the spike: achievement `SPIKE_PROBE`, leaderboard `SPIKE_PROBE`, Cloud quota values unrecorded. Remove or keep the first two by hand; step 10 (task 93) checks the quota.
+6. Pre-existing failing browser test `tests/tile-skin.test.mjs` "Expert at 1024 px wide keeps the fit rule…" (triangle "1" glyph ink, fixture-dusk), possibly from `a347cc1`.
+7. Stale comment at the head of `css/components.css` (replay viewer "inset on it at the canvas's size").
+8. Frame steps on width only vs the compact title bar switching on height — accept or `/architect amend feature=shared-screen-layout`.
+9. `desktop/node_modules` installed with `--ignore-scripts`, no lock file; decide whether to commit a lock file.
+10. Steps remaining: 7–35 (25 steps). Next agent-only steps 7, 8, 9; next agent+human step 10 (task 93). Resume with `/runbook-run 4 --attended --no-dashboard` (add `--to 9` to stop before step 10).
