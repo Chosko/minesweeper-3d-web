@@ -26,7 +26,7 @@ In scope (m3-on-steam):
 
 - The Electron main process: one game window, its lifecycle, single-instance
   lock, window state, quitting with saves flushed, and a local crash log.
-- The desktop window's behaviour: a frameless, transparent window drawn
+- The desktop window's behaviour: a frameless, opaque window drawn
   entirely by the game in its title bar's style, windowed by default,
   dragged by its title bar, sized by its content and never by the player,
   and its Fullscreen / Windowed and Minimise actions, which the title bar's
@@ -77,10 +77,11 @@ rules engine imports Electron or the binding.
   uncaught errors from both processes to a local crash log, never uploaded,
   as the direction's observability rule allows.
 - **The desktop window.** The game window has no system title bar or
-  frame and is transparent, so the game draws the whole window, rounded
-  corners included, in its title bar's style; the page marks its title
-  bar as the drag region, and the window is dragged by it like any other
-  window. The player cannot resize it: windowed, there is no backdrop and
+  frame and is opaque on a black background, so the game draws the whole
+  window in its title bar's style and the window's rounded corners show
+  black; the page marks its title bar as the drag region, and the window
+  is dragged by it like any other window. The player cannot resize it:
+  windowed, the window is not resizable, there is no backdrop and
   the window is the screen's frame at its natural size, laid out against
   the work area of the display the window is on — never against the
   window's own size, which would feed back on itself — and the page reports
@@ -90,10 +91,12 @@ rules engine imports Electron or the binding.
   ([shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
   **Screen frame**). It is windowed by default. Fullscreen renders the game
   full-screen on its backdrop, the frame at its natural size, as the canvas
-  shows it, neither
-  draggable nor resizable; the title bar's button then shows the Windowed
-  icon, and pressing it returns to the floating window as it was, the
-  button showing the Fullscreen icon again. Minimise minimises the game to
+  shows it, neither draggable nor resizable by the player; the window takes
+  the display's full bounds at once, the host setting them itself and
+  making the window resizable only while fullscreen, since a non-resizable
+  window does not reliably take them. The title bar's button then shows the
+  Windowed icon, and pressing it restores the window's saved windowed
+  position and size, the button showing the Fullscreen icon again. Minimise minimises the game to
   the taskbar. Exact sizes and looks come from the canvas
   https://claude.ai/artifact/LeP32jxNxEnHLUtRwJ3FNC, J-Components *Window
   title bar* and J-C2D-xl.
@@ -145,8 +148,9 @@ rules engine imports Electron or the binding.
   app id file. When Steam still cannot initialise — client not running in a
   development run, an init failure — the host selects the unavailable
   adapter and the game plays fully with local saves.
-- **Overlay.** The window is configured so the Steam overlay draws over the
-  game. When the overlay opens, the host sends the page a focus-loss signal
+- **Overlay.** The host configures Chromium and keeps the page drawing
+  frames so the Steam overlay draws over the game, as § Binding and overlay
+  settings records. When the overlay opens, the host sends the page a focus-loss signal
   through the same path a window blur takes, so the shell's existing
   automatic pause applies unchanged.
 - **Packaging and SteamPipe.** A packaging step produces an unpacked
@@ -232,13 +236,18 @@ rules engine imports Electron or the binding.
   module.
 - **Overlay settings.** Steam draws the overlay only when Chromium's GPU
   work runs in the main process. The host appends the switches
-  `in-process-gpu` and `disable-direct-composition`, and also
-  `ui-disable-partial-swap`, without which the overlay flickers whenever
-  the page redraws. With those switches, the overlay draws over the
-  frameless, transparent window, windowed and fullscreen, without flicker.
-  Its activation event arrives, so the host's overlay signal pauses the
-  game, and the window keeps its rounded look. While the overlay is open, the game behind it turns
-  semi-transparent: the desktop shows through everywhere except opaque
-  panels. An opaque window removes that see-through, but it loses the
-  transparent rounded corners, and its fullscreen sometimes keeps the
-  windowed size until the window is refocused.
+  `in-process-gpu`, `disable-direct-composition` and
+  `ui-disable-partial-swap` — the one set under which the overlay draws
+  over the window, windowed and fullscreen, its activation event arrives so
+  the host's overlay signal pauses the game, and it does not flicker when
+  the page redraws. Chromium's default GPU mode draws no overlay, and
+  Shift+Tab then moves focus through the title bar; the first two switches
+  alone, or `use-angle=gl`, leave the overlay flickering. Neither the
+  binding's own native overlay window, which draws no overlay and makes
+  dragging lag, nor steamworks.js, which has no activation event to pause
+  on, replaces them.
+- **Repainting while Steam runs.** While Steam runs, the host keeps the
+  page drawing frames even when the game is paused and still, because
+  Steam draws its overlay and answers Shift+Tab only when the game draws a
+  frame; a page that draws nothing lets the overlay open only once per
+  launch. The cost is GPU use while the game is idle.
