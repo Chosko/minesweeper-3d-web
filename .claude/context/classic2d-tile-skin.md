@@ -75,7 +75,9 @@ styles and glyphs — is [tile-art.md](tile-art.md).
   drawn in the recipe's outline of its shape and orientation
   ([tile-art.md](tile-art.md)), with its grid's corner radius from
   `style2d.grids` in place of the style's, and its glyphs set in the
-  geometry's glyph box — its corner on a whole device pixel — through the
+  geometry's glyph box — its sides and corner snapped to whole device
+  pixels about its centre, so a glyph's strokes fall on the pixel grid —
+  through the
   recipe's `inGlyphBox`. The square outline is the tile itself, painted
   exactly as a tile given no outline, in the style's own radius.
 - **Placeholder.** An unknown state, a number outside 0 to its outline's

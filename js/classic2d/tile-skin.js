@@ -161,9 +161,11 @@ export function paintTileWith(board, ctx, x, y, size, state, number, depth = 1, 
   const shaped = shape?.clip ? { ...style.params, radius: style.grids?.[OUTLINE_GRIDS[shape.shape]]?.radius ?? 0 } : style.params;
   const outline = shape?.clip ? { outline: shape.outline } : {};
   const face = (name, colours, params = shaped) => drawFace(ctx, size, name, { style: style.name, params, palette: colours, px, depth, ...outline });
-  // The glyphs, in the glyph box — its corner on a whole device pixel —: a square of its smaller
-  // side, centred in it.
-  const box = shape?.clip && { ...shape.glyph, x: Math.round(shape.glyph.x / px) * px, y: Math.round(shape.glyph.y / px) * px };
+  // The glyphs, in the glyph box — its sides and corner on whole device pixels, about the same
+  // centre, so a glyph's strokes fall on the pixel grid —: a square of its smaller side, centred in it.
+  const snap = (v) => Math.round(v / px) * px;
+  const g = shape?.glyph;
+  const box = shape?.clip && { x: snap(g.x + (g.width - snap(g.width)) / 2), y: snap(g.y + (g.height - snap(g.height)) / 2), width: snap(g.width), height: snap(g.height) };
   const glyph = (draw) => (box ? inGlyphBox(ctx, box, draw) : draw(size));
   ctx.save();
   ctx.translate(x, y);

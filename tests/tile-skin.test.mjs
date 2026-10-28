@@ -473,8 +473,12 @@ test('on a hexagon or triangle cell each state is the recipe\'s face in the grid
       const tile = kind === 'tri' ? 44 : 40;
       const cell = await gridCell(kind, c, tile, 3);
       const o = cell.outline;
-      // The glyph box from the tile's corner, its own corner on a whole device pixel.
-      const boxAt = (px) => ({ x: Math.round((cell.glyphBox.x - o.x) / px) * px, y: Math.round((cell.glyphBox.y - o.y) / px) * px, width: cell.glyphBox.width, height: cell.glyphBox.height });
+      // The glyph box from the tile's corner, its sides and corner on whole device pixels about its centre.
+      const boxAt = (px) => {
+        const snap = (v) => Math.round(v / px) * px;
+        const { x, y, width, height } = cell.glyphBox;
+        return { x: snap(x - o.x + (width - snap(width)) / 2), y: snap(y - o.y + (height - snap(height)) / 2), width: snap(width), height: snap(height) };
+      };
       const params = { ...b.style2d.params, radius: b.style2d.grids[kind].radius };
       const face = (ctx, px, which, palette, p = params) => art.drawFace(ctx, tile, which, { style: b.style2d.name, params: p, palette, px, depth: 1, outline });
       const glyph = (ctx, draw) => art.inGlyphBox(ctx, boxAt(1 / ctx.getTransform().a), draw);
