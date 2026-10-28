@@ -1,27 +1,30 @@
 // The desktop host's build path. `npm run package` lays out the unpacked Windows x64 build from the
 // installed Electron distribution: the executable under the game's name, the host under
-// resources/app with its runtime dependencies (the binding's slot), the game files under
-// resources/game and, when supplied, the Steam API library beside the executable.
+// resources/app with its runtime dependencies and theirs (the binding's slot), the game files under
+// resources/game, the app id the packaged build hands Steam when the local Steam config is present
+// and, when supplied, the Steam API library beside the executable.
 // `npm run steampipe` renders the SteamPipe app and depot build scripts from the local Steam
 // config; `npm run appid` writes the app id file a development run reads. The ids live only in
-// the git-ignored config file, and the app id file never reaches the build.
+// the git-ignored config file and the build made from it, and the development app id file never
+// reaches the build.
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { GAME_ENTRIES } from '../protocol.js';
+import { DEV_APP_ID_FILE, STEAM_API_LIBRARY, STEAM_APP_FILE } from '../adapter/steam.js';
+
+export { DEV_APP_ID_FILE, STEAM_API_LIBRARY, STEAM_APP_FILE };
 
 const DESKTOP_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** The executable's name in the build; any name not starting with "electron" makes the build packaged. */
 export const EXE_NAME = 'Minesweeper3D.exe';
 
-/** The Steam API library: supplied under desktop/redist/, shipped beside the executable. */
-export const STEAM_API_LIBRARY = 'steam_api64.dll';
-
-/** The app id file a development run reads from the working directory; never shipped. */
-export const DEV_APP_ID_FILE = 'steam_appid.txt';
+/** The platform a dependency's optional platform package must name to ship with the build. */
+const BUILD_OS = 'win32';
+const BUILD_CPU = 'x64';
 
 /** The host's directories that ship with it, beside its top-level scripts and package file. */
 export const APP_DIRS = Object.freeze(['adapter']);
@@ -49,6 +52,35 @@ function findFiles(dir, name) {
     .map((entry) => path.join(entry.parentPath, entry.name));
 }
 
+/**
+ * The installed packages the build ships: `names` and, through their package files, every package
+ * they depend on, with the optional ones only when they are this build's platform package.
+ */
+export function runtimePackages(desktopDir, names) {
+  const modules = path.join(desktopDir, 'node_modules');
+  const found = new Set();
+  const visit = (name, optional) => {
+    if (found.has(name)) return;
+    const dir = path.join(modules, name);
+    if (!existsSync(dir)) {
+      if (optional) return;
+      throw new Error(`The runtime dependency ${name} is not installed: run npm install in desktop/ first.`);
+    }
+    let pkg = {};
+    try {
+      pkg = JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8'));
+    } catch {
+      pkg = {};
+    }
+    if (optional && !(pkg.os?.includes(BUILD_OS) && pkg.cpu?.includes(BUILD_CPU))) return;
+    found.add(name);
+    for (const dep of Object.keys(pkg.dependencies ?? {})) visit(dep, false);
+    for (const dep of Object.keys(pkg.optionalDependencies ?? {})) visit(dep, true);
+  };
+  for (const name of names) visit(name, false);
+  return [...found].sort();
+}
+
 /** Lays out the unpacked Windows x64 build in `outDir`, replacing any earlier one. */
 export function buildWindows({
   desktopDir = DESKTOP_DIR,
@@ -56,6 +88,7 @@ export function buildWindows({
   outDir = path.join(desktopDir, 'out', 'win-x64'),
   electronDist = path.join(desktopDir, 'node_modules', 'electron', 'dist'),
   steamApiLibrary = path.join(desktopDir, 'redist', STEAM_API_LIBRARY),
+  appId = null,
   installElectron = null,
 } = {}) {
   if (!existsSync(path.join(electronDist, ELECTRON_EXE)) && installElectron) installElectron();
@@ -63,12 +96,7 @@ export function buildWindows({
     throw new Error(`No ${ELECTRON_EXE} in ${electronDist}: run npm install in desktop/ on Windows x64 first.`);
   }
   const pkg = JSON.parse(readFileSync(path.join(desktopDir, 'package.json'), 'utf8'));
-  const dependencies = Object.keys(pkg.dependencies ?? {});
-  for (const name of dependencies) {
-    if (!existsSync(path.join(desktopDir, 'node_modules', name))) {
-      throw new Error(`The runtime dependency ${name} is not installed: run npm install in desktop/ first.`);
-    }
-  }
+  const dependencies = runtimePackages(desktopDir, Object.keys(pkg.dependencies ?? {}));
 
   rmSync(outDir, { recursive: true, force: true });
   cpSync(electronDist, outDir, { recursive: true });
@@ -81,6 +109,7 @@ export function buildWindows({
   for (const entry of appEntries(desktopDir)) {
     cpSync(path.join(desktopDir, entry), path.join(appDir, entry), { recursive: true });
   }
+  if (appId) writeFileSync(path.join(appDir, STEAM_APP_FILE), `${JSON.stringify({ appId: String(appId) })}\n`);
   for (const name of dependencies) {
     cpSync(path.join(desktopDir, 'node_modules', name), path.join(appDir, 'node_modules', name), { recursive: true });
   }
@@ -163,6 +192,20 @@ export function writeDevAppId(desktopDir, config) {
   return file;
 }
 
+/** Why the build in `outDir` cannot be uploaded for `config`'s app — its app id missing or another — or null. */
+export function builtAppIdProblem(outDir, config) {
+  let built = null;
+  try {
+    built = JSON.parse(readFileSync(path.join(outDir, 'resources', 'app', STEAM_APP_FILE), 'utf8'))?.appId ?? null;
+  } catch {
+    built = null;
+  }
+  if (built === config.appId) return null;
+  return built === null
+    ? 'The build carries no app id, so it cannot ask Steam to relaunch it: run npm run package again with the Steam config in place.'
+    : `The build carries the app id ${built}, not the config's ${config.appId}: run npm run package again.`;
+}
+
 /** Runs the Electron package's own installer, which downloads its binary on first use. */
 function fetchElectronBinary() {
   const installer = path.join(DESKTOP_DIR, 'node_modules', 'electron', 'install.js');
@@ -180,13 +223,18 @@ function readLocalConfig() {
 
 function main(command = 'package') {
   if (command === 'package') {
-    const { outDir, exe, steamApi } = buildWindows({ installElectron: fetchElectronBinary });
+    const configFile = path.join(DESKTOP_DIR, 'steampipe', 'config.json');
+    const appId = existsSync(configFile) ? readLocalConfig().appId : null;
+    const { outDir, exe, steamApi } = buildWindows({ appId, installElectron: fetchElectronBinary });
     console.log(`Built ${outDir}`);
     console.log(`  run ${exe}`);
+    if (!appId) console.log('  no local Steam config — the build cannot ask Steam to relaunch it when started outside Steam');
     if (!steamApi) console.log(`  no ${STEAM_API_LIBRARY} in desktop/redist/ — its slot beside the executable is empty`);
   } else if (command === 'steampipe') {
     if (!existsSync(path.join(DESKTOP_DIR, 'out', 'win-x64', EXE_NAME))) throw new Error('No build to upload: run npm run package first.');
     const config = readLocalConfig();
+    const problem = builtAppIdProblem(path.join(DESKTOP_DIR, 'out', 'win-x64'), config);
+    if (problem) throw new Error(problem);
     const { appBuild } = writeSteamPipeScripts({ config });
     console.log(`Wrote ${appBuild}`);
     console.log(config.branch ? `  sets the build live on the branch ${config.branch}` : '  uploads only: the build is set live on no branch');

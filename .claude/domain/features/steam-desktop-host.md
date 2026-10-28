@@ -150,9 +150,10 @@ rules engine imports Electron or the binding.
   through the same path a window blur takes, so the shell's existing
   automatic pause applies unchanged.
 - **Packaging and SteamPipe.** A packaging step produces an unpacked
-  Windows x64 build containing Electron, the game files, the binding's
-  native module and the Steam API library; a SteamPipe build script uploads
-  it to the app's Windows depot and sets it live on a private branch.
+  Windows x64 build containing Electron, the game files, the binding with
+  the packages it loads, the app id the build hands Steam and the Steam API
+  library; a SteamPipe build script uploads it to the app's Windows depot
+  and sets it live on a private branch.
 
 ## Data and state
 

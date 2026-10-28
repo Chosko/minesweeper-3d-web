@@ -10,8 +10,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  APP_DIRS, DEV_APP_ID_FILE, EXE_NAME, STEAM_API_LIBRARY, STEAM_CONFIG_KEYS,
-  appEntries, buildWindows, parseSteamConfig, renderTemplate, writeDevAppId, writeSteamPipeScripts,
+  APP_DIRS, DEV_APP_ID_FILE, EXE_NAME, STEAM_API_LIBRARY, STEAM_APP_FILE, STEAM_CONFIG_KEYS,
+  appEntries, buildWindows, builtAppIdProblem, runtimePackages, parseSteamConfig, renderTemplate, writeDevAppId, writeSteamPipeScripts,
 } from '../desktop/build/package.mjs';
 import { GAME_ENTRIES } from '../desktop/protocol.js';
 
@@ -217,6 +217,57 @@ test('a runtime dependency that is not installed stops the build', () => {
   try {
     rmSync(path.join(f.desktopDir, 'node_modules', 'steam-binding'), { recursive: true });
     assert.throws(() => buildWindows(f), /steam-binding/);
+  } finally {
+    rmSync(f.base, { recursive: true, force: true });
+  }
+});
+
+test('the binding\'s own dependencies ship with it, and of its optional ones only this platform\'s package', () => {
+  const f = fixture({ dependencies: { 'steam-binding': '1.0.0' } });
+  try {
+    const modules = path.join(f.desktopDir, 'node_modules');
+    put(path.join(modules, 'steam-binding', 'package.json'), JSON.stringify({ dependencies: { ffi: '3' }, optionalDependencies: { 'build-tool': '1' } }));
+    put(path.join(modules, 'ffi', 'package.json'), JSON.stringify({ optionalDependencies: { '@ffi/win32-x64': '3', '@ffi/linux-x64': '3', '@ffi/win32-arm64': '3' } }));
+    put(path.join(modules, 'ffi', 'index.js'), '');
+    put(path.join(modules, '@ffi', 'win32-x64', 'package.json'), JSON.stringify({ os: ['win32'], cpu: ['x64'] }));
+    put(path.join(modules, '@ffi', 'win32-arm64', 'package.json'), JSON.stringify({ os: ['win32'], cpu: ['arm64'] }));
+    put(path.join(modules, 'build-tool', 'package.json'), JSON.stringify({}));
+    assert.deepEqual(runtimePackages(f.desktopDir, ['steam-binding']), ['@ffi/win32-x64', 'ffi', 'steam-binding']);
+    buildWindows(f);
+    const files = listFiles(f.outDir);
+    for (const name of ['steam-binding', 'ffi', '@ffi/win32-x64']) {
+      assert.ok(files.includes(`resources/app/node_modules/${name}/package.json`), name);
+    }
+    assert.ok(!files.some((file) => /node_modules\/(build-tool|@ffi\/win32-arm64)\//.test(file)), 'other optional packages stay out');
+    rmSync(path.join(modules, 'ffi'), { recursive: true });
+    assert.throws(() => buildWindows(f), /ffi/, 'a missing required dependency stops the build');
+  } finally {
+    rmSync(f.base, { recursive: true, force: true });
+  }
+});
+
+test('the build carries the app id it hands Steam only when given one', () => {
+  const f = fixture();
+  try {
+    buildWindows(f);
+    assert.ok(!existsSync(path.join(f.outDir, 'resources', 'app', STEAM_APP_FILE)));
+    buildWindows({ ...f, appId: '480' });
+    assert.deepEqual(JSON.parse(readFileSync(path.join(f.outDir, 'resources', 'app', STEAM_APP_FILE), 'utf8')), { appId: '480' });
+    assert.ok(!listFiles(f.outDir).some((file) => path.posix.basename(file) === DEV_APP_ID_FILE));
+  } finally {
+    rmSync(f.base, { recursive: true, force: true });
+  }
+});
+
+test('a build is uploaded only when it carries the config\'s app id', () => {
+  const f = fixture();
+  try {
+    buildWindows(f);
+    assert.match(builtAppIdProblem(f.outDir, VALID_CONFIG), /no app id/);
+    buildWindows({ ...f, appId: '999' });
+    assert.match(builtAppIdProblem(f.outDir, VALID_CONFIG), /999/);
+    buildWindows({ ...f, appId: VALID_CONFIG.appId });
+    assert.equal(builtAppIdProblem(f.outDir, VALID_CONFIG), null);
   } finally {
     rmSync(f.base, { recursive: true, force: true });
   }

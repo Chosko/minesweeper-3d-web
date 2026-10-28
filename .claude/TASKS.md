@@ -56,7 +56,7 @@ Feature: steam-desktop-host
 
 ## 89. Steam adapter implementation on the chosen binding
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude+human
 Files: desktop/adapter/steam.js, desktop/adapter/interface.js, desktop/main.js, desktop/closing.js, desktop/package.json, tests/desktop-adapter-steam.test.mjs
 Preconditions: 85, 86, 88

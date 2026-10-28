@@ -7,14 +7,18 @@
 //   identity      player() → { steamId, name }; personaNames(steamIds) → { [steamId]: name }
 //   presence      loggedOn() → boolean; onPresenceChange(listener(loggedOn))
 //   achievements  setAchievement(name); storeStats(); achievementsSet(names) → the names set
-//   leaderboards  findLeaderboard(name) → handle; uploadScore(handle, score, details) keeping the best;
-//                 downloadScores(handle, { scope: 'global' | 'friends' | 'around', start, end });
-//                 downloadScoresForPlayers(handle, steamIds)
+//   leaderboards  findLeaderboard(name) → handle, `not-found` when Steam has none by that name;
+//                 uploadScore(handle, score, details) keeping the best → { changed, rankBefore, rankAfter },
+//                 a rank null when Steam reports none; downloadScores(handle, { scope: 'global' |
+//                 'friends' | 'around', start, end }) and downloadScoresForPlayers(handle, steamIds) →
+//                 { total, entries: [{ steamId, rank, score, details, fileHandle }] }, `total` the
+//                 leaderboard's entry count and `fileHandle` null when no file is attached
 //   sharedFiles   writeAndShare(fileName, bytes) → file handle; downloadShared(fileHandle) → bytes;
 //                 attachToLeaderboard(handle, fileHandle)
 //   overlay       onOverlayActivated(listener(active)) — the overlay itself renders in the window
 //
-// Steam ids, leaderboard handles and file handles cross the interface as strings.
+// The leaderboard and shared-file calls need the Steam network: they reject with `offline` while Steam
+// is not logged on. Steam ids, leaderboard handles and file handles cross the interface as strings.
 
 export const CAPABILITIES = Object.freeze(['identity', 'presence', 'achievements', 'leaderboards', 'sharedFiles', 'overlay']);
 
