@@ -210,7 +210,7 @@ Context:
 
 Done: 2026-10-28, commit `321c54a` (6 files, +41/-20). The binding is steamworks-ffi-node 0.11.3, which covered every capability in two rounds of user runs from Steam. steamworks.js 0.4.0 has no leaderboard, shared-file or overlay-event calls. The overlay draws over the transparent window only with `in-process-gpu`, `disable-direct-composition` and `ui-disable-partial-swap`. While it is open, the page behind turns semi-transparent. An opaque window avoids that but loses the transparent corners, and its fullscreen sometimes keeps the windowed bounds. The choice between the two is left to `/architect amend feature=steam-desktop-host`. Two premises were wrong: an improved score upload clears the entry's attachment, and replacing a shared file under the same name is safe, because each share gets a new handle.
 
-## [ ] 6. Implement task 89 — Steam adapter implementation on the chosen binding
+## [x] 6. Implement task 89 — Steam adapter implementation on the chosen binding
 
 Depends on: 2, 3, 5
 
@@ -225,6 +225,8 @@ Context:
 /task-implement 89 --review --rounds 2
 ```
 
+Done: 2026-10-28, commit `93cd785` (8 files, +1013/-27). Checked on the real Steam client in two rounds: the overlay opens every time, going offline and back works, and a direct launch with Steam closed makes Steam start and relaunch the game. The host keeps the page repainting while Steam runs, because Steam draws its overlay only when the game draws a frame and a paused game draws none; the feature document does not describe this yet. `npm run package` writes the app id into the build as `resources/app/steam-app.json` from the git-ignored Steam config, and `npm run steampipe` refuses a build whose app id is missing or mismatched. The premise that the binding writes `steam_appid.txt` was wrong: 0.11.3 only sets `SteamAppId`. The title bar's Quit and the in-game quit are unwired (task 107); taskbar close and Alt+F4 exit cleanly. The window stays transparent; the user prefers an opaque one, pending `/architect amend feature=steam-desktop-host`.
+
 ## [ ] 7. Implement task 90 — Update documentation for feature `steam-desktop-host`
 
 Depends on: 1, 2, 3, 4, 5, 6
@@ -234,6 +236,7 @@ Context:
 - 2026-10-25 (from step 3): task 86 is `[PARTIAL]` — content size is not reported (desktop layout deferred to a follow-up); the capability flags ignore logged-on state, contrary to the feature document's wording.
 - 2026-10-26 (amend): task 86 was re-planned for natural screen sizes and is finished by step 41 (inserted after step 3); this step also waits on step 41.
 - 2026-10-28 (from step 5): the binding's capability table, by candidate, exists only in step 5's report, because the spike code is deleted. steamworks-ffi-node has all of them. steamworks.js 0.4.0 has only identity (its own id and name) and achievements.
+- 2026-10-28 (from step 6): the host keeps the page repainting while Steam runs, because Steam draws its overlay and reacts to Shift+Tab only when the game draws a frame; the feature document does not describe this. The app id ships in the build as `resources/app/steam-app.json`, written by `npm run package` from the git-ignored Steam config; a development run reads `desktop/steam_appid.txt`, written by `npm run appid`. The Steam API library sits beside the executable when packaged and at `desktop/redist/steam_api64.dll` (git-ignored) in development. The adapter is tested against a stand-in for the binding; its layer over the real binding is covered only by the Steam client check. The window is still transparent; the user prefers an opaque one, pending `/architect amend feature=steam-desktop-host`.
 
 ```prompt
 /task-implement 90 --review
@@ -428,6 +431,7 @@ Depends on: 3, 21, 22
 Context:
 - Leaderboards is the Records screen's fourth tab, not a main-menu entry: it shows the rankings part of task 104 for the board Records shows, in place, inside Records; Quit is the main menu's final entry. Task 107 waits on tasks 165 and 170 (themes-tasks-implementation steps 53 and 59).
 - 2026-10-23 (amend): task 107 was re-planned: Quit is the title bar's button on every desktop window, not a main menu entry — it asks the leave-game confirmation only while a game is in progress and does nothing on the web; the task is now titled "Leaderboards tab in Records and Quit in the title bar" and waits on task 282 (m2b-themes title bar), which this runbook does not run.
+- 2026-10-28 (from step 6): on the installed Steam build neither the title bar's Quit nor the in-game quit does anything yet; taskbar close and Alt+F4 run the host's closing sequence (page flush, Steam shutdown, exit) and exit cleanly, so only the triggering buttons are missing.
 
 ```prompt
 /task-implement 107 --review
