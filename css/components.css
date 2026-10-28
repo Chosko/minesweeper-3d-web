@@ -1284,8 +1284,8 @@
      other parts hidden, as behind the 3D ready card and the pause card
      (css/style.css); no first-use toast draws over it.
    Replay viewer (index.html #replay, filled by js/replay/viewer.js): ui-backdrop
-     holding a ui-frame (#replay-frame) inset on it at the canvas's size (a
-     step smaller on the smaller desktop windows): the title bar's Back,
+     holding a ui-frame (#replay-frame) at its natural size, centred: the
+     title bar's Back,
      named "Back", and the heading, "Replay · <mode> · <board>" once a
      replay is ready. Its body, top to
      bottom: a ui-counter-strip across it of the replay's figures inline and

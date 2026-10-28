@@ -531,8 +531,7 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 body:has(> :is(#ready:not(.hidden):not(.ready--pending), #pause:not(.hidden), #results:not(.hidden))) #hud { visibility: hidden; }
 body:has(> :is(#ready:not(.hidden):not(.ready--pending), #pause:not(.hidden), #results:not(.hidden))) #c2d-frame :is(.ui-frame__start, .ui-frame__end, #c2d-counters, #c2d-figures, #c2d-divider, .ui-frame__foot, #hud-tap) { visibility: hidden; }
 body:has(> #m3d-status:not(.hidden)) #hud { visibility: hidden; }
-/* The replay viewer (#replay): its window inset on the backdrop at the canvas's size, a step smaller on
-   the smaller desktop windows; the body stacks the strip across it, the board area with the figures
+/* The replay viewer (#replay): its window at its natural size, centred on the backdrop; the body stacks the strip across it, the board area with the figures
    panel beside it down to its bottom, and the controls — the seek bar alone on its row, the tools row
    (transport, speed, the toggles, the end line, the files at its right end), the key line. The 2D board
    view fits the board area; a 3D replay's scene draws into it (js/main.js syncScenePanel), the layer
