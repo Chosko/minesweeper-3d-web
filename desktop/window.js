@@ -1,4 +1,4 @@
-// The game window: frameless and transparent, so the page draws the whole window in its title bar's
+// The game window: frameless and opaque, so the page draws the whole window in its title bar's
 // style; moved by the drag region the page marks; never resized by the player — it takes the
 // content size the page reports, never past the work area of the display it is on. The window
 // actions here are what the page bridge calls.
@@ -19,10 +19,10 @@ export function windowOptions(state, { preload } = {}) {
     fullscreen: Boolean(state.fullscreen),
     fullscreenable: true,
     frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
+    transparent: false,
+    backgroundColor: '#000000',
     hasShadow: false,
-    resizable: false,
+    resizable: Boolean(state.fullscreen),
     maximizable: false,
     show: false,
     webPreferences: {
@@ -41,7 +41,7 @@ export function windowOptions(state, { preload } = {}) {
  * moved inside it, again whenever the window is moved — to another display, it is laid out against
  * that one's work area. A size reported while fullscreen applies on leaving it. The fullscreen state
  * follows the window's enter and leave events, never `isFullScreen()`, which a transparent window on
- * Windows always answers false.
+ * Windows always answers false. Fullscreen fills the bounds of the display the window is on.
  */
 export function windowActions(win, { fullscreen = false, screen = null } = {}) {
   const listeners = new Set();
@@ -65,13 +65,22 @@ export function windowActions(win, { fullscreen = false, screen = null } = {}) {
     ];
     if (inside[0] !== x || inside[1] !== y) win.setPosition(...inside);
   };
+  // An opaque frameless window is resizable only while fullscreen, and takes its display's bounds
+  // explicitly on entering it: non-resizable, Windows leaves it at its windowed bounds. Leaving
+  // restores the windowed bounds it had.
+  let windowed = null;
   win.on('enter-full-screen', () => {
     isFullscreen = true;
     win.setMovable(false);
+    const display = screen?.getDisplayMatching(win.getBounds());
+    if (display?.bounds) win.setBounds(display.bounds);
     notify(true);
   });
   win.on('leave-full-screen', () => {
     isFullscreen = false;
+    if (windowed) win.setBounds(windowed);
+    windowed = null;
+    win.setResizable(false);
     win.setMovable(true);
     fit();
     notify(false);
@@ -82,7 +91,13 @@ export function windowActions(win, { fullscreen = false, screen = null } = {}) {
       size = [Math.round(width), Math.round(height)];
       fit();
     },
-    toggleFullscreen() { win.setFullScreen(!isFullscreen); },
+    toggleFullscreen() {
+      if (!isFullscreen) {
+        windowed = win.getBounds();
+        win.setResizable(true);
+      }
+      win.setFullScreen(!isFullscreen);
+    },
     minimise() { win.minimize(); },
     isFullscreen() { return isFullscreen; },
     onFullscreenChange(listener) {

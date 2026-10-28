@@ -135,6 +135,8 @@ class FakeWindow extends EventEmitter {
   isMinimized() { return this.minimised; }
   minimize() { this.calls.push(['minimize']); this.minimised = true; }
   setMovable(on) { this.movable = on; }
+  setResizable(on) { this.resizable = on; }
+  setBounds({ x, y, width, height }) { this.calls.push(['setBounds', x, y, width, height]); this.position = [x, y]; this.contentSize = [width, height]; }
   setContentSize(w, h) { this.calls.push(['setContentSize', w, h]); this.contentSize = [w, h]; }
   getPosition() { return [...this.position]; }
   setPosition(x, y) { this.calls.push(['setPosition', x, y]); this.position = [x, y]; }
@@ -147,10 +149,10 @@ class FakeContents extends EventEmitter {
   setWindowOpenHandler(fn) { this.openHandler = fn; }
 }
 
-test('the window is frameless, transparent, not resizable and isolated', () => {
+test('the window is frameless, opaque, not resizable and isolated', () => {
   const o = windowOptions(DEFAULT_WINDOW_STATE, { preload: '/p.js' });
   assert.equal(o.frame, false);
-  assert.equal(o.transparent, true);
+  assert.equal(o.transparent, false);
   assert.equal(o.resizable, false);
   assert.equal(o.maximizable, false);
   assert.equal(o.useContentSize, true);
@@ -169,6 +171,19 @@ test('the window is frameless, transparent, not resizable and isolated', () => {
   assert.equal(placed.x, 40);
   assert.equal(placed.y, 30);
   assert.equal(placed.fullscreen, true);
+  assert.equal(placed.resizable, true, 'resizable while fullscreen, so it fills the display');
+});
+
+test('fullscreen takes the display bounds and leaving it restores the windowed bounds', () => {
+  const win = new FakeWindow({ width: 800, height: 600 });
+  const screen = { getDisplayMatching: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1040 }, bounds: { x: 0, y: 0, width: 1920, height: 1080 } }) };
+  const actions = windowActions(win, { screen });
+  actions.toggleFullscreen();
+  assert.equal(win.resizable, true);
+  assert.deepEqual([win.position, win.contentSize], [[0, 0], [1920, 1080]]);
+  actions.toggleFullscreen();
+  assert.equal(win.resizable, false);
+  assert.deepEqual([win.position, win.contentSize], [[100, 50], [800, 600]]);
 });
 
 test('window actions: content size, fullscreen toggle with its events, minimise', () => {
@@ -285,7 +300,7 @@ test('the game window saves its position and fullscreen state as they change', (
   assert.deepEqual(saved.at(-1), { x: 300, y: 200, fullscreen: true }, 'fullscreen keeps the windowed position');
   actions.toggleFullscreen();
   win.emit('moved');
-  assert.deepEqual(saved.at(-1), { x: 0, y: 0, fullscreen: false });
+  assert.deepEqual(saved.at(-1), { x: 300, y: 200, fullscreen: false }, 'leaving restores the windowed position');
 });
 
 // --- window state -------------------------------------------------------------------------------
