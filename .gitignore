@@ -4,3 +4,4 @@
 /desktop/redist/
 /desktop/steam_appid.txt
 /desktop/steampipe/config.json
+/desktop/steampipe/deploy.env
