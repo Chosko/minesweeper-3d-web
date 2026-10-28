@@ -274,7 +274,7 @@ Tasks: 180, 181, 182, 183, 184, 185, 186, 187, 213, 224, 225, 226, 227, 246
 
 ## shared-screen-layout — The redesigned shared layout: screen frame, main menu, board choice and the other screens
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/shared-screen-layout.md
 Source: product-design.md § Visual design system (m2b-themes)
 Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 206, 209, 210, 211, 212, 218, 219, 220, 221, 222, 223, 228, 229, 230, 233, 234, 235, 237, 238, 239, 240, 241, 242, 244, 281, 282, 283, 284, 285, 289, 290, 292
@@ -283,7 +283,7 @@ Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 206, 209, 210, 211
 
 ## in-game-layout — The redesigned game window: counter strip, Restart, live figures panel and foot line
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/in-game-layout.md
 Source: product-design.md § Visual design system (m2b-themes)
 Tasks: 174, 175, 176, 177, 178, 179, 231, 232, 236, 245, 286, 287, 288, 291, 293
