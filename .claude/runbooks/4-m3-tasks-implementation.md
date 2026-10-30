@@ -296,6 +296,7 @@ Needs: agent+human
 Context:
 - 2026-10-27 (from step 4): Steamworks settings changes reach the client only after Publish, which the user does by hand after reading the pending-changes list; the user asked that nothing else in Steamworks be touched and nothing made public. The game build lives on the password-protected branch `internal`, and `default` holds only a placeholder build.
 - 2026-10-28 (from step 5): the user set a Steam Cloud byte quota and file count for the spike's shared-file checks. The values were not recorded, so check them against this task's quota.
+- 2026-10-31 (amend): task 93 was re-planned around the Steam Cloud quota the owner set in Steamworks — 100 MB and 1000 files per user, recorded in `steam-cloud-saves.md`. This step runs the reconciled body: it measures whether the replay library fits that quota, configures the Auto-Cloud root and pattern and runs the two-machine sync check; it neither derives a quota nor has the owner enter one.
 
 ```prompt
 /task-implement 93 --review
