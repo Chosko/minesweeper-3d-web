@@ -76,7 +76,7 @@ Feature: steam-desktop-host
 
 ## 91. Main-process file service and the bridge's storage and blob operations
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: desktop/file-service.js, desktop/bridge.js, desktop/preload.js, tests/desktop-file-service.test.mjs
 Preconditions: 85

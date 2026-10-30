@@ -1,6 +1,6 @@
 // The Electron main process: one game window loading the web game's files over the game protocol,
 // a single-instance lock, the window state file, the crash log, the closing sequence, the Steam
-// adapter and the page bridge.
+// adapter, the page bridge and the save directory's file service behind it.
 import { app, BrowserWindow, ipcMain, protocol, screen } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +13,7 @@ import { DEFAULT_CONTENT_SIZE, createGameWindow } from './window.js';
 import { createUnavailableAdapter } from './adapter/unavailable.js';
 import { OVERLAY_SWITCHES, openSteamworks, resolveAppId, startSteam, steamLibraryPath } from './adapter/steam.js';
 import { createBridge } from './bridge.js';
+import { createFileService, registerFileService } from './file-service.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -87,6 +88,7 @@ if (!app.requestSingleInstanceLock()) {
     capturePageErrors(crashLog, game.win.webContents);
     repaintForOverlay(game.win);
     bridge = createBridge({ adapter, window: game.actions, closing });
+    registerFileService(bridge, createFileService({ root: app.getPath('userData') }));
     bridge.attach({ ipcMain, webContents: game.win.webContents });
     game.win.on('close', (event) => {
       event.preventDefault();
