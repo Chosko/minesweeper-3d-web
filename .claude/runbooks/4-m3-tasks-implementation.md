@@ -286,7 +286,6 @@ Depends on: 3, 8
 
 Context:
 - 2026-10-25 (from step 3): task 86 is `[PARTIAL]` (content size deferred, nothing this step needs). The page already answers `flushRequested` once the records and replay saves finish; `desktop/closing.js` holds the host's bounded wait.
-
 - 2026-10-31 (from step 8): the file service lives under `<userData>/saves` — documents `<name>.json`, blob stores `<name>.blobs/`, set-aside `<name>.json.aside-YYYYMMDD-HHMMSS`. A missing document or blob reads as `null` (not `not-found`), deleting a missing blob succeeds, a missing store lists `[]`, set-aside resolves to the new file name or `null`; disk failure rejects `failed`, a bad name or argument `invalid`. Names are capped at 128 characters (tighter than the bridge's 256) and Windows device names are refused.
 
 ```prompt
@@ -318,7 +317,7 @@ Context: none
 /task-implement 94 --review
 ```
 
-## [~] 12. Implement task 95 — Leaderboard catalogue, eligibility and score details
+## [x] 12. Implement task 95 — Leaderboard catalogue, eligibility and score details
 
 Depends on: none
 
@@ -329,11 +328,14 @@ Context:
 /task-implement 95 --review
 ```
 
-## [ ] 13. Implement task 96 — Leaderboard outbox, verifier gate and submission state
+Done: 2026-10-31, commit `0ef75db` (5 files, +424/-1). Games started from a board code are not eligible, matching personal bests, though the task's criteria did not say so.
+
+## [~] 13. Implement task 96 — Leaderboard outbox, verifier gate and submission state
 
 Depends on: 12
 
-Context: none
+Context:
+- 2026-10-31 (from step 12): `detailsFor(summary, { rulesVersion })` needs the rules version handed in — the summary does not carry it; the verifier can take it from the decoded replay header (`header.profile.version`). `statsOf` returns null stats for undecodable details instead of throwing. `eligible` expects the replay as the recorder's `{ blob, listing }`, `listing.id` equal to the summary's id, and refuses board-code (challenge) games.
 
 ```prompt
 /task-implement 96 --review --rounds 2
@@ -348,6 +350,7 @@ Needs: agent+human
 Context:
 - 2026-10-11 (amend): task 97 was re-planned for 12 leaderboards, not 18, after the double-layer 3D presets were dropped.
 - 2026-10-28 (from step 5): an improved score upload clears the entry's attachment, so the attach must follow every improved upload. Replacing a shared file under the same name is safe, because each share gets a new handle and the old handle keeps returning the old file. The binding decodes downloaded details wrongly, so they are read from the raw array. The spike left a test leaderboard `SPIKE_PROBE` in Steamworks.
+- 2026-10-31 (from step 12): the 12 leaderboard names are `<mode>-<standard size>-<guess|no-guess>` (e.g. `classic-2d-expert-no-guess`, `3d-cube-beginner-guess`), pinned by a test; the manual Steamworks step must create the leaderboards under exactly these names.
 
 ```prompt
 /task-implement 97 --review --rounds 2
