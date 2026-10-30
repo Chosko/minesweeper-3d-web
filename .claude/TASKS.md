@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 294
+Last task number: 295
 
 ---
 
@@ -1814,6 +1814,16 @@ Feature: in-game-layout
 Status: [MISSING]
 Target: claude
 Files: css/style.css, css/components.css, themes/joyful-tiles/theme.css, tests/components.test.mjs, .claude/domain/features/shared-screen-layout.md
+Preconditions: none
+Feature: steam-desktop-host
+
+---
+
+## 295. Desktop window size after a theme switch and the failed-board card over the pause card
+
+Status: [MISSING]
+Target: claude
+Files: js/platform/window-actions.js, js/ui.js, css/style.css, tests/platform-selection.test.mjs
 Preconditions: none
 Feature: steam-desktop-host
 
