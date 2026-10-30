@@ -1,7 +1,8 @@
 // The platform module: the one place the platform's implementations are selected, once, when the
 // module is first evaluated at start-up. It looks for the page bridge the desktop host exposes
 // (js/platform/bridge-client.js): present, each slot takes its Steam implementation (STEAM_SLOTS,
-// which the Steam features fill — storage and the replay store from steam-cloud-saves, leaderboards,
+// which the Steam features fill — storage and the replay store from steam-cloud-saves, files in the
+// save directory (js/platform/steam-storage.js, js/platform/steam-blob-store.js), leaderboards,
 // achievements); absent, or for a slot no Steam feature has filled, the browser implementation or
 // local stand-in. Callers import what is selected from here and never an implementation, nor test
 // for Electron or the bridge: the web build's storage is the browser backend
@@ -14,7 +15,8 @@
 // js/platform/blob-store.js, `leaderboards`, `achievements`, and `capabilities`, the flags of what
 // the host offers (js/platform/capabilities.js), with the latest Steam state. From the host link
 // (linkHost, js/platform/bridge-client.js): `onOverlayActivated(listener)`, called when the Steam
-// overlay opens, and `addFlushHook(hook)`, a hook the host's flush before quitting awaits; and
+// overlay opens, and `addFlushHook(hook)`, a hook the host's flush before quitting awaits — with
+// the bridge, every storage and blob request in flight is already one; and
 // `bindDesktopWindow({ document, setIcon, fullArea })`, the desktop window driven from the page
 // (js/platform/window-actions.js). The web build has no host: every flag is off, no overlay or
 // flush ever comes, and the desktop window does nothing.
@@ -24,12 +26,25 @@ import { createBrowserBackend } from './browser-backend.js';
 import { createBlobStore } from './blob-store.js';
 import { openIndexedDBBlobStore } from './indexeddb-blob-store.js';
 import { createMemoryBlobStore } from './memory-blob-store.js';
+import { createSteamBackend, createSaveTracker } from './steam-storage.js';
+import { openSteamBlobStore, REPLAY_STORE } from './steam-blob-store.js';
 import { createCapabilities } from './capabilities.js';
 import { findBridge, createBridgeClient, linkHost } from './bridge-client.js';
 import { bindWindowActions } from './window-actions.js';
 
+/** Every storage and blob request the Steam implementations have in flight, for the quit flush. */
+const STEAM_SAVES = createSaveTracker();
+
 /** The Steam implementation of each slot, a factory of the bridge client; null keeps the browser one. */
-export const STEAM_SLOTS = Object.freeze({ storage: null, blobStore: null, leaderboards: null, achievements: null });
+export const STEAM_SLOTS = Object.freeze({
+  storage: (client) => createStorage({ backend: createSteamBackend({ client, track: STEAM_SAVES.track }) }),
+  blobStore: (client) => createBlobStore({
+    open: () => openSteamBlobStore({ client, name: REPLAY_STORE, track: STEAM_SAVES.track }),
+    fallback: () => createMemoryBlobStore(),
+  }),
+  leaderboards: null,
+  achievements: null,
+});
 
 /** The web build's implementation of each slot. */
 const BROWSER = Object.freeze({
@@ -70,6 +85,7 @@ export const achievements = PLATFORM.achievements;
 export const capabilities = PLATFORM.capabilities;
 
 export const { onOverlayActivated, addFlushHook } = linkHost({ client: PLATFORM.client, capabilities });
+if (PLATFORM.client) addFlushHook(() => STEAM_SAVES.settled());
 
 /** The desktop window driven from the page; nothing on the web. */
 export function bindDesktopWindow({ document, setIcon, fullArea }) {

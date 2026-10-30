@@ -86,7 +86,7 @@ Feature: steam-cloud-saves
 
 ## 92. Steam document storage, Steam blob store and the quit flush
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/platform/steam-storage.js, js/platform/steam-blob-store.js, js/platform/index.js, tests/platform-steam-storage.test.mjs
 Preconditions: 86, 91

@@ -27,6 +27,16 @@ export function createBridgeClient(host) {
     minimise: () => call(() => host.window.minimise()),
     toggleFullscreen: () => call(() => host.window.toggleFullscreen()),
     setContentSize: (width, height) => call(() => host.window.setContentSize(width, height)),
+    /** The save directory's documents (desktop/file-service.js): text, or null when there is none. */
+    readDocument: (name) => call(() => host.storage.read(name)),
+    writeDocument: (name, text) => call(() => host.storage.write(name, text)),
+    /** Renames the document aside; resolves the new file name, or null when there was none. */
+    setDocumentAside: (name) => call(() => host.storage.setAside(name)),
+    /** The save directory's blob stores, each by name: bytes, or null when there is none. */
+    putBlob: (store, key, bytes) => call(() => host.blobs.put(store, key, bytes)),
+    getBlob: (store, key) => call(() => host.blobs.get(store, key)),
+    deleteBlob: (store, key) => call(() => host.blobs.delete(store, key)),
+    listBlobs: (store) => call(() => host.blobs.list(store)),
     /** Subscribes to one of BRIDGE_EVENTS; returns the unsubscribe. */
     on: (event, listener) => host.events[event](listener),
   });

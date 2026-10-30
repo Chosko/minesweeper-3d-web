@@ -76,7 +76,7 @@ test('the page looks for the bridge the preload exposes, under its one global an
 
 test('with the bridge the platform selects the Steam implementation of every slot a later feature fills, and the browser one of every other', () => {
   const { host } = fakeBridge();
-  const steam = { ...STEAM_SLOTS, storage: (client) => ({ steam: 'storage', client }), achievements: () => 'steam achievements' };
+  const steam = { ...STEAM_SLOTS, storage: (client) => ({ steam: 'storage', client }), blobStore: null, achievements: () => 'steam achievements' };
   const platform = selectPlatform({ bridge: host, browser: BROWSER, steam });
   assert.equal(platform.host, 'desktop');
   assert.ok(platform.client, 'the bridge client');
@@ -88,13 +88,18 @@ test('with the bridge the platform selects the Steam implementation of every slo
   assert.equal(platform.capabilities.desktopHost, true);
 });
 
-test('the Steam slots are the four the later features fill, and none is filled yet', () => {
+test('the Steam slots are the four the later features fill; steam-cloud-saves fills storage and the blob store', () => {
   assert.deepEqual(Object.keys(STEAM_SLOTS), ['storage', 'blobStore', 'leaderboards', 'achievements']);
-  assert.ok(Object.values(STEAM_SLOTS).every((slot) => slot === null));
+  assert.equal(typeof STEAM_SLOTS.storage, 'function');
+  assert.equal(typeof STEAM_SLOTS.blobStore, 'function');
+  assert.equal(STEAM_SLOTS.leaderboards, null);
+  assert.equal(STEAM_SLOTS.achievements, null);
   const { host } = fakeBridge();
   const platform = selectPlatform({ bridge: host, browser: BROWSER });
-  assert.equal(platform.storage, 'browser storage');
-  assert.equal(platform.blobStore, 'browser blob store');
+  assert.notEqual(platform.storage, 'browser storage');
+  assert.notEqual(platform.blobStore, 'browser blob store');
+  assert.equal(platform.leaderboards, 'local leaderboards');
+  assert.equal(platform.achievements, 'local achievements');
 });
 
 test('without the bridge the platform selects the browser implementations and local stand-ins, and every flag is off', () => {
