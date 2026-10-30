@@ -32,7 +32,7 @@ import { token, onThemeChange } from './tokens.js';
 import { themeApplier } from './themes/applier.js';
 import { bindBoardArt } from './shell/board-art.js';
 import { BOARD_ART } from './classic2d/tile-skin.js';
-import { storage, blobStore, capabilities, onOverlayActivated, addFlushHook, bindDesktopWindow } from './platform/index.js';
+import { storage, blobStore, leaderboards, capabilities, onOverlayActivated, addFlushHook, bindDesktopWindow } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
 import { countedClicks } from './records/summary.js';
@@ -1215,6 +1215,7 @@ function copyCode({ kind, code, select }) {
 const RESULTS = createResultsFlow({
   records: RECORDS,
   replays: REPLAYS,
+  leaderboards,
   router: SHELL,
   restart: (source, { mode, summary }) => {
     if (MODES.active) PAUSE.restart(source);

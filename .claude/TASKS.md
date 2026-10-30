@@ -126,7 +126,7 @@ Feature: steam-leaderboards
 
 ## 96. Leaderboard outbox, verifier gate and submission state
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/leaderboards/outbox.js, js/leaderboards/submit.js, js/leaderboards/state.js, js/results/flow.js, tests/leaderboards-submit.test.mjs
 Preconditions: 95

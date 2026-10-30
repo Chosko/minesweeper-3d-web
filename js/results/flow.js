@@ -1,17 +1,19 @@
 // Results flow: on the game shell's game-finished hand-off, records the summary with the records
 // store, then routes to the results screen with the summary and the comparison; on the finished
 // and abandoned hand-offs, adds the game's sealed replay to the replay library once its summary is
-// recorded; Watch replay opens the replay viewer on the finished game's own replay, and Watch best on
+// recorded, then hands a finished game to the leaderboards' submit; Watch replay opens the replay viewer on the finished game's own replay, and Watch best on
 // the board's fastest-time best's kept replay. DOM-free: the
 // shell hands in the records store, the replay library, the router and its restart and main-menu
 // actions.
 //
-// createResultsFlow({ records, replays?, router, restart, goMenu }) → flow
+// createResultsFlow({ records, replays?, leaderboards?, router, restart, goMenu }) → flow
 //   records   the records store (js/records/store.js): record(summary) → comparison, available(),
 //             and the queries counters(board), history(board), winRate(board) and
 //             completedWinRate(board).
 //   replays   the replay library (js/replay/library.js): load(), add(blob, listing, setBest),
 //             has(id). Without it no replay is kept and no best is watched.
+//   leaderboards  { submit(summary, replay) } (js/leaderboards/submit.js). Without it nothing is
+//             submitted.
 //   router    { has, go } (js/shell/router.js).
 //   restart(source, current)  start the same board choice again; current is the shown data, whose
 //             mode may already have been left (the records screen leaves it).
@@ -54,6 +56,9 @@
 //   board's three stats. A replay the library cannot save, or a session where nothing persists,
 //   stays in the library's memory for the session. A library that throws or rejects is logged
 //   and changes nothing else.
+//   Submitting: a finished game's summary and replay (or null) go to leaderboards.submit once the
+//   summary is recorded and the replay's add has settled, whether or not either succeeded. Never
+//   an abandoned game. A submit that throws is logged and changes nothing else.
 //   current                   the data of the results screen last shown, or null; the screen is
 //                             shown again from it when Back returns to it without data.
 //   playAgain(source)         restart(source, current): Play again by click, Enter or R ('pointer',
@@ -105,18 +110,24 @@ function query(fn) {
   }
 }
 
-export function createResultsFlow({ records, replays = null, router, restart, goMenu }) {
+export function createResultsFlow({ records, replays = null, leaderboards = null, router, restart, goMenu }) {
   let current = null;
   let shownReplay = null;
   let told = false;
 
+  // → Promise settled once the replay's add has, never rejecting.
   function keep(replay, comparison) {
-    if (!replays || !replay) return;
+    if (!replays || !replay) return Promise.resolve();
     const setBest = setsBest(comparison);
-    Promise.resolve()
+    return Promise.resolve()
       .then(() => replays.load())
       .then(() => replays.add(replay.blob, replay.listing, setBest))
       .catch((err) => console.error(err));
+  }
+
+  function submit(kept, summary, replay) {
+    if (!leaderboards) return;
+    kept.then(() => leaderboards.submit(summary, replay)).catch((err) => console.error(err));
   }
 
   const flow = {
@@ -152,7 +163,7 @@ export function createResultsFlow({ records, replays = null, router, restart, go
         && lookup(() => replays.has(best)) === true ? best : null;
       current = { summary, mode, comparison, saved, notSaved, watch, watchBest, rank, streak, standing };
       router.go(RESULTS_SCREEN, { data: current });
-      keep(replay, comparison);
+      submit(keep(replay, comparison), summary, replay);
       return current;
     },
     abandoned(summary, mode, replay = null) {
