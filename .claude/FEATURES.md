@@ -193,7 +193,7 @@ Tasks: 84, 85, 86, 87, 88, 89, 90, 294, 295
 
 ## steam-cloud-saves — Save files in the user-data directory, synced by Steam Auto-Cloud
 
-Status: [ITERATED]
+Status: [PLANNED]
 Doc: .claude/domain/features/steam-cloud-saves.md
 Source: product-design.md § Steam features (m3-on-steam)
 Tasks: 91, 92, 93, 94

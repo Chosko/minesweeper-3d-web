@@ -94,9 +94,9 @@ Feature: steam-cloud-saves
 
 ---
 
-## 93. Steam Auto-Cloud configuration and quota
+## 93. Steam Auto-Cloud configuration and quota fit check
 
-Status: [STALE]
+Status: [MISSING]
 Target: claude+human
 Files: dev/measure-cloud-quota.mjs, .claude/domain/features/steam-cloud-saves.md, .claude/domain/features/replay-library.md
 Preconditions: 87, 92
