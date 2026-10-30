@@ -987,7 +987,7 @@
   border-top: 2px solid var(--color-line);
   background: var(--color-surface);
 }
-@container root (max-width: 1439px) { :root[data-theme="joyful-tiles"] #menu-foot { padding: 8px 20px 10px; } }
+@container root (max-width: 1439px) or (max-height: 820px) { :root[data-theme="joyful-tiles"] #menu-foot { padding: 8px 20px 10px; } }
 /* on a phone the touch note and the build label close the body, no line above them */
 @media (max-width: 719px) { :root[data-theme="joyful-tiles"] #menu-foot { padding: 0 18px 18px; border-top: 0; } }
 /* the white action foot of a screen's actions (board choices, Daily, results): the surface under a ruled line */

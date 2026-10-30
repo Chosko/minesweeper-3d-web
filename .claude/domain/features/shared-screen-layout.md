@@ -400,7 +400,9 @@ kit are described in [app-shell.md](../../context/app-shell.md),
   resolve per size step — desktop, compact, touch — each step's values
   held by the theme stylesheet. The desktop and compact steps are chosen
   from the available area (below), never from the desktop window's own
-  size. The touch step is the web build's alone, chosen from the browser
+  size: the compact step is taken when the area falls below the desktop
+  step in width or in height, for the frame's natural size and its head
+  alike. The touch step is the web build's alone, chosen from the browser
   window; the desktop host never takes it.
 - **Screen frame.** Every screen's outer composition, the in-game windows'
   included. Each screen has a **natural size**: the size its desktop

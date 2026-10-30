@@ -126,9 +126,9 @@ export const SETTINGS_COLUMNS = Object.freeze([
   Object.freeze(['bindings', 'data']),
 ]);
 
-/** The page's columns by window size, widest first: three on the widest windows, two from the kit breakpoint, then one in the phone's order. */
+/** The page's columns by window size, widest first: three on the widest windows above the compact step's height, two from the kit breakpoint, then one in the phone's order. */
 export const SETTINGS_LAYOUTS = Object.freeze([
-  Object.freeze({ media: '(min-width: 1600px)', columns: SETTINGS_COLUMNS }),
+  Object.freeze({ media: '(min-width: 1600px) and (min-height: 821px)', columns: SETTINGS_COLUMNS }),
   Object.freeze({ media: '(min-width: 1024px)', columns: Object.freeze([Object.freeze(['controls', 'graphics', 'audio']), Object.freeze(['theme', 'data', 'bindings'])]) }),
   Object.freeze({ media: null, columns: Object.freeze([Object.freeze(['controls', 'graphics', 'theme', 'audio', 'bindings', 'data'])]) }),
 ]);

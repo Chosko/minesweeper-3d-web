@@ -1072,10 +1072,10 @@ test('the viewer\'s composition is the canvas\'s: the strip, the body\'s padding
   const style = read('css/style.css');
   const theme = read('themes/joyful-tiles/theme.css');
   assert.match(style, /#replay-frame \{ width: 1640px; height: 940px; margin-top: -8px; \}/, 'xl: inset on the backdrop like Settings, 1640 × 940');
-  assert.match(style, /@container root \(max-width: 1439px\) \{ #replay-frame \{ width: 1302px; height: 712px; \} \}/, 'l: 1302 × 712');
+  assert.match(style, /@container root \(max-width: 1439px\) or \(max-height: 820px\) \{ #replay-frame \{ width: 1302px; height: 712px; \} \}/, 'l: 1302 × 712');
   assert.match(style, /@container root \(max-width: 1199px\) \{ #replay-frame \{ width: 984px; height: 728px; \} \}/, 'm: 984 × 728');
   assert.match(style, /#replay-body \{ display: flex; flex-direction: column; gap: 12px; padding: 16px 22px; \}/, 'the body: padding 16 × 22, its parts 12 apart');
-  assert.match(style, /@container root \(max-width: 1439px\) \{\s*#replay-body \{ padding: 12px 16px; \}/, '12 × 16 at l and m');
+  assert.match(style, /@container root \(max-width: 1439px\) or \(max-height: 820px\) \{\s*#replay-body \{ padding: 12px 16px; \}/, '12 × 16 at l and m');
   assert.match(style, /#replay-main \{ display: flex; flex: 1 1 auto; gap: 18px;/, 'the board area 18 from the panel');
   assert.match(style, /#rp-figures \{ flex: none; width: 280px; align-self: stretch;/, 'the panel down to the board area\'s bottom');
   assert.match(style, /\.replay-bar \{[^}]*justify-content: flex-start;[^}]*gap: 28px;[^}]*padding: 8px 14px;/, 'the strip across the body, its items 28 apart');

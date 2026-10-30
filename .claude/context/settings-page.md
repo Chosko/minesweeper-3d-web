@@ -25,9 +25,10 @@ Page (`js/settings/page.js`)
   stack of section ids (Controls and Audio, Graphics and Theme, Bindings
   and Data); `SETTINGS_LAYOUTS` — the columns by root area size, widest
   first, each `{ media, columns }`, `media` the query the area matches
-  (three stacks on the widest areas,
+  (three stacks on the widest areas above the compact step's height,
   Controls, Graphics, Audio beside Theme, Data, Bindings from the kit
-  breakpoint, one stack in the phone's order below it);
+  breakpoint and on a short area, one stack in the phone's order below
+  it);
   `SETTING_NOTES` — the settings noted "3D" under their name.
 - `settingControl(key, { themes? })` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
   label, … }` by schema type; `SLIDERS` adds a number's step, format,

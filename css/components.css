@@ -2341,7 +2341,7 @@ html { container: root / size; height: 100%; }
 /* The pause card at each window step's width (J-Pause-xl, -l, -m; full width on a phone), its title
    block (the title, then the board line and the status line under it), its actions and settings rows. */
 #pause-card { width: min(920px, 100%); padding: 26px 28px; }
-@container root (max-width: 1439px) { #pause-card { width: min(880px, 100%); } }
+@container root (max-width: 1439px) or (max-height: 820px) { #pause-card { width: min(880px, 100%); } }
 @container root (max-width: 1199px) { #pause-card { width: min(860px, 100%); } }
 #pause-card > .ui-columns--two { gap: 26px; }
 #pause-card .ui-column { gap: 14px; }

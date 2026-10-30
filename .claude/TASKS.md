@@ -1811,7 +1811,7 @@ Feature: in-game-layout
 
 ## 294. Frame size steps follow the root area's height as well as its width
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/style.css, css/components.css, themes/joyful-tiles/theme.css, tests/components.test.mjs, .claude/domain/features/shared-screen-layout.md
 Preconditions: none

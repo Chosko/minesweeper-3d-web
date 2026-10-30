@@ -474,15 +474,17 @@ test('the page is one column composition generated from the sections, in the wid
   assert.doesNotMatch(html, /ui-columns__span|ui-grid/, 'one composition, nothing across it');
 });
 
-test('each window size stacks the sections in its own independent columns: three on the widest windows, two from the kit breakpoint, one below it', () => {
+test('each window size stacks the sections in its own independent columns: three on the widest windows, two from the kit breakpoint and on a short area, one below it', () => {
   const ids = (columns) => columns.flat().sort();
-  assert.deepEqual(SETTINGS_LAYOUTS.map((l) => l.media), ['(min-width: 1600px)', '(min-width: 1024px)', null], 'widest first, the last for any window');
+  assert.deepEqual(SETTINGS_LAYOUTS.map((l) => l.media), ['(min-width: 1600px) and (min-height: 821px)', '(min-width: 1024px)', null], 'widest first, the last for any window');
   assert.equal(SETTINGS_LAYOUTS[0].columns, SETTINGS_COLUMNS, 'the widest window\'s are the markup\'s');
   assert.deepEqual(SETTINGS_LAYOUTS[1].columns, [['controls', 'graphics', 'audio'], ['theme', 'data', 'bindings']], 'the canvas\'s two stacks at l and m');
   assert.deepEqual(SETTINGS_LAYOUTS[2].columns, [['controls', 'graphics', 'theme', 'audio', 'bindings', 'data']], 'one stack in the phone\'s order');
   for (const l of SETTINGS_LAYOUTS) assert.deepEqual(ids(l.columns), ids(SETTINGS_COLUMNS), `${l.media}: every section once`);
-  const at = (width) => settingsColumnsFor((media) => Number(media.match(/\d+/)[0]) <= width);
+  const at = (width, height = 1080) => settingsColumnsFor((media) => [...media.matchAll(/min-(width|height): (\d+)px/g)].every(([, axis, px]) => Number(px) <= (axis === 'width' ? width : height)));
   assert.equal(at(1920), SETTINGS_LAYOUTS[0].columns);
+  assert.equal(at(1920, 821), SETTINGS_LAYOUTS[0].columns);
+  assert.equal(at(1920, 820), SETTINGS_LAYOUTS[1].columns, 'a short area\'s compact frame takes the two stacks');
   assert.equal(at(1600), SETTINGS_LAYOUTS[0].columns);
   assert.equal(at(1599), SETTINGS_LAYOUTS[1].columns);
   assert.equal(at(1024), SETTINGS_LAYOUTS[1].columns);
@@ -985,7 +987,7 @@ test('the Settings frame takes each window step\'s natural size, 4 px above the 
   const rules = css.slice(css.indexOf('#settings {'), css.indexOf('@media (max-width: 719px)', css.indexOf('#settings {')));
   assert.match(rules, /^#settings \{ padding: 8px 16px; \}\n#settings-frame \{ width: 1640px; height: 940px; margin-top: -8px; \}\n#settings-body \{ padding: 24px; \}/, 'xl: 1640 × 940, 4 px above the centre');
   assert.match(rules, /#settings-columns, #settings-columns > \.ui-column \{ gap: 24px; \}/, 'xl: the stack gap equal to the column gap');
-  const step = (max) => { const at = rules.indexOf(`@container root (max-width: ${max}px) {`); assert.ok(at > 0, `a ${max} px step`); return rules.slice(at, rules.indexOf('\n}', at)); };
+  const step = (max) => { const at = rules.indexOf(`@container root (max-width: ${max}px)${max === 1439 ? ' or (max-height: 820px)' : ''} {`); assert.ok(at > 0, `a ${max} px step`); return rules.slice(at, rules.indexOf('\n}', at)); };
   assert.match(step(1439), /\{\s*#settings-frame \{ width: 1302px; height: 712px; \}\s*#settings-body \{ padding: 18px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 18px; \}/, 'l: 1302 × 712, 18 apart');
   assert.match(step(1199), /\{\s*#settings-frame \{ width: 984px; height: 728px; \}\s*#settings-body \{ padding: 14px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 14px; \}/, 'm: 984 × 728, 14 apart');
 });

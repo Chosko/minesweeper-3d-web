@@ -3973,6 +3973,26 @@ test('the frame\'s head and foot follow the canvas\'s size steps — desktop, co
   assert.doesNotMatch(STYLE, /#replay-title \{[^}]*white-space: normal/, 'the replay viewer\'s title stays on one line on a phone');
 });
 
+test('the frame\'s compact natural sizes switch on the compact title bar\'s condition, the root area\'s height as well as its width', () => {
+  // Every rule taking the compact step, in the base, shell and theme stylesheets, takes it on a short area too.
+  for (const [file, css] of [['css/components.css', CSS], ['css/style.css', STYLE], ['themes/joyful-tiles/theme.css', THEME_CSS]]) {
+    for (const [prelude] of css.matchAll(/@container root [^{]*/g)) {
+      if (!prelude.includes('max-width: 1439px')) continue;
+      assert.ok(prelude.includes('(max-width: 1439px) or (max-height: 820px)'), `${file}: "${prelude.trim()}" takes the compact step on height too`);
+    }
+  }
+  assert.ok(mediaRules(THEME_CSS, COMPACT_STEP).some(([sel]) => sel === '.ui-frame__head'), 'the compact title bar on that condition');
+  // The screens' compact natural sizes, on that same condition.
+  const compact = [...mediaRules(STYLE, COMPACT_STEP), ...mediaRules(CSS, COMPACT_STEP)];
+  const SIZES = {
+    '#menu-frame': /width: 760px; height: 712px;/, '#records-frame': /width: 1302px; height: 712px;/,
+    '#settings-frame': /width: 1302px; height: 712px;/, '#replay-frame': /width: 1302px; height: 712px;/,
+    '#coming-soon-frame': /width: 820px; height: 520px;/, '#daily-frame': /width: 1080px;/,
+    '#results-frame': /width: min\(1000px, 100%\);/, '#pause-card': /width: min\(880px, 100%\);/, '.ready-body': /width: min\(580px, 100%\);/,
+  };
+  for (const [sel, size] of Object.entries(SIZES)) assert.match(bodyOf(compact, sel), size, `${sel} at its compact natural size on a short area`);
+});
+
 test('the white action foot: board choices, Daily and results end in a white bar, the game window keeps its yellow foot', () => {
   const frame = KIT_CATALOGUE.find((c) => c.name === 'ui-frame');
   assert.ok(frame.variants.includes('ui-frame__foot--action'), 'the foot variant is catalogued');
@@ -4374,6 +4394,8 @@ test('in a browser, every screen takes its artboard\'s frame size at the desktop
   const COMPACT = [1366, 768];
   const LARGE = [2560, 1440];
   const SMALL = [1200, 640];
+  // A desktop-wide area under 820 px high takes the compact step, as the compact title bar does.
+  const SHORT = [1920, 800];
   const SIZES = {
     menu: [[980, 952], [760, 712]], records: [[1640, 940], [1302, 712]], settings: [[1640, 940], [1302, 712]],
     replay: [[1640, 940], [1302, 712]], 'coming-soon': [[900, 560], [820, 520]], daily: [[1120, null], [1080, null]],
@@ -4401,12 +4423,12 @@ test('in a browser, every screen takes its artboard\'s frame size at the desktop
     const frames = () => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     const box = (sel) => page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; }, sel);
     const at = async ([width, height]) => { await page.setViewportSize({ width, height }); await frames(); };
-    // Each area in turn for the screen showing now: its natural size at the desktop and compact steps, centred, the
-    // same on a larger area, and within a smaller one.
+    // Each area in turn for the screen showing now: its natural size at the desktop and compact steps and on a short
+    // desktop-wide area, centred, the same on a larger area, and within a smaller one.
     const measure = async (screen) => {
       const sel = FRAMES[screen];
       const got = {};
-      for (const [step, area] of [['desktop', DESKTOP], ['compact', COMPACT]]) {
+      for (const [step, area] of [['desktop', DESKTOP], ['compact', COMPACT], ['short compact', SHORT]]) {
         await at(area);
         const r = await box(sel);
         const [w, h] = SIZES[screen][step === 'desktop' ? 0 : 1];

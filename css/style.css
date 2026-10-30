@@ -73,7 +73,7 @@ kbd {
 #touch-note[data-icon="hand"] { white-space: nowrap; }
 #touch-note > .ui-icon { width: 20px; height: 20px; }
 /* the smaller windows: each tile's art at two thirds of the largest window's */
-@container root (max-width: 1439px) {
+@container root (max-width: 1439px) or (max-height: 820px) {
   #menu-frame { width: 760px; height: 712px; }
   #menu-body { padding: 16px 22px; }
   #menu-entries { gap: 20px; }
@@ -152,7 +152,7 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 :is(#records-figures, #records-averages, #records-overall, #records-history) :is(h3, h4, p) { margin: 0; }
 #records-bests { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 #records-bests > .ui-stat--tile { min-width: 0; gap: 3px; padding: 12px 10px; container-type: inline-size; }
-@container root (max-width: 1439px) { #records-bests > .ui-stat--tile { padding: 10px 12px; } }
+@container root (max-width: 1439px) or (max-height: 820px) { #records-bests > .ui-stat--tile { padding: 10px 12px; } }
 #records-bests .ui-stat__value { font-size: min(32px, 18.5cqi); }
 #records-bests .ui-stat__detail { font-size: 13px; }
 #records-counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
@@ -190,7 +190,7 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 #records-replays-table [data-pinned] { display: inline-flex; }
 #records-replays-table [data-pinned] > .ui-icon { width: 18px; height: 18px; }
 #records-export-note { flex-basis: 100%; }
-@container root (max-width: 1439px) {
+@container root (max-width: 1439px) or (max-height: 820px) {
   #records-frame { width: 1302px; height: 712px; }
   #records-body { padding: 14px 18px; }
   #records-columns { gap: 16px; grid-template-columns: 470px auto minmax(0, 1fr); }
@@ -257,7 +257,7 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 #set-data-body > .ui-text { font-size: 15px; }
 #set-data-body > .ui-button { align-self: flex-start; }
 #set-export-actions { gap: 10px; }
-@container root (max-width: 1439px) {
+@container root (max-width: 1439px) or (max-height: 820px) {
   #settings-frame { width: 1302px; height: 712px; }
   #settings-body { padding: 18px; }
   #settings-columns, #settings-columns > .ui-column { gap: 18px; }
@@ -308,7 +308,7 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
    last, Play again and Main menu with no key hints on a touch screen. A first-use toast never draws
    over the card. */
 #results-frame { width: min(1040px, 100%); }
-@container root (max-width: 1439px) { #results-frame { width: min(1000px, 100%); } }
+@container root (max-width: 1439px) or (max-height: 820px) { #results-frame { width: min(1000px, 100%); } }
 @container root (max-width: 1199px) { #results-frame { width: min(960px, 100%); } }
 #results-head { grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; padding: 22px 28px; }
 #results-frame[data-outcome="lost"] #results-head { grid-template-columns: minmax(0, 1fr) auto; }
@@ -395,7 +395,7 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 .ready-pad b { font-weight: var(--font-weight-bold); }
 .ready--touch .ready-tip { display: none; }
 .ready-tip { font-size: var(--font-size-sm); }
-@container root (max-width: 1439px) { .ready-body { width: min(580px, 100%); } }
+@container root (max-width: 1439px) or (max-height: 820px) { .ready-body { width: min(580px, 100%); } }
 @container root (max-width: 1199px) { .ready-body { width: min(560px, 100%); } }
 @media (max-width: 719px) { .ready-body { width: min(360px, 100%); padding: 16px 18px; } }
 @media (max-height: 500px) and (orientation: landscape) {
@@ -553,10 +553,10 @@ body:has(> #m3d-status:not(.hidden)) #hud { visibility: hidden; }
    the right. */
 #replay { position: fixed; inset: 0; z-index: var(--z-overlay); padding: 8px 16px; }
 #replay-frame { width: 1640px; height: 940px; margin-top: -8px; }
-@container root (max-width: 1439px) { #replay-frame { width: 1302px; height: 712px; } }
+@container root (max-width: 1439px) or (max-height: 820px) { #replay-frame { width: 1302px; height: 712px; } }
 @container root (max-width: 1199px) { #replay-frame { width: 984px; height: 728px; } }
 #replay-body { display: flex; flex-direction: column; gap: 12px; padding: 16px 22px; }
-@container root (max-width: 1439px) {
+@container root (max-width: 1439px) or (max-height: 820px) {
   #replay-body { padding: 12px 16px; }
 }
 .replay-bar { flex: none; flex-wrap: wrap; justify-content: flex-start; gap: 28px; padding: 8px 14px; min-width: 0; }
@@ -603,7 +603,7 @@ body.pad-connected .replay-key__pad { display: inline-flex; }
 .replay-note > .ui-icon { width: 18px; height: 18px; flex: none; }
 /* The l step: a denser tools row, so the files keep its right end; a 3D replay's end line, which its
    camera toggle leaves no room for, takes the next row. */
-@container root (min-width: 1200px) and (max-width: 1439px) {
+@container root (min-width: 1200px) and ((max-width: 1439px) or (max-height: 820px)) {
   .replay-tools { column-gap: 8px; }
   .replay-toggles, .replay-files { gap: 8px; }
   :is(.replay-toggles, .replay-files) > .ui-button--sm { padding-inline: 10px; }
@@ -664,7 +664,7 @@ body.touch-play .hud-figures { max-height: calc(100cqh - 2 * 208px); }
 @media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
   #hud:not(.hud--2d) ~ #help { right: 348px; top: 50%; transform: translateY(-50%); width: 320px; }
 }
-@container root (max-width: 1439px) {
+@container root (max-width: 1439px) or (max-height: 820px) {
   .hud-figures { width: 290px; }
   #hud:not(.hud--2d) ~ #help { right: 338px; }
 }
@@ -822,7 +822,7 @@ body.touch-play .hud-figures { max-height: calc(100cqh - 2 * 208px); }
 :is(#c2d-bests, #bc-bests) > [data-records] { align-self: flex-end; }
 #hex-choice-frame > .ui-frame__foot, #tri-choice-frame > .ui-frame__foot,
 #c2d-choice-frame > .ui-frame__foot, #board-choice-frame > .ui-frame__foot { justify-content: flex-end; }
-@container root (max-width: 1439px) {
+@container root (max-width: 1439px) or (max-height: 820px) {
   #daily-frame { width: 1080px; }
   #hex-choice::before, #tri-choice::before, #hex-choice::after, #tri-choice::after,
   #c2d-choice::before, #board-choice::before, #daily::before,
@@ -839,7 +839,7 @@ body.touch-play .hud-figures { max-height: calc(100cqh - 2 * 208px); }
   #daily-body { grid-template-columns: 420px auto minmax(0, 1fr); }
 }
 /* The denser rows of the smaller desktop windows, never a phone's. */
-@container root (min-width: 720px) and (max-width: 1439px) {
+@container root (min-width: 720px) and ((max-width: 1439px) or (max-height: 820px)) {
   #hex-choice-options, #tri-choice-options, #hex-choice-detail, #tri-choice-detail,
   #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { gap: 10px; padding: 12px 22px 18px; }
   #hex-choice-options, #tri-choice-options,
@@ -863,7 +863,7 @@ body.touch-play .hud-figures { max-height: calc(100cqh - 2 * 208px); }
   #daily-modes { gap: 10px; }
   #daily-modes > .ui-options { gap: var(--space-2); }
 }
-@container root (min-width: 1200px) and (max-width: 1439px) { #daily-body { grid-template-columns: 460px auto minmax(0, 1fr); } }
+@container root (min-width: 1200px) and ((max-width: 1439px) or (max-height: 820px)) { #daily-body { grid-template-columns: 460px auto minmax(0, 1fr); } }
 /* The placeholder (#coming-soon): its window at the canvas's size, 4 px above the backdrop's centre, the
    body centring the lock badge, the line and Back; on a phone the window is full-bleed. */
 #coming-soon-frame { width: 900px; height: 560px; margin-top: -8px; }
@@ -872,7 +872,7 @@ body.touch-play .hud-figures { max-height: calc(100cqh - 2 * 208px); }
 #coming-soon-badge { display: grid; place-items: center; flex: none; width: 120px; height: 120px; }
 #coming-soon-heading { margin: 0; font-size: 36px; line-height: 1.1; }
 #coming-soon-text { line-height: 1.4; }
-@container root (max-width: 1439px) { #coming-soon-frame { width: 820px; height: 520px; } }
+@container root (max-width: 1439px) or (max-height: 820px) { #coming-soon-frame { width: 820px; height: 520px; } }
 @container root (max-width: 1199px) { #coming-soon-frame { width: 760px; } }
 @media (max-width: 719px) {
   #hex-choice, #tri-choice,
