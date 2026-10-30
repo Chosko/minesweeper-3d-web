@@ -358,7 +358,7 @@ Context:
 /task-implement 97 --review --rounds 2
 ```
 
-## [~] 15. Implement task 98 — Local leaderboards stand-in for the web build
+## [ ] 15. Implement task 98 — Local leaderboards stand-in for the web build
 
 Depends on: 3, 12
 
