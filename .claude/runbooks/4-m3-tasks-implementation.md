@@ -334,7 +334,7 @@ Context:
 
 Done: 2026-10-31, commit `0ef75db` (5 files, +424/-1). Games started from a board code are not eligible, matching personal bests, though the task's criteria did not say so.
 
-## [~] 13. Implement task 96 — Leaderboard outbox, verifier gate and submission state
+## [x] 13. Implement task 96 — Leaderboard outbox, verifier gate and submission state
 
 Depends on: 12
 
@@ -344,6 +344,8 @@ Context:
 ```prompt
 /task-implement 96 --review --rounds 2
 ```
+
+Done: 2026-10-31, commit `4669c60` (7 files, +776/-8). The outbox opens its pending-replay store through an `openBlobStore(name)` factory, as `leaderboards.outbox`, because the platform has one unnamed blob store; nothing creates or starts the submission at runtime yet. The submission state carries a `reason` field the domain does not list.
 
 ## [ ] 14. Implement task 97 — Steam submitter, best cache, reader and replay fetcher
 
@@ -355,6 +357,7 @@ Context:
 - 2026-10-11 (amend): task 97 was re-planned for 12 leaderboards, not 18, after the double-layer 3D presets were dropped.
 - 2026-10-28 (from step 5): an improved score upload clears the entry's attachment, so the attach must follow every improved upload. Replacing a shared file under the same name is safe, because each share gets a new handle and the old handle keeps returning the old file. The binding decodes downloaded details wrongly, so they are read from the raw array. The spike left a test leaderboard `SPIKE_PROBE` in Steamworks.
 - 2026-10-31 (from step 12): the 12 leaderboard names are `<mode>-<standard size>-<guess|no-guess>` (e.g. `classic-2d-expert-no-guess`, `3d-cube-beginner-guess`), pinned by a test; the manual Steamworks step must create the leaderboards under exactly these names.
+- 2026-10-31 (from step 13): nothing creates or starts the submission yet — `createLeaderboardSubmission(...)` and its `start()` belong in `js/leaderboards/index.js`. The submitter it expects is `submit({ leaderboard, id, score, details, replay })` returning `{ result: 'submitted', rankBefore, rankAfter }`, `{ result: 'dropped', reason }` or `{ result: 'retry', reason }`; logged-on events come through an `onLoggedOn(listener)` option. The outbox takes an `openBlobStore(name)` factory and must get a store of its own: given the shared replay-library store, its start-up clean-up deletes every blob it does not list and wipes the replay library. `js/main.js` already hands the platform's `leaderboards` slot to `createResultsFlow`.
 
 ```prompt
 /task-implement 97 --review --rounds 2
@@ -366,6 +369,7 @@ Depends on: 3, 12
 
 Context:
 - 2026-10-25 (from step 3): the page's leaderboards slot is null on the web build until this step fills it; task 86 is `[PARTIAL]` (content size deferred, nothing this step needs).
+- 2026-10-31 (from step 13): nothing creates or starts the submission yet — `createLeaderboardSubmission(...)` and its `start()` belong in `js/leaderboards/index.js`. The submitter it expects is `submit({ leaderboard, id, score, details, replay })` returning `{ result: 'submitted', rankBefore, rankAfter }`, `{ result: 'dropped', reason }` or `{ result: 'retry', reason }`; logged-on events come through an `onLoggedOn(listener)` option. The outbox takes an `openBlobStore(name)` factory and must get a store of its own: given the shared replay-library store, its start-up clean-up deletes every blob it does not list and wipes the replay library. `js/main.js` already hands the platform's `leaderboards` slot to `createResultsFlow`.
 
 ```prompt
 /task-implement 98 --review
@@ -375,7 +379,8 @@ Context:
 
 Depends on: 12, 13, 14, 15
 
-Context: none
+Context:
+- 2026-10-31 (from step 13): `.claude/context/app-shell-results.md` does not yet describe the results flow's new `leaderboards` option (added in `4669c60`). A game leaving the queue unsubmitted becomes `not-eligible` with a `reason` (`replaced`, `beaten`, `invalid`, `no-replay` or the submitter's own); a rejection carries `refused`, `differs`, `outcome`, `board` or `time` — a field the domain document does not list.
 
 ```prompt
 /task-implement 99 --review
