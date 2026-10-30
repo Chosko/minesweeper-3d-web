@@ -187,7 +187,7 @@ Tasks: 81, 82, 83
 Status: [PLANNED]
 Doc: .claude/domain/features/steam-desktop-host.md
 Source: product-design.md § Steam features (m3-on-steam)
-Tasks: 84, 85, 86, 87, 88, 89, 90
+Tasks: 84, 85, 86, 87, 88, 89, 90, 294
 
 ---
 

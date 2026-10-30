@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 293
+Last task number: 294
 
 ---
 
@@ -1806,5 +1806,15 @@ Target: claude
 Files: .claude/context/app-shell-2d.md, .claude/context/app-shell-3d.md, .claude/context/classic2d-board-view.md, .claude/context/app-shell-hud.md, .claude/context/INDEX.md
 Preconditions: 291
 Feature: in-game-layout
+
+---
+
+## 294. Frame size steps follow the root area's height as well as its width
+
+Status: [MISSING]
+Target: claude
+Files: css/style.css, css/components.css, themes/joyful-tiles/theme.css, tests/components.test.mjs, .claude/domain/features/shared-screen-layout.md
+Preconditions: none
+Feature: steam-desktop-host
 
 ---
