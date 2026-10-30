@@ -438,6 +438,44 @@ Then open the URL it prints (by default http://localhost:8080). The game does no
 `file://`, because ES modules need a server.
 3D needs WebGL 2; Classic 2D, Records and Settings run without it.
 
+## Desktop build (Steam)
+
+The Windows desktop build is an Electron application under `desktop/` that loads the same game
+files and talks to Steam through the Steamworks binding steamworks-ffi-node. It needs Node and
+Windows x64. To run it from the repository:
+
+```sh
+cd desktop
+npm install
+npm start
+```
+
+Without Steam the game plays fully with local saves. To run it against Steam in development:
+
+1. Copy `desktop/steampipe/config.example.json` to `desktop/steampipe/config.json` and fill in the
+   app id, the Windows depot id, the private branch to set the build live on (empty to upload
+   without setting it live) and a description. The file is git-ignored; the ids live nowhere else.
+2. Put `steam_api64.dll` from the Steamworks SDK (`redistributable_bin/win64/`) in
+   `desktop/redist/`, also git-ignored.
+3. Run `npm run appid` in `desktop/`, which writes the app id file a development run reads, then
+   `npm start` with the Steam client running and logged in.
+
+A private Steam build:
+
+1. `npm run package` in `desktop/` lays out the unpacked build in `desktop/out/win-x64/` —
+   `Minesweeper3D.exe`, the game files, the binding, the app id from the Steam config and the
+   Steam API library from `desktop/redist/`. Started outside Steam, the packaged build asks Steam to
+   relaunch it.
+2. `npm run steampipe` renders the SteamPipe app and depot build scripts into
+   `desktop/out/steampipe/` and prints the SteamCMD command that uploads the build and sets it live
+   on the config's private branch.
+3. Or `./deploy-steam.sh` from the repository root does both and uploads, with SteamCMD's path and
+   the builder account in the git-ignored `desktop/steampipe/deploy.env` (`STEAMCMD=…`,
+   `STEAM_LOGIN=…`) or the environment; `--dry-run` stops before the upload and prints its command.
+
+How the host is built — the window, the adapter, the page bridge, quitting and the packaging — is
+[.claude/context/desktop.md](.claude/context/desktop.md)'s.
+
 ## Tests
 
 The tests use Node's built-in test runner (no dependencies): unit tests for the rules engine and the
@@ -515,6 +553,11 @@ js/gamepad.js           Controller polling, stick curve, trigger hysteresis, but
 js/ui.js                Menus, HUD, pause menu, settings (DOM only, no game rules)
 js/textures.js          Procedurally drawn tile textures (canvas 2D -> texture array)
 js/audio.js             Synthesized sound effects (Web Audio)
+js/platform/            Platform layer: storage, blob store, start-up selection, capability flags, the page's
+                        side of the desktop bridge and the desktop window
+desktop/                Windows desktop host: Electron main process, Steam adapter, page bridge, packaging and
+                        SteamPipe scripts
+deploy-steam.sh         Packages the desktop build and uploads it to Steam as a private build
 tests/gamepad.test.mjs  Controller helpers, analog camera moves and trigger -> mouse-action sequences
 docs/ORIGINAL_SPEC.md   Description of the original game's behaviour
 vendor/three/           three.js r186, a single minified ES module, with its licence

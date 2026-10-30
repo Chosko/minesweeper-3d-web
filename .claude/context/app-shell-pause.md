@@ -35,8 +35,10 @@ head comment. Both modes' end delay and its skip are
 - **One owner.** `PAUSE` is the one owner of pause, resume, restart and back
   to menu. Every pause source goes through `pauseGame(source)` (nothing
   during an end delay, else `PAUSE.pause`): the overlay's pause button,
-  controller disconnect (with a note), `blur`, `visibilitychange` hidden,
-  `__ms.pause()`. Esc on the board, the controller's back buttons over a
+  controller disconnect (with a note), `blur` — the window's, and the
+  overlay pause: the Steam overlay opening at the desktop host
+  (`onOverlayActivated`, [platform.md](platform.md)) pauses as a window
+  blur —, `visibilitychange` hidden, `__ms.pause()`. Esc on the board, the controller's back buttons over a
   board status card and pointer-lock loss go through
   `backGame(source)` → `PAUSE.back`, which first cancels a board being
   generated (`cancelGeneration()`; a 3D game without lock or controller
@@ -112,6 +114,12 @@ head comment. Both modes' end delay and its skip are
   context-lost reload and Reset all data's reload set `reloading` to bypass
   it. It does not guard a game in its end delay, which `pagehide` finishes
   at once (`activeMode().finishNow()`) so it is recorded finished.
+- **Quit flush.** Before the desktop host quits it asks the page to flush
+  ([desktop.md](desktop.md) § Closing); the shell's flush hook
+  (`addFlushHook`, [platform.md](platform.md)) ends the game as closing the
+  page does — a game in its end delay finished, then `PAUSE.pageHide()` —
+  and awaits the records store's and the replay library's `settled()`
+  before the page answers, the host's own timeout bounding the wait.
 
 ## DOMAIN DEPENDENCIES
 
@@ -121,6 +129,8 @@ head comment. Both modes' end delay and its skip are
   — the replay beside the summary in the finished and abandoned reports.
 - [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
   — the pause card's and the confirmations' layout.
+- [../domain/features/steam-desktop-host.md](../domain/features/steam-desktop-host.md)
+  — the overlay pause and the flush before quitting.
 
 ## CROSS-REFERENCES
 

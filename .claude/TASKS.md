@@ -66,7 +66,7 @@ Feature: steam-desktop-host
 
 ## 90. Update documentation for feature `steam-desktop-host`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/app-shell-pause.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 84, 85, 86, 87, 88, 89

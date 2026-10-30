@@ -43,11 +43,16 @@ document's browser key directly at start-up.
 Platform module (`js/platform/index.js`) — what callers import: `storage`
 and its methods `register`, `load`, `save`, `clear`, `available` by name;
 `blobStore`; `leaderboards` and `achievements` (null until their features
-fill them); `capabilities`, the live flags of what the host offers —
-`desktopHost`, `steam`, `achievements`, `leaderboards`, `sharedFiles`,
-`cloud` — with a getter per flag, `snapshot()`, `steamState()` and
-`subscribe(listener)`, updated from the host's Steam state events (logged-on
-state never turns a flag off); `onOverlayActivated(listener)`, which the
+fill them); `capabilities`, the live flags of what the host offers, which
+callers read instead of testing for the platform — `desktopHost` (the
+bridge is present), `steam` (the host runs the Steam adapter, not the
+unavailable one), `achievements`, `leaderboards` and `sharedFiles` (Steam
+present and the adapter's capability of that name), `cloud` (Steam
+present) — with a getter per flag, `snapshot()`, `steamState()` and
+`subscribe(listener)`, derived at start-up from selection and again from
+every Steam state the host sends (`deriveFlags`; logged-on state never
+turns a flag off, since a call needing the Steam network rejects
+`offline`); `onOverlayActivated(listener)`, which the
 shell answers with the window blur's pause; `addFlushHook(hook)`, awaited
 before the page answers the host's flush request; `bindDesktopWindow({
 document, setIcon, fullArea })` → `{ actions, reportSize, screenChanged,
@@ -204,6 +209,9 @@ return a Promise and may throw.
 
 ## CROSS-REFERENCES
 
+- [desktop.md](desktop.md) — the host's side of the bridge: its request
+  and event lists, the Steam state it sends, the window actions, the
+  closing sequence that sends the flush request.
 - [testing.md](testing.md) — `tests/platform-storage.test.mjs`,
   `tests/platform-browser.test.mjs` (every platform browser test, the
   IndexedDB blob store's round trip among them),
