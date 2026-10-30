@@ -161,8 +161,14 @@ return a Promise and may throw.
   follows it.
 - **The windowed window.** Windowed at the desktop host the window is the
   shown screen's frame (`bindScreenSize`): the screens lay out in the
-  available area as everywhere, the box around every shown `SCREEN_FRAMES`
-  element — a card over the game window widening it — is measured, the root
+  available area as everywhere, the box around the shown `SCREEN_FRAMES`
+  elements is measured — only those inside a layer over the screen
+  (`WINDOW_OVER`, `data-window-over` on `index.html`'s pause, results,
+  context-lost, ready and Learn 3D end layers) while one shows, so a popup
+  is the window alone and the game window's size comes back when it hides;
+  a card inside the window (`WINDOW_INSIDE`, `data-window-inside`: the
+  Classic 2D status card, which the shell fits inside the game window) is
+  never measured —, the root
   element shifted by its corner (`--window-x`, `--window-y`, which
   `css/style.css` applies while the root carries `data-window-state="windowed"`,
   the 3D scene's canvas shifted back onto the window and the toast placed on

@@ -49,8 +49,9 @@ overlay's parts and the aimed-cell readout are
     `sizeBoard2D(extent)` (the board area `#c2d-stage` at the board's extent in the room the window's chrome leaves, measured under `#c2d.c2d--measure`, giving back what the body or the board column then overflows, then `fitTitle2D`; → whether it changed),
     `fitTitle2D()` (the title bar fitted to the board column, `fitTitleBar`; the frame's `min-width` its least width, so only a column narrower than Pause and the window buttons widens the window),
     `setBoard2D(board)` (the foot line: `boardTitle2D`, then `boardFoot2D`), `updateFigures2D(input, {tick, bests})`,
-    `setBoardStatus` (the card centred on the board column `#c2d-main`,
-    `_centreStatus2D`, again on every `placePanel2D`); 3D `setBoardStatus3D`
+    `setBoardStatus` (the card centred on the board column `#c2d-main` in
+    the root's own coordinates, its `--status-room` the game window's width
+    about that centre, `_centreStatus2D`, again on every `placePanel2D`); 3D `setBoardStatus3D`
     (progress by `progressLine`); on either a failure offering nothing
     shows Back alone, with the arrow icon;
   - menu: `setEntryUnavailable` (a play tile's reason, long and short, its

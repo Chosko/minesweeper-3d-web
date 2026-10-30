@@ -141,9 +141,10 @@ test('the theme declares every token the base stylesheets and the screens read',
   for (const f of sources) {
     for (const [, name] of strip(read(f)).matchAll(/var\((--[\w-]+)/g)) {
       // the menu buttons' and the logo letters' own accent slots (the full colour, its edge and ink, and the
-      // pastel and its edge at rest), the logo's extrusion and outline by size step, and the desktop window's
-      // corner in the root area the page sets (js/platform/window-actions.js)
-      if (['--f', '--e', '--o', '--fs', '--es', '--logo-x', '--logo-y', '--logo-o', '--window-x', '--window-y'].includes(name)) continue;
+      // pastel and its edge at rest), the logo's extrusion and outline by size step, the desktop window's
+      // corner in the root area the page sets (js/platform/window-actions.js) and the Classic 2D status
+      // card's room in the game window the shell sets (js/ui.js)
+      if (['--f', '--e', '--o', '--fs', '--es', '--logo-x', '--logo-y', '--logo-o', '--window-x', '--window-y', '--status-room'].includes(name)) continue;
       assert.ok(ALL.has(name), `${f} reads undeclared ${name}`);
     }
   }

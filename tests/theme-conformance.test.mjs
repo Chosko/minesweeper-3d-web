@@ -486,9 +486,10 @@ test('the fill contrast check passes readable go and stop buttons and flags a fa
 const walk = (dir) => readdirSync(join(ROOT, dir), { withFileTypes: true })
   .flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.js') ? [`${dir}/${e.name}`] : []));
 
-// Custom properties no theme declares: the menu entries' own accent slots, and the desktop window's
-// corner in the root area the page sets (js/platform/window-actions.js).
-const PAGE_SET = ['--f', '--e', '--o', '--window-x', '--window-y'];
+// Custom properties no theme declares: the menu entries' own accent slots, the desktop window's
+// corner in the root area the page sets (js/platform/window-actions.js) and the Classic 2D status
+// card's room in the game window the shell sets (js/ui.js).
+const PAGE_SET = ['--f', '--e', '--o', '--window-x', '--window-y', '--status-room'];
 
 test('the required token set is what the base stylesheets and the screens read, plus the contrast roles', () => {
   const structural = new Set([...read('css/tokens.css').matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));

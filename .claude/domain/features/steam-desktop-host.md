@@ -86,8 +86,12 @@ rules engine imports Electron or the binding.
   the work area of the display the window is on — never against the
   window's own size, which would feed back on itself — and the page reports
   that size over the bridge on every screen change and every change of the
-  frame's size (the board choice window grows when its panel opens); the
-  host resizes the window to it, never past the work area
+  frame's size (the board choice window grows when its panel opens). A
+  popup over a flat game — the pause card, the results, the context-lost
+  card — is the window alone while it shows, never the game window and the
+  popup together, and the game window's size comes back when it hides; the
+  board status card stays inside the game window. The host resizes the
+  window to the reported size, never past the work area
   ([shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
   **Screen frame**). It is windowed by default. Fullscreen renders the game
   full-screen on its backdrop, the frame at its natural size, as the canvas

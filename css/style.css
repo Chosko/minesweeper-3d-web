@@ -529,6 +529,9 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
    width and never past a phone's, centred on the board: the 3D box in the window's centre, the Classic 2D
    board column where UI places it (UI._centreStatus2D). The spinner 16 px from its title and progress line. */
 #c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); width: min(480px, calc(100cqw - 2 * var(--space-4))); box-sizing: border-box; }
+/* Windowed at the desktop host the Classic 2D status card stays inside the game window it shows over
+   (it never sizes the window: data-window-inside): no wider than the window's room about its centre. */
+:root[data-host="desktop"][data-window-state="windowed"] #c2d-status { max-width: calc(var(--status-room, 100cqw) - 2 * var(--space-4)); }
 :is(#c2d-status, #m3d-status) > .ui-row { gap: var(--space-4); flex-wrap: nowrap; }
 :is(#c2d-status, #m3d-status) .ui-card__title { margin: 0; font-size: var(--font-size-xl); }
 :is(#c2d-progress, #m3d-progress) { margin: 4px 0 0; font-size: 15px; }

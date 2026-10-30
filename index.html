@@ -138,7 +138,7 @@
     </section>
   </section>
   <!-- Classic 2D board status: a slow first click's generation, or a failed board and its offer -->
-  <section id="c2d-status" class="ui-card ui-screen hidden" aria-labelledby="c2d-status-title" role="status">
+  <section id="c2d-status" class="ui-card ui-screen hidden" data-window-inside aria-labelledby="c2d-status-title" role="status">
     <div class="ui-row">
       <span id="c2d-spinner" class="ui-spinner" aria-hidden="true"></span>
       <div>
@@ -380,7 +380,7 @@
   </section>
 
   <!-- Click to play -->
-  <section id="ready" class="overlay hidden" aria-label="Click to play">
+  <section id="ready" class="overlay hidden" data-window-over aria-label="Click to play">
     <section class="ui-card ui-screen ready-body" aria-labelledby="ready-title">
       <div class="ready-main">
         <h2 class="ui-card__title ready-heading" id="ready-heading" aria-hidden="true">Click to play</h2>
@@ -417,7 +417,7 @@
   </section>
 
   <!-- WebGL context lost -->
-  <section id="ctx-lost" class="overlay hidden" aria-label="Graphics context lost">
+  <section id="ctx-lost" class="overlay hidden" data-window-over aria-label="Graphics context lost">
     <section class="ui-card ui-screen" role="alertdialog" aria-labelledby="ctx-lost-title" aria-describedby="ctx-lost-text">
       <h2 class="ui-card__title" id="ctx-lost-title">Graphics context lost</h2>
       <p class="ui-text" id="ctx-lost-text">The browser stopped the 3D view. Reloading restores it.</p>
@@ -647,7 +647,7 @@
   <!-- /Replay viewer -->
 
   <!-- Results -->
-  <section id="results" class="overlay hidden" aria-label="Results">
+  <section id="results" class="overlay hidden" data-window-over aria-label="Results">
     <section id="results-frame" class="ui-frame" aria-labelledby="results-title" data-outcome="won">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head" id="results-head">
@@ -889,7 +889,7 @@
 
   <!-- Pause / end menu -->
   <!-- Learn 3D end card: over the stopped scene of the guided board (js/mode3d/learn.js) -->
-  <section id="learn-end" class="overlay hidden" aria-label="Learn 3D">
+  <section id="learn-end" class="overlay hidden" data-window-over aria-label="Learn 3D">
     <section class="ui-card ui-screen" aria-labelledby="learn-end-title">
       <div class="ui-section-label"><span class="ui-section-label__text">Learn 3D</span></div>
       <h2 class="ui-card__title" id="learn-end-title">You cleared the box!</h2>
@@ -901,7 +901,7 @@
     </section>
   </section>
 
-  <section id="pause" class="overlay hidden" aria-label="Pause menu">
+  <section id="pause" class="overlay hidden" data-window-over aria-label="Pause menu">
     <section id="pause-card" class="ui-card ui-screen ui-screen--wide" aria-labelledby="pause-title">
       <div class="ui-columns ui-columns--two">
         <div class="ui-column">

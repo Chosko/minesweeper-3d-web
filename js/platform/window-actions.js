@@ -8,7 +8,7 @@
 // window is on — its work area while windowed, the whole screen in fullscreen (bindAvailableArea) —,
 // settles the stylesheets' window-size media queries — the touch step's — against that area, so the
 // desktop host never takes the phone layout (bindAreaMedia), and — windowed — makes the window the
-// shown screen's frame: the frames laid out in the available area as everywhere, the page shifted so
+// shown screen's frame, or a popup's alone while one shows over it: the frames laid out in the available area as everywhere, the page shifted so
 // their box sits at the window's edges and that box's size reported to the host on every screen change
 // and every change of a frame's size, the whole available area during 3D play (bindScreenSize). With no host (the web build) it does nothing: the root area is the browser
 // window and the touch step follows the window. Quit is not the desktop window's: the title bar's
@@ -28,6 +28,12 @@ const NONE = Object.freeze({ actions: Object.freeze({}), reportSize() {}, screen
 
 /** The screens' frames: every screen's ui-frame and every card shown as a screen of its own. */
 export const SCREEN_FRAMES = '.ui-frame, .ui-screen';
+
+/** A layer shown over a screen (a popup): while a frame in it shows, that frame alone is the window. */
+export const WINDOW_OVER = '[data-window-over]';
+
+/** A card laid out inside the window it shows over: never measured, so it never sizes the window. */
+export const WINDOW_INSIDE = '[data-window-inside]';
 
 /** Whether the window fills its screen: a window opened full screen, before any fullscreen event. */
 const fillsScreen = (win) => Boolean(win?.screen) && win.innerWidth >= win.screen.width && win.innerHeight >= win.screen.height;
@@ -129,8 +135,10 @@ export function bindAreaMedia(doc) {
 
 /**
  * The windowed window's size, from the screens of `document` laid out in the available area `area()`
- * ({ width, height }): while `fullArea()` holds (3D play) the whole area, else the box around every
- * shown screen frame (SCREEN_FRAMES) — a card over the game window included. The root element is
+ * ({ width, height }): while `fullArea()` holds (3D play) the whole area, else the box around the
+ * shown screen frames (SCREEN_FRAMES) — only those in a layer over the screen (WINDOW_OVER) while one
+ * shows, so a popup is the window alone, never the popup and the screen under it; a card inside the
+ * window (WINDOW_INSIDE) is never measured. The root element is
  * shifted by that box's corner (`--window-x`, `--window-y`, which the stylesheet applies while
  * windowed), so the box sits at the window's edges, and `report(width, height)` gets its size; every
  * frame is watched for a change of its size. Nothing is measured before the first `screenChanged()`,
@@ -156,9 +164,11 @@ export function bindScreenSize(doc, { area, report, fullArea = () => false, paus
       report(width, height);
       return;
     }
+    const shown = [...doc.querySelectorAll(SCREEN_FRAMES)]
+      .filter((frame) => frame.getClientRects().length && !frame.closest?.(WINDOW_INSIDE));
+    const over = shown.filter((frame) => frame.closest?.(WINDOW_OVER));
     let box = null;
-    for (const frame of doc.querySelectorAll(SCREEN_FRAMES)) {
-      if (!frame.getClientRects().length) continue;
+    for (const frame of over.length ? over : shown) {
       const r = frame.getBoundingClientRect();
       const left = r.left + shift.x;
       const top = r.top + shift.y;

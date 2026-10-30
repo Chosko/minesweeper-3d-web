@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { selectPlatform, STEAM_SLOTS } from '../js/platform/index.js';
 import { CAPABILITY_FLAGS, createCapabilities, deriveFlags } from '../js/platform/capabilities.js';
 import { BRIDGE_GLOBAL, BRIDGE_EVENTS, findBridge, createBridgeClient, linkHost } from '../js/platform/bridge-client.js';
-import { bindWindowActions, bindAvailableArea, bindAreaMedia, areaMatches, WINDOW_STATES, DRAG_REGION_CSS, SCREEN_FRAMES } from '../js/platform/window-actions.js';
+import { bindWindowActions, bindAvailableArea, bindAreaMedia, areaMatches, WINDOW_STATES, DRAG_REGION_CSS, SCREEN_FRAMES, WINDOW_OVER, WINDOW_INSIDE } from '../js/platform/window-actions.js';
 import { BRIDGE_GLOBAL as HOST_GLOBAL, BRIDGE_EVENTS as HOST_EVENTS } from '../desktop/bridge.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -292,11 +292,12 @@ function withListeners(target) {
  * A screen's frame laid out in the root area at `box` ({ left, top, width, height }), shown while
  * `shown`: the page reads it shifted by the root's `--window-x` / `--window-y`, as a browser does.
  */
-function fakeFrame(root, box, shown = true) {
+function fakeFrame(root, box, shown = true, layer = null) {
   const shift = (name) => parseFloat(root.style[name] ?? '0') || 0;
   return {
     box,
     shown,
+    closest(selector) { return selector === layer ? {} : null; },
     getClientRects() { return this.shown ? [this.box] : []; },
     getBoundingClientRect() {
       const left = this.box.left - shift('--window-x');
@@ -335,7 +336,7 @@ function fakeDocument({ fullscreenButtons = 2, innerWidth = 1280, innerHeight = 
     },
     defaultView: { innerWidth, innerHeight, screen: withListeners(screen), ResizeObserver, ...withListeners({}) },
   };
-  const addFrame = (box, shown) => { const frame = fakeFrame(doc.documentElement, box, shown); frames.push(frame); return frame; };
+  const addFrame = (box, shown, layer) => { const frame = fakeFrame(doc.documentElement, box, shown, layer); frames.push(frame); return frame; };
   return { doc, buttons, appended, addFrame, resized };
 }
 
@@ -443,7 +444,7 @@ test('windowed, the window is the shown screen\'s frame: its size reported on ev
   assert.deepEqual(sizeReports(bridge), [[980, 952], [1200, 800]]);
 });
 
-test('a change of the frame\'s size is reported: the board choice panel opening, a board loading, a card over the game', async () => {
+test('a change of the frame\'s size is reported: the board choice panel opening, a board loading', async () => {
   const bridge = fakeBridge();
   const { doc, addFrame, resized } = fakeDocument();
   const game = addFrame({ left: 660, top: 220, width: 600, height: 600 });
@@ -451,15 +452,61 @@ test('a change of the frame\'s size is reported: the board choice panel opening,
   win.screenChanged();
   game.box = { left: 560, top: 170, width: 800, height: 700 };
   resized(game);
-  const card = addFrame({ left: 710, top: 370, width: 500, height: 300 });
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [[600, 600], [800, 700]]);
+  assert.deepEqual(shiftOf(doc), ['560px', '170px']);
+});
+
+test('a popup over the game window is the window alone while it shows, never both; the game window comes back after it', async () => {
+  const bridge = fakeBridge();
+  const { doc, addFrame, resized } = fakeDocument();
+  addFrame({ left: 760, top: 270, width: 400, height: 500 });
+  const results = addFrame({ left: 440, top: 300, width: 1040, height: 440 }, false, WINDOW_OVER);
+  const pause = addFrame({ left: 500, top: 400, width: 920, height: 300 }, false, WINDOW_OVER);
+  const win = bindWindowActions({ client: createBridgeClient(bridge.host), document: doc, setIcon: () => {} });
   win.screenChanged();
-  const results = addFrame({ left: 440, top: 300, width: 1040, height: 440 });
+  results.shown = true;
+  win.screenChanged();
+  assert.deepEqual(shiftOf(doc), ['440px', '300px'], 'the results frame at the window\'s top-left corner');
+  results.shown = false;
+  win.screenChanged();
+  assert.deepEqual(shiftOf(doc), ['760px', '270px'], 'the game window back at the window\'s edges');
+  pause.shown = true;
+  win.screenChanged();
+  pause.box = { left: 500, top: 350, width: 920, height: 400 };
+  resized(pause);
+  pause.shown = false;
   win.screenChanged();
   await tick();
-  assert.deepEqual(sizeReports(bridge), [[600, 600], [800, 700], [1040, 700]],
-    'the card inside the game window changes nothing; the wider results take the window with them');
-  assert.deepEqual(shiftOf(doc), ['440px', '170px']);
-  assert.ok(card && results);
+  assert.deepEqual(sizeReports(bridge), [[400, 500], [1040, 440], [400, 500], [920, 300], [920, 400], [400, 500]],
+    'the popup\'s size alone — its confirm box growing it —, then the game window\'s');
+});
+
+test('a card inside the window never sizes it: the window stays the game window', async () => {
+  const bridge = fakeBridge();
+  const { doc, addFrame } = fakeDocument();
+  addFrame({ left: 760, top: 270, width: 400, height: 500 });
+  addFrame({ left: 720, top: 470, width: 480, height: 100 }, true, WINDOW_INSIDE);
+  const win = bindWindowActions({ client: createBridgeClient(bridge.host), document: doc, setIcon: () => {} });
+  win.screenChanged();
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [[400, 500]]);
+  assert.deepEqual(shiftOf(doc), ['760px', '270px']);
+});
+
+test('the layers shown over a game are marked as over the window, the board status card as inside it', () => {
+  const html = read('index.html');
+  for (const id of ['pause', 'results', 'ctx-lost', 'ready', 'learn-end']) {
+    assert.match(html, new RegExp(`<section id="${id}" [^>]*\\bdata-window-over\\b`), `#${id} is a layer over the window`);
+  }
+  assert.match(html, /<section id="c2d-status" [^>]*\bdata-window-inside\b/, 'the board status card stays inside the game window');
+  assert.match(read('css/style.css'), /:root\[data-host="desktop"\]\[data-window-state="windowed"\] #c2d-status \{ max-width: calc\(var\(--status-room, 100cqw\) - 2 \* var\(--space-4\)\); \}/,
+    'windowed, the status card no wider than the game window\'s room about its centre');
+  assert.match(read('js/ui.js'), /_centreStatus2D\(\) \{[\s\S]*?getBoundingClientRect\(\)[\s\S]*?- root\.left[\s\S]*?--status-room/,
+    'the card placed in the root\'s own coordinates, its room the game frame\'s width about its centre');
+  assert.equal(WINDOW_OVER, '[data-window-over]');
+  assert.equal(WINDOW_INSIDE, '[data-window-inside]');
+  assert.doesNotMatch(read('js/platform/window-actions.js'), /#(?:c2d|pause|results|ctx-lost)\b/, 'no shell id in the platform layer');
 });
 
 test('during 3D play the window is the whole work area', async () => {

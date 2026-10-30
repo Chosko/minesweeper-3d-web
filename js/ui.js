@@ -576,14 +576,24 @@ export class UI {
     el('Offer').classList.toggle('hidden', !failure);
     if (prefix === 'c2d') this._centreStatus2D();
   }
-  /** The Classic 2D status card centred on the board column (#c2d-main) while it shows; the stylesheet's window centre otherwise. */
+  /**
+   * The Classic 2D status card centred on the board column (#c2d-main) while it shows, in the root's
+   * own coordinates (the root is shifted while windowed at the desktop host), its room
+   * (`--status-room`) the game window's width about that centre, which the windowed stylesheet caps it
+   * to; the stylesheet's window centre otherwise.
+   */
   _centreStatus2D() {
     const card = this.el.c2dStatus;
     if (card.classList.contains('hidden')) return;
     const r = this.el.c2d.classList.contains('hidden') ? null : $('c2d-main')?.getBoundingClientRect();
     const placed = !!r && r.width > 0 && r.height > 0;
-    card.style.left = placed ? `${r.left + r.width / 2}px` : '';
-    card.style.top = placed ? `${r.top + r.height / 2}px` : '';
+    const root = document.documentElement.getBoundingClientRect();
+    const frame = placed ? $('c2d-frame')?.getBoundingClientRect() : null;
+    const x = placed ? r.left + r.width / 2 : 0;
+    card.style.left = placed ? `${x - root.left}px` : '';
+    card.style.top = placed ? `${r.top + r.height / 2 - root.top}px` : '';
+    if (frame) card.style.setProperty('--status-room', `${2 * Math.min(x - frame.left, frame.right - x)}px`);
+    else card.style.removeProperty('--status-room');
   }
   /**
    * The 3D ready card: its board, a message, the "How 3D works" block while `rules` is set, the

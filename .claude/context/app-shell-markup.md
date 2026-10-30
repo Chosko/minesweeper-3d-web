@@ -101,7 +101,8 @@ bind.
     `#replay-end`, Download, Open replay file; the key line); the hidden
     file input `#replay-file`; after it the layer over a 3D replay's scene
     `#replay-scene-over` with the free-camera notice `#rp-free-note`;
-  - status cards `#c2d-status` (centred on the board column by `UI`) and
+  - status cards `#c2d-status` (centred on the board column by `UI`;
+    `data-window-inside`, so it never sizes the desktop window) and
     `#m3d-status`, stacked above the pause card: progress line,
     `ui-spinner`, Cancel and Play a standard board (`#…-wait`,
     `#…-wait-standard`), the failure line `#…-status-text`, the offer
