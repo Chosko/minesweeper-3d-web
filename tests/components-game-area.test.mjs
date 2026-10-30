@@ -140,6 +140,43 @@ test('in a browser, on the desktop host windowed, the toast shows at the bottom 
   }
 });
 
+test('in a browser, on the desktop host windowed, the fatal card fills the window and its card sits centred inside it, not in the work area', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const desk = await openPage(browser, base, SMALL_WINDOW, WORK_AREA);
+    await desk.ready(() => {
+      const host = globalThis.ms3dHost;
+      host.window.setContentSize = async (width, height) => { globalThis.__contentSize = [width, height]; };
+    });
+    const { page } = desk;
+    await page.waitForFunction(() => Array.isArray(globalThis.__contentSize));
+    const [width, height] = await page.evaluate(() => globalThis.__contentSize);
+    await page.setViewportSize({ width, height });
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.windowState), 'windowed');
+    assert.notEqual(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--window-x').trim()), '0px', 'the root shifted by the measured frame');
+    // As main.js's showFatal does.
+    await page.evaluate(() => document.body.append(document.getElementById('fatal-card').content.cloneNode(true)));
+    // The card's entrance motion settled.
+    await page.evaluate(() => Promise.all(document.querySelector('.fatal').getAnimations({ subtree: true }).map((a) => a.finished)));
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const g = await page.evaluate(() => {
+      const box = (el) => { const r = el.getBoundingClientRect(); return [Math.round(r.x), Math.round(r.y), Math.round(r.right), Math.round(r.bottom)]; };
+      return { layer: box(document.querySelector('.fatal')), card: box(document.querySelector('.fatal > .ui-card')), w: innerWidth, h: innerHeight };
+    });
+    assert.deepEqual(g.layer, [0, 0, g.w, g.h], `the fatal card's backdrop covers the ${g.w} × ${g.h} window (${g.layer})`);
+    const [x, y, right, bottom] = g.card;
+    assert.ok(x >= 0 && y >= 0 && right <= g.w && bottom <= g.h, `the card inside the window (${g.card})`);
+    assert.ok(Math.abs((x + right) / 2 - g.w / 2) <= 1 && Math.abs((y + bottom) / 2 - g.h / 2) <= 1, `the card centred on the window (${g.card})`);
+    assert.deepEqual(desk.errors, []);
+    await desk.context.close();
+  } finally {
+    await browser.close();
+  }
+});
+
 test('in a browser, on the desktop host 3D play, its ready card, the 3D overlay and the Learn 3D layout fill the available area, not the window', async (t) => {
   const env = await suite.open(t);
   if (!env) return;

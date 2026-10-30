@@ -77,8 +77,8 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   and compact size steps and every rule sized from the window resolve
   against it as `@container root` queries and container units, never as
   window queries or viewport units — the 3D scene's canvas and the toast
-  placed on the window while windowed at the desktop host alone read the
-  window's size. The touch step (a phone upright or sideways) keeps its
+  and the fatal card placed on the window while windowed at the desktop
+  host alone read the window's size. The touch step (a phone upright or sideways) keeps its
   `@media` queries on the browser window; at the desktop host
   `bindAreaMedia` settles them against the work area, so the desktop host
   never takes the phone layout. A script that picks a layout by size reads

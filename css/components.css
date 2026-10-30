@@ -1240,7 +1240,8 @@
      the window, windowed at the desktop host; over the 3D scene, below
      the crosshair.
    Fatal card (index.html #fatal-card, the template the page shows when the
-     game cannot start): a ui-backdrop filling the page, holding a message
+     game cannot start): a ui-backdrop filling the page — the window,
+     windowed at the desktop host —, holding a message
      ui-card: its badge, the title, a ui-text line and ui-actions--row of
      Reload (go). Default focus: Reload, focused as the card is
      appended.

@@ -928,6 +928,13 @@ body.touch-play .hud-figures { max-height: calc(100cqh - 2 * 208px); }
 /* The fatal card, the no-JavaScript notice and the 404 page: a message card on a backdrop filling the page. */
 .fatal, .noscript, .not-found { position: fixed; inset: 0; z-index: var(--z-fatal); padding: 12px; }
 :is(.fatal, .noscript, .not-found) > .ui-card { width: min(560px, 100%); }
+/* Windowed at the desktop host the fatal card fills the window, not the root area: its corner at the
+   window's corner in the root area, its size the window's own (viewport units). */
+:root[data-host="desktop"][data-window-state="windowed"] .fatal {
+  inset: var(--window-y, 0px) auto auto var(--window-x, 0px);
+  width: 100vw;
+  height: 100vh;
+}
 
 @container root (max-width: 760px) {
   .hud-tools { display: none; }
