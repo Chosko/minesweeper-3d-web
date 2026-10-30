@@ -267,7 +267,7 @@ Context:
 
 Done: 2026-10-31, commit `9a18812` (7 files, +275/-10). `.claude/context/INDEX.md`'s Last updated date was left unchanged on purpose, so `/context-update` still covers earlier undescribed commits.
 
-## [~] 8. Implement task 91 — Main-process file service and the bridge's storage and blob operations
+## [x] 8. Implement task 91 — Main-process file service and the bridge's storage and blob operations
 
 Depends on: 2
 
@@ -278,12 +278,16 @@ Context:
 /task-implement 91 --review --rounds 2
 ```
 
-## [ ] 9. Implement task 92 — Steam document storage, Steam blob store and the quit flush
+Done: 2026-10-31, commit `dd70f98` (4 files, +595/-2). The bridge and preload needed no change; the file service is wired in `desktop/main.js` (not on the task's `Files:`), rooted at `<userData>/saves`.
+
+## [~] 9. Implement task 92 — Steam document storage, Steam blob store and the quit flush
 
 Depends on: 3, 8
 
 Context:
 - 2026-10-25 (from step 3): task 86 is `[PARTIAL]` (content size deferred, nothing this step needs). The page already answers `flushRequested` once the records and replay saves finish; `desktop/closing.js` holds the host's bounded wait.
+
+- 2026-10-31 (from step 8): the file service lives under `<userData>/saves` — documents `<name>.json`, blob stores `<name>.blobs/`, set-aside `<name>.json.aside-YYYYMMDD-HHMMSS`. A missing document or blob reads as `null` (not `not-found`), deleting a missing blob succeeds, a missing store lists `[]`, set-aside resolves to the new file name or `null`; disk failure rejects `failed`, a bad name or argument `invalid`. Names are capped at 128 characters (tighter than the bridge's 256) and Windows device names are refused.
 
 ```prompt
 /task-implement 92 --review
@@ -314,7 +318,7 @@ Context: none
 /task-implement 94 --review
 ```
 
-## [ ] 12. Implement task 95 — Leaderboard catalogue, eligibility and score details
+## [~] 12. Implement task 95 — Leaderboard catalogue, eligibility and score details
 
 Depends on: none
 
