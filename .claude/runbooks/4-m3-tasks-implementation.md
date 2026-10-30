@@ -284,7 +284,7 @@ Context:
 
 Done: 2026-10-31, commit `dd70f98` (4 files, +595/-2). The bridge and preload needed no change; the file service is wired in `desktop/main.js` (not on the task's `Files:`), rooted at `<userData>/saves`.
 
-## [~] 9. Implement task 92 — Steam document storage, Steam blob store and the quit flush
+## [x] 9. Implement task 92 — Steam document storage, Steam blob store and the quit flush
 
 Depends on: 3, 8
 
@@ -295,6 +295,8 @@ Context:
 ```prompt
 /task-implement 92 --review
 ```
+
+Done: 2026-10-31, commit `4626abc` (10 files, +886/-392). Reset all data fails on the Steam build: the bridge and file service cannot list or delete documents, so the Steam storage's `clear()` reports `write-failed` (deferred, no task yet). Steam storage availability is always true; a refused write shows only in that save's result.
 
 ## [ ] 10. Implement task 93 — Steam Auto-Cloud configuration and quota
 
@@ -315,7 +317,8 @@ Context:
 
 Depends on: 8, 9, 10
 
-Context: none
+Context:
+- 2026-10-31 (from step 9): `.claude/context/platform.md` does not list the two Steam storage modules and still calls the Steam slots empty. The replay library uses the blob store named `replays` (`<userData>/saves/replays.blobs/`) and `openSteamBlobStore` opens any other store by name; the quit flush waits for every storage and blob request over the bridge, reads included. Reset all data on the Steam build is unsupported (no document clear in the bridge or file service). `js/theme.js` reads settings from `localStorage` before first paint, which the Steam build no longer writes — harmless while one theme ships.
 
 ```prompt
 /task-implement 94 --review
