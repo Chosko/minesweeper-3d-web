@@ -9,6 +9,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; }
 :root[data-host="desktop"][data-window-state="windowed"] { position: relative; left: calc(-1 * var(--window-x, 0px)); top: calc(-1 * var(--window-y, 0px)); }
 :root[data-host="desktop"][data-window-state="windowed"] :is(body, .ui-backdrop) { background: none; }
 :root[data-host="desktop"][data-window-state="windowed"] #scene { left: var(--window-x, 0px); top: var(--window-y, 0px); }
+/* Windowed at the desktop host the toast sits on the window, not the root area: centred on it, 28 px above
+   its bottom edge, fitted to its width; viewport units are the window's own size. 3D play keeps its own rule. */
+:root[data-host="desktop"][data-window-state="windowed"] .toast {
+  left: calc(var(--window-x, 0px) + 50vw);
+  bottom: calc(100cqh - var(--window-y, 0px) - 100vh + 28px);
+  max-width: min(640px, calc(100vw - 32px));
+}
 body {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-regular);

@@ -4235,13 +4235,13 @@ test('one root area: the page\'s root element is the size container root, the de
   assert.match(head, /The root area\.[\s\S]*@container root[\s\S]*touch step[\s\S]*@media/, 'the catalogue states the rule');
 });
 
-test('the desktop and compact steps and every window-sized rule read the root area: no window query but the touch step\'s, no viewport unit but the 3D scene\'s canvas', () => {
+test('the desktop and compact steps and every window-sized rule read the root area: no window query but the touch step\'s, no viewport unit but the 3D scene\'s canvas and the windowed toast on the window', () => {
   for (const [file, css] of ROOT_AREA_SHEETS()) {
     const media = [...css.matchAll(/@media ([^{]+)\{/g)].map((m) => m[1].trim())
       .filter((q) => !/^\((pointer|prefers-reduced-motion): [a-z]+\)$/.test(q));
     assert.deepEqual(media.filter((q) => !TOUCH_MEDIA.test(q)), [], `${file}: a window query outside the touch step`);
     const units = [...css.matchAll(/[^{}]*\{[^{}]*\b\d*\.?\d+(vw|vh|vmin|vmax|dvh|svh|lvh|dvw|svw|lvw)\b[^{}]*\}/g)].map((m) => m[0].trim().split('{')[0].trim());
-    assert.deepEqual(units, file === 'css/style.css' ? ['#scene'] : [], `${file}: a viewport unit outside the scene's canvas`);
+    assert.deepEqual(units, file === 'css/style.css' ? [':root[data-host="desktop"][data-window-state="windowed"] .toast', '#scene'] : [], `${file}: a viewport unit outside the scene's canvas and the windowed toast`);
     for (const m of css.matchAll(/@container ([^{]+)\{/g)) assert.match(m[1], /^root \(/, `${file}: every container query names the root area (${m[1].trim()})`);
   }
   assert.ok([...STYLE.matchAll(/@container root/g)].length > 20 && THEME_CSS.includes(`${COMPACT_STEP} {`), 'the steps moved, not dropped');

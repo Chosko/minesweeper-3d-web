@@ -1236,8 +1236,9 @@
      confirm key hint; Back to board choice with the arrow-left icon). No
      time and no records. Default focus: the primary action.
    Toast (index.html #toast): one ui-toast, its text in #toast-text, shown
-     at the bottom centre of the page for its time (js/ui.js toast); over
-     the 3D scene, below the crosshair.
+     at the bottom centre of the page for its time (js/ui.js toast) — of
+     the window, windowed at the desktop host; over the 3D scene, below
+     the crosshair.
    Fatal card (index.html #fatal-card, the template the page shows when the
      game cannot start): a ui-backdrop filling the page, holding a message
      ui-card: its badge, the title, a ui-text line and ui-actions--row of

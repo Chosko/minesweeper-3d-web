@@ -103,6 +103,43 @@ test('in a browser, on the desktop host a game window laid out in a work area la
   }
 });
 
+test('in a browser, on the desktop host windowed, the toast shows at the bottom of the window, centred and fitted to it, not of the work area', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const desk = await openPage(browser, base, SMALL_WINDOW, WORK_AREA);
+    // The host's window takes the content size the page reports, as desktop/window.js does.
+    await desk.ready(() => {
+      const host = globalThis.ms3dHost;
+      host.window.setContentSize = async (width, height) => { globalThis.__contentSize = [width, height]; };
+    });
+    const { page } = desk;
+    await page.waitForFunction(() => Array.isArray(globalThis.__contentSize));
+    const [width, height] = await page.evaluate(() => globalThis.__contentSize);
+    await page.setViewportSize({ width, height });
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.windowState), 'windowed');
+    // The longest toast, the restart notice, wraps inside the window.
+    const RESTART_NOTICE = await page.evaluate(async () => (await import('/js/shell/pause.js')).RESTART_NOTICE);
+    await page.evaluate((text) => {
+      document.getElementById('toast-text').textContent = text;
+      document.getElementById('toast').classList.add('on');
+    }, RESTART_NOTICE);
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('toast')).opacity === '1', null, { polling: 'raf' });
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 400)));
+    const g = await page.evaluate(() => { const r = document.getElementById('toast').getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, w: innerWidth, h: innerHeight }; });
+    assert.ok(g.x >= 0 && g.right <= g.w && g.y >= 0 && g.bottom <= g.h, `the toast inside the ${g.w} × ${g.h} window (${g.x}, ${g.y} .. ${g.right}, ${g.bottom})`);
+    assert.ok(Math.abs(g.bottom - (g.h - 28)) <= 1, `28 px above the window's bottom edge (${g.bottom} of ${g.h})`);
+    assert.ok(Math.abs((g.x + g.right) / 2 - g.w / 2) <= 1, `centred on the window (${g.x} .. ${g.right} of ${g.w})`);
+    assert.ok(g.right - g.x <= Math.min(640, g.w - 32) + 0.5, `fitted to the window's width (${g.right - g.x})`);
+    assert.deepEqual(desk.errors, []);
+    await desk.context.close();
+  } finally {
+    await browser.close();
+  }
+});
+
 test('in a browser, on the desktop host 3D play, its ready card, the 3D overlay and the Learn 3D layout fill the available area, not the window', async (t) => {
   const env = await suite.open(t);
   if (!env) return;

@@ -165,7 +165,8 @@ return a Promise and may throw.
   element — a card over the game window widening it — is measured, the root
   element shifted by its corner (`--window-x`, `--window-y`, which
   `css/style.css` applies while the root carries `data-window-state="windowed"`,
-  the 3D scene's canvas shifted back onto the window, no backdrop drawn)
+  the 3D scene's canvas shifted back onto the window and the toast placed on
+  it — centred, above its bottom edge, fitted to its width —, no backdrop drawn)
   and its size sent through `reportSize`, deduplicated, on every screen
   change, every change of a frame's size (a `ResizeObserver`) and every
   change of the available area; during 3D play the size is the whole
