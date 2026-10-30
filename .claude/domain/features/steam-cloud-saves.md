@@ -89,8 +89,7 @@ the desktop host's fixed bridge (see
   in-memory copy as before.
 - **Auto-Cloud configuration** — set in the Steamworks app settings: the
   Windows root that maps to the save directory, all files beneath it
-  recursively, a byte quota and a file-count quota sized for the replay
-  library's retention plus the documents.
+  recursively, and a quota of 100 MB and 1000 files per user.
 - **Size** — documents are small apart from the stats history; the replay
   library dominates, at up to 100 unpinned replays plus pinned ones.
 
@@ -125,10 +124,10 @@ the desktop host's fixed bridge (see
 
 ## Open questions
 
-- The byte and file-count quota. Set by measuring real replay sizes against
-  the library's retention of 100 unpinned replays plus pins; this also
-  settles `replay-library`'s question of whether Steam Cloud fits the
-  library as designed.
+- Whether the library as designed fits that quota, measured from real
+  replay sizes against the library's retention of unpinned replays plus
+  pins; this also settles `replay-library`'s question of whether Steam Cloud
+  fits the library as designed.
 - Whether the settings document's machine-specific values (graphics
   quality, sensitivity) should stay per machine instead of syncing. Blocks
   nothing; until settled the whole settings document syncs.
