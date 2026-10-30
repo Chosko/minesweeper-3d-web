@@ -1,7 +1,7 @@
 # Runbook: m3-tasks-implementation
 
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 17) · Model: opus
-Last step number: 41
+Last step number: 43
 
 ## [x] 32. Implement task 115 — Three cube 3D presets and no no-guess on a side of 2
 
@@ -226,6 +226,26 @@ Context:
 ```
 
 Done: 2026-10-28, commit `93cd785` (8 files, +1013/-27). Checked on the real Steam client in two rounds: the overlay opens every time, going offline and back works, and a direct launch with Steam closed makes Steam start and relaunch the game. The host keeps the page repainting while Steam runs, because Steam draws its overlay only when the game draws a frame and a paused game draws none; the feature document does not describe this yet. `npm run package` writes the app id into the build as `resources/app/steam-app.json` from the git-ignored Steam config, and `npm run steampipe` refuses a build whose app id is missing or mismatched. The premise that the binding writes `steam_appid.txt` was wrong: 0.11.3 only sets `SteamAppId`. The title bar's Quit and the in-game quit are unwired (task 107); taskbar close and Alt+F4 exit cleanly. The window stays transparent; the user prefers an opaque one, pending `/architect amend feature=steam-desktop-host`.
+
+## [ ] 42. Implement task 294 — Frame size steps follow the root area's height as well as its width
+
+Depends on: 41
+
+Context: none
+
+```prompt
+/task-implement 294 --review
+```
+
+## [ ] 43. Implement task 295 — Desktop window size after a theme switch and the failed-board card over the pause card
+
+Depends on: 41
+
+Context: none
+
+```prompt
+/task-implement 295 --review
+```
 
 ## [ ] 7. Implement task 90 — Update documentation for feature `steam-desktop-host`
 
