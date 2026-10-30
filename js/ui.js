@@ -31,6 +31,23 @@ export function clampSettings(s) {
 }
 
 export const fmtDims = (s) => `${s.X} × ${s.Y} × ${s.Z}`;
+
+/**
+ * Where the Classic 2D status card sits, in the coordinates of the root's rect `root`: centred on the
+ * card `over` the window while one shows (the pause card, which is then the window alone), else on the
+ * board column `column`; its room (`--status-room`, null for none) the width of the window about that
+ * centre — `over`, or the game window `frame`. Rects as getBoundingClientRect gives them.
+ */
+export function statusPlace({ column, frame = null, over = null, root }) {
+  const centre = over ?? column;
+  const bounds = over ?? frame;
+  const x = centre.left + centre.width / 2;
+  return {
+    left: x - root.left,
+    top: centre.top + centre.height / 2 - root.top,
+    room: bounds ? 2 * Math.min(x - bounds.left, bounds.right - x) : null,
+  };
+}
 /** The generating card's progress line: the worker's candidates tried so far and the whole seconds since the click. */
 export const progressLine = ({ candidates, seconds }) => `candidate ${candidates} · ${seconds} s`;
 
@@ -577,22 +594,24 @@ export class UI {
     if (prefix === 'c2d') this._centreStatus2D();
   }
   /**
-   * The Classic 2D status card centred on the board column (#c2d-main) while it shows, in the root's
-   * own coordinates (the root is shifted while windowed at the desktop host), its room
-   * (`--status-room`) the game window's width about that centre, which the windowed stylesheet caps it
-   * to; the stylesheet's window centre otherwise.
+   * The Classic 2D status card placed by statusPlace while it shows, in the root's own coordinates (the
+   * root is shifted while windowed at the desktop host): over the pause card (#pause-card), which is
+   * then the window, centred on it with its width as the room; else centred on the board column
+   * (#c2d-main), its room (`--status-room`) the game window's width about that centre. The windowed
+   * stylesheet caps the card to its room; with neither shown, the stylesheet's window centre.
    */
   _centreStatus2D() {
     const card = this.el.c2dStatus;
     if (card.classList.contains('hidden')) return;
-    const r = this.el.c2d.classList.contains('hidden') ? null : $('c2d-main')?.getBoundingClientRect();
-    const placed = !!r && r.width > 0 && r.height > 0;
-    const root = document.documentElement.getBoundingClientRect();
-    const frame = placed ? $('c2d-frame')?.getBoundingClientRect() : null;
-    const x = placed ? r.left + r.width / 2 : 0;
-    card.style.left = placed ? `${x - root.left}px` : '';
-    card.style.top = placed ? `${r.top + r.height / 2 - root.top}px` : '';
-    if (frame) card.style.setProperty('--status-room', `${2 * Math.min(x - frame.left, frame.right - x)}px`);
+    const sized = (r) => (r && r.width > 0 && r.height > 0 ? r : null);
+    const over = this.isPauseVisible() ? sized($('pause-card')?.getBoundingClientRect()) : null;
+    const column = over || this.el.c2d.classList.contains('hidden') ? null : sized($('c2d-main')?.getBoundingClientRect());
+    const placed = over || column;
+    const frame = column ? $('c2d-frame')?.getBoundingClientRect() : null;
+    const place = placed ? statusPlace({ column, frame, over, root: document.documentElement.getBoundingClientRect() }) : null;
+    card.style.left = place ? `${place.left}px` : '';
+    card.style.top = place ? `${place.top}px` : '';
+    if (place?.room != null) card.style.setProperty('--status-room', `${place.room}px`);
     else card.style.removeProperty('--status-room');
   }
   /**

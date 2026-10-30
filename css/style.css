@@ -528,10 +528,12 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 }
 /* A board status card (generating, or a failed board's offer) sits above the pause card at the canvas's
    width and never past a phone's, centred on the board: the 3D box in the window's centre, the Classic 2D
-   board column where UI places it (UI._centreStatus2D). The spinner 16 px from its title and progress line. */
+   board column where UI places it — on the pause card while it shows over that (UI._centreStatus2D). The
+   spinner 16 px from its title and progress line. */
 #c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); width: min(480px, calc(100cqw - 2 * var(--space-4))); box-sizing: border-box; }
-/* Windowed at the desktop host the Classic 2D status card stays inside the game window it shows over
-   (it never sizes the window: data-window-inside): no wider than the window's room about its centre. */
+/* Windowed at the desktop host the Classic 2D status card stays inside the window it shows in — the game
+   window, or the pause card while that is the window alone — and never sizes it (data-window-inside):
+   no wider than the window's room about its centre (UI._centreStatus2D). */
 :root[data-host="desktop"][data-window-state="windowed"] #c2d-status { max-width: calc(var(--status-room, 100cqw) - 2 * var(--space-4)); }
 :is(#c2d-status, #m3d-status) > .ui-row { gap: var(--space-4); flex-wrap: nowrap; }
 :is(#c2d-status, #m3d-status) .ui-card__title { margin: 0; font-size: var(--font-size-xl); }

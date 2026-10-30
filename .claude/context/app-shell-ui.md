@@ -51,7 +51,9 @@ overlay's parts and the aimed-cell readout are
     `setBoard2D(board)` (the foot line: `boardTitle2D`, then `boardFoot2D`), `updateFigures2D(input, {tick, bests})`,
     `setBoardStatus` (the card centred on the board column `#c2d-main` in
     the root's own coordinates, its `--status-room` the game window's width
-    about that centre, `_centreStatus2D`, again on every `placePanel2D`); 3D `setBoardStatus3D`
+    about that centre — on the pause card `#pause-card` and its width while
+    the pause card shows —, `statusPlace` through `_centreStatus2D`, again
+    on every `placePanel2D`); 3D `setBoardStatus3D`
     (progress by `progressLine`); on either a failure offering nothing
     shows Back alone, with the arrow icon;
   - menu: `setEntryUnavailable` (a play tile's reason, long and short, its

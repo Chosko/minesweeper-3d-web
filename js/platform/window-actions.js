@@ -10,8 +10,8 @@
 // desktop host never takes the phone layout (bindAreaMedia), and — windowed — makes the window the
 // shown screen's frame, or a popup's alone while one shows over it: the frames laid out in the available area as everywhere, the page shifted so
 // their box sits at the window's edges — the frame filling it taking the window's 8 px corners and
-// its drop edge inside the window (WINDOW_EDGE) — and that box's size reported to the host on every screen change
-// and every change of a frame's size, the whole available area during 3D play (bindScreenSize). With no host (the web build) it does nothing: the root area is the browser
+// its drop edge inside the window (WINDOW_EDGE) — and that box's size reported to the host on every screen change,
+// every change of a frame's size and every theme switch, the whole available area during 3D play (bindScreenSize). With no host (the web build) it does nothing: the root area is the browser
 // window and the touch step follows the window. Quit is not the desktop window's: the title bar's
 // Quit reaches the host through the feature that owns quitting.
 
@@ -169,7 +169,8 @@ export function bindAreaMedia(doc) {
  * windowed), so the box sits at the window's edges, and `report(width, height)` gets its size. The
  * frame filling the box is marked as the window's edge (WINDOW_EDGE, its corners the window's) and
  * its drop edge (dropEdgeOf) is added under the box, so the window shows it; in 3D play no frame is
- * marked. Every frame is watched for a change of its size. Nothing is measured before the first `screenChanged()`,
+ * marked. Every frame is watched for a change of its size, and the root's `data-theme` for a theme
+ * switch, which can change the drop edge alone. Nothing is measured before the first `screenChanged()`,
  * nor while `paused()` (fullscreen). Returns { measure(), screenChanged(), dispose() }.
  */
 export function bindScreenSize(doc, { area, report, fullArea = () => false, paused = () => false }) {
@@ -177,6 +178,11 @@ export function bindScreenSize(doc, { area, report, fullArea = () => false, paus
   const win = doc.defaultView;
   const Observer = win?.ResizeObserver;
   const observer = Observer && new Observer(() => measure());
+  // A theme switch ends with the root's data-theme flipped: its frames' drop edge may change with no
+  // change of their size.
+  const Mutations = win?.MutationObserver;
+  const themes = Mutations && new Mutations(() => measure());
+  themes?.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
   const watched = new Set();
   let started = false;
   let shift = { x: 0, y: 0 };
@@ -230,7 +236,7 @@ export function bindScreenSize(doc, { area, report, fullArea = () => false, paus
       started = true;
       measure();
     },
-    dispose() { observer?.disconnect(); watched.clear(); },
+    dispose() { observer?.disconnect(); themes?.disconnect(); watched.clear(); },
   };
 }
 

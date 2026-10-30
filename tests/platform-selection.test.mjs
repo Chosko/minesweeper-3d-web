@@ -8,6 +8,7 @@ import { CAPABILITY_FLAGS, createCapabilities, deriveFlags } from '../js/platfor
 import { BRIDGE_GLOBAL, BRIDGE_EVENTS, findBridge, createBridgeClient, linkHost } from '../js/platform/bridge-client.js';
 import { bindWindowActions, bindAvailableArea, bindAreaMedia, areaMatches, WINDOW_STATES, DRAG_REGION_CSS, SCREEN_FRAMES, WINDOW_OVER, WINDOW_INSIDE, WINDOW_EDGE, WINDOW_EDGE_CSS, dropEdgeOf } from '../js/platform/window-actions.js';
 import { BRIDGE_GLOBAL as HOST_GLOBAL, BRIDGE_EVENTS as HOST_EVENTS } from '../desktop/bridge.js';
+import { statusPlace } from '../js/ui.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -322,6 +323,12 @@ function fakeDocument({ fullscreenButtons = 2, innerWidth = 1280, innerHeight = 
     disconnect() { this.targets.clear(); }
   }
   const resized = (frame) => { for (const o of observers) if (o.targets.has(frame)) o.callback([{ target: frame }]); };
+  const mutationObservers = [];
+  class MutationObserver {
+    constructor(callback) { this.callback = callback; this.watching = []; mutationObservers.push(this); }
+    observe(target, options) { this.watching.push([target, options]); }
+    disconnect() { this.watching = []; }
+  }
   const style = {};
   Object.defineProperty(style, 'setProperty', { value: (name, value) => { style[name] = value; } });
   const button = () => {
@@ -338,10 +345,19 @@ function fakeDocument({ fullscreenButtons = 2, innerWidth = 1280, innerHeight = 
       if (selector === SCREEN_FRAMES) return frames;
       return [];
     },
-    defaultView: { innerWidth, innerHeight, screen: withListeners(screen), ResizeObserver, getComputedStyle: (el) => ({ boxShadow: el.boxShadow }), ...withListeners({}) },
+    defaultView: { innerWidth, innerHeight, screen: withListeners(screen), ResizeObserver, MutationObserver, getComputedStyle: (el) => ({ boxShadow: el.boxShadow }), ...withListeners({}) },
   };
   const addFrame = (box, shown, layer) => { const frame = fakeFrame(doc.documentElement, box, shown, layer); frames.push(frame); return frame; };
-  return { doc, buttons, appended, addFrame, resized };
+  // The theme applier flipping the root's data-theme: every observer of that attribute hears of it.
+  const themed = (id) => {
+    doc.documentElement.dataset.theme = id;
+    for (const o of mutationObservers) {
+      if (o.watching.some(([target, { attributes, attributeFilter }]) => target === doc.documentElement && attributes && (!attributeFilter || attributeFilter.includes('data-theme')))) {
+        o.callback([{ type: 'attributes', target: doc.documentElement, attributeName: 'data-theme' }]);
+      }
+    }
+  };
+  return { doc, buttons, appended, addFrame, resized, themed };
 }
 
 test('the window buttons\' two looks: Fullscreen while windowed, Windowed while full screen', () => {
@@ -535,10 +551,60 @@ test('windowed, the frame that is the window is marked as its edge and its drop 
   assert.deepEqual(sizeReports(bridge), [[400, 510], [920, 308], [1920, 1040]]);
 });
 
+test('windowed, a theme switch that changes the edge frame\'s drop edge re-measures the window at once; one that changes nothing reports nothing', async () => {
+  const bridge = fakeBridge();
+  const { doc, addFrame, themed } = fakeDocument();
+  const game = addFrame({ left: 760, top: 270, width: 400, height: 500 });
+  game.boxShadow = FRAME_SHADOW;
+  const win = bindWindowActions({ client: createBridgeClient(bridge.host), document: doc, setIcon: () => {} });
+  themed('quartz');
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [], 'nothing before the first screen shows');
+  win.screenChanged();
+  game.boxShadow = 'rgb(1, 2, 3) 0px 4px 0px 0px';
+  themed('quartz');
+  themed('marble');
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [[400, 510], [400, 504]], 'the new drop edge with no screen change, and nothing new for a switch that changes neither');
+  win.dispose();
+  game.boxShadow = 'none';
+  themed('neon');
+  await tick();
+  assert.equal(sizeReports(bridge).length, 2, 'a disposed window hears of no switch');
+});
+
 test('the window\'s edge frame takes the 8 px corners Windows 11 gives the window, windowed only, over any theme\'s', () => {
   assert.equal(WINDOW_EDGE, 'data-window-edge');
   assert.equal(WINDOW_EDGE_CSS, ':root[data-window-state="windowed"] [data-window-edge] { border-radius: 8px !important; }\n');
   assert.doesNotMatch(read('desktop/window.js'), /roundedCorners/, 'the system rounds the window: Electron\'s default kept');
+});
+
+const rectOf = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
+
+test('a failed board\'s offer over the pause card sits wholly inside the window the pause card sizes', () => {
+  // Windowed, the root shifted so the pause card (the window alone) sits at the window's edges; a tall
+  // Expert game window under it, its board column above the area's centre, its live figures panel below.
+  const root = rectOf(-500, -260, 1920, 1040);
+  const frame = rectOf(80, -220, 1760, 1000);
+  const column = rectOf(100, -150, 1720, 600);
+  const pause = rectOf(0, 0, 920, 520);
+  const card = { width: 480, height: 240 };
+  const placedRect = ({ left, top, room }) => {
+    const width = Math.min(card.width, room - 32);
+    const x = left + root.left;
+    const y = top + root.top;
+    return rectOf(x - width / 2, y - card.height / 2, width, card.height);
+  };
+  const inside = (r, w) => r.left >= w.left && r.top >= w.top && r.right <= w.right && r.bottom <= w.bottom;
+
+  const under = statusPlace({ column, frame, root });
+  assert.deepEqual(under, { left: 1460, top: 410, room: 1760 }, 'on the game window: centred on the board column, in the root\'s own coordinates');
+  assert.equal(inside(placedRect(under), pause), false, 'placed on the board column it would leave the window the pause card sizes');
+
+  const over = statusPlace({ column, frame, over: pause, root });
+  assert.deepEqual(over, { left: 960, top: 520, room: 920 }, 'over the pause card: centred on it, its room the pause card\'s width');
+  assert.ok(inside(placedRect(over), pause), 'wholly inside the window the pause card sizes');
+  assert.deepEqual(statusPlace({ column, root }), { left: 1460, top: 410, room: null }, 'no game window: no room');
 });
 
 test('the layers shown over a game are marked as over the window, the board status card as inside it', () => {
@@ -549,8 +615,8 @@ test('the layers shown over a game are marked as over the window, the board stat
   assert.match(html, /<section id="c2d-status" [^>]*\bdata-window-inside\b/, 'the board status card stays inside the game window');
   assert.match(read('css/style.css'), /:root\[data-host="desktop"\]\[data-window-state="windowed"\] #c2d-status \{ max-width: calc\(var\(--status-room, 100cqw\) - 2 \* var\(--space-4\)\); \}/,
     'windowed, the status card no wider than the game window\'s room about its centre');
-  assert.match(read('js/ui.js'), /_centreStatus2D\(\) \{[\s\S]*?getBoundingClientRect\(\)[\s\S]*?- root\.left[\s\S]*?--status-room/,
-    'the card placed in the root\'s own coordinates, its room the game frame\'s width about its centre');
+  assert.match(read('js/ui.js'), /_centreStatus2D\(\) \{[\s\S]*?isPauseVisible\(\)[\s\S]*?\$\('pause-card'\)[\s\S]*?statusPlace\([\s\S]*?--status-room/,
+    'the card placed by statusPlace, over the pause card while it shows');
   assert.equal(WINDOW_OVER, '[data-window-over]');
   assert.equal(WINDOW_INSIDE, '[data-window-inside]');
   assert.doesNotMatch(read('js/platform/window-actions.js'), /#(?:c2d|pause|results|ctx-lost)\b/, 'no shell id in the platform layer');

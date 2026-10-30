@@ -1821,7 +1821,7 @@ Feature: steam-desktop-host
 
 ## 295. Desktop window size after a theme switch and the failed-board card over the pause card
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/platform/window-actions.js, js/ui.js, css/style.css, tests/platform-selection.test.mjs
 Preconditions: none

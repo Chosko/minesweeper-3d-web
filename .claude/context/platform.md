@@ -172,16 +172,17 @@ return a Promise and may throw.
   context-lost, ready and Learn 3D end layers) while one shows, so a popup
   is the window alone and the game window's size comes back when it hides;
   a card inside the window (`WINDOW_INSIDE`, `data-window-inside`: the
-  Classic 2D status card, which the shell fits inside the game window) is
-  never measured —, the root
+  Classic 2D status card, which the shell fits inside the game window, or
+  inside the pause card while that is the window) is never measured —, the root
   element shifted by its corner (`--window-x`, `--window-y`, which
   `css/style.css` applies while the root carries `data-window-state="windowed"`,
   the 3D scene's canvas shifted back onto the window, the toast placed on
   it — centred, above its bottom edge, fitted to its width — and the fatal
   card filling it, no backdrop drawn)
   and its size sent through `reportSize`, deduplicated, on every screen
-  change, every change of a frame's size (a `ResizeObserver`) and every
-  change of the available area. The frame filling the box is marked
+  change, every change of a frame's size (a `ResizeObserver`), every
+  theme switch (the root's `data-theme`, a `MutationObserver`: a theme can
+  change the drop edge alone) and every change of the available area. The frame filling the box is marked
   `data-window-edge` (`WINDOW_EDGE`): the host stylesheet the page adds
   (`WINDOW_EDGE_CSS`) gives it, windowed, the 8 px corners Windows 11
   rounds the frameless window to (Electron's `roundedCorners` default), and
