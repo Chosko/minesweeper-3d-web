@@ -89,7 +89,8 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   the size its artboard draws at the size step, or its content's —,
   shrinking to fit a smaller root area and never growing past it on a
   larger one; windowed at the desktop host no backdrop is drawn and the
-  window is the frame ([platform.md](platform.md) § The windowed window). Its head is the game's title bar on every one but
+  window is the frame, its corners the window's own and its drop edge
+  inside the window ([platform.md](platform.md) § The windowed window). Its head is the game's title bar on every one but
   the results card, which keeps a head of its own: Back at the start as
   its arrow icon alone (none on the main menu; the game window holds its
   own controls there, [app-shell-hud.md](app-shell-hud.md)), the game logo

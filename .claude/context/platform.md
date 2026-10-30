@@ -176,8 +176,15 @@ return a Promise and may throw.
   card filling it, no backdrop drawn)
   and its size sent through `reportSize`, deduplicated, on every screen
   change, every change of a frame's size (a `ResizeObserver`) and every
-  change of the available area; during 3D play the size is the whole
-  available area. Nothing is measured before the first screen change nor in
+  change of the available area. The frame filling the box is marked
+  `data-window-edge` (`WINDOW_EDGE`): the host stylesheet the page adds
+  (`WINDOW_EDGE_CSS`) gives it, windowed, the 8 px corners Windows 11
+  rounds the frameless window to (Electron's `roundedCorners` default), and
+  its drop edge — the hard outer shadow under it, read from its computed
+  `box-shadow` (`dropEdgeOf`) — is added to the reported height, so the
+  window shows it; a card inside the window keeps its own corners. During
+  3D play the size is the whole available area and no frame is marked.
+  Nothing is measured before the first screen change nor in
   fullscreen, where the frame sits on the backdrop; leaving fullscreen
   measures again. The host (`desktop/window.js`) caps the size at the work
   area of the display the window is on and moves the window inside it,

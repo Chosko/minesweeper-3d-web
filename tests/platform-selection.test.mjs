@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { selectPlatform, STEAM_SLOTS } from '../js/platform/index.js';
 import { CAPABILITY_FLAGS, createCapabilities, deriveFlags } from '../js/platform/capabilities.js';
 import { BRIDGE_GLOBAL, BRIDGE_EVENTS, findBridge, createBridgeClient, linkHost } from '../js/platform/bridge-client.js';
-import { bindWindowActions, bindAvailableArea, bindAreaMedia, areaMatches, WINDOW_STATES, DRAG_REGION_CSS, SCREEN_FRAMES, WINDOW_OVER, WINDOW_INSIDE } from '../js/platform/window-actions.js';
+import { bindWindowActions, bindAvailableArea, bindAreaMedia, areaMatches, WINDOW_STATES, DRAG_REGION_CSS, SCREEN_FRAMES, WINDOW_OVER, WINDOW_INSIDE, WINDOW_EDGE, WINDOW_EDGE_CSS, dropEdgeOf } from '../js/platform/window-actions.js';
 import { BRIDGE_GLOBAL as HOST_GLOBAL, BRIDGE_EVENTS as HOST_EVENTS } from '../desktop/bridge.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -297,6 +297,10 @@ function fakeFrame(root, box, shown = true, layer = null) {
   return {
     box,
     shown,
+    boxShadow: 'none',
+    attrs: new Set(),
+    toggleAttribute(name, on) { if (on) this.attrs.add(name); else this.attrs.delete(name); return on; },
+    hasAttribute(name) { return this.attrs.has(name); },
     closest(selector) { return selector === layer ? {} : null; },
     getClientRects() { return this.shown ? [this.box] : []; },
     getBoundingClientRect() {
@@ -334,7 +338,7 @@ function fakeDocument({ fullscreenButtons = 2, innerWidth = 1280, innerHeight = 
       if (selector === SCREEN_FRAMES) return frames;
       return [];
     },
-    defaultView: { innerWidth, innerHeight, screen: withListeners(screen), ResizeObserver, ...withListeners({}) },
+    defaultView: { innerWidth, innerHeight, screen: withListeners(screen), ResizeObserver, getComputedStyle: (el) => ({ boxShadow: el.boxShadow }), ...withListeners({}) },
   };
   const addFrame = (box, shown, layer) => { const frame = fakeFrame(doc.documentElement, box, shown, layer); frames.push(frame); return frame; };
   return { doc, buttons, appended, addFrame, resized };
@@ -404,7 +408,7 @@ test('on the desktop host the title bar is marked as the window\'s drag region, 
   assert.equal(doc.documentElement.dataset.host, 'desktop');
   assert.equal(appended.length, 1);
   assert.equal(appended[0].tagName, 'STYLE');
-  assert.equal(appended[0].textContent, DRAG_REGION_CSS);
+  assert.equal(appended[0].textContent, DRAG_REGION_CSS + WINDOW_EDGE_CSS);
   assert.match(DRAG_REGION_CSS, /\.ui-frame__head\s*\{\s*-webkit-app-region: drag;/);
   assert.match(DRAG_REGION_CSS, /\.ui-frame__head :is\(button, a, input, select, \[tabindex\]\)\s*\{\s*-webkit-app-region: no-drag;/);
 });
@@ -492,6 +496,49 @@ test('a card inside the window never sizes it: the window stays the game window'
   await tick();
   assert.deepEqual(sizeReports(bridge), [[400, 500]]);
   assert.deepEqual(shiftOf(doc), ['760px', '270px']);
+});
+
+const FRAME_SHADOW = 'rgb(232, 225, 208) 0px -2px 0px 0px inset, rgb(201, 147, 12) 0px 10px 0px 0px, rgba(22, 32, 74, 0.22) 0px 24px 28px -10px, rgba(22, 32, 74, 0.35) 0px 48px 70px -18px';
+
+test('a frame\'s drop edge: its hard outer shadow straight down, never an inset, a blurred elevation or a side offset', () => {
+  assert.equal(dropEdgeOf(FRAME_SHADOW), 10);
+  assert.equal(dropEdgeOf('rgb(201, 147, 12) 0px 8px 0px 0px, rgba(0, 0, 0, 0.2) 0px 24px 28px -10px'), 8);
+  assert.equal(dropEdgeOf('rgb(1, 2, 3) 0px 4px 0px 2px'), 6, 'its spread lengthens it');
+  assert.equal(dropEdgeOf('rgb(1, 2, 3) 0px 12px 0px 0px inset'), 0);
+  assert.equal(dropEdgeOf('rgb(1, 2, 3) 3px 10px 0px 0px'), 0);
+  assert.equal(dropEdgeOf('none'), 0);
+  assert.equal(dropEdgeOf(undefined), 0);
+});
+
+test('windowed, the frame that is the window is marked as its edge and its drop edge is inside the window; a card inside it is not', async () => {
+  const bridge = fakeBridge();
+  const { doc, addFrame } = fakeDocument();
+  const game = addFrame({ left: 760, top: 270, width: 400, height: 500 });
+  game.boxShadow = FRAME_SHADOW;
+  const status = addFrame({ left: 720, top: 470, width: 480, height: 100 }, true, WINDOW_INSIDE);
+  status.boxShadow = 'rgb(201, 147, 12) 0px 8px 0px 0px';
+  const pause = addFrame({ left: 500, top: 400, width: 920, height: 300 }, false, WINDOW_OVER);
+  pause.boxShadow = 'rgb(201, 147, 12) 0px 8px 0px 0px';
+  let play = false;
+  const win = bindWindowActions({ client: createBridgeClient(bridge.host), document: doc, setIcon: () => {}, fullArea: () => play });
+  win.screenChanged();
+  assert.deepEqual([game.hasAttribute('data-window-edge'), status.hasAttribute('data-window-edge')], [true, false]);
+  status.shown = false;
+  pause.shown = true;
+  win.screenChanged();
+  assert.deepEqual([game.hasAttribute('data-window-edge'), pause.hasAttribute('data-window-edge')], [false, true], 'the popup is the window\'s edge');
+  assert.deepEqual(shiftOf(doc), ['500px', '400px'], 'the window\'s corner the frame\'s, its drop edge below');
+  play = true;
+  win.screenChanged();
+  assert.equal(pause.hasAttribute('data-window-edge'), false, 'during 3D play no frame is the window');
+  await tick();
+  assert.deepEqual(sizeReports(bridge), [[400, 510], [920, 308], [1920, 1040]]);
+});
+
+test('the window\'s edge frame takes the 8 px corners Windows 11 gives the window, windowed only, over any theme\'s', () => {
+  assert.equal(WINDOW_EDGE, 'data-window-edge');
+  assert.equal(WINDOW_EDGE_CSS, ':root[data-window-state="windowed"] [data-window-edge] { border-radius: 8px !important; }\n');
+  assert.doesNotMatch(read('desktop/window.js'), /roundedCorners/, 'the system rounds the window: Electron\'s default kept');
 });
 
 test('the layers shown over a game are marked as over the window, the board status card as inside it', () => {

@@ -78,8 +78,9 @@ rules engine imports Electron or the binding.
   as the direction's observability rule allows.
 - **The desktop window.** The game window has no system title bar or
   frame and is opaque on a black background, so the game draws the whole
-  window in its title bar's style and the window's rounded corners show
-  black; the page marks its title bar as the drag region, and the window
+  window in its title bar's style; windowed, Windows rounds the window's
+  corners, the frame that fills the window takes the same 8 px corners and
+  its drop edge is drawn inside the window; the page marks its title bar as the drag region, and the window
   is dragged by it like any other window. The player cannot resize it:
   windowed, the window is not resizable, there is no backdrop and
   the window is the screen's frame at its natural size, laid out against

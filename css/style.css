@@ -3,9 +3,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; }
 /* At the desktop host the root area is the display's work area, its size set on the root element
    (js/platform/window-actions.js): the layout, fixed layers included, never reads the window's own size. */
 :root[data-host="desktop"] { contain: layout; }
-/* Windowed at the desktop host the window is the shown screen's frame over the transparent window: no
+/* Windowed at the desktop host the opaque window is the shown screen's frame, its drop edge included: no
    backdrop, and the page shifted by the frame's corner in the root area (--window-x, --window-y) so the
-   frame sits at the window's edges; the 3D scene's canvas stays on the window. */
+   frame sits at the window's edges, its corners the window's own (WINDOW_EDGE_CSS, which the platform
+   layer adds); the 3D scene's canvas stays on the window. */
 :root[data-host="desktop"][data-window-state="windowed"] { position: relative; left: calc(-1 * var(--window-x, 0px)); top: calc(-1 * var(--window-y, 0px)); }
 :root[data-host="desktop"][data-window-state="windowed"] :is(body, .ui-backdrop) { background: none; }
 :root[data-host="desktop"][data-window-state="windowed"] #scene { left: var(--window-x, 0px); top: var(--window-y, 0px); }

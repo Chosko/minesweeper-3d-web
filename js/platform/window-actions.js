@@ -9,7 +9,8 @@
 // settles the stylesheets' window-size media queries — the touch step's — against that area, so the
 // desktop host never takes the phone layout (bindAreaMedia), and — windowed — makes the window the
 // shown screen's frame, or a popup's alone while one shows over it: the frames laid out in the available area as everywhere, the page shifted so
-// their box sits at the window's edges and that box's size reported to the host on every screen change
+// their box sits at the window's edges — the frame filling it taking the window's 8 px corners and
+// its drop edge inside the window (WINDOW_EDGE) — and that box's size reported to the host on every screen change
 // and every change of a frame's size, the whole available area during 3D play (bindScreenSize). With no host (the web build) it does nothing: the root area is the browser
 // window and the touch step follows the window. Quit is not the desktop window's: the title bar's
 // Quit reaches the host through the feature that owns quitting.
@@ -34,6 +35,31 @@ export const WINDOW_OVER = '[data-window-over]';
 
 /** A card laid out inside the window it shows over: never measured, so it never sizes the window. */
 export const WINDOW_INSIDE = '[data-window-inside]';
+
+/** The mark on the frame that is the windowed window: the box the window is cut to is its own. */
+export const WINDOW_EDGE = 'data-window-edge';
+
+/**
+ * Windowed, the frame that is the window takes the corners Windows 11 rounds the frameless window
+ * to (8 px), over any theme's radius, so the frame's corners meet the window's.
+ */
+export const WINDOW_EDGE_CSS = `:root[data-window-state="windowed"] [${WINDOW_EDGE}] { border-radius: 8px !important; }\n`;
+
+/**
+ * The drop edge a computed `box-shadow` draws under its box, in CSS pixels: the longest outer shadow
+ * that is hard (no blur) and straight down (no side offset), its offset plus its spread; 0 for none.
+ * A blurred elevation is not the frame's and stays outside the window.
+ */
+export function dropEdgeOf(boxShadow) {
+  let drop = 0;
+  for (const shadow of String(boxShadow ?? '').split(/,(?![^(]*\))/)) {
+    if (/\binset\b/.test(shadow)) continue;
+    const [x = 0, y = 0, blur = 0, spread = 0] = shadow.replace(/\w+\([^)]*\)/g, '')
+      .match(/-?\d*\.?\d+(?=px)/g)?.map(Number) ?? [];
+    if (x === 0 && blur === 0 && y + spread > drop) drop = y + spread;
+  }
+  return drop;
+}
 
 /** Whether the window fills its screen: a window opened full screen, before any fullscreen event. */
 const fillsScreen = (win) => Boolean(win?.screen) && win.innerWidth >= win.screen.width && win.innerHeight >= win.screen.height;
@@ -140,13 +166,16 @@ export function bindAreaMedia(doc) {
  * shows, so a popup is the window alone, never the popup and the screen under it; a card inside the
  * window (WINDOW_INSIDE) is never measured. The root element is
  * shifted by that box's corner (`--window-x`, `--window-y`, which the stylesheet applies while
- * windowed), so the box sits at the window's edges, and `report(width, height)` gets its size; every
- * frame is watched for a change of its size. Nothing is measured before the first `screenChanged()`,
+ * windowed), so the box sits at the window's edges, and `report(width, height)` gets its size. The
+ * frame filling the box is marked as the window's edge (WINDOW_EDGE, its corners the window's) and
+ * its drop edge (dropEdgeOf) is added under the box, so the window shows it; in 3D play no frame is
+ * marked. Every frame is watched for a change of its size. Nothing is measured before the first `screenChanged()`,
  * nor while `paused()` (fullscreen). Returns { measure(), screenChanged(), dispose() }.
  */
 export function bindScreenSize(doc, { area, report, fullArea = () => false, paused = () => false }) {
   const root = doc.documentElement;
-  const Observer = doc.defaultView?.ResizeObserver;
+  const win = doc.defaultView;
+  const Observer = win?.ResizeObserver;
   const observer = Observer && new Observer(() => measure());
   const watched = new Set();
   let started = false;
@@ -158,27 +187,37 @@ export function bindScreenSize(doc, { area, report, fullArea = () => false, paus
   };
   function measure() {
     if (!started || paused()) return;
+    const frames = [...doc.querySelectorAll(SCREEN_FRAMES)];
     if (fullArea()) {
       const { width, height } = area();
+      for (const frame of frames) frame.toggleAttribute?.(WINDOW_EDGE, false);
       setShift(0, 0);
       report(width, height);
       return;
     }
-    const shown = [...doc.querySelectorAll(SCREEN_FRAMES)]
-      .filter((frame) => frame.getClientRects().length && !frame.closest?.(WINDOW_INSIDE));
+    const shown = frames.filter((frame) => frame.getClientRects().length && !frame.closest?.(WINDOW_INSIDE));
     const over = shown.filter((frame) => frame.closest?.(WINDOW_OVER));
-    let box = null;
-    for (const frame of over.length ? over : shown) {
+    const measured = (over.length ? over : shown).map((frame) => {
       const r = frame.getBoundingClientRect();
       const left = r.left + shift.x;
       const top = r.top + shift.y;
-      box = box
-        ? { left: Math.min(box.left, left), top: Math.min(box.top, top), right: Math.max(box.right, left + r.width), bottom: Math.max(box.bottom, top + r.height) }
-        : { left, top, right: left + r.width, bottom: top + r.height };
+      return { frame, left, top, right: left + r.width, bottom: top + r.height };
+    });
+    if (!measured.length) return;
+    const box = {
+      left: Math.min(...measured.map((m) => m.left)), top: Math.min(...measured.map((m) => m.top)),
+      right: Math.max(...measured.map((m) => m.right)), bottom: Math.max(...measured.map((m) => m.bottom)),
+    };
+    // The frame filling the box is the window's edge: its corners the window's, its drop edge inside it.
+    const fills = (m) => ['left', 'top', 'right', 'bottom'].every((side) => Math.abs(m[side] - box[side]) < 1);
+    let drop = 0;
+    for (const frame of frames) {
+      const edge = measured.some((m) => m.frame === frame && fills(m));
+      frame.toggleAttribute?.(WINDOW_EDGE, edge);
+      if (edge) drop = Math.max(drop, dropEdgeOf(win?.getComputedStyle?.(frame).boxShadow));
     }
-    if (!box) return;
     setShift(Math.round(box.left), Math.round(box.top));
-    report(box.right - box.left, box.bottom - box.top);
+    report(box.right - box.left, box.bottom - box.top + drop);
   }
   return {
     measure,
@@ -209,7 +248,7 @@ export function bindWindowActions({ client, document: doc, setIcon, fullscreen =
 
   doc.documentElement.dataset.host = 'desktop';
   const style = doc.createElement('style');
-  style.textContent = DRAG_REGION_CSS;
+  style.textContent = DRAG_REGION_CSS + WINDOW_EDGE_CSS;
   doc.head.append(style);
   let full = fullscreen;
   let reported = null;
