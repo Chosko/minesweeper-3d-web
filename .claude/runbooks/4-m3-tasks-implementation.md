@@ -227,7 +227,7 @@ Context:
 
 Done: 2026-10-28, commit `93cd785` (8 files, +1013/-27). Checked on the real Steam client in two rounds: the overlay opens every time, going offline and back works, and a direct launch with Steam closed makes Steam start and relaunch the game. The host keeps the page repainting while Steam runs, because Steam draws its overlay only when the game draws a frame and a paused game draws none; the feature document does not describe this yet. `npm run package` writes the app id into the build as `resources/app/steam-app.json` from the git-ignored Steam config, and `npm run steampipe` refuses a build whose app id is missing or mismatched. The premise that the binding writes `steam_appid.txt` was wrong: 0.11.3 only sets `SteamAppId`. The title bar's Quit and the in-game quit are unwired (task 107); taskbar close and Alt+F4 exit cleanly. The window stays transparent; the user prefers an opaque one, pending `/architect amend feature=steam-desktop-host`.
 
-## [~] 42. Implement task 294 — Frame size steps follow the root area's height as well as its width
+## [x] 42. Implement task 294 — Frame size steps follow the root area's height as well as its width
 
 Depends on: 41
 
@@ -236,6 +236,8 @@ Context: none
 ```prompt
 /task-implement 294 --review
 ```
+
+Done: 2026-10-31, commit `8ebee81` (12 files, +62/-35). The compact step also fires at a root area 820 px high or less. `js/settings/page.js` (not on the task's files) changed too: the Settings columns are picked in JavaScript, and three columns now also require an area at least 821 px high.
 
 ## [~] 43. Implement task 295 — Desktop window size after a theme switch and the failed-board card over the pause card
 
@@ -356,7 +358,7 @@ Context:
 /task-implement 97 --review --rounds 2
 ```
 
-## [ ] 15. Implement task 98 — Local leaderboards stand-in for the web build
+## [~] 15. Implement task 98 — Local leaderboards stand-in for the web build
 
 Depends on: 3, 12
 
