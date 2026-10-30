@@ -239,7 +239,7 @@ Context: none
 
 Done: 2026-10-31, commit `8ebee81` (12 files, +62/-35). The compact step also fires at a root area 820 px high or less. `js/settings/page.js` (not on the task's files) changed too: the Settings columns are picked in JavaScript, and three columns now also require an area at least 821 px high.
 
-## [~] 43. Implement task 295 — Desktop window size after a theme switch and the failed-board card over the pause card
+## [x] 43. Implement task 295 — Desktop window size after a theme switch and the failed-board card over the pause card
 
 Depends on: 41
 
@@ -248,6 +248,8 @@ Context: none
 ```prompt
 /task-implement 295 --review
 ```
+
+Done: 2026-10-31, commit `1931379` (7 files, +125/-29). While the pause card shows, the offer card is centred on it with its width capped to the pause card's, on the web build too; its height is not bounded, which relies on the pause card always being the taller one.
 
 ## [x] 7. Implement task 90 — Update documentation for feature `steam-desktop-host`
 
