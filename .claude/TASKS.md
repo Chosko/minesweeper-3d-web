@@ -116,7 +116,7 @@ Feature: steam-cloud-saves
 
 ## 95. Leaderboard catalogue, eligibility and score details
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/leaderboards/catalogue.js, js/leaderboards/details.js, js/leaderboards/eligibility.js, tests/leaderboards-catalogue.test.mjs
 Preconditions: none
