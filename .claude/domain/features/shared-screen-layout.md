@@ -326,7 +326,9 @@ In scope (m2b-themes):
     actions with the arrow icon;
   - the **fatal card**, its Reload focused when it appears, and the
     context-lost card, *Click to reload* carrying a refresh icon;
-  - the **toasts**, centred at the bottom of the page.
+  - the **toasts**, centred at the bottom of the page — windowed at the
+    desktop host, the page is the window: the toast sits at the window's
+    bottom, centred on it and no wider than it, over its bottom bar.
 - **Copy** — the canvas's wording for the toasts, the board code lines
   (valid, from the other mode, incomplete — which the board code parser
   reports as its own reason), the board-code summary, the refusals, the
