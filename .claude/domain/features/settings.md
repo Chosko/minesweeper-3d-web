@@ -100,16 +100,17 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
 - **Reset all data.** The Data panel's last action. Its confirmation, in the
   panel, names what goes — records, game history, replays, settings, the
   last board choices (Classic 2D and 3D) and the first-use hints — and says
-  it is deleted from this browser for good; focus moves to Cancel, and
-  Cancel, Back or leaving the page change nothing. Confirming waits for the
+  it is deleted for good: from this browser on the web build, from this
+  computer on the Steam build. Focus moves to Cancel, and Cancel, Back or
+  leaving the page change nothing. Confirming waits for the
   replay library's start-up load, then clears every document and kept-aside
   copy (`platform-storage`'s clear), every replay blob and the carried-over
   legacy keys with the old first-use key, and reloads the page, so every
   owner starts from nothing as a new player's game does. When any part
   cannot be deleted, an error line under the action says the data could
-  not be deleted and asks the player to close the game's other tabs and
-  try again; the rest is still cleared, nothing reloads and the action
-  stays available.
+  not be deleted and asks the player to try again — on the web build after
+  closing the game's other tabs; the rest is still cleared, nothing reloads
+  and the action stays available.
 - **Pause-card shortcuts.** The pause card keeps quick access to volume in
   both modes, and to look sensitivity and invert Y on a 3D game's pause card
   only, bound to the same store.

@@ -138,9 +138,11 @@ rules engine imports Electron or the binding.
   caller.
 - **Page bridge.** A preload script exposes one frozen object to the page
   with a fixed list of request operations — each a promise — and a fixed
-  list of events. Requests are validated in the main process (operation
-  name, argument types and sizes) before they reach the adapter or the
-  disk. The bridge carries no general file or process access.
+  list of events, and beside it the theme id the main process read before
+  the window loaded (`steam-cloud-saves`' pre-paint theme). Requests are
+  validated in the main process (operation name, argument types and sizes)
+  before they reach the adapter or the disk. The bridge carries no general
+  file or process access.
 - **Platform selection.** At start-up the page's platform layer looks for
   the bridge: present, it selects the Steam implementations of storage, the
   replay store, leaderboards and achievements; absent, it selects the

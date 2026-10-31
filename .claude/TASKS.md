@@ -99,7 +99,7 @@ Feature: steam-cloud-saves
 Status: [MISSING]
 Target: claude+human
 Files: dev/measure-cloud-quota.mjs, .claude/domain/features/steam-cloud-saves.md, .claude/domain/features/replay-library.md
-Preconditions: 87, 92
+Preconditions: 87, 92, 298
 Feature: steam-cloud-saves
 
 ---
@@ -1833,7 +1833,7 @@ Feature: steam-desktop-host
 
 Status: [MISSING]
 Target: claude
-Files: js/settings/store.js, js/settings/reset.js, js/main.js, tests/settings-store.test.mjs, tests/settings-reset.test.mjs
+Files: js/settings/store.js, js/settings/reset.js, js/settings/page.js, js/main.js, tests/settings-store.test.mjs, tests/settings-reset.test.mjs, tests/settings-page.test.mjs
 Preconditions: none
 Feature: settings
 
