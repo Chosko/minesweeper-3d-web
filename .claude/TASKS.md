@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 297
+Last task number: 299
 
 ---
 
@@ -106,7 +106,7 @@ Feature: steam-cloud-saves
 
 ## 94. Update documentation for feature `steam-cloud-saves`
 
-Status: [STALE]
+Status: [SKIP]
 Target: claude
 Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/replay-library.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 91, 92, 93
@@ -1846,5 +1846,25 @@ Target: claude
 Files: .claude/context/settings.md, .claude/context/settings-reset.md, .claude/context/platform.md, .claude/context/INDEX.md
 Preconditions: 296
 Feature: settings
+
+---
+
+## 298. Machine prefs directory, document delete and list, and the pre-paint theme on the Steam build
+
+Status: [MISSING]
+Target: claude
+Files: desktop/file-service.js, desktop/bridge.js, desktop/main.js, desktop/preload.js, js/platform/bridge-client.js, js/platform/steam-storage.js, js/theme.js, tests/desktop-file-service.test.mjs, tests/desktop-bridge.test.mjs, tests/platform-steam-storage.test.mjs, tests/theme.test.mjs
+Preconditions: 296
+Feature: steam-cloud-saves
+
+---
+
+## 299. Update documentation for feature `steam-cloud-saves`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/replay-library.md, .claude/context/settings-appliers.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 93, 298
+Feature: steam-cloud-saves
 
 ---
