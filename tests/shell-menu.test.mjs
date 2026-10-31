@@ -1514,7 +1514,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     assert.equal(await mode(), 'settings');
     await page.click('#set-renderResolution [data-value="sharp"]');
     await page.click('#set-theme [data-value="joyful-tiles"]');
-    await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? '{}').data?.renderResolution === 'sharp', null, { timeout: patience(5000) });
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:settings.machine') ?? '{}').data?.renderResolution === 'sharp', null, { timeout: patience(5000) });
     assert.equal(await ms(() => JSON.parse(localStorage.getItem('ms3d:doc:settings')).data.theme), 'joyful-tiles');
     assert.equal(await ms(() => document.documentElement.dataset.theme), 'joyful-tiles', 'the theme picked is the one shown');
     await page.keyboard.press('Escape');

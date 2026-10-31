@@ -23,7 +23,7 @@
 //                                the schema default), carrying data-setting="key"; ids are `set-<key>`.
 //                                With labelledBy, a choice shows no label of its own and takes its
 //                                name from that element; `themes` is settingControl's.
-// settingsPageHtml()           → one kit column composition (ui-columns, #settings-columns) of the
+// settingsPageHtml({ desktopHost? }) → one kit column composition (ui-columns, #settings-columns) of the
 //                                SETTINGS_COLUMNS, each a ui-column stacking its sections (ui-panel,
 //                                data-section naming it, under its ui-section-label): a section per
 //                                SETTINGS_SECTIONS entry, each setting a ui-row of its control and,
@@ -37,7 +37,8 @@
 //                                js/records/export.js) — then a rule, the reset's line, the "Reset
 //                                all data…" button with its trash icon, under it the hidden failure
 //                                (an err note), and the hidden confirmation (a confirm box:
-//                                RESET_MESSAGE, Reset all data with its trash icon beside Cancel). A
+//                                RESET_MESSAGE, or RESET_MESSAGE_DESKTOP when desktopHost — the
+//                                Steam build —, Reset all data with its trash icon beside Cancel). A
 //                                control whose label is its section's title is named by the section
 //                                label. The columns are the widest window's, and a section
 //                                SETTINGS_COLUMNS does not list joins the last column.
@@ -66,11 +67,12 @@
 // themeSwatchColors(cssText, id) → { token: value } for each SWATCH_TOKENS entry the theme's token
 //   block (the rule whose selector is :root[data-theme="<id>"]) declares; swatchBackground(colors) →
 //   the swatch's background, a stripe per token.
-// bindResetPanel({ open, panel, yes, no, note }, { reset }) → { isOpen, close, clear }. The Data
-//   panel's elements: `open` shows the confirmation `panel` in its place with focus on Cancel
-//   (`no`); Cancel or close() hides it and focuses `open` again. Confirming (`yes`) calls reset()
-//   once → Promise of { ok } (the page reloads) or { ok: false, message }, which closes the
-//   confirmation and shows the message in the err note `note` (RESET_FAILURE when the reset threw);
+// bindResetPanel({ open, panel, yes, no, note }, { reset, desktopHost? }) → { isOpen, close, clear }.
+//   The Data panel's elements: `open` shows the confirmation `panel` in its place with focus on
+//   Cancel (`no`); Cancel or close() hides it and focuses `open` again. Confirming (`yes`) calls
+//   reset() once → Promise of { ok } (the page reloads) or { ok: false, message }, which closes the
+//   confirmation and shows the message in the err note `note` (when the reset threw, the build's
+//   failure line: RESET_FAILURE, or RESET_FAILURE_DESKTOP when desktopHost);
 //   the action stays available. close() → false when nothing is open; clear() closes it and the
 //   note, without moving focus.
 
@@ -80,7 +82,7 @@ import { SITE_ROOT } from '../themes/applier.js';
 import { BINDING_MODES, bindingDevices, bindingRows, bindingsListHtml } from './bindings.js';
 import { formatSliderValue, decimalsOf, segmentedState, bindSegmented, bindSliderFill, setNote, iconMarkup } from '../ui/components.js';
 import { EXPORT_LINE } from '../records/export.js';
-import { RESET_FAILURE } from './reset.js';
+import { RESET_FAILURE, RESET_FAILURE_DESKTOP } from './reset.js';
 
 export const SETTINGS_SECTIONS = Object.freeze([
   Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY', 'camera', 'confirmRestart']) }),
@@ -268,22 +270,25 @@ function bindingsPanelHtml() {
     + '<div id="settings-bindings"></div></section>';
 }
 
-export function settingsPageHtml() {
+export function settingsPageHtml({ desktopHost = false } = {}) {
   const panels = new Map(SETTINGS_SECTIONS.map((s) => [s.id, `${sectionOpen(s.id)}${sectionLabel(s.id, s.title)}`
     + `${s.settings.map((k) => (SETTING_LABELS[k] === s.title
       ? settingControlHtml(k, undefined, { labelledBy: `set-sec-${s.id}` }) : settingRowHtml(k))).join('')}</section>`]));
   panels.set('bindings', bindingsPanelHtml());
-  panels.set('data', dataPanelHtml());
+  panels.set('data', dataPanelHtml(desktopHost));
   const listed = new Set(SETTINGS_COLUMNS.flat());
   const columns = SETTINGS_COLUMNS.map((ids, i) => [...ids, ...(i === SETTINGS_COLUMNS.length - 1 ? [...panels.keys()].filter((id) => !listed.has(id)) : [])]);
   return `<div class="ui-columns" id="settings-columns">${columns.map((ids) => `<div class="ui-column">${ids.map((id) => panels.get(id)).join('')}</div>`).join('')}</div>`;
 }
 
-export const RESET_MESSAGE = 'Delete your records, game history, replays, settings, last board choices (Classic 2D and 3D) '
-  + 'and first-use hints from this browser? This cannot be undone.';
+const resetMessage = (where) => 'Delete your records, game history, replays, settings, last board choices (Classic 2D and 3D) '
+  + `and first-use hints from ${where}? This cannot be undone.`;
+/** The Reset all data confirmation: on the web build, and on the Steam build. */
+export const RESET_MESSAGE = resetMessage('this browser');
+export const RESET_MESSAGE_DESKTOP = resetMessage('this computer');
 
 // The Data panel: the place of everything about the player's stored data.
-function dataPanelHtml() {
+function dataPanelHtml(desktopHost) {
   return `${sectionOpen('data', ' id="settings-data"')}${sectionLabel('data', 'Data')}<div class="ui-actions" id="set-data-body">`
     + `<p class="ui-text ui-text--muted" id="set-export-text">${EXPORT_LINE}</p>`
     + '<div class="ui-actions ui-actions--row" id="set-export-actions">'
@@ -294,14 +299,14 @@ function dataPanelHtml() {
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset" data-icon="trash">Reset all data…</button>'
     + '<p class="ui-note ui-note--err hidden" id="set-reset-note" role="status" data-icon="warning"><span class="ui-note__text"></span></p>'
     + '<div class="ui-confirm hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">'
-    + `<p class="ui-confirm__text" id="set-reset-text">${RESET_MESSAGE}</p>`
+    + `<p class="ui-confirm__text" id="set-reset-text">${desktopHost ? RESET_MESSAGE_DESKTOP : RESET_MESSAGE}</p>`
     + '<div class="ui-actions ui-actions--row">'
     + '<button type="button" class="ui-button ui-button--danger" id="set-reset-yes" data-icon="trash">Reset all data</button>'
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel</button>'
     + '</div></div></div></section>';
 }
 
-export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
+export function bindResetPanel({ open, panel, yes, no, note }, { reset, desktopHost = false }) {
   let busy = false;
   const show = (el, on) => el.classList.toggle('hidden', !on);
   const isOpen = () => !panel.classList.contains('hidden');
@@ -337,7 +342,7 @@ export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
     yes.disabled = false;
     no.disabled = false;
     if (result?.ok) return; // the page reloads
-    setNote(note, result?.message ?? RESET_FAILURE);
+    setNote(note, result?.message ?? (desktopHost ? RESET_FAILURE_DESKTOP : RESET_FAILURE));
     show(note, true);
     close();
   });

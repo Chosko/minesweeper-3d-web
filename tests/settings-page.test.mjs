@@ -15,8 +15,9 @@ import {
 } from '../js/settings/bindings.js';
 import {
   SETTINGS_SECTIONS, SETTINGS_COLUMNS, SETTINGS_LAYOUTS, settingsColumnsFor, SETTING_LABELS, SETTING_NOTES, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
-  bindSettingControls, bindResetPanel, RESET_MESSAGE, SWATCH_TOKENS, themeSwatchColors, swatchBackground,
+  bindSettingControls, bindResetPanel, RESET_MESSAGE, RESET_MESSAGE_DESKTOP, SWATCH_TOKENS, themeSwatchColors, swatchBackground,
 } from '../js/settings/page.js';
+import { RESET_FAILURE_DESKTOP } from '../js/settings/reset.js';
 import { EXPORT_LINE } from '../js/records/export.js';
 import { THEMES, DEFAULT_THEME_ID, registerTheme, themeById } from '../js/themes/registry.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
@@ -499,7 +500,7 @@ test('each window size stacks the sections in its own independent columns: three
     assert.doesNotMatch(sheet, /#settings-columns > \.ui-column \{[^}]*display: contents/, 'each stack is a box of its own');
   }
   const ui = read('js/ui.js');
-  assert.match(ui, /\$\('settings-body'\)\.innerHTML = settingsPageHtml\(\);\n[^\n]*\n\s*bindSettingsLayout\(\$\('settings-columns'\), \{ matchMedia: matchRootArea\(document\) \}\);/, 'the shell places the sections for the root area, never the window');
+  assert.match(ui, /\$\('settings-body'\)\.innerHTML = settingsPageHtml\(\{ desktopHost \}\);\n[^\n]*\n\s*bindSettingsLayout\(\$\('settings-columns'\), \{ matchMedia: matchRootArea\(document\) \}\);/, 'the shell places the sections for the root area, never the window');
 });
 
 // ---------------------------------------------------------------- the Data panel and Reset all data
@@ -552,6 +553,27 @@ test('the confirmation names every kind of data that goes, says it cannot be und
   assert.ok(confirm.includes(`<p class="ui-confirm__text" id="set-reset-text">${RESET_MESSAGE}</p>`));
   assert.match(confirm, /<div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger" id="set-reset-yes" data-icon="trash">Reset all data<\/button><button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel<\/button><\/div><\/div>/,
     'the danger md action with its trash icon beside Cancel');
+});
+
+test('on the Steam build the confirmation says the data is deleted from this computer; the web build keeps "from this browser"', () => {
+  for (const kind of ['records', 'game history', 'replays', 'settings', 'last board choices', 'first-use hints']) {
+    assert.ok(RESET_MESSAGE_DESKTOP.includes(kind), `the message names ${kind}`);
+  }
+  assert.match(RESET_MESSAGE_DESKTOP, /from this computer/);
+  assert.doesNotMatch(RESET_MESSAGE_DESKTOP, /browser/);
+  assert.match(RESET_MESSAGE_DESKTOP, /cannot be undone/);
+  assert.equal(RESET_MESSAGE_DESKTOP, RESET_MESSAGE.replace('from this browser', 'from this computer'), 'the same message otherwise');
+  const text = (html) => html.match(/<p class="ui-confirm__text" id="set-reset-text">([^<]*)<\/p>/)[1];
+  assert.equal(text(settingsPageHtml({ desktopHost: true })), RESET_MESSAGE_DESKTOP);
+  assert.equal(text(settingsPageHtml({ desktopHost: false })), RESET_MESSAGE);
+  assert.equal(text(settingsPageHtml()), RESET_MESSAGE, 'the web build by default');
+});
+
+test('the shell builds the Settings page and its Reset panel for the build it runs on', () => {
+  const ui = read('js/ui.js');
+  assert.match(ui, /constructor\(cb, \{ desktopHost = false \} = \{\}\)/);
+  assert.match(ui, /bindResetPanel\(\{[^}]*\}, \{ reset: \(\) => cb\.onResetAll\?\.\(\), desktopHost \}\)/);
+  assert.match(read('js/main.js'), /\n\}, \{ desktopHost: capabilities\.desktopHost \}\);\nui\.setNoMouse/, 'main.js hands the UI the capability flag');
 });
 
 // A fake element with a class list and focus, for the Data panel's binder.
@@ -653,6 +675,12 @@ test('a reset that throws is said as a failure, never left hanging', async () =>
   assert.equal(panel.isOpen(), false);
   assert.equal(els.note.hidden, false);
   assert.equal(els.note.text.textContent, 'The data could not be deleted. Close other tabs of the game and try again.');
+  const steam = panelFake();
+  bindResetPanel(steam.els, { reset: async () => { throw new Error('boom'); }, desktopHost: true });
+  steam.els.open.click();
+  steam.els.yes.click();
+  await tick();
+  assert.equal(steam.els.note.text.textContent, RESET_FAILURE_DESKTOP, 'the Steam build\'s line, with no advice about tabs');
 });
 
 test('the shell wires the reset: the replay library\'s load awaited, the reload flagged, Back closes the confirmation first', () => {
@@ -967,7 +995,7 @@ test('index.html holds the Settings page in a screen frame on the backdrop, its 
   assert.match(page, /<h2 class="ui-frame__title" id="settings-title">Settings<\/h2>/);
   assert.match(page, /<div class="ui-frame__body" id="settings-body"><\/div>/, 'the controls are generated, not written in the markup');
   assert.doesNotMatch(page, /ui-card|ui-frame__foot|data-esc-hint/, 'no card, no foot, no text hint');
-  assert.match(read('js/ui.js'), /settingsPageHtml\(\)/);
+  assert.match(read('js/ui.js'), /settingsPageHtml\(\{ desktopHost \}\)/);
 });
 
 test('Settings\' Back is the title bar\'s arrow, named for where it goes, and its heading names the page, both in view while the body scrolls', () => {

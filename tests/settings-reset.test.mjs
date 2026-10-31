@@ -7,7 +7,7 @@ import { createBlobStore } from '../js/platform/blob-store.js';
 import { createMemoryBlobStore } from '../js/platform/memory-blob-store.js';
 import { createReplayLibrary, LIBRARY_DOC } from '../js/replay/library.js';
 import { LEGACY_KEYS } from '../js/settings/store.js';
-import { createReset, RESET_KEYS, FIRST_USE_LEGACY_KEY, RESET_FAILURE } from '../js/settings/reset.js';
+import { createReset, RESET_KEYS, FIRST_USE_LEGACY_KEY, RESET_FAILURE, RESET_FAILURE_DESKTOP } from '../js/settings/reset.js';
 
 const raw = (version, data) => JSON.stringify({ version, data });
 const bytes = (n) => new Uint8Array([n, n + 1, n + 2]);
@@ -203,6 +203,43 @@ test('the default legacy remover touches only the given keys, and with no storag
     if (saved) Object.defineProperty(globalThis, 'localStorage', saved);
     else delete globalThis.localStorage;
   }
+});
+
+test('the Steam build hands Reset no legacy remover: no loose key is touched, every document and replay blob still goes', async () => {
+  const saved = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  let touched = 0;
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { touched++; return { removeItem() {} }; } });
+  try {
+    const f = fixture();
+    const reset = createReset({ storage: f.storage, blobStore: f.blobStore, legacy: null, desktopHost: true, reload: f.reload });
+    assert.deepEqual(await reset.run(), { ok: true });
+    assert.equal(touched, 0, 'browser storage never touched');
+    assert.deepEqual(f.reloads[0], {
+      documents: 0, aside: 0, blobs: 0, keys: [...f.keys.map.keys()],
+    }, 'documents, kept-aside copies and blobs cleared before the reload');
+    assert.equal(f.keys.map.size, RESET_KEYS.length + Object.keys(UNREAD).length + 1, 'no key removed');
+  } finally {
+    if (saved) Object.defineProperty(globalThis, 'localStorage', saved);
+    else delete globalThis.localStorage;
+  }
+});
+
+test('on the Steam build a failed reset says the data could not be deleted and to try again, with no advice about tabs', async () => {
+  assert.equal(RESET_FAILURE_DESKTOP, 'The data could not be deleted. Try again.');
+  assert.doesNotMatch(RESET_FAILURE_DESKTOP, /tab/i);
+  const f = fixture();
+  const storage = { ...f.storage, clear: async () => ({ ok: false, reason: 'write-failed' }) };
+  const desktop = await createReset({ storage, blobStore: f.blobStore, legacy: null, desktopHost: true, reload: f.reload }).run();
+  assert.deepEqual(desktop, { ok: false, failed: ['documents'], message: RESET_FAILURE_DESKTOP });
+  const web = await createReset({ storage, blobStore: f.blobStore, legacy: f.keys, reload: f.reload }).run();
+  assert.equal(web.message, RESET_FAILURE, 'the web build keeps the close-other-tabs line');
+  assert.equal(f.reloads.length, 0);
+});
+
+test('the shell hands Reset the build: no legacy remover and the Steam wording on the desktop host', () => {
+  const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  const wiring = main.slice(main.indexOf('const RESET = createReset('));
+  assert.match(wiring.split('});')[0], /legacy: LOOSE_KEYS,\s*desktopHost: capabilities\.desktopHost,/);
 });
 
 test('the reset module is DOM-free apart from the default legacy remover', () => {

@@ -423,7 +423,7 @@ const ui = new UI({
   onStandardWait3D: () => standardFromWait3D(),
   onOfferMenu3D: () => PAUSE.toMenu(),
   onTouchMode: (mode) => { controls.toggle(mode); ui.setTouchModes(controls.touch); needRender = true; },
-});
+}, { desktopHost: capabilities.desktopHost });
 ui.setNoMouse(NO_MOUSE, COARSE_ONLY);
 ui.setTouch3D(COARSE_ONLY);
 // The icons the screens' markup names (data-icon), the Settings page's included once the UI built it,
@@ -465,8 +465,12 @@ THEME.start({ notice: (text) => ui.toast(text, 4000) }).catch(() => showFatal())
 
 // ---------- settings ----------
 // The store loads before the first screen shows; each setting's owner applies it by subscribing.
+// The loose ms3d.* keys are the browser build's alone: the Steam build hands the store and Reset all
+// data no legacy reader or remover (null), the web build leaves them their localStorage default.
+const LOOSE_KEYS = capabilities.desktopHost ? null : undefined;
 const SETTINGS = createSettingsStore({
   storage,
+  legacy: LOOSE_KEYS,
   onNotKept: () => ui.toast('Settings could not be saved in this browser. They last until you close the page.', 4000),
 });
 const settingsLoaded = SETTINGS.load();
@@ -1028,6 +1032,8 @@ addFlushHook(async () => {
 const RESET = createReset({
   storage,
   blobStore,
+  legacy: LOOSE_KEYS,
+  desktopHost: capabilities.desktopHost,
   waitFor: async () => { await REPLAYS.load(); await REPLAYS.settled(); },
   reload: () => { reloading = true; location.reload(); },
 });

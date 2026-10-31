@@ -376,7 +376,7 @@ test('in a browser, a resolution change applies at once, and a saved light or da
     // Joyful tiles is on the root before any module runs, whatever theme is saved: here a
     // version-1 document's Dark.
     await page.waitForFunction(() => { // the saves have landed
-      const doc = JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? 'null');
+      const doc = JSON.parse(localStorage.getItem('ms3d:doc:settings.machine') ?? 'null');
       return doc?.data?.renderResolution === 'fast';
     });
     await ms(() => {

@@ -6,6 +6,7 @@ import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { SCHEMA, SETTING_KEYS, DEFAULTS, isValid } from '../js/settings/schema.js';
 import {
   createSettingsStore, SETTINGS_DOC, SETTINGS_VERSION, LEGACY_KEYS,
+  MACHINE_SETTINGS_DOC, MACHINE_SETTINGS_VERSION, MACHINE_KEYS,
 } from '../js/settings/store.js';
 import { THEMES, registerTheme } from '../js/themes/registry.js';
 import { FIXTURE_THEME } from './fixtures/themes/fixture-theme.js';
@@ -30,12 +31,16 @@ function setup({ initial, available, legacy = legacyOf() } = {}) {
   const storage = createStorage({ backend });
   const unsaved = [];
   const store = createSettingsStore({ storage, legacy, onNotKept: (info) => unsaved.push(info) });
-  const stored = () => {
-    const text = backend.documents.get(SETTINGS_DOC);
+  const doc = (name) => () => {
+    const text = backend.documents.get(name);
     return text === undefined ? undefined : JSON.parse(text);
   };
-  return { backend, storage, store, legacy, unsaved, stored };
+  return { backend, storage, store, legacy, unsaved, stored: doc(SETTINGS_DOC), machine: doc(MACHINE_SETTINGS_DOC) };
 }
+
+// The settings document's share of a full set of values: everything but the machine settings.
+const settingsPart = (values) => Object.fromEntries(Object.entries(values).filter(([k]) => !MACHINE_KEYS.includes(k)));
+const machinePart = (values) => Object.fromEntries(MACHINE_KEYS.map((k) => [k, values[k]]));
 
 const EXPECTED_DEFAULTS = {
   lookSensitivity: 1,
@@ -283,7 +288,7 @@ test('set validates, saves the whole document and notifies', async () => {
   assert.deepEqual(result, { ok: true });
   assert.equal(store.get('theme'), FIXTURE_ID);
   assert.deepEqual(seen, [['theme', FIXTURE_ID]]);
-  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: { ...EXPECTED_DEFAULTS, theme: FIXTURE_ID } });
+  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: settingsPart({ ...EXPECTED_DEFAULTS, theme: FIXTURE_ID }) });
 });
 
 test('an invalid value is rejected, the old value kept and nothing saved or notified', async () => {
@@ -313,7 +318,7 @@ test('a set while load runs applies after the loaded values, keeping the stored 
   assert.deepEqual(await pending, { ok: true });
   assert.equal(store.get('fullscreen'), true);
   assert.equal(store.get('volume'), 0.2);
-  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: { ...EXPECTED_DEFAULTS, volume: 0.2, theme: FIXTURE_ID, fullscreen: true } });
+  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: settingsPart({ ...EXPECTED_DEFAULTS, volume: 0.2, theme: FIXTURE_ID, fullscreen: true }) });
 });
 
 test('setting the current value again neither saves nor notifies', async () => {
@@ -369,9 +374,9 @@ test('onChange returns an unsubscribe; a throwing listener does not stop the oth
 
 // ---------------------------------------------------------------- legacy carry-over
 
-test('with no settings document the legacy keys are read once and written into the new document', async () => {
+test('with no settings document the legacy keys are read once and written into the two new documents', async () => {
   const legacy = legacyOf({ 'ms3d.lookSens': '2.5', 'ms3d.invertY': '1', 'ms3d.volume': '0.3', 'ms3d.muted': '1' });
-  const { store, stored, backend } = setup({ legacy });
+  const { store, stored, machine, backend } = setup({ legacy });
   await store.load();
   assert.deepEqual([...legacy.reads].sort(), [...Object.values(LEGACY_KEYS)].sort());
   assert.deepEqual(
@@ -380,9 +385,10 @@ test('with no settings document the legacy keys are read once and written into t
   );
   const expected = { ...EXPECTED_DEFAULTS, lookSensitivity: 2.5, invertY: true, volume: 0.3, muted: true, fieldOfView: 45 };
   for (const key of SETTING_KEYS) assert.equal(store.get(key), expected[key]);
-  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: expected });
+  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: settingsPart(expected) });
+  assert.deepEqual(machine(), { version: MACHINE_SETTINGS_VERSION, data: { lookSensitivity: 2.5, renderResolution: 'auto' } }, 'the sensitivity in the machine settings document');
 
-  // A later start reads only the document, even when the legacy keys say otherwise.
+  // A later start reads only the documents, even when the legacy keys say otherwise.
   const legacy2 = legacyOf({ 'ms3d.lookSens': '0.5', 'ms3d.muted': '0' });
   const store2 = createSettingsStore({ storage: createStorage({ backend }), legacy: legacy2 });
   await store2.load();
@@ -406,7 +412,7 @@ test('missing or garbage legacy values take the defaults', async () => {
   const { store, stored } = setup({ legacy });
   await store.load();
   for (const key of SETTING_KEYS) assert.equal(store.get(key), EXPECTED_DEFAULTS[key]);
-  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: EXPECTED_DEFAULTS });
+  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: settingsPart(EXPECTED_DEFAULTS) });
 });
 
 test('a legacy reader that throws is treated as no legacy values', async () => {
@@ -467,9 +473,115 @@ test('a newer settings document is left untouched; defaults apply and saving rep
   assert.equal(unsaved.length, 1);
 });
 
-test('the store registers its document with platform storage once', () => {
+test('the store registers its two documents with platform storage once', () => {
   const { storage } = setup();
   assert.throws(() => storage.register(SETTINGS_DOC, SETTINGS_VERSION), /already registered|registered/);
+  assert.throws(() => storage.register(MACHINE_SETTINGS_DOC, MACHINE_SETTINGS_VERSION), /already registered|registered/);
+  assert.notEqual(MACHINE_SETTINGS_DOC, SETTINGS_DOC);
+});
+
+// ---------------------------------------------------------------- the machine settings document
+
+test('look sensitivity and render resolution are the machine settings; the other settings stay in the settings document', () => {
+  assert.deepEqual([...MACHINE_KEYS].sort(), ['lookSensitivity', 'renderResolution']);
+  assert.ok(Object.isFrozen(MACHINE_KEYS));
+});
+
+test('a set of a machine setting saves the machine settings document; any other set saves the settings document without them', async () => {
+  const initial = {
+    [SETTINGS_DOC]: raw(SETTINGS_VERSION, settingsPart(EXPECTED_DEFAULTS)),
+    [MACHINE_SETTINGS_DOC]: raw(MACHINE_SETTINGS_VERSION, machinePart(EXPECTED_DEFAULTS)),
+  };
+  const { store, backend, stored, machine } = setup({ initial });
+  await store.load();
+  const writes = [];
+  const write = backend.write;
+  backend.write = (name, ...a) => { writes.push(name); return write(name, ...a); };
+
+  assert.deepEqual(await store.set('lookSensitivity', 2), { ok: true });
+  assert.deepEqual(await store.set('renderResolution', 'fast'), { ok: true });
+  assert.deepEqual(writes, [MACHINE_SETTINGS_DOC, MACHINE_SETTINGS_DOC], 'only the machine settings document');
+  assert.deepEqual(machine(), { version: MACHINE_SETTINGS_VERSION, data: { lookSensitivity: 2, renderResolution: 'fast' } });
+  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: settingsPart(EXPECTED_DEFAULTS) }, 'the settings document untouched');
+
+  writes.length = 0;
+  assert.deepEqual(await store.set('volume', 0.4), { ok: true });
+  assert.deepEqual(writes, [SETTINGS_DOC], 'only the settings document');
+  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: settingsPart({ ...EXPECTED_DEFAULTS, volume: 0.4 }) });
+  for (const key of MACHINE_KEYS) assert.ok(!Object.hasOwn(stored().data, key), `the settings document holds no ${key}`);
+});
+
+test('with no machine settings document, the two values come once from a settings document saved with them', async () => {
+  const old = { ...EXPECTED_DEFAULTS, lookSensitivity: 2, renderResolution: 'sharp', volume: 0.3 };
+  const { store, backend, machine } = setup({ initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, old) } });
+  await store.load();
+  assert.equal(store.get('lookSensitivity'), 2);
+  assert.equal(store.get('renderResolution'), 'sharp');
+  assert.equal(store.get('volume'), 0.3, 'the rest as stored');
+  assert.deepEqual(machine(), { version: MACHINE_SETTINGS_VERSION, data: { lookSensitivity: 2, renderResolution: 'sharp' } }, 'saved at load');
+
+  // From then on only the machine settings document is read, whatever the settings document holds.
+  await backend.write(SETTINGS_DOC, raw(SETTINGS_VERSION, { ...old, lookSensitivity: 0.5, renderResolution: 'fast' }));
+  const again = createSettingsStore({ storage: createStorage({ backend }), legacy: legacyOf(), onNotKept: () => {} });
+  await again.load();
+  assert.equal(again.get('lookSensitivity'), 2);
+  assert.equal(again.get('renderResolution'), 'sharp');
+
+  // A settings document without valid machine values: their defaults, saved.
+  const invalid = setup({ initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, { ...settingsPart(EXPECTED_DEFAULTS), lookSensitivity: 9, renderResolution: 'ultra' }) } });
+  await invalid.store.load();
+  assert.equal(invalid.store.get('lookSensitivity'), 1);
+  assert.equal(invalid.store.get('renderResolution'), 'auto');
+  assert.deepEqual(invalid.machine(), { version: MACHINE_SETTINGS_VERSION, data: machinePart(EXPECTED_DEFAULTS) });
+});
+
+test('a machine settings document that is present always wins over the settings document\'s values', async () => {
+  const initial = {
+    [SETTINGS_DOC]: raw(SETTINGS_VERSION, { ...EXPECTED_DEFAULTS, lookSensitivity: 2, renderResolution: 'sharp' }),
+    [MACHINE_SETTINGS_DOC]: raw(MACHINE_SETTINGS_VERSION, { lookSensitivity: 1.5, renderResolution: 'nope' }),
+  };
+  const { store, backend } = setup({ initial });
+  const writes = [];
+  const write = backend.write;
+  backend.write = (name, ...a) => { writes.push(name); return write(name, ...a); };
+  await store.load();
+  assert.equal(store.get('lookSensitivity'), 1.5);
+  assert.equal(store.get('renderResolution'), 'auto', 'an invalid value in the machine document takes the default, not the settings document\'s');
+  assert.deepEqual(writes, [], 'nothing saved at load');
+});
+
+test('a machine settings document that cannot be used gives its two defaults and is not overwritten at load', async () => {
+  for (const text of ['{not json', raw(MACHINE_SETTINGS_VERSION + 1, { lookSensitivity: 2 })]) {
+    const initial = {
+      [SETTINGS_DOC]: raw(SETTINGS_VERSION, { ...EXPECTED_DEFAULTS, lookSensitivity: 2.5, volume: 0.2 }),
+      [MACHINE_SETTINGS_DOC]: text,
+    };
+    const { store, machine } = setup({ initial });
+    await store.load();
+    assert.equal(store.get('lookSensitivity'), 1, text);
+    assert.equal(store.get('volume'), 0.2, 'the settings document still loads');
+    assert.notDeepEqual(machine(), { version: MACHINE_SETTINGS_VERSION, data: { lookSensitivity: 2.5, renderResolution: 'auto' } }, 'no carry-over over it');
+  }
+});
+
+test('the Steam build hands the store no legacy reader: a first start reads no loose key', async () => {
+  const saved = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  let touched = 0;
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { touched++; return { getItem: () => '2' }; } });
+  try {
+    const backend = createMemoryBackend();
+    const store = createSettingsStore({ storage: createStorage({ backend }), legacy: null });
+    await store.load();
+    assert.equal(touched, 0, 'browser storage never read');
+    for (const key of SETTING_KEYS) assert.equal(store.get(key), EXPECTED_DEFAULTS[key], `${key}: the default`);
+    assert.ok(backend.documents.has(SETTINGS_DOC) && backend.documents.has(MACHINE_SETTINGS_DOC), 'both documents saved');
+  } finally {
+    if (saved) Object.defineProperty(globalThis, 'localStorage', saved);
+    else delete globalThis.localStorage;
+  }
+  const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  assert.match(main, /const LOOSE_KEYS = capabilities\.desktopHost \? null : undefined;/, 'the Steam build hands no reader, the web build the default');
+  assert.match(main, /createSettingsStore\(\{\s*storage,\s*legacy: LOOSE_KEYS,/);
 });
 
 test('the page tells the player once, in the canvas\'s words, that settings are not being saved', () => {

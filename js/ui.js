@@ -94,7 +94,8 @@ export const TOUCH_MSG = 'Both modes play by touch: 3D and Classic 2D.';
 const PRESS_KEYS = new Set(['Enter', 'NumpadEnter', 'Space']);
 
 export class UI {
-  constructor(cb) {
+  // desktopHost: the Steam build (capabilities.desktopHost), whose Reset all data speaks of this computer.
+  constructor(cb, { desktopHost = false } = {}) {
     this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleFigures, onTapMode, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onTouchMode }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
@@ -149,7 +150,7 @@ export class UI {
     });
     for (const id of ['coming-soon-back', 'coming-soon-menu', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
     // The Settings page's controls are generated from the settings schema and bound by the shell.
-    $('settings-body').innerHTML = settingsPageHtml();
+    $('settings-body').innerHTML = settingsPageHtml({ desktopHost });
     // Its sections in the root area's columns, each an independent stack.
     bindSettingsLayout($('settings-columns'), { matchMedia: matchRootArea(document) });
     this.el.settingsBindings = $('settings-bindings');
@@ -160,7 +161,7 @@ export class UI {
     // The Data panel's Reset all data, behind its confirmation; the shell runs the reset.
     this._reset = bindResetPanel({
       open: $('set-reset'), panel: $('set-reset-confirm'), yes: $('set-reset-yes'), no: $('set-reset-no'), note: $('set-reset-note'),
-    }, { reset: () => cb.onResetAll?.() });
+    }, { reset: () => cb.onResetAll?.(), desktopHost });
     this._renderBindings();
     $('ready-back').addEventListener('click', () => cb.onReadyBack?.());
     $('hint-strip-close').addEventListener('click', () => this.dismissHint());

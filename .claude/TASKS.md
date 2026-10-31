@@ -1831,7 +1831,7 @@ Feature: steam-desktop-host
 
 ## 296. Machine settings document and browser-only carry-over of the loose keys
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/settings/store.js, js/settings/reset.js, js/settings/page.js, js/main.js, tests/settings-store.test.mjs, tests/settings-reset.test.mjs, tests/settings-page.test.mjs
 Preconditions: none
