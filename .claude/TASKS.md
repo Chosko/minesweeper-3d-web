@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 295
+Last task number: 297
 
 ---
 
@@ -1826,5 +1826,25 @@ Target: claude
 Files: js/platform/window-actions.js, js/ui.js, css/style.css, tests/platform-selection.test.mjs
 Preconditions: none
 Feature: steam-desktop-host
+
+---
+
+## 296. Machine settings document and browser-only carry-over of the loose keys
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/store.js, js/settings/reset.js, js/main.js, tests/settings-store.test.mjs, tests/settings-reset.test.mjs
+Preconditions: none
+Feature: settings
+
+---
+
+## 297. Update documentation for feature `settings`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/settings.md, .claude/context/settings-reset.md, .claude/context/platform.md, .claude/context/INDEX.md
+Preconditions: 296
+Feature: settings
 
 ---
