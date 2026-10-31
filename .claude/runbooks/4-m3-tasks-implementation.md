@@ -347,13 +347,14 @@ Context:
 
 Depends on: 8, 9, 10, 46
 
-Context: none
+Context:
+- 2026-10-31 (amend): carried from struck step 11, where step 9 recorded it — `.claude/context/platform.md` does not list the two Steam storage modules and still calls the Steam slots empty. The replay library uses the blob store named `replays` (`<userData>/saves/replays.blobs/`) and `openSteamBlobStore` opens any other store by name; the quit flush waits for every storage and blob request over the bridge, reads included. Reset all data on the Steam build is unsupported (no document clear in the bridge or file service). `js/theme.js` reads settings from `localStorage` before first paint, which the Steam build no longer writes — harmless while one theme ships.
 
 ```prompt
 /task-implement 299 --review
 ```
 
-## [ ] 11. Implement task 94 — Update documentation for feature `steam-cloud-saves`
+## [x] 11. Implement task 94 — Update documentation for feature `steam-cloud-saves`
 
 Depends on: 8, 9, 10
 
@@ -363,6 +364,8 @@ Context:
 ```prompt
 /task-implement 94 --review
 ```
+
+Done: struck — task 94 is `[SKIP]`, replaced by task 299, which step 47 runs; this step's `Context:` fact is carried to step 47.
 
 ## [x] 12. Implement task 95 — Leaderboard catalogue, eligibility and score details
 
