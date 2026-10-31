@@ -323,7 +323,7 @@ Context:
 
 Done: 2026-10-31, commit `8231012` (8 files, +89/-47). Feature `settings` has all its tasks done.
 
-## [~] 46. Implement task 298 — Machine prefs directory, document delete and list, and the pre-paint theme on the Steam build
+## [x] 46. Implement task 298 — Machine prefs directory, document delete and list, and the pre-paint theme on the Steam build
 
 Depends on: 8, 9, 44
 
@@ -333,6 +333,8 @@ Context:
 ```prompt
 /task-implement 298 --review
 ```
+
+Done: 2026-10-31, commit `bd1c29f` (13 files, +500/-63). The pre-paint theme is read on every page load (a synchronous bridge reader behind a frozen `ms3dPrePaint = { theme }` global), not once at start-up, so a reload after Reset paints the right theme. `js/main.js` still keeps the history-superseded set in `sessionStorage` on the Steam build — undecided whether exempt.
 
 ## [x] 10. Implement task 93 — Steam Auto-Cloud configuration and quota
 
@@ -374,6 +376,7 @@ Context:
 - 2026-10-31 (amend): carried from struck step 10, where step 4 recorded it — Steamworks settings changes reach the client only after Publish, which the user does by hand after reading the pending-changes list; the user asked that nothing else in Steamworks be touched and nothing made public. The game build lives on the password-protected branch `internal`, and `default` holds only a placeholder build.
 - 2026-10-31 (amend): carried from struck step 10, where step 5 recorded it — the user set a Steam Cloud byte quota and file count for the spike's shared-file checks. The values were not recorded, so check them against this task's quota.
 - 2026-10-31 (amend): carried from struck step 10 — task 93 was re-planned around the Steam Cloud quota the owner set in Steamworks — 100 MB and 1000 files per user, recorded in `steam-cloud-saves.md`. This step runs the reconciled body: it measures whether the replay library fits that quota, configures the Auto-Cloud root and pattern and runs the two-machine sync check; it neither derives a quota nor has the owner enter one.
+- 2026-10-31 (from step 46): the machine prefs directory is `<userData>/prefs/` beside `<userData>/saves/`; only `saves/` is the Auto-Cloud root. The file service routes `settings.machine` there by name (`MACHINE_DOCUMENTS` in `desktop/file-service.js`).
 
 ```prompt
 /task-implement 93 --review
@@ -385,6 +388,7 @@ Depends on: 8, 9, 46, 48
 
 Context:
 - 2026-10-31 (amend): carried from struck step 47, which carried it from struck step 11, where step 9 recorded it — `.claude/context/platform.md` does not list the two Steam storage modules and still calls the Steam slots empty. The replay library uses the blob store named `replays` (`<userData>/saves/replays.blobs/`) and `openSteamBlobStore` opens any other store by name; the quit flush waits for every storage and blob request over the bridge, reads included. Reset all data on the Steam build is unsupported (no document clear in the bridge or file service). `js/theme.js` reads settings from `localStorage` before first paint, which the Steam build no longer writes — harmless while one theme ships.
+- 2026-10-31 (from step 46): task 298 made the carried note's Reset and `js/theme.js` remarks obsolete — `storage.delete(name)` and `storage.list()` exist (both `saves/` and `prefs/`), Steam `clear()` lists then deletes, and `js/theme.js` takes the theme from a frozen `ms3dPrePaint = { theme }` global the preload exposes, read through a synchronous bridge reader on every page load. `desktop.md`, `platform.md` and `app-shell-theme-runtime.md` still describe the old state.
 
 ```prompt
 /task-implement 299 --review
@@ -429,7 +433,7 @@ Context:
 
 Done: 2026-10-31, commit `4669c60` (7 files, +776/-8). The outbox opens its pending-replay store through an `openBlobStore(name)` factory, as `leaderboards.outbox`, because the platform has one unnamed blob store; nothing creates or starts the submission at runtime yet. The submission state carries a `reason` field the domain does not list.
 
-## [ ] 14. Implement task 97 — Steam submitter, best cache, reader and replay fetcher
+## [~] 14. Implement task 97 — Steam submitter, best cache, reader and replay fetcher
 
 Depends on: 6, 9, 13
 
