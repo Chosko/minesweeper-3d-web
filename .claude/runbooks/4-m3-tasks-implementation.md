@@ -1,7 +1,7 @@
 # Runbook: m3-tasks-implementation
 
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 17) · Model: opus
-Last step number: 47
+Last step number: 49
 
 ## [x] 32. Implement task 115 — Three cube 3D presets and no no-guess on a side of 2
 
@@ -328,7 +328,7 @@ Context: none
 /task-implement 298 --review
 ```
 
-## [ ] 10. Implement task 93 — Steam Auto-Cloud configuration and quota
+## [x] 10. Implement task 93 — Steam Auto-Cloud configuration and quota
 
 Depends on: 4, 9
 
@@ -343,12 +343,42 @@ Context:
 /task-implement 93 --review
 ```
 
-## [ ] 47. Implement task 299 — Update documentation for feature `steam-cloud-saves`
+Done: struck — its `Depends on:` lacks step 46, which runs task 298, now a precondition of task 93; replaced by step 48, and this step's `Context:` facts are carried to step 48.
+
+## [x] 47. Implement task 299 — Update documentation for feature `steam-cloud-saves`
 
 Depends on: 8, 9, 10, 46
 
 Context:
 - 2026-10-31 (amend): carried from struck step 11, where step 9 recorded it — `.claude/context/platform.md` does not list the two Steam storage modules and still calls the Steam slots empty. The replay library uses the blob store named `replays` (`<userData>/saves/replays.blobs/`) and `openSteamBlobStore` opens any other store by name; the quit flush waits for every storage and blob request over the bridge, reads included. Reset all data on the Steam build is unsupported (no document clear in the bridge or file service). `js/theme.js` reads settings from `localStorage` before first paint, which the Steam build no longer writes — harmless while one theme ships.
+
+```prompt
+/task-implement 299 --review
+```
+
+Done: struck — its `Depends on:` names struck step 10, which a strike releases; replaced by step 49, which waits on step 48, and this step's `Context:` fact is carried to step 49.
+
+## [ ] 48. Implement task 93 — Steam Auto-Cloud configuration and quota
+
+Depends on: 4, 9, 46
+
+Needs: agent+human
+
+Context:
+- 2026-10-31 (amend): carried from struck step 10, where step 4 recorded it — Steamworks settings changes reach the client only after Publish, which the user does by hand after reading the pending-changes list; the user asked that nothing else in Steamworks be touched and nothing made public. The game build lives on the password-protected branch `internal`, and `default` holds only a placeholder build.
+- 2026-10-31 (amend): carried from struck step 10, where step 5 recorded it — the user set a Steam Cloud byte quota and file count for the spike's shared-file checks. The values were not recorded, so check them against this task's quota.
+- 2026-10-31 (amend): carried from struck step 10 — task 93 was re-planned around the Steam Cloud quota the owner set in Steamworks — 100 MB and 1000 files per user, recorded in `steam-cloud-saves.md`. This step runs the reconciled body: it measures whether the replay library fits that quota, configures the Auto-Cloud root and pattern and runs the two-machine sync check; it neither derives a quota nor has the owner enter one.
+
+```prompt
+/task-implement 93 --review
+```
+
+## [ ] 49. Implement task 299 — Update documentation for feature `steam-cloud-saves`
+
+Depends on: 8, 9, 46, 48
+
+Context:
+- 2026-10-31 (amend): carried from struck step 47, which carried it from struck step 11, where step 9 recorded it — `.claude/context/platform.md` does not list the two Steam storage modules and still calls the Steam slots empty. The replay library uses the blob store named `replays` (`<userData>/saves/replays.blobs/`) and `openSteamBlobStore` opens any other store by name; the quit flush waits for every storage and blob request over the bridge, reads included. Reset all data on the Steam build is unsupported (no document clear in the bridge or file service). `js/theme.js` reads settings from `localStorage` before first paint, which the Steam build no longer writes — harmless while one theme ships.
 
 ```prompt
 /task-implement 299 --review
