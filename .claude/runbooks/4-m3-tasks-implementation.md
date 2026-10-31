@@ -310,7 +310,7 @@ Context: none
 
 Done: 2026-10-31, commit `9b95dec` (11 files, +311/-79). The machine settings document is `settings.machine` (version 1; store exports `MACHINE_SETTINGS_DOC`, `MACHINE_KEYS`); the Data panel's line above the Reset button still says "in this browser" on the Steam build — left, outside the task.
 
-## [~] 45. Implement task 297 — Update documentation for feature `settings`
+## [x] 45. Implement task 297 — Update documentation for feature `settings`
 
 Depends on: 44
 
@@ -320,6 +320,8 @@ Context:
 ```prompt
 /task-implement 297 --review
 ```
+
+Done: 2026-10-31, commit `8231012` (8 files, +89/-47). Feature `settings` has all its tasks done.
 
 ## [~] 46. Implement task 298 — Machine prefs directory, document delete and list, and the pre-paint theme on the Steam build
 
