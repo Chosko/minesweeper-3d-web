@@ -13,8 +13,8 @@ import {
 } from '../desktop/adapter/interface.js';
 import { createUnavailableAdapter } from '../desktop/adapter/unavailable.js';
 import {
-  BRIDGE_EVENTS, BRIDGE_GLOBAL, BRIDGE_REQUESTS, EVENT_CHANNEL, LIMITS, REQUEST_CHANNEL, SLOT_REQUESTS, SPEC_CHANNEL,
-  bridgeSpec, createBridge, validateRequest,
+  BRIDGE_EVENTS, BRIDGE_GLOBAL, BRIDGE_REQUESTS, EVENT_CHANNEL, LIMITS, PRE_PAINT_GLOBAL, REQUEST_CHANNEL, SLOT_REQUESTS,
+  SPEC_CHANNEL, bridgeSpec, createBridge, validateRequest,
 } from '../desktop/bridge.js';
 
 const PRELOAD = fileURLToPath(new URL('../desktop/preload.js', import.meta.url));
@@ -220,13 +220,14 @@ test('the bridge carries exactly the document\'s requests and events, and no gen
     'achievements.set', 'achievements.store', 'achievements.read',
     'leaderboards.find', 'leaderboards.upload', 'leaderboards.download', 'leaderboards.attach',
     'sharedFiles.writeAndShare', 'sharedFiles.download',
-    'storage.read', 'storage.write', 'storage.setAside',
+    'storage.read', 'storage.write', 'storage.setAside', 'storage.delete', 'storage.list',
     'blobs.put', 'blobs.get', 'blobs.delete', 'blobs.list',
     'quit.handshake', 'quit.request',
     'window.minimise', 'window.toggleFullscreen', 'window.setContentSize',
   ]);
   assert.deepEqual([...SLOT_REQUESTS], [
-    'storage.read', 'storage.write', 'storage.setAside', 'blobs.put', 'blobs.get', 'blobs.delete', 'blobs.list',
+    'storage.read', 'storage.write', 'storage.setAside', 'storage.delete', 'storage.list',
+    'blobs.put', 'blobs.get', 'blobs.delete', 'blobs.list',
   ]);
   assert.deepEqual([...BRIDGE_EVENTS], ['steamStateChanged', 'overlayActivated', 'flushRequested', 'fullscreenChanged']);
   assert.ok(Object.isFrozen(BRIDGE_REQUESTS) && Object.isFrozen(BRIDGE_EVENTS) && Object.isFrozen(SLOT_REQUESTS));
@@ -236,7 +237,9 @@ test('the bridge carries exactly the document\'s requests and events, and no gen
     channels: { request: REQUEST_CHANNEL, event: EVENT_CHANNEL },
     requests: Object.keys(BRIDGE_REQUESTS),
     events: [...BRIDGE_EVENTS],
+    prePaint: { global: PRE_PAINT_GLOBAL, theme: null },
   });
+  assert.deepEqual(bridgeSpec({ prePaintTheme: 'joyful-tiles' }).prePaint, { global: PRE_PAINT_GLOBAL, theme: 'joyful-tiles' });
   for (const name of spec.requests) assert.doesNotMatch(name, /\b(fs|file|path|exec|spawn|process|shell|require|eval)\b/i);
 });
 
@@ -274,6 +277,10 @@ test('validation refuses an unknown operation, a wrong argument count, wrong typ
   invalid('sharedFiles.writeAndShare', ['replay.bin', new Uint8Array(LIMITS.sharedFileBytes + 1)]);
   invalid('storage.write', ['settings', 5]);
   invalid('storage.write', ['settings', 'x'.repeat(LIMITS.documentChars + 1)]);
+  invalid('storage.delete', []);
+  invalid('storage.delete', [5]);
+  invalid('storage.delete', ['']);
+  invalid('storage.list', ['settings']);
   invalid('blobs.put', ['replays', 'k', new Uint8Array(LIMITS.blobBytes + 1)]);
   invalid('window.setContentSize', [0, 600]);
   invalid('window.setContentSize', [800, -1]);
@@ -292,6 +299,8 @@ test('validation passes well-formed requests through', () => {
   assert.deepEqual(validateRequest('leaderboards.download', ['9', { scope: 'players', players: ['76561197960287930'] }]),
     ['9', { scope: 'players', players: ['76561197960287930'] }]);
   assert.deepEqual(validateRequest('storage.write', ['settings', '']), ['settings', '']);
+  assert.deepEqual(validateRequest('storage.delete', ['settings']), ['settings']);
+  assert.deepEqual(validateRequest('storage.list', []), []);
   const bytes = new Uint8Array([1, 2, 3]);
   assert.deepEqual(validateRequest('blobs.put', ['replays', 'k', bytes]), ['replays', 'k', bytes]);
   assert.deepEqual(validateRequest('window.setContentSize', [1, LIMITS.contentSize]), [1, LIMITS.contentSize]);
@@ -379,7 +388,7 @@ test('the Steam state: the unavailable adapter, and a logged-on player', async (
 test('the storage and blob slots reject with unavailable until a handler is registered, and only they register', async () => {
   const bridge = createBridge({ adapter: createUnavailableAdapter(), window: fakeWindow(), closing: fakeClosing() });
   for (const operation of SLOT_REQUESTS) {
-    const args = { 'storage.write': ['settings', '{}'], 'blobs.put': ['replays', 'k', new Uint8Array(1)] }[operation]
+    const args = { 'storage.write': ['settings', '{}'], 'storage.list': [], 'blobs.put': ['replays', 'k', new Uint8Array(1)] }[operation]
       ?? (operation.startsWith('blobs.') && operation !== 'blobs.list' ? ['replays', 'k'] : ['settings']);
     assert.deepEqual(await bridge.handle(operation, args),
       { ok: false, error: { code: 'unavailable', message: ERROR_MESSAGES.unavailable } }, operation);
@@ -481,7 +490,7 @@ test('the preload exposes one deeply frozen object with exactly the request list
   const bridge = createBridge({ adapter: createUnavailableAdapter(), window: fakeWindow(), closing: fakeClosing() });
   bridge.attach({ ipcMain: ipc.ipcMain, webContents: ipc.webContents });
   const exposed = runPreload(ipc.ipcRenderer);
-  assert.deepEqual(Object.keys(exposed), [BRIDGE_GLOBAL]);
+  assert.deepEqual(Object.keys(exposed), [BRIDGE_GLOBAL, PRE_PAINT_GLOBAL]);
   const host = exposed[BRIDGE_GLOBAL];
   assert.ok(Object.isFrozen(host));
   const requests = [];
@@ -495,6 +504,36 @@ test('the preload exposes one deeply frozen object with exactly the request list
   }
   assert.deepEqual(requests, Object.keys(BRIDGE_REQUESTS));
   assert.deepEqual(Object.keys(host.events), [...BRIDGE_EVENTS]);
+});
+
+test('the preload hands the page the theme id the main process read, frozen beside the bridge, or null for none', () => {
+  const handOver = (prePaintTheme) => {
+    const ipc = fakeIpc();
+    const bridge = createBridge({ adapter: createUnavailableAdapter(), window: fakeWindow(), closing: fakeClosing(), prePaintTheme });
+    bridge.attach({ ipcMain: ipc.ipcMain, webContents: ipc.webContents });
+    return runPreload(ipc.ipcRenderer)[PRE_PAINT_GLOBAL];
+  };
+  for (const theme of ['joyful-tiles', null]) {
+    const prePaint = handOver(() => theme);
+    assert.deepEqual(prePaint, { theme });
+    assert.ok(Object.isFrozen(prePaint));
+  }
+  assert.deepEqual(handOver(() => 42), { theme: null }, 'anything but a string hands over none');
+  assert.deepEqual(handOver(() => { throw new Error('unreadable'); }), { theme: null }, 'a reader that throws hands over none');
+});
+
+test('every page load reads the stored theme afresh, so a reload paints in the file\'s current theme', () => {
+  const ipc = fakeIpc();
+  let stored = 'joyful-tiles';
+  let reads = 0;
+  const prePaintTheme = () => { reads += 1; return stored; };
+  const bridge = createBridge({ adapter: createUnavailableAdapter(), window: fakeWindow(), closing: fakeClosing(), prePaintTheme });
+  bridge.attach({ ipcMain: ipc.ipcMain, webContents: ipc.webContents });
+  assert.equal(reads, 0, 'nothing is read before the page asks');
+  assert.deepEqual(runPreload(ipc.ipcRenderer)[PRE_PAINT_GLOBAL], { theme: 'joyful-tiles' });
+  stored = null; // Reset all data removed the settings document, then reloaded
+  assert.deepEqual(runPreload(ipc.ipcRenderer)[PRE_PAINT_GLOBAL], { theme: null });
+  assert.equal(reads, 2);
 });
 
 test('the preload exposes nothing when the main process offers no bridge', () => {

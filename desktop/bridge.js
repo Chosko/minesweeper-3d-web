@@ -6,8 +6,13 @@
 // process access: storage and blob requests reach only the handler registered in their slot.
 import { HostError, toTypedError } from './adapter/interface.js';
 
-/** The page's global the preload exposes, and the IPC channels between the preload and here. */
+/**
+ * The page's globals the preload exposes — the bridge, and beside it the pre-paint theme
+ * `{ theme }` js/theme.js reads before first paint —, and the IPC channels between the preload and
+ * here.
+ */
 export const BRIDGE_GLOBAL = 'ms3dHost';
+export const PRE_PAINT_GLOBAL = 'ms3dPrePaint';
 export const SPEC_CHANNEL = 'ms3d:bridge-spec';
 export const REQUEST_CHANNEL = 'ms3d:request';
 export const EVENT_CHANNEL = 'ms3d:event';
@@ -79,6 +84,8 @@ export const BRIDGE_REQUESTS = Object.freeze({
   'storage.read': slot([name]),
   'storage.write': slot([name, text(LIMITS.documentChars, 0)]),
   'storage.setAside': slot([name]),
+  'storage.delete': slot([name]),
+  'storage.list': slot([]),
   'blobs.put': slot([name, name, bytes(LIMITS.blobBytes)]),
   'blobs.get': slot([name, name]),
   'blobs.delete': slot([name, name]),
@@ -97,13 +104,17 @@ export const SLOT_REQUESTS = Object.freeze(Object.keys(BRIDGE_REQUESTS).filter((
 /** The events the page may receive. */
 export const BRIDGE_EVENTS = Object.freeze(['steamStateChanged', 'overlayActivated', 'flushRequested', 'fullscreenChanged']);
 
-/** What the preload builds the page's object from. */
-export function bridgeSpec() {
+/**
+ * What the preload builds the page's objects from; `prePaintTheme` is the theme id the main process
+ * read from the settings document's file as the page loads, anything but a string none.
+ */
+export function bridgeSpec({ prePaintTheme = null } = {}) {
   return {
     global: BRIDGE_GLOBAL,
     channels: { request: REQUEST_CHANNEL, event: EVENT_CHANNEL },
     requests: Object.keys(BRIDGE_REQUESTS),
     events: [...BRIDGE_EVENTS],
+    prePaint: { global: PRE_PAINT_GLOBAL, theme: typeof prePaintTheme === 'string' ? prePaintTheme : null },
   };
 }
 
@@ -125,9 +136,11 @@ async function settle(fn, fallback) {
 
 /**
  * The bridge over `adapter`, the game window's actions (`window`, desktop/window.js) and the
- * closing sequence (`closing`, desktop/closing.js). `attach` joins it to the page.
+ * closing sequence (`closing`, desktop/closing.js). `prePaintTheme()` reads the stored theme id
+ * synchronously, once per page load as its preload asks for the spec, so a reload gets the file's
+ * current id (bridgeSpec); a reader that throws hands over none. `attach` joins it to the page.
  */
-export function createBridge({ adapter, window, closing }) {
+export function createBridge({ adapter, window, closing, prePaintTheme = () => null }) {
   const slots = new Map();
   let contents = null;
   let flush = null;
@@ -203,7 +216,14 @@ export function createBridge({ adapter, window, closing }) {
     detach();
     contents = webContents;
     const trusted = (event) => event?.sender === webContents;
-    const onSpec = (event) => { event.returnValue = trusted(event) ? bridgeSpec() : null; };
+    const readTheme = () => {
+      try {
+        return prePaintTheme();
+      } catch {
+        return null;
+      }
+    };
+    const onSpec = (event) => { event.returnValue = trusted(event) ? bridgeSpec({ prePaintTheme: readTheme() }) : null; };
     ipcMain.on(SPEC_CHANNEL, onSpec);
     ipcMain.handle(REQUEST_CHANNEL, (event, operation, args) => (trusted(event)
       ? handle(operation, args)

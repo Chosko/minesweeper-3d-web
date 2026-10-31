@@ -14,6 +14,7 @@ import { selectPlatform, STEAM_SLOTS } from '../js/platform/index.js';
 import { BRIDGE_GLOBAL, createBridgeClient } from '../js/platform/bridge-client.js';
 import { BRIDGE_EVENTS, BRIDGE_REQUESTS, createBridge } from '../desktop/bridge.js';
 import { createFileService, documentFile, storeDir } from '../desktop/file-service.js';
+import { MACHINE_SETTINGS_DOC, MACHINE_SETTINGS_VERSION, SETTINGS_DOC } from '../js/settings/store.js';
 import { storageSuite, blobStoreSuite } from './helpers/platform-suites.mjs';
 
 const raw = (version, data) => JSON.stringify({ version, data });
@@ -45,6 +46,8 @@ function fakeHost(files, { refuse = new Set(), hold = () => null } = {}) {
     'storage.read': (name) => files.read(name),
     'storage.write': (name, text) => files.write(name, text),
     'storage.setAside': (name) => files.setAside(name),
+    'storage.delete': (name) => files.deleteDocument(name),
+    'storage.list': () => files.listDocuments(),
     'blobs.put': (store, key, data) => files.put(store, key, data),
     'blobs.get': (store, key) => files.get(store, key),
     'blobs.delete': (store, key) => files.delete(store, key),
@@ -199,14 +202,60 @@ test('a name the save directory refuses fails as a save, not as an unwritable di
   assert.equal(storage.available(), true);
 });
 
-test('clear is not offered by the bridge: it reports a failure and deletes nothing', async () => {
+test('the machine settings document is a file in the machine prefs directory, every other document one in the save directory', async () => {
+  const files = saveDirectory();
+  const storage = STEAM_SLOTS.storage(createBridgeClient(fakeHost(files).host));
+  storage.register(MACHINE_SETTINGS_DOC, MACHINE_SETTINGS_VERSION);
+  storage.register(SETTINGS_DOC, 2, { 1: (d) => d });
+  assert.deepEqual(await storage.save(MACHINE_SETTINGS_DOC, { renderResolution: 1 }), { ok: true });
+  assert.deepEqual(await storage.save(SETTINGS_DOC, { theme: 'joyful-tiles' }), { ok: true });
+  assert.equal(textOf(join(files.prefsDir, documentFile(MACHINE_SETTINGS_DOC))), raw(MACHINE_SETTINGS_VERSION, { renderResolution: 1 }));
+  assert.equal(existsSync(join(files.dir, documentFile(MACHINE_SETTINGS_DOC))), false, 'never in the synced save directory');
+  assert.equal(textOf(join(files.dir, documentFile(SETTINGS_DOC))), raw(2, { theme: 'joyful-tiles' }));
+  assert.deepEqual(await storage.load(MACHINE_SETTINGS_DOC), { renderResolution: 1 });
+});
+
+test('clear deletes every document file and kept-aside copy in both directories, and resolves ok', async () => {
+  const files = saveDirectory();
+  const { host, calls } = fakeHost(files);
+  const storage = STEAM_SLOTS.storage(createBridgeClient(host));
+  assert.deepEqual(await storage.clear(), { ok: true }, 'nothing to clear');
+  writeFileSync(join(files.dir, 'settings.json'), raw(2, { a: 1 }));
+  writeFileSync(join(files.dir, 'settings.json.aside-20261031-140509'), '{bad');
+  writeFileSync(join(files.dir, 'records.json'), raw(1, {}));
+  writeFileSync(join(files.dir, 'unregistered.json'), raw(1, {}));
+  mkdirSync(files.prefsDir, { recursive: true });
+  writeFileSync(join(files.prefsDir, documentFile(MACHINE_SETTINGS_DOC)), raw(1, {}));
+  writeFileSync(join(files.prefsDir, `${documentFile(MACHINE_SETTINGS_DOC)}.aside-20261031-140509`), '{bad');
+  mkdirSync(join(files.dir, storeDir(REPLAY_STORE)), { recursive: true });
+  writeFileSync(join(files.dir, storeDir(REPLAY_STORE), 'r1'), 'replay');
+  assert.deepEqual(await storage.clear(), { ok: true });
+  assert.deepEqual(readdirSync(files.dir), [storeDir(REPLAY_STORE)], 'the replay store is the blob store\'s to clear');
+  assert.deepEqual(readdirSync(files.prefsDir), []);
+  assert.ok(calls.includes('storage.list') && calls.includes('storage.delete'));
+});
+
+test('clear fails only when an existing file cannot be deleted', async () => {
   const files = saveDirectory();
   writeFileSync(join(files.dir, 'settings.json'), raw(1, { a: 1 }));
-  const storage = STEAM_SLOTS.storage(createBridgeClient(fakeHost(files).host));
+  const refuse = new Set(['storage.delete']);
+  const storage = STEAM_SLOTS.storage(createBridgeClient(fakeHost(files, { refuse }).host));
   const result = await storage.clear();
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'write-failed');
   assert.equal(textOf(join(files.dir, 'settings.json')), raw(1, { a: 1 }));
+  refuse.delete('storage.delete');
+  assert.deepEqual(await storage.clear(), { ok: true });
+  assert.equal(existsSync(join(files.dir, 'settings.json')), false);
+});
+
+test('the bridge client lists and deletes documents over the bridge\'s document requests', async () => {
+  const files = saveDirectory();
+  const client = createBridgeClient(fakeHost(files).host);
+  await client.writeDocument('records', raw(1, {}));
+  assert.deepEqual(await client.listDocuments(), ['records']);
+  assert.equal(await client.deleteDocument('records'), null);
+  assert.deepEqual(await client.listDocuments(), []);
 });
 
 // ---------------------------------------------------------------- selection

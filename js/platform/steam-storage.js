@@ -1,17 +1,19 @@
 // The Steam build's document storage (`steam-cloud-saves`): the backend js/platform/storage.js runs
-// over, each document one text file in the save directory the desktop host's file service keeps
-// (desktop/file-service.js), reached through the bridge client's document requests. Loading,
-// upgrades, refusing a newer version and the failure contract stay the storage interface's; only
-// where the text lives changes. A file that will not parse is renamed aside by the file service with
-// a dated suffix, so it reads as missing.
+// over, each document one text file the desktop host's file service keeps (desktop/file-service.js)
+// — the machine settings document's in the machine prefs directory, every other in the save
+// directory, the file service choosing by name — reached through the bridge client's document
+// requests. Loading, upgrades, refusing a newer version and the failure contract stay the storage
+// interface's; only where the text lives changes. A file that will not parse is renamed aside by the
+// file service with a dated suffix, so it reads as missing.
 //
 // createSteamBackend({ client, track? }) → the backend contract of js/platform/storage.js:
 //   read(name)        → Promise of the text, or undefined when there is none; rejects with the
 //                       bridge's typed error { code, message } when the disk refuses.
 //   write(name, text) → Promise; replaces the file safely (a temporary file renamed over it).
 //   keepAside(name)   → Promise; renames the file aside, so the name reads as missing.
-//   clear()           → rejects: the bridge offers no way to list or delete documents, so the
-//                       interface's clear() reports { ok: false, reason: 'write-failed' }.
+//   clear()           → Promise; lists every document in both directories and deletes each one's
+//                       file and kept-aside copies; rejects only when an existing file cannot be
+//                       deleted (or the directories cannot be listed).
 //   available()       → true: the save directory is the game's own and persists whether or not
 //                       Steam runs; a write the disk refuses is reported through save's failure
 //                       contract, never by turning availability off, so no owner stops saving.
@@ -56,7 +58,8 @@ export function createSteamBackend({ client, track = (promise) => promise }) {
       await track(client.setDocumentAside(name));
     },
     async clear() {
-      throw new Error('steam storage: the documents in the save directory cannot be cleared through the bridge');
+      const names = await track(client.listDocuments());
+      for (const name of names) await track(client.deleteDocument(name));
     },
     available: () => true,
   };

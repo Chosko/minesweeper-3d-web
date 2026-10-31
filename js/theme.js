@@ -1,8 +1,11 @@
 /* Pre-paint theme script. A classic (non-module) script in the page head, after the base
-   stylesheets and ahead of the module graph: it reads the stored theme id from the settings
-   document, maps it (unknown or absent -> the default; light or dark -> Joyful tiles), inserts that
-   theme's stylesheet as a render-blocking <link> after the base stylesheets and sets the root
-   data-theme attribute, so no screen paints unstyled or in another theme.
+   stylesheets and ahead of the module graph: it reads the stored theme id, maps it (unknown or
+   absent -> the default; light or dark -> Joyful tiles), inserts that theme's stylesheet as a
+   render-blocking <link> after the base stylesheets and sets the root data-theme attribute, so no
+   screen paints unstyled or in another theme. On the desktop host the stored id is the one the
+   host's preload hands over (HOST_GLOBAL: { theme }, read by the main process from the settings
+   document's file; null for none) and browser storage is never read; on the web it is the settings
+   document in localStorage.
 
    A classic script cannot import the ES registry (js/themes/registry.js) without delaying first
    paint, so STYLESHEETS mirrors its id -> stylesheet mapping; tests/theme.test.mjs keeps the two in
@@ -11,7 +14,7 @@
    Exposes globalThis.msThemeBoot, the start-up state the run-time applier (js/themes/applier.js)
    takes over: { id, fellBackFrom, link, ready } — `ready` resolves once the active stylesheet has
    loaded and rejects when the default's fails. globalThis.msThemePrePaint carries the pieces, for
-   tests: { STYLESHEETS, DEFAULT_THEME, themeIdOf, readStoredTheme, boot }.
+   tests: { STYLESHEETS, DEFAULT_THEME, HOST_GLOBAL, themeIdOf, readStoredTheme, readHostTheme, boot }.
    The theme preference is the settings feature's; this script reads it and never writes it. */
 (function (global) {
   'use strict';
@@ -35,6 +38,16 @@
     var doc = JSON.parse(text);
     if (!doc || SETTINGS_VERSIONS.indexOf(doc.version) < 0 || !doc.data) return null;
     return doc.data.theme;
+  }
+
+  // The desktop host's hand-over (desktop/bridge.js PRE_PAINT_GLOBAL, exposed by its preload):
+  // undefined when there is none (the web build), else its theme id or null.
+  var HOST_GLOBAL = 'ms3dPrePaint';
+
+  function readHostTheme(scope) {
+    var handed = scope ? scope[HOST_GLOBAL] : undefined;
+    if (!handed || typeof handed !== 'object') return undefined;
+    return typeof handed.theme === 'string' ? handed.theme : null;
   }
 
   function own(table, key) {
@@ -64,14 +77,18 @@
     });
   }
 
-  // opts: { doc, storage, base?, stylesheets? } — base is the site root the stylesheet paths are
-  // relative to.
+  // opts: { doc, storage, hostTheme?, base?, stylesheets? } — hostTheme, when not undefined, is the
+  // desktop host's hand-over and storage is not read; base is the site root the stylesheet paths
+  // are relative to.
   function boot(opts) {
     var doc = opts.doc;
     var table = opts.stylesheets || STYLESHEETS;
     var base = opts.base || '';
     var stored = null;
-    try { stored = readStoredTheme(opts.storage); } catch (e) { stored = null; }
+    if (opts.hostTheme !== undefined) stored = opts.hostTheme;
+    else {
+      try { stored = readStoredTheme(opts.storage); } catch (e) { stored = null; }
+    }
     var id = themeIdOf(stored, table);
     var state = { id: id, fellBackFrom: null, link: null, ready: null };
 
@@ -95,15 +112,20 @@
   var doc = global.document;
   var script = doc.currentScript;
   var base = script && script.src ? new URL('..', script.src).href : '';
+  var hostTheme = readHostTheme(global);
   var storage = null;
-  try { storage = global.localStorage; } catch (e) { storage = null; }
+  if (hostTheme === undefined) {
+    try { storage = global.localStorage; } catch (e) { storage = null; }
+  }
 
   global.msThemePrePaint = {
     STYLESHEETS: STYLESHEETS,
     DEFAULT_THEME: DEFAULT_THEME,
+    HOST_GLOBAL: HOST_GLOBAL,
     themeIdOf: themeIdOf,
     readStoredTheme: readStoredTheme,
+    readHostTheme: readHostTheme,
     boot: boot,
   };
-  global.msThemeBoot = boot({ doc: doc, storage: storage, base: base });
+  global.msThemeBoot = boot({ doc: doc, storage: storage, hostTheme: hostTheme, base: base });
 })(globalThis);

@@ -27,11 +27,18 @@ export function createBridgeClient(host) {
     minimise: () => call(() => host.window.minimise()),
     toggleFullscreen: () => call(() => host.window.toggleFullscreen()),
     setContentSize: (width, height) => call(() => host.window.setContentSize(width, height)),
-    /** The save directory's documents (desktop/file-service.js): text, or null when there is none. */
+    /**
+     * The documents of the save directory and the machine prefs directory (desktop/file-service.js):
+     * text, or null when there is none.
+     */
     readDocument: (name) => call(() => host.storage.read(name)),
     writeDocument: (name, text) => call(() => host.storage.write(name, text)),
     /** Renames the document aside; resolves the new file name, or null when there was none. */
     setDocumentAside: (name) => call(() => host.storage.setAside(name)),
+    /** Removes the document's file and every kept-aside copy of it. */
+    deleteDocument: (name) => call(() => host.storage.delete(name)),
+    /** Every document with a file or a kept-aside copy, by name, sorted. */
+    listDocuments: () => call(() => host.storage.list()),
     /** The save directory's blob stores, each by name: bytes, or null when there is none. */
     putBlob: (store, key, bytes) => call(() => host.blobs.put(store, key, bytes)),
     getBlob: (store, key) => call(() => host.blobs.get(store, key)),

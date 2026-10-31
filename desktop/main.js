@@ -1,6 +1,7 @@
 // The Electron main process: one game window loading the web game's files over the game protocol,
 // a single-instance lock, the window state file, the crash log, the closing sequence, the Steam
-// adapter, the page bridge and the save directory's file service behind it.
+// adapter, the page bridge and the file service behind it, and the stored theme id handed to the
+// page as it loads.
 import { app, BrowserWindow, ipcMain, protocol, screen } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -79,6 +80,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     handleGameProtocol(protocol, gameRoot());
+    const files = createFileService({ root: app.getPath('userData') });
     const stateFile = path.join(app.getPath('userData'), WINDOW_STATE_FILE);
     const workAreas = screen.getAllDisplays().map((display) => display.workArea);
     const state = placeOnScreen(readWindowState(stateFile), workAreas, DEFAULT_CONTENT_SIZE);
@@ -87,8 +89,8 @@ if (!app.requestSingleInstanceLock()) {
     });
     capturePageErrors(crashLog, game.win.webContents);
     repaintForOverlay(game.win);
-    bridge = createBridge({ adapter, window: game.actions, closing });
-    registerFileService(bridge, createFileService({ root: app.getPath('userData') }));
+    bridge = createBridge({ adapter, window: game.actions, closing, prePaintTheme: () => files.storedTheme() });
+    registerFileService(bridge, files);
     bridge.attach({ ipcMain, webContents: game.win.webContents });
     game.win.on('close', (event) => {
       event.preventDefault();

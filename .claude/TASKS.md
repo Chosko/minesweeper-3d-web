@@ -1851,7 +1851,7 @@ Feature: settings
 
 ## 298. Machine prefs directory, document delete and list, and the pre-paint theme on the Steam build
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: desktop/file-service.js, desktop/bridge.js, desktop/main.js, desktop/preload.js, js/platform/bridge-client.js, js/platform/steam-storage.js, js/theme.js, tests/desktop-file-service.test.mjs, tests/desktop-bridge.test.mjs, tests/platform-steam-storage.test.mjs, tests/theme.test.mjs
 Preconditions: 296

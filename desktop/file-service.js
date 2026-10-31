@@ -1,19 +1,40 @@
-// The file service behind the bridge's storage and blob requests (`steam-cloud-saves`): the save
-// directory under the user-data directory — one file per document and a directory per blob store,
-// nothing else, so Steam Auto-Cloud syncs exactly it while the window state file and the crash log
-// stay outside. Every name is checked against NAME_PATTERN before any path is built, so no request
-// reaches outside the save directory. A write goes to a temporary file in the same directory, flushed
-// and renamed over the old one, so a crash mid-write leaves the old file whole; leftover temporary
-// files are swept the first time their directory is used. Every operation resolves or rejects with
-// a HostError — `invalid` for a bad name or argument, `failed` for a disk that refuses — and never
-// throws anything else into the bridge.
+// The file service behind the bridge's storage and blob requests (`steam-cloud-saves`): two
+// directories under the user-data directory. The save directory holds one file per document and a
+// directory per blob store, nothing else, so Steam Auto-Cloud syncs exactly it; the machine prefs
+// directory beside it holds the machine-local documents (MACHINE_DOCUMENTS) and never syncs, like
+// the window state file and the crash log. Every name is checked against NAME_PATTERN before any
+// path is built, so no request reaches outside those two directories. A write goes to a temporary
+// file in the same directory, flushed and renamed over the old one, so a crash mid-write leaves the
+// old file whole; leftover temporary files are swept the first time their directory is used. Every
+// operation resolves or rejects with a HostError — `invalid` for a bad name or argument, `failed`
+// for a disk that refuses — and never throws anything else into the bridge.
 import * as nodeFs from 'node:fs/promises';
+import { readFileSync as nodeReadFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { HostError } from './adapter/interface.js';
 
 /** The save directory's name under the user-data directory. */
 export const SAVE_DIR = 'saves';
+
+/** The machine prefs directory's name under the user-data directory, beside the save directory. */
+export const PREFS_DIR = 'prefs';
+
+/**
+ * The documents whose file lives in the machine prefs directory: the settings store's machine
+ * settings document (js/settings/store.js MACHINE_SETTINGS_DOC; the host cannot import the game's
+ * files, and tests/desktop-file-service.test.mjs keeps the two in step).
+ */
+export const MACHINE_DOCUMENTS = Object.freeze(['settings.machine']);
+
+/** The settings document (js/settings/store.js SETTINGS_DOC), whose theme id the page gets before first paint. */
+export const SETTINGS_DOCUMENT = 'settings';
+
+/**
+ * The settings document's versions whose theme id is handed over: 1 up to the store's
+ * SETTINGS_VERSION, as js/theme.js reads them; a newer build's file hands over none.
+ */
+export const SETTINGS_VERSIONS = Object.freeze([1, 2]);
 
 /**
  * A document, blob-store or blob name: letters, digits, dot, dash and underscore, starting with a
@@ -37,8 +58,14 @@ export function checkName(name) {
   return name;
 }
 
-/** A document's file name in the save directory. */
+/** A document's file name, in the save directory or the machine prefs directory. */
 export const documentFile = (name) => `${name}${DOCUMENT_EXT}`;
+
+/** A document file or one of its kept-aside copies: the document's name, else null. */
+function documentOf(entry) {
+  const match = /^(.+)\.json(?:\.aside-\d{8}-\d{6}(?:-\d+)?)?$/.exec(entry);
+  return match && NAME_PATTERN.test(match[1]) && !DEVICE_NAME.test(match[1]) ? match[1] : null;
+}
 
 /** A blob store's directory name in the save directory. */
 export const storeDir = (name) => `${name}${STORE_EXT}`;
@@ -49,11 +76,13 @@ const pad = (n) => String(n).padStart(2, '0');
 const stamp = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 
 /**
- * The file service over `<root>/saves`, `root` being the user-data directory. `fs` is the
- * node:fs/promises API and `now` the clock, both replaceable for tests.
+ * The file service over `<root>/saves` and `<root>/prefs`, `root` being the user-data directory.
+ * `fs` is the node:fs/promises API, `readFileSync` node:fs's and `now` the clock, all replaceable
+ * for tests.
  */
-export function createFileService({ root, fs = nodeFs, now = () => new Date() }) {
+export function createFileService({ root, fs = nodeFs, readFileSync = nodeReadFileSync, now = () => new Date() }) {
   const dir = path.join(root, SAVE_DIR);
+  const prefsDir = path.join(root, PREFS_DIR);
   const sweeps = new Map();
   const queues = new Map();
   let serial = 0;
@@ -134,12 +163,25 @@ export function createFileService({ root, fs = nodeFs, now = () => new Date() })
     }
   }
 
-  const documentPath = (name) => path.join(dir, documentFile(checkName(name)));
+  /** The entries of `folder`, none when it does not exist yet. */
+  async function entriesOf(folder) {
+    await sweep(folder);
+    try {
+      return await fs.readdir(folder);
+    } catch (error) {
+      if (missing(error)) return [];
+      throw failed();
+    }
+  }
+
+  const folderOf = (name) => (MACHINE_DOCUMENTS.includes(name) ? prefsDir : dir);
+  const documentPath = (name) => path.join(folderOf(checkName(name)), documentFile(name));
   const storePath = (store) => path.join(dir, storeDir(checkName(store)));
   const blobPath = (store, key) => path.join(storePath(store), checkName(key));
 
   return {
     dir,
+    prefsDir,
 
     /** The document's text, or null when there is none. */
     async read(name) {
@@ -160,16 +202,17 @@ export function createFileService({ root, fs = nodeFs, now = () => new Date() })
      */
     async setAside(name) {
       const file = documentPath(name);
+      const folder = path.dirname(file);
       return serialise(file, async () => {
         const base = `${path.basename(file)}${ASIDE_MARK}${stamp(now())}`;
         try {
           for (let n = 1; ; n += 1) {
             const aside = n === 1 ? base : `${base}-${n}`;
             try {
-              await fs.stat(path.join(dir, aside));
+              await fs.stat(path.join(folder, aside));
             } catch (error) {
               if (!missing(error)) throw error;
-              await fs.rename(file, path.join(dir, aside));
+              await fs.rename(file, path.join(folder, aside));
               return aside;
             }
           }
@@ -178,6 +221,55 @@ export function createFileService({ root, fs = nodeFs, now = () => new Date() })
           throw failed();
         }
       });
+    },
+
+    /**
+     * Removes the document's file and every kept-aside copy of it, in both directories; removing a
+     * document that is not there succeeds.
+     */
+    async deleteDocument(name) {
+      checkName(name);
+      for (const folder of [dir, prefsDir]) {
+        const file = path.join(folder, documentFile(name));
+        await serialise(file, async () => {
+          for (const entry of await entriesOf(folder)) {
+            if (documentOf(entry) !== name) continue;
+            try {
+              await fs.unlink(path.join(folder, entry));
+            } catch (error) {
+              if (!missing(error)) throw failed();
+            }
+          }
+        });
+      }
+      return null;
+    },
+
+    /** Every document with a file or a kept-aside copy in either directory, by name, sorted. */
+    async listDocuments() {
+      const names = new Set();
+      for (const folder of [dir, prefsDir]) {
+        for (const entry of await entriesOf(folder)) {
+          const name = documentOf(entry);
+          if (name !== null) names.add(name);
+        }
+      }
+      return [...names].sort();
+    },
+
+    /**
+     * The theme id the settings document's file holds, read synchronously for the page's first
+     * paint each time it loads; null when the file is absent, unreadable, of a version outside
+     * SETTINGS_VERSIONS or holds none. Never throws.
+     */
+    storedTheme() {
+      try {
+        const doc = JSON.parse(readFileSync(documentPath(SETTINGS_DOCUMENT), 'utf8'));
+        const theme = SETTINGS_VERSIONS.includes(doc?.version) ? doc.data?.theme : null;
+        return typeof theme === 'string' ? theme : null;
+      } catch {
+        return null;
+      }
     },
 
     /** Stores the bytes under `key` in the named store, replacing any earlier blob. */
@@ -229,6 +321,8 @@ export function registerFileService(bridge, files) {
   bridge.register('storage.read', (name) => files.read(name));
   bridge.register('storage.write', (name, text) => files.write(name, text));
   bridge.register('storage.setAside', (name) => files.setAside(name));
+  bridge.register('storage.delete', (name) => files.deleteDocument(name));
+  bridge.register('storage.list', () => files.listDocuments());
   bridge.register('blobs.put', (store, key, bytes) => files.put(store, key, bytes));
   bridge.register('blobs.get', (store, key) => files.get(store, key));
   bridge.register('blobs.delete', (store, key) => files.delete(store, key));

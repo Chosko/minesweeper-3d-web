@@ -15,8 +15,10 @@ import { ERROR_MESSAGES, HostError } from '../desktop/adapter/interface.js';
 import { createUnavailableAdapter } from '../desktop/adapter/unavailable.js';
 import { SLOT_REQUESTS, createBridge } from '../desktop/bridge.js';
 import {
-  SAVE_DIR, checkName, createFileService, documentFile, registerFileService, storeDir,
+  MACHINE_DOCUMENTS, PREFS_DIR, SAVE_DIR, SETTINGS_DOCUMENT, SETTINGS_VERSIONS, checkName, createFileService, documentFile, registerFileService,
+  storeDir,
 } from '../desktop/file-service.js';
+import { MACHINE_SETTINGS_DOC, SETTINGS_DOC, SETTINGS_VERSION } from '../js/settings/store.js';
 
 const MAIN = fileURLToPath(new URL('../desktop/main.js', import.meta.url));
 
@@ -62,6 +64,135 @@ test('the save directory sits under the user-data directory and holds a file per
   assert.deepEqual(readdirSync(path.join(dir, storeDir('replays'))), ['a1b2']);
   assert.deepEqual(readdirSync(root).sort(), ['crash.log', SAVE_DIR, 'window-state.json'].sort(),
     'window state and the crash log stay outside the save directory');
+});
+
+// --- the machine prefs directory ------------------------------------------------------------------
+
+test('the machine settings document lives in the machine prefs directory beside the save directory, outside it', async (t) => {
+  const root = tempRoot(t);
+  const files = createFileService({ root, now: fixedNow });
+  assert.equal(files.prefsDir, path.join(root, PREFS_DIR));
+  assert.notEqual(PREFS_DIR, SAVE_DIR);
+  assert.deepEqual([...MACHINE_DOCUMENTS], [MACHINE_SETTINGS_DOC], 'the host\'s machine-local names are the settings store\'s');
+  assert.equal(SETTINGS_DOCUMENT, SETTINGS_DOC);
+  await files.write(MACHINE_SETTINGS_DOC, '{"version":1,"data":{"lookSensitivity":2}}');
+  await files.write('settings', '{"version":2,"data":{}}');
+  assert.deepEqual(readdirSync(files.prefsDir), [documentFile(MACHINE_SETTINGS_DOC)]);
+  assert.deepEqual(readdirSync(files.dir), [documentFile('settings')]);
+  assert.equal(await files.read(MACHINE_SETTINGS_DOC), '{"version":1,"data":{"lookSensitivity":2}}');
+  assert.deepEqual(readdirSync(root).sort(), [PREFS_DIR, SAVE_DIR].sort());
+
+  const aside = await files.setAside(MACHINE_SETTINGS_DOC);
+  assert.equal(aside, `${documentFile(MACHINE_SETTINGS_DOC)}.aside-20261031-140509`);
+  assert.deepEqual(readdirSync(files.prefsDir), [aside], 'set aside within the machine prefs directory');
+  assert.equal(await files.read(MACHINE_SETTINGS_DOC), null);
+});
+
+test('the machine prefs directory keeps the safe-write rule: a crash mid-write leaves the old file and a swept temporary', async (t) => {
+  const root = tempRoot(t);
+  await createFileService({ root }).write(MACHINE_SETTINGS_DOC, 'old');
+  const { fs } = failingFs('EIO', []);
+  let reached;
+  const renamed = new Promise((resolve) => { reached = resolve; });
+  const crashed = createFileService({ root, fs: { ...fs, rename: () => { reached(); return new Promise(() => {}); } } });
+  crashed.write(MACHINE_SETTINGS_DOC, 'new, half');
+  await renamed;
+  assert.equal(readdirSync(path.join(root, PREFS_DIR)).length, 2, 'the document and its temporary file');
+  const files = createFileService({ root });
+  assert.equal(await files.read(MACHINE_SETTINGS_DOC), 'old');
+  assert.deepEqual(readdirSync(path.join(root, PREFS_DIR)), [documentFile(MACHINE_SETTINGS_DOC)]);
+});
+
+// --- document delete and list ---------------------------------------------------------------------
+
+test('document list names every document with a file or a kept-aside copy, in both directories, sorted', async (t) => {
+  const root = tempRoot(t);
+  const files = createFileService({ root, now: fixedNow });
+  assert.deepEqual(await files.listDocuments(), [], 'neither directory exists yet');
+  await files.write('records', '{}');
+  await files.write('settings', '{bad');
+  await files.setAside('settings');
+  await files.write(MACHINE_SETTINGS_DOC, '{}');
+  await files.write('shell.lastMode', '{}');
+  await files.put('replays', 'k', new Uint8Array([1]));
+  writeFileSync(path.join(files.dir, '~records.json.1-1.tmp'), 'half');
+  writeFileSync(path.join(files.dir, 'notes.txt'), 'not a document');
+  assert.deepEqual(await files.listDocuments(), [MACHINE_SETTINGS_DOC, 'records', 'settings', 'shell.lastMode'].sort());
+});
+
+test('document delete removes the document\'s file and every kept-aside copy, in both directories, and nothing else', async (t) => {
+  const root = tempRoot(t);
+  const files = createFileService({ root, now: fixedNow });
+  await files.write('records', 'one');
+  await files.setAside('records');
+  await files.write('records', 'two');
+  await files.setAside('records');
+  await files.write('records', 'three');
+  await files.write('records.history', 'kept');
+  await files.put('replays', 'k', new Uint8Array([1]));
+  await files.write(MACHINE_SETTINGS_DOC, 'machine');
+  await files.setAside(MACHINE_SETTINGS_DOC);
+  // A stray copy of the machine-local document in the save directory goes too.
+  writeFileSync(path.join(files.dir, documentFile(MACHINE_SETTINGS_DOC)), 'stray');
+  assert.equal(await files.deleteDocument('records'), null);
+  assert.deepEqual(readdirSync(files.dir).sort(), [documentFile(MACHINE_SETTINGS_DOC), documentFile('records.history'), storeDir('replays')].sort());
+  assert.equal(await files.deleteDocument(MACHINE_SETTINGS_DOC), null);
+  assert.deepEqual(readdirSync(files.prefsDir), []);
+  assert.deepEqual(readdirSync(files.dir).sort(), [documentFile('records.history'), storeDir('replays')].sort());
+  assert.equal(await files.deleteDocument('records'), null, 'deleting a missing document succeeds');
+  assert.equal(await files.deleteDocument('nowhere'), null);
+  assert.deepEqual(await files.listDocuments(), ['records.history']);
+});
+
+test('document delete waits for a write in flight to the same document', async (t) => {
+  const files = createFileService({ root: tempRoot(t) });
+  const writing = files.write('records', 'late');
+  await files.deleteDocument('records');
+  await writing;
+  assert.equal(await files.read('records'), null);
+});
+
+test('a document that cannot be deleted rejects with failed; a listing the disk refuses rejects with failed', async (t) => {
+  const root = tempRoot(t);
+  await createFileService({ root }).write('records', 'kept');
+  const refusing = createFileService({ root, fs: failingFs('EPERM', ['unlink']).fs });
+  await rejectsWith(refusing.deleteDocument('records'), 'failed');
+  assert.equal(await createFileService({ root }).read('records'), 'kept');
+  await rejectsWith(createFileService({ root, fs: failingFs('EIO', ['readdir']).fs }).listDocuments(), 'failed');
+});
+
+// --- the pre-paint theme --------------------------------------------------------------------------
+
+test('the stored theme is the settings document\'s theme id, or null when the file is absent or unreadable', async (t) => {
+  const root = tempRoot(t);
+  const files = createFileService({ root });
+  assert.deepEqual([...SETTINGS_VERSIONS], Array.from({ length: SETTINGS_VERSION }, (_, i) => i + 1),
+    'every settings version up to the store\'s');
+  assert.equal(files.storedTheme(), null, 'no settings file, read synchronously');
+  await realFs.mkdir(files.dir, { recursive: true });
+  for (const [text, want] of [
+    ['{"version":2,"data":{"theme":"joyful-tiles"}}', 'joyful-tiles'],
+    ['{"version":1,"data":{"theme":"dark"}}', 'dark'],
+    [`{"version":${SETTINGS_VERSION + 1},"data":{"theme":"joyful-tiles"}}`, null],
+    ['{"version":2,"data":{"volume":1}}', null],
+    ['{"version":2,"data":{"theme":7}}', null],
+    ['{"version":2,"data":null}', null],
+    ['{"data":{"theme":"joyful-tiles"}}', null],
+    ['{"version":2,"da', null],
+    ['', null],
+  ]) {
+    writeFileSync(path.join(files.dir, documentFile(SETTINGS_DOCUMENT)), text);
+    assert.equal(await files.storedTheme(), want, text);
+  }
+  writeFileSync(path.join(files.dir, documentFile(SETTINGS_DOCUMENT)), '{"version":2,"data":{"theme":"joyful-tiles"}}');
+  const refusing = () => { throw Object.assign(new Error('refused'), { code: 'EIO' }); };
+  assert.equal(createFileService({ root, readFileSync: refusing }).storedTheme(), null, 'a read the disk refuses');
+});
+
+test('the main process hands the bridge the stored theme\'s reader before the window loads', () => {
+  const source = readFileSync(MAIN, 'utf8');
+  assert.match(source, /createBridge\(\{[^}]*prePaintTheme: \(\) => files\.storedTheme\(\)[^}]*\}\)/s);
+  assert.ok(source.indexOf('createBridge(') < source.indexOf('loadURL('));
 });
 
 test('no document file, blob-store directory or temporary file can take another\'s name', () => {
@@ -209,6 +340,7 @@ test('a request with a bad name rejects with invalid and reaches nothing outside
     await rejectsWith(files.read(name), 'invalid');
     await rejectsWith(files.write(name, 'x'), 'invalid');
     await rejectsWith(files.setAside(name), 'invalid');
+    await rejectsWith(files.deleteDocument(name), 'invalid');
     await rejectsWith(files.put(name, 'k', new Uint8Array(1)), 'invalid');
     await rejectsWith(files.put('replays', name, new Uint8Array(1)), 'invalid');
     await rejectsWith(files.get(name, 'k'), 'invalid');
@@ -219,27 +351,37 @@ test('a request with a bad name rejects with invalid and reaches nothing outside
   assert.deepEqual(calls, [], 'no bad name touches the disk');
   assert.equal(readFileSync(path.join(root, 'window-state.json'), 'utf8'), 'outside');
   assert.equal(existsSync(path.join(root, SAVE_DIR)), false);
+  assert.equal(existsSync(path.join(root, PREFS_DIR)), false);
 });
 
-test('every path the service touches is inside the save directory', async (t) => {
+test('every path the service touches is inside the save directory or the machine prefs directory', async (t) => {
   const root = tempRoot(t);
   const { fs, calls } = failingFs('EIO', []);
   const files = createFileService({ root, fs, now: fixedNow });
   await files.write('settings', '{}');
   await files.read('settings');
   await files.setAside('settings');
+  await files.write(MACHINE_SETTINGS_DOC, '{}');
+  await files.read(MACHINE_SETTINGS_DOC);
+  await files.setAside(MACHINE_SETTINGS_DOC);
+  await files.write('records', '{}');
+  await files.listDocuments();
+  await files.deleteDocument('records');
+  await files.deleteDocument(MACHINE_SETTINGS_DOC);
+  await files.storedTheme();
   await files.put('replays', 'k', new Uint8Array([1]));
   await files.get('replays', 'k');
   await files.list('replays');
   await files.delete('replays', 'k');
-  const dir = path.join(root, SAVE_DIR);
+  const inside = (arg, dir) => arg === dir || arg.startsWith(dir + path.sep);
   for (const [op, ...args] of calls) {
     const paths = args.filter((a) => typeof a === 'string' && path.isAbsolute(a));
     assert.ok(paths.length > 0, `${op} names its path`);
     for (const arg of paths) {
-      assert.ok(arg === dir || arg.startsWith(dir + path.sep), `${op} ${arg} stays inside the save directory`);
+      assert.ok(inside(arg, files.dir) || inside(arg, files.prefsDir), `${op} ${arg} stays inside the two directories`);
     }
   }
+  assert.ok(calls.some(([, arg]) => inside(arg, files.prefsDir)), 'the machine prefs directory is used');
 });
 
 test('bad arguments other than names reject with invalid', async (t) => {
@@ -324,6 +466,13 @@ test('the file service fills every storage and blob slot of the bridge', async (
   assert.deepEqual(await bridge.handle('storage.write', ['settings', '{"v":1}']), ok(null));
   assert.deepEqual(await bridge.handle('storage.read', ['settings']), ok('{"v":1}'));
   assert.deepEqual(await bridge.handle('storage.setAside', ['settings']), ok(`${documentFile('settings')}.aside-20261031-140509`));
+  assert.deepEqual(await bridge.handle('storage.write', [MACHINE_SETTINGS_DOC, '{}']), ok(null));
+  assert.deepEqual(await bridge.handle('storage.list', []), ok([MACHINE_SETTINGS_DOC, 'settings'].sort()));
+  assert.deepEqual(await bridge.handle('storage.delete', ['settings']), ok(null));
+  assert.deepEqual(await bridge.handle('storage.delete', [MACHINE_SETTINGS_DOC]), ok(null));
+  assert.deepEqual(await bridge.handle('storage.list', []), ok([]));
+  assert.deepEqual(await bridge.handle('storage.delete', ['..']),
+    { ok: false, error: { code: 'invalid', message: ERROR_MESSAGES.invalid } });
   assert.deepEqual(await bridge.handle('blobs.put', ['replays', 'k', new Uint8Array([4, 5])]), ok(null));
   const got = await bridge.handle('blobs.get', ['replays', 'k']);
   assert.equal(got.ok, true);
@@ -350,6 +499,7 @@ test('a disk failure reaches the page as a failed reply', async (t) => {
 
 test('the main process registers the file service over the user-data directory before the page loads', () => {
   const source = readFileSync(MAIN, 'utf8');
-  assert.match(source, /registerFileService\(bridge, createFileService\(\{ root: app\.getPath\('userData'\) \}\)\)/);
+  assert.match(source, /const files = createFileService\(\{ root: app\.getPath\('userData'\) \}\)/);
+  assert.match(source, /registerFileService\(bridge, files\)/);
   assert.ok(source.indexOf('registerFileService(') < source.indexOf('loadURL('));
 });

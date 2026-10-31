@@ -3,7 +3,9 @@
 // (desktop/bridge.js, their one authority) and exposes one deeply frozen object to the page: a
 // promise function per request, grouped as `<group>.<request>`, and under `events` a subscribe
 // function per event, returning its unsubscribe. A request rejects with a typed error
-// `{ code, message }` and never throws. Nothing is exposed when the main process offers no bridge.
+// `{ code, message }` and never throws. Beside it, a frozen `{ theme }` — the theme id the main
+// process read from the settings document's file, or null — for js/theme.js's first paint. Nothing
+// is exposed when the main process offers no bridge.
 'use strict';
 
 const { contextBridge, ipcRenderer } = require('electron');
@@ -56,4 +58,8 @@ const SPEC_CHANNEL = 'ms3d:bridge-spec';
   for (const [group, requests] of Object.entries(groups)) api[group] = Object.freeze(requests);
   api.events = Object.freeze(Object.fromEntries(spec.events.map((event) => [event, subscribe(event)])));
   contextBridge.exposeInMainWorld(spec.global, Object.freeze(api));
+  if (spec.prePaint && typeof spec.prePaint.global === 'string') {
+    const theme = typeof spec.prePaint.theme === 'string' ? spec.prePaint.theme : null;
+    contextBridge.exposeInMainWorld(spec.prePaint.global, Object.freeze({ theme }));
+  }
 }());

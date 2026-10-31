@@ -1,8 +1,8 @@
 // The platform module: the one place the platform's implementations are selected, once, when the
 // module is first evaluated at start-up. It looks for the page bridge the desktop host exposes
 // (js/platform/bridge-client.js): present, each slot takes its Steam implementation (STEAM_SLOTS,
-// which the Steam features fill — storage and the replay store from steam-cloud-saves, files in the
-// save directory (js/platform/steam-storage.js, js/platform/steam-blob-store.js), leaderboards,
+// which the Steam features fill — storage and the replay store from steam-cloud-saves, files the
+// desktop host keeps (js/platform/steam-storage.js, js/platform/steam-blob-store.js), leaderboards,
 // achievements); absent, or for a slot no Steam feature has filled, the browser implementation or
 // local stand-in. Callers import what is selected from here and never an implementation, nor test
 // for Electron or the bridge: the web build's storage is the browser backend
