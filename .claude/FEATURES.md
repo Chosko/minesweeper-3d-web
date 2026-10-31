@@ -67,7 +67,7 @@ Tasks: 24, 25, 26, 27, 28, 204, 205
 
 ## settings — Settings page and store: controls, graphics, theme, audio
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/settings.md
 Source: product-design.md § Main menu and game shell (m1-classic-2d)
 Tasks: 39, 40, 41, 42, 296, 297
