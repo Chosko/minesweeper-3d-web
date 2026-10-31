@@ -298,7 +298,7 @@ Context:
 
 Done: 2026-10-31, commit `4626abc` (10 files, +886/-392). Reset all data fails on the Steam build: the bridge and file service cannot list or delete documents, so the Steam storage's `clear()` reports `write-failed` (deferred, no task yet). Steam storage availability is always true; a refused write shows only in that save's result.
 
-## [ ] 44. Implement task 296 — Machine settings document and browser-only carry-over of the loose keys
+## [x] 44. Implement task 296 — Machine settings document and browser-only carry-over of the loose keys
 
 Depends on: none
 
@@ -308,21 +308,25 @@ Context: none
 /task-implement 296 --review
 ```
 
-## [ ] 45. Implement task 297 — Update documentation for feature `settings`
+Done: 2026-10-31, commit `9b95dec` (11 files, +311/-79). The machine settings document is `settings.machine` (version 1; store exports `MACHINE_SETTINGS_DOC`, `MACHINE_KEYS`); the Data panel's line above the Reset button still says "in this browser" on the Steam build — left, outside the task.
+
+## [~] 45. Implement task 297 — Update documentation for feature `settings`
 
 Depends on: 44
 
-Context: none
+Context:
+- 2026-10-31 (from step 44): the machine settings document is `settings.machine` (browser key `ms3d:doc:settings.machine`, version 1). `js/ui.js` also changed: the `UI` constructor takes `{ desktopHost }`; `createReset`, `settingsPageHtml` and `bindResetPanel` take a `desktopHost` option, and `js/main.js` passes `legacy: null` (no loose keys) on the Steam build. `.claude/context/settings.md` and `settings-reset.md` still describe one settings document and the old `createReset` signature.
 
 ```prompt
 /task-implement 297 --review
 ```
 
-## [ ] 46. Implement task 298 — Machine prefs directory, document delete and list, and the pre-paint theme on the Steam build
+## [~] 46. Implement task 298 — Machine prefs directory, document delete and list, and the pre-paint theme on the Steam build
 
 Depends on: 8, 9, 44
 
-Context: none
+Context:
+- 2026-10-31 (from step 44): the machine settings document is registered as `settings.machine` (version 1; `js/settings/store.js` exports `MACHINE_SETTINGS_DOC`, `MACHINE_SETTINGS_VERSION`, `MACHINE_KEYS` = `lookSensitivity`, `renderResolution`) — this is the document the machine prefs directory holds. The Steam Reset wording (`RESET_MESSAGE_DESKTOP`, `RESET_FAILURE_DESKTOP`) is already done in task 296, selected by a `desktopHost` option `js/main.js` passes from `capabilities.desktopHost`.
 
 ```prompt
 /task-implement 298 --review
