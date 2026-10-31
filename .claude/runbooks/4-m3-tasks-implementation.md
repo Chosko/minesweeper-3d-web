@@ -1,7 +1,7 @@
 # Runbook: m3-tasks-implementation
 
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 17) · Model: opus
-Last step number: 43
+Last step number: 46
 
 ## [x] 32. Implement task 115 — Three cube 3D presets and no no-guess on a side of 2
 
@@ -297,6 +297,36 @@ Context:
 ```
 
 Done: 2026-10-31, commit `4626abc` (10 files, +886/-392). Reset all data fails on the Steam build: the bridge and file service cannot list or delete documents, so the Steam storage's `clear()` reports `write-failed` (deferred, no task yet). Steam storage availability is always true; a refused write shows only in that save's result.
+
+## [ ] 44. Implement task 296 — Machine settings document and browser-only carry-over of the loose keys
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 296 --review
+```
+
+## [ ] 45. Implement task 297 — Update documentation for feature `settings`
+
+Depends on: 44
+
+Context: none
+
+```prompt
+/task-implement 297 --review
+```
+
+## [ ] 46. Implement task 298 — Machine prefs directory, document delete and list, and the pre-paint theme on the Steam build
+
+Depends on: 8, 9, 44
+
+Context: none
+
+```prompt
+/task-implement 298 --review
+```
 
 ## [ ] 10. Implement task 93 — Steam Auto-Cloud configuration and quota
 
