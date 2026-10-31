@@ -1,7 +1,7 @@
 # Runbook: m3-tasks-implementation
 
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 17) · Model: opus
-Last step number: 46
+Last step number: 47
 
 ## [x] 32. Implement task 115 — Three cube 3D presets and no no-guess on a side of 2
 
@@ -341,6 +341,16 @@ Context:
 
 ```prompt
 /task-implement 93 --review
+```
+
+## [ ] 47. Implement task 299 — Update documentation for feature `steam-cloud-saves`
+
+Depends on: 8, 9, 10, 46
+
+Context: none
+
+```prompt
+/task-implement 299 --review
 ```
 
 ## [ ] 11. Implement task 94 — Update documentation for feature `steam-cloud-saves`
