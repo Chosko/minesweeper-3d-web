@@ -1,9 +1,11 @@
 # Steam cloud saves
 
-The Steam build's storage: every saved document — settings, records, stats
-history, the replay library's index, the last mode played — and every kept
-replay is a file in the game's save directory, written safely by the desktop
-host, and Steam Cloud carries that directory between the player's machines.
+The Steam build's storage: every saved document and every kept replay is a
+file written safely by the desktop host, and nothing is kept in browser
+storage. Steam Cloud carries the save directory — settings, records, stats
+history, the replay library's index, the last mode played and the replays —
+between the player's machines; the machine settings document stays on the
+machine that saved it.
 
 ## Purpose
 
@@ -23,20 +25,25 @@ feature that saves anything changes.
 In scope (m3-on-steam):
 
 - The Steam implementation of `platform-storage`'s document interface:
-  one file per document.
+  one file per document, in the save directory or, for a machine-local
+  document, in the machine prefs directory beside it.
 - The Steam implementation of `replay-library`'s replay store: one file per
   replay, and further named blob stores on the same pattern.
-- The main-process file service behind them: safe writes, reads, listing,
-  and keeping corrupt files aside.
+- The main-process file service behind them: safe writes, reads, deletion,
+  listing, and keeping corrupt files aside.
+- The stored theme id handed to the page before first paint.
+- No browser storage anywhere on the Steam build.
 - Steam Auto-Cloud configuration for the save directory: what syncs, the
   quota, and how conflicts are resolved.
 - The flush of pending saves when the game quits.
 
 Non-goals:
 
-- What any document holds — its owning feature.
-- Syncing machine-local state — window state and the crash log stay out of
-  the save directory (`steam-desktop-host`).
+- What any document holds, and which settings are machine-local — their
+  owning feature (`settings` for the machine settings document).
+- Syncing machine-local state — the machine prefs directory stays out of
+  the save directory, as window state and the crash log do
+  (`steam-desktop-host`).
 - Leaderboard replay files — shared through Steam remote storage by
   `steam-leaderboards`, not part of the save directory.
 - Moving web-preview data into the Steam build — browser storage belongs to
@@ -60,33 +67,53 @@ the desktop host's fixed bridge (see
   The remote storage API is used only for leaderboard replay sharing, never
   for saves.
 - **File service.** In the main process of `steam-desktop-host`, scoped to
-  the save directory and reachable only through the bridge's storage and
-  blob operations. Writes go to a temporary file and are renamed over the
-  old one, so a crash mid-write never leaves a half-written save. Names are
-  checked against a fixed pattern, so no request reaches outside the save
-  directory.
+  the save directory and the machine prefs directory and reachable only
+  through the bridge's storage and blob operations: read, write, delete,
+  list and set aside for documents, put, get, delete and list for blobs.
+  Writes go to a temporary file and are renamed over the old one, so a
+  crash mid-write never leaves a half-written save. Names are checked
+  against a fixed pattern, so no request reaches outside those two
+  directories.
 - **Steam document storage.** Implements `platform-storage`'s interface:
   each document is one text file holding its version and data. Loading,
   version upgrades and refusal of a newer version stay `platform-storage`'s
-  rules; only where the bytes live changes. A file that will not parse is
-  renamed aside with a dated suffix and reported missing, which is the
-  "kept aside rather than overwritten" rule of `platform-storage`.
+  rules; only where the bytes live changes. The machine settings document
+  is the one machine-local document: its file lives in the machine prefs
+  directory, every other document's in the save directory. A file that will
+  not parse is renamed aside with a dated suffix and reported missing, which
+  is the "kept aside rather than overwritten" rule of `platform-storage`.
+  Clear lists and deletes every document file and kept-aside copy in both
+  directories, so `settings`' Reset all data removes everything the game
+  stored for the player.
 - **Steam blob store.** Implements `replay-library`'s replay store
   interface — put, get, delete, list — as one binary file per blob in a
   subdirectory per named store. The replay library opens its store under
   its own name; `steam-leaderboards` opens a separate one for replays
   waiting to be submitted.
+- **Pre-paint theme.** Before the window loads, the main process reads the
+  theme id from the settings document's file, and the preload script hands
+  it to the page beside the bridge. `theme-system`'s pre-paint script
+  prefers that id when present, so the chosen theme applies before first
+  paint on the Steam build.
+- **No browser storage.** Nothing on the Steam build reads or writes
+  browser storage: documents and blobs go through the bridge, the pre-paint
+  theme comes from the host, and the settings store's carried-over values
+  and Reset all data's removal of loose keys, which exist only in the
+  browser build, read and remove nothing.
 - **Quit flush.** On the host's flush request the page waits for every save
   in flight, then answers, so Auto-Cloud's exit upload sees the final files.
 
 ## Data and state
 
-- **Save directory** — under the user-data directory: one file per
+- **Save directory** — under the user-data directory: one file per synced
   document, a subdirectory per blob store, nothing else. Everything in it
   syncs; nothing outside it does.
+- **Machine prefs directory** — under the user-data directory, outside the
+  save directory: the machine-local document's file, in the same format.
+  It never syncs.
 - **Source of truth** — the files on the local disk while the game runs;
-  Steam Cloud's copy between machines. Each owning feature keeps its
-  in-memory copy as before.
+  Steam Cloud's copy of the save directory between machines. Each owning
+  feature keeps its in-memory copy as before.
 - **Auto-Cloud configuration** — set in the Steamworks app settings: the
   Windows root that maps to the save directory, all files beneath it
   recursively, and a quota of 100 MB and 1000 files per user.
@@ -95,30 +122,41 @@ the desktop host's fixed bridge (see
 
 ## Interfaces and contracts
 
-- **Document storage** — exactly `platform-storage`'s register, load, save
-  and availability, asynchronous, with its failure contract unchanged.
-  Start-up loads stay asynchronous: they are reads of local files through
-  the bridge, and no screen waits on more than the documents it shows.
+- **Document storage** — exactly `platform-storage`'s register, load, save,
+  clear and availability, asynchronous, with its failure contract
+  unchanged. Start-up loads stay asynchronous: they are reads of local
+  files through the bridge, and no screen waits on more than the documents
+  it shows.
 - **Blob store** — exactly `replay-library`'s put, get, delete and list,
   plus opening a store by name.
+- **Pre-paint theme id** — a theme id, or nothing when the settings file is
+  absent or unreadable, present on the page before any page script runs.
+  Read once when the window loads; at run time the settings store drives
+  the theme.
 - **Availability** — documents and blobs persist whenever the save
-  directory is writable, whether or not Steam is running or online; cloud
-  sync is Steam's and is invisible to the game.
+  directory and the machine prefs directory are writable, whether or not
+  Steam is running or online; cloud sync is Steam's and is invisible to the
+  game.
 - **Conflicts** — when both machines changed the save directory since the
   last sync, Steam asks the player at launch which copy to keep; the game
   then loads whichever set of files it finds.
 - **Failure** — a disk that cannot be written reports failed saves through
   `platform-storage`'s and `replay-library`'s own failure contracts, and the
-  game keeps playing; exceeding the cloud quota stops Steam syncing, never
-  local saving.
+  game keeps playing; clear fails only when an existing file cannot be
+  deleted; exceeding the cloud quota stops Steam syncing, never local
+  saving.
 
 ## Dependencies
 
-- `steam-desktop-host` — the main process, the bridge's storage and blob
-  operations, platform selection and the quit hand-shake.
+- `steam-desktop-host` — the main process, the preload script, the bridge's
+  storage and blob operations, platform selection and the quit hand-shake.
 - `platform-storage` — the document interface implemented here.
 - `replay-library` — the replay store interface implemented here; the
   library itself is unchanged.
+- `settings` — the machine settings document, and the carried-over values
+  and loose-key removal the Steam build skips.
+- `theme-system` — the pre-paint script that prefers the handed-over theme
+  id.
 - Steam Auto-Cloud — configured in the Steamworks app settings; no runtime
   dependency on the binding.
 
@@ -128,6 +166,3 @@ the desktop host's fixed bridge (see
   replay sizes against the library's retention of unpinned replays plus
   pins; this also settles `replay-library`'s question of whether Steam Cloud
   fits the library as designed.
-- Whether the settings document's machine-specific values (graphics
-  quality, sensitivity) should stay per machine instead of syncing. Blocks
-  nothing; until settled the whole settings document syncs.

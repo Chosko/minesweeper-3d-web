@@ -116,23 +116,29 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
 
 ## Data and state
 
-- **Saved settings** — one versioned settings document: look sensitivity
-  (0.25–3, default 1), invert Y (default off), fullscreen (default off),
-  render resolution (Auto, Sharp or Fast; default Auto), 2D board scale
-  (Fit, 100 % or 125 %; default 100 %), theme (a theme id, default
+- **Saved settings** — two versioned documents, both persisted through
+  `platform-storage`. The machine settings document holds the values that
+  belong to one machine: look sensitivity (0.25–3, default 1) and render
+  resolution (Auto, Sharp or Fast; default Auto). The settings document
+  holds the rest: invert Y (default off), fullscreen (default off), 2D board
+  scale (Fit, 100 % or 125 %; default 100 %), theme (a theme id, default
   *Joyful tiles*), volume (0–1, default 0.7), mute (default off), always
   ask before restarting (default off), field of view (45–90°, default
   60; 45 for a document saved without it) and camera (Fly or Orbit; default
-  Fly, also for a document saved without it). Persisted through
-  `platform-storage`.
+  Fly, also for a document saved without it). With no machine settings
+  document, the store takes sensitivity and render resolution from a
+  settings document saved with them, once. The Steam build keeps the
+  machine settings document on the machine and syncs the settings document
+  (`steam-cloud-saves`).
 - **In memory** — the validated current values, the single source of truth
   while the game runs.
-- **Carried-over values** — on first start with no settings document, the
-  store reads the current build's separate keys for sensitivity, invert Y,
-  volume and mute once, writes them into the new document — with the field
-  of view at 45° when it carried any of them over — and from then on reads
-  only the document. Reset all data removes those keys, so the start
-  after a reset carries nothing over and every setting takes its default.
+- **Carried-over values** — browser build only. On first start with no
+  settings document, the store reads the current build's separate keys for
+  sensitivity, invert Y, volume and mute once, writes them into the new
+  documents — with the field of view at 45° when it carried any of them
+  over — and from then on reads only the documents. Reset all data removes
+  those keys, so the start after a reset carries nothing over and every
+  setting takes its default.
 - **Fullscreen** — the browser can leave fullscreen on its own (the player
   presses Esc); the store follows the browser's state rather than fighting
   it.
@@ -153,7 +159,8 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
 
 ## Dependencies
 
-- `platform-storage` — loading and saving the settings document.
+- `platform-storage` — loading and saving the settings and machine settings
+  documents.
 - `theme-system` — the theme applier the theme setting drives, and the
   theme list.
 - `screen-components` — the page's components: toggles, sliders, segmented

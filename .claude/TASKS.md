@@ -106,7 +106,7 @@ Feature: steam-cloud-saves
 
 ## 94. Update documentation for feature `steam-cloud-saves`
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude
 Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/replay-library.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 91, 92, 93

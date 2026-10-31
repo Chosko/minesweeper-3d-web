@@ -67,7 +67,7 @@ Tasks: 24, 25, 26, 27, 28, 204, 205
 
 ## settings — Settings page and store: controls, graphics, theme, audio
 
-Status: [DONE]
+Status: [ITERATED]
 Doc: .claude/domain/features/settings.md
 Source: product-design.md § Main menu and game shell (m1-classic-2d)
 Tasks: 39, 40, 41, 42
@@ -193,7 +193,7 @@ Tasks: 84, 85, 86, 87, 88, 89, 90, 294, 295
 
 ## steam-cloud-saves — Save files in the user-data directory, synced by Steam Auto-Cloud
 
-Status: [PLANNED]
+Status: [ITERATED]
 Doc: .claude/domain/features/steam-cloud-saves.md
 Source: product-design.md § Steam features (m3-on-steam)
 Tasks: 91, 92, 93, 94
