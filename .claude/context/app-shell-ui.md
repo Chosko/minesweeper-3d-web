@@ -29,12 +29,14 @@ overlay's parts and the aimed-cell readout are
   `boardTitle3D` (`"3D · Cube Intermediate"`);
   `figuresLine` (re-exported). The pause card's board line joins a mode's
   title to its size line (`boardLine2D`, `boardLine3D` with mines).
-- `UI(cb)` — callbacks are named after the control they serve
+- `UI(cb, { desktopHost? })` — callbacks are named after the control they serve
   (`onMenuEntry`, `onBack`, `onReady*`, `onResume`, `onRestart`,
   `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleFigures`, `onTapMode`,
   `onDismissHint(mode, kind)`, `on{Retry,Standard,OfferMenu,Cancel}{2D,3D}`,
   `onStandardWait3D`, `onLearnEnd(won)`, `onLearnBack`, `onBackToStart`,
-  `onResetAll`). Method groups:
+  `onResetAll`); the second argument `{ desktopHost? }` — the Steam build,
+  `capabilities.desktopHost` — picks the Data panel's Reset all data
+  wording ([settings-reset.md](settings-reset.md)). Method groups:
   - screens: `showMenu`, `showBoardChoice`, `showBoardChoice2D(id?)` (a
     flat mode's board choice: `#c2d-choice` by default, `#hex-choice`,
     `#tri-choice`),

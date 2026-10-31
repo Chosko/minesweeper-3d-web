@@ -15,7 +15,7 @@ Each module's head comment states its full contract.
 | File | Responsibility |
 | --- | --- |
 | `js/settings/schema.js` | each setting's key, type, range or values, default; drives both validation and the page's controls, so a setting is added here and nowhere else |
-| `js/settings/store.js` | load at start-up, the document's format steps, validated writes, whole-document saves, change notification, the one-time `ms3d.*` carry-over; knows none of the appliers |
+| `js/settings/store.js` | the two documents — settings and machine settings — loaded at start-up, the settings document's format steps, validated writes, whole-document saves, change notification, the one-time carry-overs (machine values from an old settings document, the browser build's `ms3d.*` keys); knows none of the appliers |
 | `js/settings/appliers.js` | each setting's effect, applied by its owner subscribing to the store; the render-resolution pixel-ratio rule ([settings-appliers.md](settings-appliers.md)) |
 | `js/settings/page.js` | the Settings page and the control binder ([settings-page.md](settings-page.md)), the Data panel's binder ([settings-reset.md](settings-reset.md)) |
 | `js/settings/reset.js` | Reset all data ([settings-reset.md](settings-reset.md)) |
@@ -44,21 +44,26 @@ Each module's head comment states its full contract.
   `THEMES`' ids in catalogue order, its `known` is `isRegisteredTheme`),
   `SETTING_KEYS`, `DEFAULTS`, `isValid(key, value)`.
 - Store: `SETTINGS_DOC` = `'settings'`, `SETTINGS_VERSION`;
-  `LEGACY_KEYS` (`lookSensitivity`, `invertY`, `volume`, `muted` → their
-  `ms3d.*` keys), `EXISTING_FIELD_OF_VIEW`.
+  `MACHINE_SETTINGS_DOC` = `'settings.machine'`, `MACHINE_SETTINGS_VERSION`;
+  `MACHINE_KEYS` — the settings the machine settings document holds
+  (`lookSensitivity`, `renderResolution`), every other setting being the
+  settings document's; `LEGACY_KEYS` (`lookSensitivity`, `invertY`,
+  `volume`, `muted` → their `ms3d.*` keys), `EXISTING_FIELD_OF_VIEW`.
   `createSettingsStore({ storage, legacy?, onNotKept? })` →
-  `{ load, get, set, onChange }`:
-  - `load()` → one shared Promise; fills missing or invalid values with
-    defaults, except that a stored document without `fieldOfView` loads it
-    as `EXISTING_FIELD_OF_VIEW`, and a stored theme id the registry does
-    not know loads as the default and is kept in the document, saves
-    included, until the player sets the theme; unreadable, corrupt or newer
-    storage gives every default.
+  `{ load, get, set, onChange }`; `legacy` is `{ get(key) }` over the
+  loose keys, the global `localStorage` by default, `null` for none:
+  - `load()` → one shared Promise; loads both documents and fills missing
+    or invalid values with defaults, except that a stored settings document
+    without `fieldOfView` loads it as `EXISTING_FIELD_OF_VIEW`, and a stored
+    theme id the registry does not know loads as the default and is kept in
+    the document, saves included, until the player sets the theme;
+    unreadable, corrupt or newer storage gives that document's defaults.
   - `get(key)` is always valid (the default before load).
   - `set(key, value)` → `{ ok: true }` or `{ ok: false, reason }` —
-    `'invalid'` keeps the old value; a save failure keeps the change for the
-    session and calls `onNotKept` once per store. A set before `load()` is
-    called throws.
+    `'invalid'` keeps the old value; a valid change saves the whole document
+    its key belongs to; a save failure of either document keeps the change
+    for the session and calls `onNotKept` once per store. A set before
+    `load()` is called throws.
   - `onChange(key, fn)` → unsubscribe; `fn(value, key)` after each change
     and once with the loaded value. An unknown key throws everywhere.
 - Appliers, `pixelRatioFor` and `applySettings`:
@@ -84,12 +89,25 @@ Each module's head comment states its full contract.
   starts at its own defaults and keeps no copy, the camera's fields are
   written only by `applyLook` and its mode only by `applyCamera`, and the
   theme script reads the document but never writes it.
-- **Carry-over.** Only when `storage.load` returns no document and reported
-  no load trouble: each legacy key is read the old owner's way (sensitivity
+- **Two documents.** The machine settings document holds `MACHINE_KEYS`,
+  the values that belong to one machine; the settings document holds every
+  other setting, the theme included, so `js/theme.js` reads only it. A
+  write saves only its own document.
+- **Machine carry-over.** When no machine settings document is stored and
+  neither load reported trouble, the machine values loaded from the settings
+  document (or their defaults) are saved as a new machine settings document,
+  once; a stored machine settings document always wins, and one that cannot
+  be used gives the machine defaults. No format step strips the machine
+  values from a settings document, since this carry-over reads them.
+- **Loose-key carry-over** — the browser build's alone: `js/main.js` hands
+  the store and Reset all data `legacy: null` on the Steam build
+  (`capabilities.desktopHost`), so neither reads nor removes the keys there.
+  Only when `storage.load` returns no settings document and reported no load
+  trouble: each legacy key is read the old owner's way (sensitivity
   `parseFloat`, volume `Number`, both clamped; booleans true only on `'1'`;
   a throwing reader counts as no value), `fieldOfView` is set to
-  `EXISTING_FIELD_OF_VIEW` when any value was carried over, then the whole
-  document is saved.
+  `EXISTING_FIELD_OF_VIEW` when any value was carried over, then both
+  documents are saved.
   The store never writes or deletes the legacy keys; Reset all data removes
   them, so the start after a reset carries nothing over.
 
@@ -101,7 +119,7 @@ Each module's head comment states its full contract.
 - [../domain/features/theme-system.md](../domain/features/theme-system.md)
   — the theme preference and its carry-over.
 - [../domain/features/platform-storage.md](../domain/features/platform-storage.md)
-  — the versioned document the store saves.
+  — the versioned documents the store saves.
 
 ## CROSS-REFERENCES
 
@@ -125,9 +143,11 @@ Each module's head comment states its full contract.
 
 - Adding a setting: `SCHEMA`, then its section, label and (for a number) a
   `SLIDERS` entry in `page.js` ([settings-page.md](settings-page.md)), and
-  its applier ([settings-appliers.md](settings-appliers.md)); a setting that changes the stored shape bumps
-  `SETTINGS_VERSION` with an upgrade step.
-- Changing load, carry-over, the format steps or save-failure behaviour:
-  `doLoad`, `readLegacy`, `UPGRADES` and `persist` in `store.js`; a format
+  its applier ([settings-appliers.md](settings-appliers.md)); a setting that
+  belongs to one machine joins `MACHINE_KEYS`; a setting that changes the
+  stored shape bumps its document's version with an upgrade step.
+- Changing load, the carry-overs, the format steps or save-failure
+  behaviour: `doLoad`, `readLegacy`, `UPGRADES`, `save`, `persist` and
+  `persistMachine` in `store.js`; a format
   step that maps a theme is mirrored in `js/theme.js` and
   `js/themes/applier.js`.

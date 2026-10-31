@@ -28,7 +28,8 @@ page to the shown screen's frame.
 | `js/platform/bridge-client.js` | The page's side of the page bridge: `findBridge`, the request client, `linkHost` — Steam state into the flags, overlay listeners, the quit flush. |
 | `js/platform/window-actions.js` | The desktop window driven from the page: drag region, Minimise and Fullscreen / Windowed with its icon, the root area sized to the available area (`bindAvailableArea`), the window-size media queries settled against it (`areaMatches`, `bindAreaMedia`), the windowed window's size from the shown screen frames (`SCREEN_FRAMES`, `bindScreenSize`), `reportSize`. |
 
-Document owners register here: settings ([settings.md](settings.md)),
+Document owners register here: the settings store's `settings` and
+`settings.machine` ([settings.md](settings.md)),
 `shell.lastMode` and the board choice panel's pin `shell.boardPanel` ([app-shell-menu.md](app-shell-menu.md)), the live figures panel's open state `shell.liveFigures` ([app-shell-2d.md](app-shell-2d.md)) and `shell.firstUse` ([app-shell-help.md](app-shell-help.md)), the
 last Classic 2D and 3D board choices ([classic2d.md](classic2d.md),
 [mode3d.md](mode3d.md)), the records store's three documents
@@ -221,8 +222,9 @@ return a Promise and may throw.
   window and its available area).
 - [replay-library.md](replay-library.md) — the blob store's one user.
 - [app-shell.md](app-shell.md) — the `ms3d.*` keys nothing reads.
-- [settings.md](settings.md) — the settings document, the legacy keys it
-  carries over, Reset all data.
+- [settings.md](settings.md) — the settings and machine settings
+  documents, the legacy keys the store carries over on the browser build,
+  Reset all data.
 
 ## WHEN TO READ THE SOURCE
 

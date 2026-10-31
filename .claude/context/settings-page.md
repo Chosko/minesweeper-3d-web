@@ -42,7 +42,7 @@ Page (`js/settings/page.js`)
   shows.
 - `settingControlHtml(key, value?, { labelledBy?, themes? })` — the control's kit
   markup, root carrying `data-setting="<key>"`, ids `set-<key>`.
-- `settingsPageHtml()` — one `ui-columns` (`#settings-columns`) of the
+- `settingsPageHtml({ desktopHost? })` — one `ui-columns` (`#settings-columns`) of the
   `SETTINGS_COLUMNS`, each a `ui-column` stacking its sections (a
   `ui-panel` with `data-section`, under its `ui-section-label`; each
   setting a `ui-row` of its name and its control): the four setting
@@ -56,7 +56,9 @@ Page (`js/settings/page.js`)
   `bindExportActions` (no note line) over `RECORDS_EXPORT` and
   refreshed on each show of the page ([records-screen-view.md](records-screen-view.md))
   — then button `#set-reset` with its trash icon, under it the hidden err note `#set-reset-note`,
-  and the hidden confirm box `#set-reset-confirm` with `#set-reset-yes`
+  and the hidden confirm box `#set-reset-confirm` — its text the build's
+  (`RESET_MESSAGE`, or `RESET_MESSAGE_DESKTOP` when `desktopHost`,
+  [settings-reset.md](settings-reset.md)) — with `#set-reset-yes`
   (its trash icon) beside `#set-reset-no`);
   `bindingsSectionHtml(glyphs?, camera?, {mode?, device?})` — the
   controls list `dl.ui-controls` of one mode's full rows for one device (default Classic 2D and the

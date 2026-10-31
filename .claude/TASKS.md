@@ -1841,7 +1841,7 @@ Feature: settings
 
 ## 297. Update documentation for feature `settings`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/settings.md, .claude/context/settings-reset.md, .claude/context/platform.md, .claude/context/INDEX.md
 Preconditions: 296

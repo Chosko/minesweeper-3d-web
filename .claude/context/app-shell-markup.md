@@ -69,7 +69,7 @@ bind.
     phone's bar opening the body, the heading's switch and the picker each in
     a `data-pad-hinted` row between `data-pad-glyph` hints); Settings
     `#settings` (Back `#settings-back`, its arrow alone, in the title bar's start `#settings-actions`, the
-    body `#settings-body` from `settingsPageHtml()`,
+    body `#settings-body` from `settingsPageHtml({ desktopHost })`,
     [settings-page.md](settings-page.md));
   - pause card `#pause-card` (`ui-screen--wide`, a `ui-columns--two`):
     a `ui-column` of the title block `#pause-head` (`#pause-title`,
