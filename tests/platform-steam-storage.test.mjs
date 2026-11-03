@@ -275,7 +275,10 @@ test('with the bridge the platform fills its storage and replay store slots with
   assert.deepEqual(await platform.blobStore.put('r1', bytes(9)), { ok: true });
   assert.deepEqual(await platform.blobStore.list(), ['r1']);
   assert.ok(existsSync(join(files.dir, 'replays.blobs', 'r1')));
-  assert.equal(platform.leaderboards, 'local leaderboards');
+  assert.equal(typeof platform.leaderboards.submit, 'function', 'the Steam leaderboards fill their slot');
+  await platform.leaderboards.started;
+  await platform.leaderboards.settled();
+  assert.ok(existsSync(join(files.dir, 'replays.blobs', 'r1')), 'the outbox\'s start-up clean-up never touches the replay library\'s store');
 });
 
 // ---------------------------------------------------------------- the quit flush

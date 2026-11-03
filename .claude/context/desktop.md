@@ -56,7 +56,7 @@ Bridge (`desktop/bridge.js`) — the page's `ms3dHost` holds a promise
 function per request, grouped `<group>.<request>`, and under `events` a
 subscribe function per event returning its unsubscribe:
 - requests: `steam.state` → `{ adapter, loggedOn, player, capabilities }`;
-  `achievements.set` / `store` / `read`; `leaderboards.find` / `upload` /
+  `identity.names` (other players' persona names); `achievements.set` / `store` / `read`; `leaderboards.find` / `upload` /
   `download` (a rank range in a scope, or named players) / `attach`;
   `sharedFiles.writeAndShare` / `download`; the slots `storage.read` /
   `write` / `setAside` and `blobs.put` / `get` / `delete` / `list`, run by

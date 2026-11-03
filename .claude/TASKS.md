@@ -136,7 +136,7 @@ Feature: steam-leaderboards
 
 ## 97. Steam submitter, best cache, reader and replay fetcher
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude+human
 Files: js/leaderboards/steam-submitter.js, js/leaderboards/best-cache.js, js/leaderboards/reader.js, js/leaderboards/replay-fetch.js, js/leaderboards/index.js, js/platform/index.js, tests/leaderboards-steam.test.mjs
 Preconditions: 89, 92, 96

@@ -44,6 +44,20 @@ export function createBridgeClient(host) {
     getBlob: (store, key) => call(() => host.blobs.get(store, key)),
     deleteBlob: (store, key) => call(() => host.blobs.delete(store, key)),
     listBlobs: (store) => call(() => host.blobs.list(store)),
+    /**
+     * Steam leaderboards and shared files (desktop/adapter/interface.js): a leaderboard's handle by
+     * name; an upload keeping the best → { changed, rankBefore, rankAfter }; a download of a rank
+     * range in a scope or of named players → { total, entries }; a shared file attached to the
+     * player's entry; a file written to remote storage and shared → its handle; a shared file's bytes.
+     */
+    findLeaderboard: (name) => call(() => host.leaderboards.find(name)),
+    uploadScore: (board, score, details) => call(() => host.leaderboards.upload(board, score, details)),
+    downloadScores: (board, query) => call(() => host.leaderboards.download(board, query)),
+    attachToLeaderboard: (board, file) => call(() => host.leaderboards.attach(board, file)),
+    writeAndShare: (name, bytes) => call(() => host.sharedFiles.writeAndShare(name, bytes)),
+    downloadShared: (file) => call(() => host.sharedFiles.download(file)),
+    /** Other players' persona names → { [steamId]: name }. */
+    personaNames: (steamIds) => call(() => host.identity.names(steamIds)),
     /** Subscribes to one of BRIDGE_EVENTS; returns the unsubscribe. */
     on: (event, listener) => host.events[event](listener),
   });

@@ -217,6 +217,7 @@ test('the unavailable adapter reports every capability unavailable and rejects e
 test('the bridge carries exactly the document\'s requests and events, and no general file or process access', () => {
   assert.deepEqual(Object.keys(BRIDGE_REQUESTS), [
     'steam.state',
+    'identity.names',
     'achievements.set', 'achievements.store', 'achievements.read',
     'leaderboards.find', 'leaderboards.upload', 'leaderboards.download', 'leaderboards.attach',
     'sharedFiles.writeAndShare', 'sharedFiles.download',
@@ -329,9 +330,13 @@ test('every request resolves with its result or a typed error, and an adapter th
 });
 
 test('requests reach the adapter operation they name', async () => {
-  const adapter = fakeAdapter({ achievementsSet: ['A'], downloadScores: [], downloadScoresForPlayers: [], downloadShared: new Uint8Array([9]) });
+  const adapter = fakeAdapter({
+    personaNames: { 5: 'Bo' }, achievementsSet: ['A'], downloadScores: [], downloadScoresForPlayers: [], downloadShared: new Uint8Array([9]),
+  });
   const bridge = createBridge({ adapter, window: fakeWindow(), closing: fakeClosing() });
   const bytes = new Uint8Array([1, 2]);
+  assert.deepEqual(await bridge.handle('identity.names', [['5']]), { ok: true, value: { 5: 'Bo' } });
+  assert.equal((await bridge.handle('identity.names', [[]])).error.code, 'invalid', 'names of nobody');
   await bridge.handle('achievements.set', ['WIN']);
   await bridge.handle('achievements.store', []);
   assert.deepEqual(await bridge.handle('achievements.read', [['A', 'B']]), { ok: true, value: ['A'] });
@@ -342,6 +347,7 @@ test('requests reach the adapter operation they name', async () => {
   await bridge.handle('sharedFiles.writeAndShare', ['r.bin', bytes]);
   assert.deepEqual(await bridge.handle('sharedFiles.download', ['88']), { ok: true, value: new Uint8Array([9]) });
   assert.deepEqual(adapter.calls, [
+    ['personaNames', ['5']],
     ['setAchievement', 'WIN'],
     ['storeStats'],
     ['achievementsSet', ['A', 'B']],

@@ -183,8 +183,8 @@ rules engine imports Electron or the binding.
 
 ## Interfaces and contracts
 
-- **Bridge requests** — a fixed list: Steam state; achievements (set,
-  store, read); leaderboards (find, upload, download, attach); shared files
+- **Bridge requests** — a fixed list: Steam state; other players' persona
+  names; achievements (set, store, read); leaderboards (find, upload, download, attach); shared files
   (write and share, download); storage and blob-store file operations for
   `steam-cloud-saves`; the quit hand-shake; quit, which runs the same
   sequence as closing the window; and the window actions — minimise,

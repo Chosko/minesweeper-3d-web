@@ -69,6 +69,7 @@ const slot = (args) => request(args, null);
  */
 export const BRIDGE_REQUESTS = Object.freeze({
   'steam.state': request([], (h) => h.steamState()),
+  'identity.names': request([list(id, LIMITS.players, 1)], (h, ids) => h.adapter.personaNames(ids), 'identity'),
   'achievements.set': request([name], (h, n) => h.adapter.setAchievement(n), 'achievements'),
   'achievements.store': request([], (h) => h.adapter.storeStats(), 'achievements'),
   'achievements.read': request([list(name, LIMITS.names)], (h, names) => h.adapter.achievementsSet(names), 'achievements'),

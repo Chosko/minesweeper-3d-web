@@ -2,9 +2,10 @@
 // module is first evaluated at start-up. It looks for the page bridge the desktop host exposes
 // (js/platform/bridge-client.js): present, each slot takes its Steam implementation (STEAM_SLOTS,
 // which the Steam features fill — storage and the replay store from steam-cloud-saves, files the
-// desktop host keeps (js/platform/steam-storage.js, js/platform/steam-blob-store.js), leaderboards,
-// achievements); absent, or for a slot no Steam feature has filled, the browser implementation or
-// local stand-in. Callers import what is selected from here and never an implementation, nor test
+// desktop host keeps (js/platform/steam-storage.js, js/platform/steam-blob-store.js), the
+// leaderboards from steam-leaderboards (js/leaderboards/index.js, its outbox in a blob store of its
+// own), achievements); absent, or for a slot no Steam feature has filled, the browser implementation
+// or local stand-in. Callers import what is selected from here and never an implementation, nor test
 // for Electron or the bridge: the web build's storage is the browser backend
 // (js/platform/browser-backend.js) for documents, and IndexedDB (js/platform/indexeddb-blob-store.js)
 // for blobs, falling back to memory (js/platform/memory-blob-store.js) when IndexedDB is unavailable
@@ -31,18 +32,28 @@ import { openSteamBlobStore, REPLAY_STORE } from './steam-blob-store.js';
 import { createCapabilities } from './capabilities.js';
 import { findBridge, createBridgeClient, linkHost } from './bridge-client.js';
 import { bindWindowActions } from './window-actions.js';
+import { createSteamLeaderboards } from '../leaderboards/index.js';
 
 /** Every storage and blob request the Steam implementations have in flight, for the quit flush. */
 const STEAM_SAVES = createSaveTracker();
 
-/** The Steam implementation of each slot, a factory of the bridge client; null keeps the browser one. */
+/** A blob store of the save directory opened under `name`, falling back to memory. */
+const steamBlobStore = (client, name) => createBlobStore({
+  open: () => openSteamBlobStore({ client, name, track: STEAM_SAVES.track }),
+  fallback: () => createMemoryBlobStore(),
+});
+
+/**
+ * The Steam implementation of each slot, a factory of the bridge client and of what is selected
+ * before it (the capability flags and the earlier slots: { capabilities, storage, blobStore, … });
+ * null keeps the browser one.
+ */
 export const STEAM_SLOTS = Object.freeze({
   storage: (client) => createStorage({ backend: createSteamBackend({ client, track: STEAM_SAVES.track }) }),
-  blobStore: (client) => createBlobStore({
-    open: () => openSteamBlobStore({ client, name: REPLAY_STORE, track: STEAM_SAVES.track }),
-    fallback: () => createMemoryBlobStore(),
+  blobStore: (client) => steamBlobStore(client, REPLAY_STORE),
+  leaderboards: (client, { storage, capabilities }) => createSteamLeaderboards({
+    client, capabilities, storage, openBlobStore: (name) => steamBlobStore(client, name),
   }),
-  leaderboards: null,
   achievements: null,
 });
 
@@ -63,15 +74,20 @@ const BROWSER = Object.freeze({
  */
 export function selectPlatform({ bridge, browser, steam = STEAM_SLOTS }) {
   const client = bridge ? createBridgeClient(bridge) : null;
-  const pick = (slot) => (client && typeof steam[slot] === 'function' ? steam[slot](client) : browser[slot]());
+  const selected = { capabilities: createCapabilities({ desktopHost: client !== null }) };
+  const pick = (slot) => (client && typeof steam[slot] === 'function' ? steam[slot](client, selected) : browser[slot]());
+  selected.storage = pick('storage');
+  selected.blobStore = pick('blobStore');
+  selected.leaderboards = pick('leaderboards');
+  selected.achievements = pick('achievements');
   return {
     host: client ? 'desktop' : 'browser',
     client,
-    storage: pick('storage'),
-    blobStore: pick('blobStore'),
-    leaderboards: pick('leaderboards'),
-    achievements: pick('achievements'),
-    capabilities: createCapabilities({ desktopHost: client !== null }),
+    storage: selected.storage,
+    blobStore: selected.blobStore,
+    leaderboards: selected.leaderboards,
+    achievements: selected.achievements,
+    capabilities: selected.capabilities,
   };
 }
 

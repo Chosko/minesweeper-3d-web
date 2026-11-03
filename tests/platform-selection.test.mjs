@@ -76,7 +76,9 @@ test('the page looks for the bridge the preload exposes, under its one global an
 
 test('with the bridge the platform selects the Steam implementation of every slot a later feature fills, and the browser one of every other', () => {
   const { host } = fakeBridge();
-  const steam = { ...STEAM_SLOTS, storage: (client) => ({ steam: 'storage', client }), blobStore: null, achievements: () => 'steam achievements' };
+  const steam = {
+    ...STEAM_SLOTS, storage: (client) => ({ steam: 'storage', client }), blobStore: null, leaderboards: null, achievements: () => 'steam achievements',
+  };
   const platform = selectPlatform({ bridge: host, browser: BROWSER, steam });
   assert.equal(platform.host, 'desktop');
   assert.ok(platform.client, 'the bridge client');
@@ -88,17 +90,22 @@ test('with the bridge the platform selects the Steam implementation of every slo
   assert.equal(platform.capabilities.desktopHost, true);
 });
 
-test('the Steam slots are the four the later features fill; steam-cloud-saves fills storage and the blob store', () => {
+test('the Steam slots are the four the later features fill; steam-cloud-saves fills storage and the blob store, steam-leaderboards the leaderboards', () => {
   assert.deepEqual(Object.keys(STEAM_SLOTS), ['storage', 'blobStore', 'leaderboards', 'achievements']);
   assert.equal(typeof STEAM_SLOTS.storage, 'function');
   assert.equal(typeof STEAM_SLOTS.blobStore, 'function');
-  assert.equal(STEAM_SLOTS.leaderboards, null);
+  assert.equal(typeof STEAM_SLOTS.leaderboards, 'function');
   assert.equal(STEAM_SLOTS.achievements, null);
   const { host } = fakeBridge();
-  const platform = selectPlatform({ bridge: host, browser: BROWSER });
+  const seen = [];
+  const steam = { ...STEAM_SLOTS, leaderboards: (client, selected) => { seen.push({ client, ...selected }); return 'steam leaderboards'; } };
+  const platform = selectPlatform({ bridge: host, browser: BROWSER, steam });
   assert.notEqual(platform.storage, 'browser storage');
   assert.notEqual(platform.blobStore, 'browser blob store');
-  assert.equal(platform.leaderboards, 'local leaderboards');
+  assert.equal(platform.leaderboards, 'steam leaderboards');
+  assert.equal(seen[0].client, platform.client);
+  assert.equal(seen[0].storage, platform.storage, 'the leaderboards get the selected storage');
+  assert.equal(seen[0].capabilities, platform.capabilities, 'and the live flags');
   assert.equal(platform.achievements, 'local achievements');
 });
 

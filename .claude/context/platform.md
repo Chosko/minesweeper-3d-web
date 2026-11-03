@@ -43,8 +43,9 @@ document's browser key directly at start-up.
 
 Platform module (`js/platform/index.js`) — what callers import: `storage`
 and its methods `register`, `load`, `save`, `clear`, `available` by name;
-`blobStore`; `leaderboards` and `achievements` (null until their features
-fill them); `capabilities`, the live flags of what the host offers, which
+`blobStore`; `leaderboards` — on the desktop host the Steam leaderboards
+(`js/leaderboards/index.js`), null on the web until its stand-in fills it —
+and `achievements` (null until its feature fills it); `capabilities`, the live flags of what the host offers, which
 callers read instead of testing for the platform — `desktopHost` (the
 bridge is present), `steam` (the host runs the Steam adapter, not the
 unavailable one), `achievements`, `leaderboards` and `sharedFiles` (Steam
@@ -232,7 +233,8 @@ return a Promise and may throw.
   header and `memory-backend.js` (a blob implementation likewise from the
   `blob-store.js` header and `memory-blob-store.js`), then fill its slot in
   `index.js`'s `STEAM_SLOTS` only — a factory of the bridge client
-  (`bridge-client.js`).
+  (`bridge-client.js`) and of what is selected before it — the capability
+  flags and the earlier slots (`{ capabilities, storage, blobStore, … }`).
 - A blob store failing in the browser: `indexeddb-blob-store.js`'s
   `openDatabase` and `run`.
 - Changing the stored format or the failure rules: `storage.js`'s `parse`,
