@@ -26,6 +26,8 @@ Context: none
 /task-implement 301 --review
 ```
 
+Done: 2026-11-04, commit `d2abdcb` (5 files, +11/-6).
+
 ## [x] 48. Implement task 93 — Steam Auto-Cloud configuration and quota
 
 Depends on: 4, 9, 46
@@ -41,6 +43,8 @@ Context:
 ```prompt
 /task-implement 93 --review
 ```
+
+Done: 2026-11-04, commit `b36fe4f` (6 files, +192/-9). Decision: the Auto-Cloud root is saved with OS "All OSes", not Windows. Premise wrong: Publish alone does not start Auto-Cloud on an unreleased app — each machine needs `testappcloudpaths 5517360` in its Steam console.
 
 ## [ ] 49. Implement task 299 — Update documentation for feature `steam-cloud-saves`
 
