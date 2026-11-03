@@ -55,7 +55,9 @@ Page (`js/settings/page.js`)
   download icons in `#set-export-actions`, bound in `js/main.js` by
   `bindExportActions` (no note line) over `RECORDS_EXPORT` and
   refreshed on each show of the page ([records-screen-view.md](records-screen-view.md))
-  — then button `#set-reset` with its trash icon, under it the hidden err note `#set-reset-note`,
+  — then a `ui-divider` rule, the reset's line — the game's data kept
+  "in this browser", or "on this computer" when `desktopHost` —,
+  button `#set-reset` with its trash icon, under it the hidden err note `#set-reset-note`,
   and the hidden confirm box `#set-reset-confirm` — its text the build's
   (`RESET_MESSAGE`, or `RESET_MESSAGE_DESKTOP` when `desktopHost`,
   [settings-reset.md](settings-reset.md)) — with `#set-reset-yes`

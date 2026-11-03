@@ -35,8 +35,9 @@ overlay's parts and the aimed-cell readout are
   `onDismissHint(mode, kind)`, `on{Retry,Standard,OfferMenu,Cancel}{2D,3D}`,
   `onStandardWait3D`, `onLearnEnd(won)`, `onLearnBack`, `onBackToStart`,
   `onResetAll`); the second argument `{ desktopHost? }` — the Steam build,
-  `capabilities.desktopHost` — picks the Data panel's Reset all data
-  wording ([settings-reset.md](settings-reset.md)). Method groups:
+  `capabilities.desktopHost` — picks the Data panel's wording, the line
+  above Reset all data and its confirmation
+  ([settings-reset.md](settings-reset.md)). Method groups:
   - screens: `showMenu`, `showBoardChoice`, `showBoardChoice2D(id?)` (a
     flat mode's board choice: `#c2d-choice` by default, `#hex-choice`,
     `#tri-choice`),

@@ -206,7 +206,7 @@ Feature: steam-desktop-host
 
 ## 301. Update documentation for feature `steam-desktop-host`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/settings-page.md, .claude/context/settings-reset.md, .claude/context/app-shell-ui.md, .claude/context/testing.md
 Preconditions: 300

@@ -25,7 +25,9 @@ Confirmation (`js/settings/page.js`)
   false when closed, true and nothing done while the reset runs.
 - `RESET_MESSAGE` / `RESET_MESSAGE_DESKTOP` — the confirmation's text,
   deleting from "this browser" on the web build and "this computer" on the
-  Steam build (`settingsPageHtml({ desktopHost })`,
+  Steam build; the same `desktopHost` picks the Data panel's line above
+  Reset all data, the game's data kept "in this browser" or "on this
+  computer" (`settingsPageHtml({ desktopHost })`,
   [settings-page.md](settings-page.md)).
 
 Reset (`js/settings/reset.js`)
