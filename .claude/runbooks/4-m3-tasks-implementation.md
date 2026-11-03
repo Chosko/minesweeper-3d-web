@@ -16,7 +16,7 @@ Context: none
 
 Done: 2026-11-04, commit `fe1d578` (3 files, +15/-6).
 
-## [ ] 51. Implement task 301 — Update documentation for feature `steam-desktop-host`
+## [x] 51. Implement task 301 — Update documentation for feature `steam-desktop-host`
 
 Depends on: 50
 
