@@ -26,7 +26,7 @@ Context: none
 /task-implement 301 --review
 ```
 
-## [ ] 48. Implement task 93 — Steam Auto-Cloud configuration and quota
+## [x] 48. Implement task 93 — Steam Auto-Cloud configuration and quota
 
 Depends on: 4, 9, 46
 
@@ -49,6 +49,8 @@ Depends on: 8, 9, 46, 48
 Context:
 - 2026-10-31 (amend): carried from struck step 47, which carried it from struck step 11, where step 9 recorded it — `.claude/context/platform.md` does not list the two Steam storage modules and still calls the Steam slots empty. The replay library uses the blob store named `replays` (`<userData>/saves/replays.blobs/`) and `openSteamBlobStore` opens any other store by name; the quit flush waits for every storage and blob request over the bridge, reads included. Reset all data on the Steam build is unsupported (no document clear in the bridge or file service). `js/theme.js` reads settings from `localStorage` before first paint, which the Steam build no longer writes — harmless while one theme ships.
 - 2026-10-31 (from step 46): task 298 made the carried note's Reset and `js/theme.js` remarks obsolete — `storage.delete(name)` and `storage.list()` exist (both `saves/` and `prefs/`), Steam `clear()` lists then deletes, and `js/theme.js` takes the theme from a frozen `ms3dPrePaint = { theme }` global the preload exposes, read through a synchronous bridge reader on every page load. `desktop.md`, `platform.md` and `app-shell-theme-runtime.md` still describe the old state.
+
+- 2026-11-04 (from step 48): the Auto-Cloud root is saved with OS "All OSes", not Windows. On an unreleased app Auto-Cloud syncs only after `testappcloudpaths 5517360` is entered in each machine's Steam console — recorded in `dev/steam/README.md`; Publish alone leaves every sync "Sync Disabled".
 
 ```prompt
 /task-implement 299 --review
