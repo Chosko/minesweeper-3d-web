@@ -433,7 +433,7 @@ Context:
 
 Done: 2026-10-31, commit `4669c60` (7 files, +776/-8). The outbox opens its pending-replay store through an `openBlobStore(name)` factory, as `leaderboards.outbox`, because the platform has one unnamed blob store; nothing creates or starts the submission at runtime yet. The submission state carries a `reason` field the domain does not list.
 
-## [~] 14. Implement task 97 — Steam submitter, best cache, reader and replay fetcher
+## [ ] 14. Implement task 97 — Steam submitter, best cache, reader and replay fetcher
 
 Depends on: 6, 9, 13
 
@@ -444,6 +444,7 @@ Context:
 - 2026-10-28 (from step 5): an improved score upload clears the entry's attachment, so the attach must follow every improved upload. Replacing a shared file under the same name is safe, because each share gets a new handle and the old handle keeps returning the old file. The binding decodes downloaded details wrongly, so they are read from the raw array. The spike left a test leaderboard `SPIKE_PROBE` in Steamworks.
 - 2026-10-31 (from step 12): the 12 leaderboard names are `<mode>-<standard size>-<guess|no-guess>` (e.g. `classic-2d-expert-no-guess`, `3d-cube-beginner-guess`), pinned by a test; the manual Steamworks step must create the leaderboards under exactly these names.
 - 2026-10-31 (from step 13): nothing creates or starts the submission yet — `createLeaderboardSubmission(...)` and its `start()` belong in `js/leaderboards/index.js`. The submitter it expects is `submit({ leaderboard, id, score, details, replay })` returning `{ result: 'submitted', rankBefore, rankAfter }`, `{ result: 'dropped', reason }` or `{ result: 'retry', reason }`; logged-on events come through an `onLoggedOn(listener)` option. The outbox takes an `openBlobStore(name)` factory and must get a store of its own: given the shared replay-library store, its start-up clean-up deletes every blob it does not list and wipes the replay library. `js/main.js` already hands the platform's `leaderboards` slot to `createResultsFlow`.
+- 2026-11-03 (attended run): task 97's code is already in the main tree, uncommitted — keep it. Both manual checkpoints are done against the private build. Q1: a — the 12 leaderboards exist; the ones created in Steamworks with Writes Trusted kept refusing client uploads after Trusted was cleared, so they were deleted and re-created from the client with `FindOrCreateLeaderboard` (ascending, milliseconds). Q2: passed — an online win and an offline win both reached Steam with replays attached, and the offline one was sent on reconnect without a relaunch (the outbox emptied while the game kept running). Q3: b. `SPIKE_PROBE` is deleted.
 
 ```prompt
 /task-implement 97 --review --rounds 2
