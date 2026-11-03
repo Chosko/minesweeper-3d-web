@@ -1,8 +1,8 @@
 # Steam cloud saves
 
 The Steam build's storage: every saved document and every kept replay is a
-file written safely by the desktop host, and nothing is kept in browser
-storage. Steam Cloud carries the save directory — settings, records, stats
+file written safely by the desktop host, and nothing that outlives the
+session is kept in browser storage. Steam Cloud carries the save directory — settings, records, stats
 history, the replay library's index, the last mode played and the replays —
 between the player's machines; the machine settings document stays on the
 machine that saved it.
@@ -32,7 +32,7 @@ In scope (m3-on-steam):
 - The main-process file service behind them: safe writes, reads, deletion,
   listing, and keeping corrupt files aside.
 - The stored theme id handed to the page before first paint.
-- No browser storage anywhere on the Steam build.
+- No browser storage on the Steam build beyond session storage.
 - Steam Auto-Cloud configuration for the save directory: what syncs, the
   quota, and how conflicts are resolved.
 - The flush of pending saves when the game quits.
@@ -95,11 +95,14 @@ the desktop host's fixed bridge (see
   it to the page beside the bridge. `theme-system`'s pre-paint script
   prefers that id when present, so the chosen theme applies before first
   paint on the Steam build.
-- **No browser storage.** Nothing on the Steam build reads or writes
-  browser storage: documents and blobs go through the bridge, the pre-paint
-  theme comes from the host, and the settings store's carried-over values
-  and Reset all data's removal of loose keys, which exist only in the
-  browser build, read and remove nothing.
+- **No browser storage beyond the session.** Nothing on the Steam build
+  reads or writes browser storage that outlives the session: documents and
+  blobs go through the bridge, the pre-paint theme comes from the host, and
+  the settings store's carried-over values and Reset all data's removal of
+  loose keys, which exist only in the browser build, read and remove
+  nothing. Session storage is allowed, since closing the window wipes it:
+  the shell's browser-history sync keeps there its record of the page loads
+  a reload or a return through history superseded.
 - **Quit flush.** On the host's flush request the page waits for every save
   in flight, then answers, so Auto-Cloud's exit upload sees the final files.
 

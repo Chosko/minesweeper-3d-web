@@ -43,6 +43,8 @@ In scope (m3-on-steam):
 - Platform selection in the page: the Steam implementations when the bridge
   is present, the browser implementations otherwise, with capability flags
   the rest of the game reads.
+- The Steam build's wording of where the player's data is kept, on the
+  Settings Data panel.
 - Steam presence: start-up through Steam, the logged-on and connection
   state, the overlay and its activation event.
 - Windows packaging and the SteamPipe upload of a private build.
@@ -150,6 +152,13 @@ rules engine imports Electron or the binding.
   flags (desktop host, Steam present, achievements, leaderboards, shared
   files, cloud)
   that callers read instead of testing for the platform.
+- **Where the data is kept, in words.** The Steam build keeps the player's
+  saves in the user-data directory, synced by Steam Cloud, never in a
+  browser, so on it the Settings Data panel's line above Reset all data
+  reads "Delete everything the game keeps on this computer and start over
+  as a new player."; the web build keeps "in this browser". The page picks
+  the line from the desktop host flag, as Reset all data's confirmation
+  picks "from this computer" ([settings.md](./settings.md)).
 - **Steam start-up.** The packaged build asks Steam to relaunch it through
   the Steam client when started outside it; a development run uses a local
   app id file. When Steam still cannot initialise — client not running in a
@@ -196,8 +205,8 @@ rules engine imports Electron or the binding.
   activated, flush requested before quit, fullscreen entered or left — so
   the title bar's button shows the right icon.
 - **Capability flags** — read by `steam-cloud-saves`, `steam-leaderboards`,
-  `leaderboard-screen`, `steam-achievements` and `leaderboards-menu-entry`
-  to choose behaviour; no caller tests for Electron or the bridge directly.
+  `leaderboard-screen`, `steam-achievements`, `leaderboards-menu-entry` and
+  `settings`' Data panel to choose behaviour; no caller tests for Electron or the bridge directly.
 - **Quit** — closing the window, or the page's quit request, asks the page
   to flush pending saves; the host waits for the answer, bounded by a short
   timeout, then shuts Steam down and exits, so Steam Cloud's exit sync sees
