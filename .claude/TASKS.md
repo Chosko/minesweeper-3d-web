@@ -196,7 +196,7 @@ Feature: steam-cloud-saves
 
 ## 300. Steam build's Data panel says the data is kept on this computer
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/settings/page.js, tests/settings-page.test.mjs
 Preconditions: none

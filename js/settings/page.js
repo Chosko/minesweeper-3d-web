@@ -34,10 +34,12 @@
 //                                first the export — its muted line (EXPORT_LINE) and the small
 //                                "Export history (CSV)" and "Export all (JSON)" with their download
 //                                icons (#set-export-actions, bound by bindExportActions,
-//                                js/records/export.js) — then a rule, the reset's line, the "Reset
-//                                all data…" button with its trash icon, under it the hidden failure
-//                                (an err note), and the hidden confirmation (a confirm box:
-//                                RESET_MESSAGE, or RESET_MESSAGE_DESKTOP when desktopHost — the
+//                                js/records/export.js) — then a rule, the reset's line (the game's
+//                                data kept "in this browser", or "on this computer" when
+//                                desktopHost), the "Reset all data…" button with its trash icon,
+//                                under it the hidden failure (an err note), and the hidden
+//                                confirmation (a confirm box: RESET_MESSAGE, or
+//                                RESET_MESSAGE_DESKTOP when desktopHost — the
 //                                Steam build —, Reset all data with its trash icon beside Cancel). A
 //                                control whose label is its section's title is named by the section
 //                                label. The columns are the widest window's, and a section
@@ -295,7 +297,7 @@ function dataPanelHtml(desktopHost) {
     + '<button type="button" class="ui-button ui-button--secondary ui-button--sm" id="set-export-csv" data-icon="download">Export history (CSV)</button>'
     + '<button type="button" class="ui-button ui-button--secondary ui-button--sm" id="set-export-json" data-icon="download">Export all (JSON)</button>'
     + '</div><hr class="ui-divider">'
-    + '<p class="ui-text">Delete everything the game keeps in this browser and start over as a new player.</p>'
+    + `<p class="ui-text">Delete everything the game keeps ${desktopHost ? 'on this computer' : 'in this browser'} and start over as a new player.</p>`
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset" data-icon="trash">Reset all data…</button>'
     + '<p class="ui-note ui-note--err hidden" id="set-reset-note" role="status" data-icon="warning"><span class="ui-note__text"></span></p>'
     + '<div class="ui-confirm hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">'

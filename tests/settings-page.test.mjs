@@ -569,6 +569,13 @@ test('on the Steam build the confirmation says the data is deleted from this com
   assert.equal(text(settingsPageHtml()), RESET_MESSAGE, 'the web build by default');
 });
 
+test('on the Steam build the Data panel\'s reset line says the data is kept on this computer; the web build keeps "in this browser"', () => {
+  const line = (html) => html.match(/<hr class="ui-divider"><p class="ui-text">([^<]*)<\/p><button type="button" class="ui-button ui-button--secondary" id="set-reset"/)[1];
+  assert.equal(line(settingsPageHtml({ desktopHost: true })), 'Delete everything the game keeps on this computer and start over as a new player.');
+  assert.equal(line(settingsPageHtml({ desktopHost: false })), 'Delete everything the game keeps in this browser and start over as a new player.');
+  assert.equal(line(settingsPageHtml()), 'Delete everything the game keeps in this browser and start over as a new player.', 'the web build by default');
+});
+
 test('the shell builds the Settings page and its Reset panel for the build it runs on', () => {
   const ui = read('js/ui.js');
   assert.match(ui, /constructor\(cb, \{ desktopHost = false \} = \{\}\)/);
