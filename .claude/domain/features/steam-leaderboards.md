@@ -66,9 +66,11 @@ only through `steam-desktop-host`'s bridge and capability adapter.
 - **Catalogue.** Maps a board identity from `game-summary` and
   `3d-game-records` to a leaderboard name, or to none. Names are derived
   from the board's mode, standard size and no-guess setting and never
-  change once published. The leaderboards are created in the Steamworks app
-  settings — ascending sort, time-in-milliseconds display — and the game
-  only finds them, never creates them.
+  change once published. The leaderboards are created from a Steam client by
+  `dev/steam/create-boards.mjs` — ascending sort, time-in-milliseconds
+  display — because a leaderboard made on the Steamworks site with Writes
+  Trusted refuses client uploads (`dev/steam/README.md`); the game only finds
+  them, never creates them.
 - **Eligibility.** A game is submitted when it was won, its board is in the
   catalogue, and a sealed replay exists for it. A won game without a replay
   is never submitted, because every entry carries its replay. A game that

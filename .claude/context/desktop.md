@@ -30,6 +30,11 @@ are [platform.md](platform.md)'s.
 | `desktop/build/package.mjs` | The build path behind `npm run package`, `npm run steampipe` and `npm run appid`. |
 | `desktop/steampipe/` | The SteamPipe app and depot build script templates, `config.example.json` beside the git-ignored `config.json`. |
 | `deploy-steam.sh` | Package, render and upload in one go (repository root). |
+| `dev/steam/create-boards.mjs` | Creates the catalogue's leaderboards from the client; how the leaderboards are made (`dev/steam/README.md`). |
+| `dev/steam/read-board.mjs` | Prints the named leaderboards' top entries; writes nothing. |
+| `dev/steam/probe-upload.mjs` | Uploads one score to an existing leaderboard and reads it back, behind `--yes`. |
+| `dev/steam/probe-control.mjs` | The same upload to a throwaway leaderboard the client creates, behind `--yes`. |
+| `dev/steam/probe-steam.mjs` | The probes' shared Steam session over `openSteamworks`: app id, callback pump, shutdown. |
 
 ## PUBLIC API
 

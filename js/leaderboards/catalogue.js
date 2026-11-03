@@ -8,8 +8,8 @@
 // A name is derived from the board's mode, its standard size and its no-guess setting:
 //   <mode>-<standard size>-<guess|no-guess>
 // e.g. `classic-2d-expert-no-guess`, `3d-cube-beginner-guess`. The leaderboards are created under
-// these names in the Steamworks app settings, so a published name never changes; the catalogue
-// test pins every one.
+// these names from the client by dev/steam/create-boards.mjs, so a published name never changes;
+// the catalogue test pins every one.
 
 import { createBoardIdentity, STANDARD_BOARDS, PRESETS_3D, MODE_3D } from '../records/board.js';
 import { MODE_CLASSIC_2D } from '../records/model.js';
