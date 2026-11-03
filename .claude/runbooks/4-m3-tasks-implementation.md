@@ -1,7 +1,7 @@
 # Runbook: m3-tasks-implementation
 
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 17) · Model: opus
-Last step number: 49
+Last step number: 51
 
 ## [x] 32. Implement task 115 — Three cube 3D presets and no no-guess on a side of 2
 
@@ -335,6 +335,26 @@ Context:
 ```
 
 Done: 2026-10-31, commit `bd1c29f` (13 files, +500/-63). The pre-paint theme is read on every page load (a synchronous bridge reader behind a frozen `ms3dPrePaint = { theme }` global), not once at start-up, so a reload after Reset paints the right theme. `js/main.js` still keeps the history-superseded set in `sessionStorage` on the Steam build — undecided whether exempt.
+
+## [ ] 50. Implement task 300 — Steam build's Data panel says the data is kept on this computer
+
+Depends on: 3, 44
+
+Context: none
+
+```prompt
+/task-implement 300 --review
+```
+
+## [ ] 51. Implement task 301 — Update documentation for feature `steam-desktop-host`
+
+Depends on: 50
+
+Context: none
+
+```prompt
+/task-implement 301 --review
+```
 
 ## [x] 10. Implement task 93 — Steam Auto-Cloud configuration and quota
 
