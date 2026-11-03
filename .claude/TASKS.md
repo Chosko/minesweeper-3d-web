@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 299
+Last task number: 301
 
 ---
 
@@ -191,5 +191,25 @@ Target: claude
 Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/replay-library.md, .claude/context/settings-appliers.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 93
 Feature: steam-cloud-saves
+
+---
+
+## 300. Steam build's Data panel says the data is kept on this computer
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/page.js, tests/settings-page.test.mjs
+Preconditions: none
+Feature: steam-desktop-host
+
+---
+
+## 301. Update documentation for feature `steam-desktop-host`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/settings-page.md, .claude/context/settings-reset.md, .claude/context/app-shell-ui.md, .claude/context/testing.md
+Preconditions: 300
+Feature: steam-desktop-host
 
 ---

@@ -184,10 +184,10 @@ Tasks: 81, 82, 83
 
 ## steam-desktop-host — Electron host for Windows, Steamworks capability adapter, page bridge and SteamPipe build
 
-Status: [ITERATED]
+Status: [PLANNED]
 Doc: .claude/domain/features/steam-desktop-host.md
 Source: product-design.md § Steam features (m3-on-steam)
-Tasks: 84, 85, 86, 87, 88, 89, 90, 294, 295
+Tasks: 84, 85, 86, 87, 88, 89, 90, 294, 295, 300, 301
 
 ---
 
