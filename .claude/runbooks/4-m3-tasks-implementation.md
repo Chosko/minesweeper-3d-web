@@ -433,7 +433,7 @@ Context:
 
 Done: 2026-10-31, commit `4669c60` (7 files, +776/-8). The outbox opens its pending-replay store through an `openBlobStore(name)` factory, as `leaderboards.outbox`, because the platform has one unnamed blob store; nothing creates or starts the submission at runtime yet. The submission state carries a `reason` field the domain does not list.
 
-## [ ] 14. Implement task 97 — Steam submitter, best cache, reader and replay fetcher
+## [x] 14. Implement task 97 — Steam submitter, best cache, reader and replay fetcher
 
 Depends on: 6, 9, 13
 
@@ -449,6 +449,8 @@ Context:
 ```prompt
 /task-implement 97 --review --rounds 2
 ```
+
+Done: 2026-11-03, commit `2a7213e` (16 files, +1014/-28). Premise wrong: task 97's checkpoint 1 (create the leaderboards in Steamworks) does not work as written — boards created there with Writes Trusted kept refusing client uploads after it was cleared, and were re-created from the client with `FindOrCreateLeaderboard`; a queued score is also sent on reconnect while the game runs, not only at start.
 
 ## [ ] 15. Implement task 98 — Local leaderboards stand-in for the web build
 
@@ -468,6 +470,7 @@ Depends on: 12, 13, 14, 15
 
 Context:
 - 2026-10-31 (from step 13): `.claude/context/app-shell-results.md` does not yet describe the results flow's new `leaderboards` option (added in `4669c60`). A game leaving the queue unsubmitted becomes `not-eligible` with a `reason` (`replaced`, `beaten`, `invalid`, `no-replay` or the submitter's own); a rejection carries `refused`, `differs`, `outcome`, `board` or `time` — a field the domain document does not list.
+- 2026-11-03 (from step 14): the 12 Steam leaderboards are created from the game client with `FindOrCreateLeaderboard` (ascending, milliseconds), not in the Steamworks settings — boards created there with Writes Trusted kept refusing client uploads after it was cleared. A queued score is sent on reconnect while the game keeps running, as well as at start. Any document saying the boards are created in Steamworks, or that the queue resends only at start, is wrong.
 
 ```prompt
 /task-implement 99 --review
