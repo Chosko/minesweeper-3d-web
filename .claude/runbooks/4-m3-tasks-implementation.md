@@ -4,7 +4,7 @@ Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3
 Last step number: 51
 Archive: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
-## [ ] 50. Implement task 300 — Steam build's Data panel says the data is kept on this computer
+## [x] 50. Implement task 300 — Steam build's Data panel says the data is kept on this computer
 
 Depends on: 3, 44
 
@@ -13,6 +13,8 @@ Context: none
 ```prompt
 /task-implement 300 --review
 ```
+
+Done: 2026-11-04, commit `fe1d578` (3 files, +15/-6).
 
 ## [ ] 51. Implement task 301 — Update documentation for feature `steam-desktop-host`
 
