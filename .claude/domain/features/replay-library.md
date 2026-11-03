@@ -168,5 +168,9 @@ plain DOM from the `screen-components` kit inside the Records screen.
 - How much browser storage the web build can count on, and whether 100
   unpinned replays of long 3D games fit within it. Measured once real
   replays exist; blocks only the retention constant.
-- Whether Steam Cloud's quota fits the library as designed. Settled when
-  `m3-on-steam` architects cloud saves; blocks nothing in m2.
+- Steam Cloud's quota fits the library as designed, measured by
+  `dev/measure-cloud-quota.mjs` against the quota recorded in
+  `steam-cloud-saves`: 100 unpinned replays of real games, hour-long 3D games
+  included, leave room for several hundred pinned replays. Only a library
+  made mostly of games of many hours, whose movement reached its cap,
+  exceeds it.

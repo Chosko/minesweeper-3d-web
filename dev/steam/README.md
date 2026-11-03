@@ -31,3 +31,12 @@ refuses every client upload — `LeaderboardScoreUploaded_t` comes back with
 and re-creating it with `create-boards.mjs` makes it accept uploads.
 `probe-control.mjs` against `probe-upload.mjs` tells such a board apart from a
 broken upload path.
+
+## Testing Steam Cloud before release
+
+Until the app is released, a Steam client does not run Auto-Cloud for it,
+even with the root published in Steamworks: Steam's cloud log
+(`Steam/logs/cloud_log.txt`) marks each launch and exit sync `Sync Disabled`
+and nothing uploads. Running `testappcloudpaths <app id>` in the Steam
+console (`steam://open/console`) on each test machine turns it on; the next
+exit's sync then lists the save directory's files as persisted to the cloud.

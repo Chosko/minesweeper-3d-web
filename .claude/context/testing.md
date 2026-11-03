@@ -129,8 +129,9 @@ Data beside the tests:
   (`measure-first-box-3d.mjs`), the replay sampler constants and
   `MOTION_CAP` (`measure-cell-motion.mjs`), and the hexagon and
   triangle boards' no-guess timing against the attempt budget
-  (`measure-noguess-hex.mjs`, `measure-noguess-tri.mjs`); each head
-  comment says how to read it. `dev/find-learn-3d.mjs` is the search behind
+  (`measure-noguess-hex.mjs`, `measure-noguess-tri.mjs`), and the
+  save directory's fit in the Steam Cloud quota
+  (`measure-cloud-quota.mjs`); each head comment says how to read it. `dev/find-learn-3d.mjs` is the search behind
   `LEARN_BOARD` (its `findLearnBoard` also used by `tests/mode3d-learn.test.mjs`).
 
 ## INTERNAL PATTERNS

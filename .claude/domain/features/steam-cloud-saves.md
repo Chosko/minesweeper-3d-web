@@ -165,7 +165,10 @@ the desktop host's fixed bridge (see
 
 ## Open questions
 
-- Whether the library as designed fits that quota, measured from real
-  replay sizes against the library's retention of unpinned replays plus
-  pins; this also settles `replay-library`'s question of whether Steam Cloud
-  fits the library as designed.
+- None. The library as designed fits that quota, measured by
+  `dev/measure-cloud-quota.mjs` from real replay sizes against the
+  library's retention of unpinned replays plus pins, with the documents and
+  the leaderboard outbox's pending replays: with hour-long 3D games filling
+  the retention, several hundred pinned replays still fit. Only a retention
+  made mostly of games of many hours, whose movement reached its cap,
+  exceeds the byte quota, which stops Steam syncing, never local saving.

@@ -6,7 +6,7 @@ Last task number: 301
 
 ## 93. Steam Auto-Cloud configuration and quota fit check
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude+human
 Files: dev/measure-cloud-quota.mjs, .claude/domain/features/steam-cloud-saves.md, .claude/domain/features/replay-library.md
 Preconditions: none
