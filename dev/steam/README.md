@@ -32,6 +32,22 @@ and re-creating it with `create-boards.mjs` makes it accept uploads.
 `probe-control.mjs` against `probe-upload.mjs` tells such a board apart from a
 broken upload path.
 
+## The Auto-Cloud root
+
+Steamworks → Steam Cloud holds one Auto-Cloud root, the game's save
+directory:
+
+| Field | Value |
+| ----- | ----- |
+| Root | `WinAppDataRoaming` |
+| Subdirectory | `Minesweeper 3D/saves` |
+| Pattern | `*` |
+| Recursive | yes |
+| OS | All OSes |
+
+The OS stays *All OSes*: a root saved as *Windows* ties the save files to
+Windows for good.
+
 ## Testing Steam Cloud before release
 
 Until the app is released, a Steam client does not run Auto-Cloud for it,
