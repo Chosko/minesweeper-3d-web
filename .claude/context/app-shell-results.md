@@ -5,7 +5,8 @@
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers `js/results/flow.js` — the results screen's (`results`) DOM-free flow:
 it records the game on the `finished` and `abandoned` hand-offs, routes a
-finished one to `results` and hands the replay to the library — and its
+finished one to `results`, hands the replay to the library and a finished
+game to the leaderboards' `submit` — and its
 wiring in `js/main.js`, the screen's actions included. The screen's content,
 binder, its place over the board and Look at the board are
 [app-shell-results-view.md](app-shell-results-view.md); the replay viewer's
@@ -16,14 +17,15 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 
 `js/results/flow.js`
 - `RESULTS_SCREEN` = `'results'`.
-- `createResultsFlow({records, replays?, router, restart(source, current),
-  goMenu})` → `attach(pauser)` → detach, `finished(summary, mode, replay?)`
-  → the routed data `{summary, mode, comparison, saved, notSaved, watch,
-  watchBest, rank, streak, standing}` or null, `abandoned(summary, mode,
-  replay?)`, `current`, `playAgain(source)`, `openRecords()`, `watch()`,
-  `watchBest()`, `toMenu()`. Without `replays` no replay is kept and no best
-  is watched. `watch` is set when the game handed over a sealed replay and
-  the router has the `replay` route; `watchBest` is, after a win that set
+- `createResultsFlow({records, replays?, leaderboards?, router,
+  restart(source, current), goMenu})` → `attach(pauser)` → detach,
+  `finished(summary, mode, replay?)` → the routed data `{summary, mode,
+  comparison, saved, notSaved, watch, watchBest, rank, streak, standing}`
+  or null, `abandoned(summary, mode, replay?)`, `current`,
+  `playAgain(source)`, `openRecords()`, `watch()`, `watchBest()`,
+  `toMenu()`. Without `replays` no replay is kept and no best is watched;
+  without `leaderboards` nothing is submitted. `watch` is set when the game
+  handed over a sealed replay and the router has the `replay` route; `watchBest` is, after a win that set
   no new best on any stat, the board's fastest-time best's id (after
   recording) when the library `has` its replay and it is not the game
   shown, else null. `rank` is
@@ -66,6 +68,13 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   `REPLAYS` once it has loaded, pinned as a best when the comparison shows a
   new best on any of the three stats ([replay-library.md](replay-library.md)); a throwing or
   rejecting library is logged and changes nothing else.
+- **Leaderboards hand-off.** For a finished game only, once the summary is
+  recorded and the replay's add has settled — whether or not either
+  succeeded — the flow calls `leaderboards.submit(summary, replay)` (replay
+  null when none was sealed); the shell passes the platform's
+  `leaderboards`. Eligibility, verification and the outbox are
+  [leaderboards.md](leaderboards.md)'s; a throwing submit is logged and
+  changes nothing else.
 
 ## DOMAIN DEPENDENCIES
 
@@ -77,6 +86,8 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   — where the Records screen is opened from, Back and focus.
 - [../domain/features/replay-library.md](../domain/features/replay-library.md)
   — the end-of-game hand-off, best pinning, the session-only replay.
+- [../domain/features/steam-leaderboards.md](../domain/features/steam-leaderboards.md)
+  — `submit` after the summary is recorded and the replay added.
 
 ## CROSS-REFERENCES
 
@@ -92,14 +103,17 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   replay and Watch best open.
 - [app-shell-pause.md](app-shell-pause.md) — the hand-offs the flow attaches
   to.
+- [leaderboards.md](leaderboards.md) — `submit` and the submission state.
 - [testing.md](testing.md) — `tests/results.test.mjs` (a flat-mode
   game's board line and Records route among them),
   `tests/results-watch.test.mjs` (fast only; the results' browser tests,
   Watch replay's among them, are in `tests/results.test.mjs`),
-  `tests/replay-handoff.test.mjs`.
+  `tests/replay-handoff.test.mjs`; `tests/leaderboards-submit.test.mjs`
+  holds the leaderboards hand-off's tests.
 
 ## WHEN TO READ THE SOURCE
 
-- Changing what the flow records, routes or hands to the library, or the
+- Changing what the flow records, routes or hands to the library or the
+  leaderboards, or the
   screen's actions: the head comment of `js/results/flow.js` and the
   `results` wiring in `js/main.js`.

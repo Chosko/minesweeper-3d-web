@@ -26,7 +26,7 @@ Feature: steam-leaderboards
 
 ## 99. Update documentation for feature `steam-leaderboards`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/leaderboards.md, .claude/context/app-shell-results.md, .claude/context/platform.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 98

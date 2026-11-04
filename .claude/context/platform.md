@@ -25,7 +25,7 @@ page to the shown screen's frame.
 | `js/platform/indexeddb-blob-store.js` | The web build's blob implementation over IndexedDB. |
 | `js/platform/steam-storage.js` | The Steam build's backend (`createSteamBackend`): each document one file the desktop host's file service keeps, over the bridge client's document requests; the save tracker (`createSaveTracker`) the quit flush waits on. |
 | `js/platform/steam-blob-store.js` | The Steam build's blob implementation (`openSteamBlobStore`): a named store, one file per blob in its directory of the save directory, over the bridge client's blob requests; `REPLAY_STORE`, the replay library's. |
-| `js/platform/index.js` | The selector (`selectPlatform`): looks for the page bridge once at start-up, fills each slot (`STEAM_SLOTS`: storage, blob store, leaderboards, achievements) with its Steam implementation or the browser one; re-exports the storage methods; the capability flags, the host link with the Steam saves' flush hook, and the desktop window. |
+| `js/platform/index.js` | The selector (`selectPlatform`): looks for the page bridge once at start-up, fills each slot (storage, blob store, leaderboards, achievements) with its Steam implementation (`STEAM_SLOTS`) or the web build's (`BROWSER_SLOTS`); re-exports the storage methods; the capability flags, the host link with the Steam saves' flush hook, and the desktop window. |
 | `js/platform/capabilities.js` | The capability flags (`CAPABILITY_FLAGS`, `deriveFlags`, `createCapabilities`) and the latest Steam state. |
 | `js/platform/bridge-client.js` | The page's side of the page bridge: `findBridge`, the request client, `linkHost` — Steam state into the flags, overlay listeners, the quit flush. |
 | `js/platform/window-actions.js` | The desktop window driven from the page: drag region, Minimise and Fullscreen / Windowed with its icon, the root area sized to the available area (`bindAvailableArea`), the window-size media queries settled against it (`areaMatches`, `bindAreaMedia`), the windowed window's size from the shown screen frames (`SCREEN_FRAMES`, `bindScreenSize`), `reportSize`. |
@@ -37,7 +37,9 @@ last Classic 2D and 3D board choices ([classic2d.md](classic2d.md),
 [mode3d.md](mode3d.md)), the records store's three documents
 ([records-store.md](records-store.md)), the Records screen's `records.view`
 ([records-library-view.md](records-library-view.md)) and `replays.library`
-([replay-library.md](replay-library.md)), the blob store's one user. The
+([replay-library.md](replay-library.md)), the replay store's user, and the
+leaderboard outbox's `leaderboards.outbox`, with a blob store of its own
+under the same name ([leaderboards.md](leaderboards.md)). The
 machine settings document `settings.machine` is the one machine-local
 document: on the Steam build its file lives in the machine prefs directory,
 which never syncs, every other document's in the save directory
@@ -52,7 +54,10 @@ Platform module (`js/platform/index.js`) — what callers import: `storage`
 and its methods `register`, `load`, `save`, `clear`, `available` by name;
 `blobStore`; `leaderboards` — on the desktop host the Steam leaderboards,
 on the web the local stand-in (`js/leaderboards/local.js`), both from
-`js/leaderboards/index.js` —
+`js/leaderboards/index.js` with one interface and a `local` flag telling
+them apart; the shell hands both the records and the replay library through
+`leaderboards.connect({ records, replays })`, which only the stand-in reads
+([leaderboards.md](leaderboards.md)) —
 and `achievements` (null until its feature fills it); `capabilities`, the live flags of what the host offers, which
 callers read instead of testing for the platform — `desktopHost` (the
 bridge is present), `steam` (the host runs the Steam adapter, not the
@@ -134,7 +139,7 @@ return a Promise and may throw.
   `failed` for a refusing disk, `invalid` for a name the save directory
   does not take; `REPLAY_STORE` `'replays'`, the replay library's store.
   Any other feature opens its own store by name beside it, as the
-  leaderboard outbox does.
+  leaderboard outbox does (`'leaderboards.outbox'`).
 
 ## INTERNAL PATTERNS
 
@@ -184,9 +189,12 @@ return a Promise and may throw.
   backend or blob implementation; it selects once, when first evaluated,
   from the page bridge (`findBridge(globalThis)`): with the bridge, each
   slot a Steam feature filled in `STEAM_SLOTS` takes that implementation,
-  every other slot the browser one, the memory blob store standing in when
-  IndexedDB is missing or refuses; it never follows a later change of the
-  globals. Tests pin that no other file under `js/` imports an
+  every other slot its `BROWSER_SLOTS` one — the memory blob store standing
+  in when IndexedDB is missing or refuses, the local leaderboards stand-in
+  for `leaderboards`; it never follows a later change of the globals. Slots
+  are filled in order, so the Steam leaderboards are built over the
+  selected storage and the capability flags, and open the outbox's blob
+  store through the same save-tracked Steam blob store as the replays. Tests pin that no other file under `js/` imports an
   implementation, and that no module outside `js/platform/` tests for
   Electron or the bridge.
 - **The available area.** At the desktop host `bindDesktopWindow` sizes the
@@ -252,6 +260,8 @@ return a Promise and may throw.
 - [../domain/features/steam-cloud-saves.md](../domain/features/steam-cloud-saves.md)
   — the Steam document storage and blob store, the machine-local document,
   the quit flush's wait for saves, no browser storage beyond the session.
+- [../domain/features/steam-leaderboards.md](../domain/features/steam-leaderboards.md)
+  — the leaderboards selected per build, the local stand-in on the web.
 
 ## CROSS-REFERENCES
 
@@ -265,8 +275,12 @@ return a Promise and may throw.
   (selection with a fake bridge, the flags, the host link, the desktop
   window and its available area), `tests/platform-steam-storage.test.mjs`
   (the Steam storage and blob store, clear, the quit flush) and the shared
-  interface suites in `tests/helpers/platform-suites.mjs`.
-- [replay-library.md](replay-library.md) — the blob store's one user.
+  interface suites in `tests/helpers/platform-suites.mjs`; the
+  leaderboards slot's selection is pinned in
+  `tests/leaderboards-local.test.mjs` and `tests/leaderboards-steam.test.mjs`.
+- [replay-library.md](replay-library.md) — the replay store's user;
+  [leaderboards.md](leaderboards.md) — the leaderboards slot's two
+  implementations and the outbox's document and blob store.
 - [app-shell.md](app-shell.md) — the `ms3d.*` keys nothing reads.
 - [settings.md](settings.md) — the settings and machine settings
   documents, the legacy keys the store carries over on the browser build,
