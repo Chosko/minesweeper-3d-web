@@ -220,7 +220,7 @@ Tasks: 104, 105, 106
 
 ## steam-achievements — The m3 milestone achievements for Classic 2D and 3D, evaluated per game and caught up from history
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/steam-achievements.md
 Source: product-design.md § Steam features (m3-on-steam)
 Tasks: 100, 101, 102, 103
