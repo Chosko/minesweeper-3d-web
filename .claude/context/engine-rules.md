@@ -88,11 +88,11 @@ Metrics (`metrics.js`)
   profiles the game plays on.
 - [engine-3d.md](engine-3d.md) — flag batches and auto-hide under the 3D
   profile, the 3D state view over the game.
-- [records.md](records.md) — the summary record built from `summary()` and
+- [records-summary.md](records-summary.md) — the summary record built from `summary()` and
   `counts()`.
 - [replay-playback.md](replay-playback.md) — seeking with `snapshot()` /
   `restore()`.
-- [testing.md](testing.md) — `tests/engine-*.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/engine-*.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

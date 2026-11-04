@@ -119,9 +119,9 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   seed and the daily boards.
 - [records-store.md](records-store.md) — the history the Daily screen
   reads.
-- [generation.md](generation.md) — the clients the daily boards are
+- [generation-worker.md](generation-worker.md) — the clients the daily boards are
   pre-generated through.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (daily — the
+- [testing-files.md](testing-files.md) — `tests/shell-*.test.mjs` (daily — the
   Hexagon and Triangle rows, panels and previews, and today's Hexagon daily
   played in a browser among them —, challenge — a hexagon or triangle code
   and `#board=` link, today's and another day's Hexagon daily code among

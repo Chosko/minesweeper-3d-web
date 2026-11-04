@@ -132,7 +132,7 @@ overlay's parts and the aimed-cell readout are
 - [input-controller.md](input-controller.md) — the navigation layer;
   [app-shell-focus.md](app-shell-focus.md) — the focus walk.
 - [app-shell-kit.md](app-shell-kit.md) — the in-game components.
-- [testing.md](testing.md) — `tests/components.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/components.test.mjs`,
   `tests/settings-*.test.mjs`, `tests/shell-pad-walk.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

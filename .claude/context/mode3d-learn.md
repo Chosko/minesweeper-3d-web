@@ -27,7 +27,7 @@ the stylesheets (§ Learn 3D's screens).
   session's forced, marked start cell ([mode3d-session.md](mode3d-session.md)).
 - `LEARN_PROMPTS` (`start`, `shift`, `ctrl`, `flag`, `chord`, `rest`),
   `LEARN_HINTS` (each prompt's `HINT_TEXT` name,
-  [settings-bindings.md](settings-bindings.md)), `learnStepOf(hint)` (a
+  [settings-bindings-rows.md](settings-bindings-rows.md)), `learnStepOf(hint)` (a
   step prompt's place among the step prompts, as "<step> / <steps>", null for the start and the
   rest);
   `createLearnPrompts({lessonNumber, lessonMine})` → `current`,
@@ -83,13 +83,13 @@ the stylesheets (§ Learn 3D's screens).
 - [app-shell-3d-session.md](app-shell-3d-session.md) — the guided game's
   wiring, its hint strip and end card; [app-shell-3d.md](app-shell-3d.md)
   — the ready card's Learn 3D line.
-- [settings-bindings.md](settings-bindings.md) — the `HINT_TEXT` the
+- [settings-bindings-rows.md](settings-bindings-rows.md) — the `HINT_TEXT` the
   prompts name.
 - [engine-3d.md](engine-3d.md) — the 3D state view `lessonCells` and
   `closedAround` read.
 - [app-shell-hud.md](app-shell-hud.md) — the 3D overlay and the hint strip
   the play layout changes.
-- [testing.md](testing.md) — `tests/mode3d-learn.test.mjs` (the layout and
+- [testing-files.md](testing-files.md) — `tests/mode3d-learn.test.mjs` (the layout and
   the prompt strip in the Playwright lesson),
   `tests/components-learn-end.test.mjs` (the end cards).
 

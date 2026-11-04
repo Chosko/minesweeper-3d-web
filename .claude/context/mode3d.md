@@ -36,7 +36,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   with no side of exactly 2 (a side of 1 keeps it); `noGuessReason(choice)`
   — the side-of-2 line, which takes precedence, else the cell-limit line.
   `densityHintShown(custom, noGuess)` — from Classic 2D's
-  `NOGUESS_DENSITY_HINT` ([classic2d.md](classic2d.md)).
+  `NOGUESS_DENSITY_HINT` ([classic2d-board-setup.md](classic2d-board-setup.md)).
 - `normaliseChoice(choice)` → a valid plain copy or null (null for a `size`
   outside `BOARD_SIZES`, such as a double layer or First box preset's id), with no-guess
   dropped on a custom board that does not offer it;
@@ -51,7 +51,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 - `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION`.
 - `bindBoardChoice({root, onStart, onLearn, onBack, onRecords?, code?,
   bests?, pin?})` → `{show(choice, {held}), state(), refresh(),
-  destroy()}`, the Classic 2D binder's shape ([classic2d.md](classic2d.md))
+  destroy()}`, the Classic 2D binder's shape ([classic2d-board-choice.md](classic2d-board-choice.md))
   over `#board-choice`: `onLearn` for the Learn 3D option (first, no
   preset), `onRecords(board)` — *All records* — with the chosen board as `boardOf` gives it
   (null for Learn 3D, a code or a refused custom board), `bests(board)` the
@@ -84,7 +84,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 - **The screen.** The Classic 2D board choice's composition and placement
   (`css/components.css` head comment, *3D board choice*): the Board list
   and the foot's Play, everything else in the board choice panel under
-  the same pin and auto-open rules ([classic2d.md](classic2d.md) § Board
+  the same pin and auto-open rules ([classic2d-board-choice.md](classic2d-board-choice.md) § Board
   choice panel). In the panel Learn 3D shows only how 3D works and that it
   keeps no records (the phone drawer labelled *Learn 3D*), a preset the
   presets' switch and the board's bests with *All records*, Custom its own
@@ -109,14 +109,14 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 - [mode3d-session.md](mode3d-session.md), [mode3d-adapter.md](mode3d-adapter.md) — the session and the adapter
   the chosen board is handed to.
 - [mode3d-learn.md](mode3d-learn.md) — Learn 3D's guided board and prompts.
-- [classic2d.md](classic2d.md) — `NOGUESS_DENSITY_HINT` and the density
+- [classic2d-board-setup.md](classic2d-board-setup.md) — `NOGUESS_DENSITY_HINT` and the density
   hint text.
 - [app-shell-menu.md](app-shell-menu.md) — the board choices' wiring in
   `js/main.js`, `createLastBoardChoice` and `boardBests`.
 - [platform.md](platform.md) — the storage the last 3D choice is a document
   in.
 - [records.md](records.md) — `PRESETS_3D`, kept equal to `PRESETS` by a test.
-- [testing.md](testing.md) — `tests/mode3d-board-choice.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/mode3d-board-choice.test.mjs`,
   `tests/mode3d-noguess-limit.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

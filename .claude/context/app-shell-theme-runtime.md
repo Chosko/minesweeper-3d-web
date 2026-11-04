@@ -47,13 +47,13 @@ getStyle, theme, dev?, log?})`.
   desktop host it takes the stored theme id the host hands over — the
   frozen `ms3dPrePaint` `{ theme }` global (`HOST_GLOBAL`) the preload
   exposes, read by the main process from the settings document's file each
-  time the page loads, null for none ([desktop.md](desktop.md) § Pre-paint
+  time the page loads, null for none ([desktop-files.md](desktop-files.md) § Pre-paint
   theme) — through `readHostTheme`, and never reads browser storage. On
   the web, with no such global, `readStoredTheme` reads the settings
   document (`ms3d:doc:settings`, at any version the store has written)
   straight from `localStorage`. Either way `themeIdOf` maps the id as
   `themeIdFor` does — a value the store's format
-  step retires ([settings.md](settings.md)) or an unknown or absent id → the
+  step retires ([settings-store.md](settings-store.md)) or an unknown or absent id → the
   default. It cannot import the registry, so `STYLESHEETS` mirrors its
   id → stylesheet table (`tests/theme.test.mjs` keeps the two equal). A non-default
   stylesheet that fails falls back to the default here. It never writes:
@@ -92,7 +92,7 @@ getStyle, theme, dev?, log?})`.
   settings document `readStoredTheme` reads;
   [settings-appliers.md](settings-appliers.md) — the theme applier's
   caller; [settings-page.md](settings-page.md) — the theme list.
-- [testing.md](testing.md) — `tests/theme.test.mjs` (the pre-paint
+- [testing-files.md](testing-files.md) — `tests/theme.test.mjs` (the pre-paint
   script, the applier, the token reader).
 
 ## WHEN TO READ THE SOURCE

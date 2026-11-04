@@ -12,7 +12,7 @@ renderer.
 | File | Responsibility |
 | ---- | -------------- |
 | `js/themes/board-module.js` | the board module's shape (head comment: palette, the 2D and 3D number lists, font, sky, a drawing style per mode with the 2D gap and frame radius and the other flat grids' shape, cursor ring, 3D selection and start-cell tint, confetti colours, the Classic 2D end effect's waves, motion per cell event and the motion vocabulary) and the board conformance checks (DOM-free) |
-| `js/shell/board-art.js` | the board art hand-off on the shell's side: the active board module to `BOARD_ART` ([classic2d-tile-skin.md](classic2d-tile-skin.md)) at start-up and on every theme change, once its number font has loaded |
+| `js/shell/board-art.js` | the board art hand-off on the shell's side: the active board module to `BOARD_ART` ([classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md)) at start-up and on every theme change, once its number font has loaded |
 | `js/shell/scene-palette.js` | the 3D scene's hand-off: the module `BOARD_ART` holds to the renderer's `setBoard` |
 
 ## PUBLIC API
@@ -131,11 +131,11 @@ returns the unsubscribe.
 - [app-shell-theme-runtime.md](app-shell-theme-runtime.md) — the applier that imports
   the module and notifies `bindBoardArt`.
 - [rendering-board-art.md](rendering-board-art.md) — `setBoard` and what the 3D scene draws from
-  the module; [classic2d-tile-skin.md](classic2d-tile-skin.md) — `BOARD_ART`
+  the module; [classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md) — `BOARD_ART`
   and the Classic 2D tile skin.
 - [classic2d-board-view.md](classic2d-board-view.md) — the board frame's
   radius and the gap on the pitch.
-- [testing.md](testing.md) — `tests/board-module.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/board-module.test.mjs`,
   `tests/theme-conformance.test.mjs` (the board case),
   `tests/theme.test.mjs` (the 3D scene's hand-off),
   `tests/tile-skin.test.mjs` (`bindBoardArt`).

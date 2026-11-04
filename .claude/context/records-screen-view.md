@@ -45,7 +45,7 @@ Export (`js/records/export.js`)
 - **Layout** (`css/components.css` head comment, *Records*; `css/style.css`
   places it). `#records` is a `ui-frame` centred on the backdrop at its
   natural size for the size step the root area takes
-  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area) —
+  ([app-shell-kit-frame.md](app-shell-kit-frame.md) § The root area) —
   J-Records-xl at the desktop step, -l at the compact step, -m on the
   narrowest desktop areas —, shrinking to fit a smaller area: the
   title bar's Back (its arrow alone, named "Back to Main menu" when it
@@ -99,8 +99,8 @@ Export (`js/records/export.js`)
 - [settings-page.md](settings-page.md) — the Data panel's export actions.
 - [app-shell-focus.md](app-shell-focus.md) — the focus walk;
   [app-shell-kit.md](app-shell-kit.md) — the columns and tabs;
-  [app-shell-kit-layout.md](app-shell-kit-layout.md) — the frame and stat tile; [app-shell-markup.md](app-shell-markup.md) — the `#records` markup.
-- [testing.md](testing.md) — `tests/records-screen*.test.mjs`,
+  [app-shell-kit-frame.md](app-shell-kit-frame.md) — the frame; [app-shell-kit-layout.md](app-shell-kit-layout.md) — the stat tile; [app-shell-markup.md](app-shell-markup.md) — the `#records` markup.
+- [testing-files.md](testing-files.md) — `tests/records-screen*.test.mjs`,
   `tests/records-export.test.mjs`, `tests/shell-pad-walk.test.mjs` (the
   controller on Records).
 

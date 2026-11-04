@@ -11,7 +11,7 @@ wiring in `js/main.js`, the screen's actions included. The screen's content,
 binder, its place over the board and Look at the board are
 [app-shell-results-view.md](app-shell-results-view.md); the replay viewer's
 route and the 3D replay scene are [app-shell-replay.md](app-shell-replay.md);
-the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
+the screen's markup is [app-shell-markup-game.md](app-shell-markup-game.md) § Screens.
 
 ## PUBLIC API
 
@@ -74,7 +74,7 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   succeeded — the flow calls `leaderboards.submit(summary, replay)` (replay
   null when none was sealed); the shell passes the platform's
   `leaderboards`. Eligibility, verification and the outbox are
-  [leaderboards.md](leaderboards.md)'s; a throwing submit is logged and
+  [leaderboards.md](leaderboards.md)'s and [leaderboards-submit.md](leaderboards-submit.md)'s; a throwing submit is logged and
   changes nothing else.
 - **Achievements hand-off.** For a finished game only, once the record call
   has returned — whether or not it succeeded — the flow calls
@@ -110,11 +110,11 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 - [replay-library.md](replay-library.md) — library;
   [app-shell-replay.md](app-shell-replay.md) — the `replay` route Watch
   replay and Watch best open.
-- [app-shell-pause.md](app-shell-pause.md) — the hand-offs the flow attaches
+- [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — the hand-offs the flow attaches
   to.
-- [leaderboards.md](leaderboards.md) — `submit` and the submission state.
+- [leaderboards-submit.md](leaderboards-submit.md) — `submit` and the submission state.
 - [platform-host.md](platform-host.md) — the `achievements` slot.
-- [testing.md](testing.md) — `tests/results.test.mjs` (a flat-mode
+- [testing-files.md](testing-files.md) — `tests/results.test.mjs` (a flat-mode
   game's board line and Records route among them),
   `tests/results-watch.test.mjs` (fast only; the results' browser tests,
   Watch replay's among them, are in `tests/results.test.mjs`),

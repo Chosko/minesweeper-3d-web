@@ -75,10 +75,10 @@ return a Promise and may throw.
   storage and its save tracker.
 - [platform-host.md](platform-host.md) — the selector that opens the
   implementation, the memory fallback standing in when IndexedDB refuses.
-- [desktop.md](desktop.md) § Saves — the file service's blob operations.
+- [desktop-files.md](desktop-files.md) § Saves — the file service's blob operations.
 - [replay-library.md](replay-library.md) — the replay store's user;
-  [leaderboards.md](leaderboards.md) — the outbox's blob store.
-- [testing.md](testing.md) — `tests/platform-blob-store.test.mjs`,
+  [leaderboards-submit.md](leaderboards-submit.md) — the outbox's blob store.
+- [testing-files.md](testing-files.md) — `tests/platform-blob-store.test.mjs`,
   `tests/platform-browser.test.mjs` (the IndexedDB blob store's round
   trip), `tests/platform-steam-storage.test.mjs` (the Steam blob stores)
   and the shared interface suites in `tests/helpers/platform-suites.mjs`.

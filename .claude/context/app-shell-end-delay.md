@@ -35,7 +35,7 @@ The pause controller it holds back is [app-shell-pause.md](app-shell-pause.md).
   The finished report then routes to `results` at once. The 3D-specific
   freeze during the delay: [app-shell-3d-session.md](app-shell-3d-session.md) § End sequence.
 - **Nothing else waits.** `restartBlocked()` is true during the delay
-  ([app-shell-pause.md](app-shell-pause.md) § Restart keys), and
+  ([app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) § Restart keys), and
   `pauseGame` does nothing; `pagehide` finishes a game in its delay at once
   (`activeMode().finishNow()`) so it is recorded finished.
 
@@ -48,15 +48,16 @@ The pause controller it holds back is [app-shell-pause.md](app-shell-pause.md).
 
 ## CROSS-REFERENCES
 
-- [app-shell-pause.md](app-shell-pause.md) — the pause controller, restart
+- [app-shell-pause.md](app-shell-pause.md) — the pause controller;
+  [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — restart
   keys and the leave-page guard the delay suspends.
 - [app-shell-3d-session.md](app-shell-3d-session.md) § End sequence — the
-  3D freeze during the delay; [classic2d-mode.md](classic2d-mode.md) and
+  3D freeze during the delay; [classic2d-mode-window.md](classic2d-mode-window.md) and
   [mode3d-adapter.md](mode3d-adapter.md) — each mode's `ending` and
   `finishNow`.
 - [app-shell-results-view.md](app-shell-results-view.md) § Look at the
   board — `LOOK_END`, a second end skip on the same listeners.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (end-delay skip).
+- [testing-files.md](testing-files.md) — `tests/shell-*.test.mjs` (end-delay skip).
 
 ## WHEN TO READ THE SOURCE
 

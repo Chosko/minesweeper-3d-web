@@ -111,9 +111,9 @@ enforces.
   navigation with `pickInDirection` / `Repeat`; [app-shell-navigation.md](app-shell-navigation.md),
   [app-shell-pause.md](app-shell-pause.md) — the router and pause controller Back resolves through.
 - [rendering.md](rendering.md) — the renderer toggles `Controls.shift/space/ctrl` feed.
-- [classic2d-input.md](classic2d-input.md) — the Classic 2D cursor input reuses `BTN`, `Repeat`
+- [classic2d-input-cursor.md](classic2d-input-cursor.md) — the Classic 2D cursor input reuses `BTN`, `Repeat`
   and `stickCurve` and reads `GamepadReader` polls; B, Start and Back are unmapped there.
-- [testing.md](testing.md) — `tests/gamepad.test.mjs` covers the gamepad helpers, rumble,
+- [testing-files.md](testing-files.md) — `tests/gamepad.test.mjs` covers the gamepad helpers, rumble,
   `GamepadReader` and `Controls`; `tests/shell-router.test.mjs` the shell navigation helpers;
   `tests/shell-pad-walk.test.mjs` the controller's walk over every screen;
   `tests/shell-focus-containment.test.mjs` the inert set and the Tab wrap.

@@ -89,7 +89,7 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
 - **Layout.** `#menu` (`css/style.css`) holds each size step's fixed
   values from the J-Menu artboards — xl at the desktop step, l at the
   compact step, read from the root area
-  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area),
+  ([app-shell-kit-frame.md](app-shell-kit-frame.md) § The root area),
   and p at the touch step: the frame's natural size, centred and shrinking
   to fit a smaller area (full-bleed on a phone, filling its height held
   sideways), the body's padding, the buttons' gaps, the preview square,
@@ -109,7 +109,7 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   `held3D`, each flat mode's own) for the way back. Every binder takes
   the one `BOARD_PANEL` pin, loaded before the first screen, so pinning
   the panel on one board choice pins it on every one. The binders are
-  [classic2d.md](classic2d.md) and [mode3d.md](mode3d.md); their code
+  [classic2d-board-choice.md](classic2d-board-choice.md) and [mode3d.md](mode3d.md); their code
   fields go through [app-shell-daily.md](app-shell-daily.md)'s `checkCode`
   / `playCode`.
 - **Build label and touch note.** The foot holds no key hints;
@@ -137,7 +137,7 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
 - [records-store.md](records-store.md) — the bests the board choices read.
 - [app-shell-kit.md](app-shell-kit.md) — the play tile, the small entry and
   board option components.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (menu — the
+- [testing-files.md](testing-files.md) — `tests/shell-*.test.mjs` (menu — the
   Hexagon and Triangle routes and the last mode played among them —,
   returning).
 

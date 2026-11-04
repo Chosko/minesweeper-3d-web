@@ -25,7 +25,7 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   card's list, the 3D ready card's list `#ready-keys`, the HUD strip
   `#hud-tools`, the hint strip, the controls reminders and the Settings page's bindings are
   all drawn from `js/settings/bindings.js`
-  ([settings-bindings.md](settings-bindings.md)), every list in the kit's
+  ([settings-bindings-rows.md](settings-bindings-rows.md)), every list in the kit's
   controls list `ui-controls`: the help panel and the pause card the help
   rows (`helpListHtml`), the Settings page the full rows
   (`bindingsSectionHtml`), the ready card its short rows (`readyListHtml`,
@@ -76,7 +76,7 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   board area `#c2d-stage`, laid over the board's foot, so the board keeps its
   size and neither the Tap choice under the board nor the figures under it
   on a narrower window are covered; its wording and key boxes are
-  `hintStripHtml`'s ([settings-bindings.md](settings-bindings.md)). On a coarse pointer the
+  `hintStripHtml`'s ([settings-bindings-rows.md](settings-bindings-rows.md)). On a coarse pointer the
   Classic 2D window's Tap choice `#hud-tap` sets what a tap on a closed cell
   does ([classic2d-input.md](classic2d-input.md) § Touch input).
   The ready card shows "How 3D works" and the Learn 3D line while
@@ -105,12 +105,12 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
 ## CROSS-REFERENCES
 
 - [app-shell-ui.md](app-shell-ui.md) — the `UI` methods and the HUD.
-- [settings-bindings.md](settings-bindings.md) — bindings source, active
-  device, hint texts.
+- [settings-bindings-rows.md](settings-bindings-rows.md) — bindings source,
+  hint texts; [settings-bindings.md](settings-bindings.md) — active device.
 - [platform.md](platform.md) — the `shell.firstUse` document's storage.
 - [app-shell-3d-session.md](app-shell-3d-session.md) — Learn 3D's prompts in the hint strip.
 - [input.md](input.md) — Space's tap-toggle the hints name.
-- [testing.md](testing.md) — `tests/shell-help.test.mjs` (every flat
+- [testing-files.md](testing-files.md) — `tests/shell-help.test.mjs` (every flat
   mode's pause card with Classic 2D's help among them),
   `tests/shell-first-use.test.mjs` (the shared first-use record among
   them).

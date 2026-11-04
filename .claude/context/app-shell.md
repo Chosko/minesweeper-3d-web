@@ -8,9 +8,10 @@ others:
 
 | File | Covers |
 | ---- | ------ |
-| this file | `js/main.js` as a whole, mode host, context loss, no-WebGL 2 path, start-up loading, storage, `__ms` |
+| this file | `js/main.js` as a whole, mode host, start-up loading, storage, `__ms` |
+| [app-shell-fallbacks.md](app-shell-fallbacks.md) | context loss, the no-WebGL 2 path |
 | [app-shell-navigation.md](app-shell-navigation.md), [app-shell-focus.md](app-shell-focus.md) | router and back stack, session history and the browser's Back, Back inputs; default focus, overlay focus containment, the focus walk |
-| [app-shell-pause.md](app-shell-pause.md), [app-shell-end-delay.md](app-shell-end-delay.md) | pause controller, confirmations, restart keys, hand-offs, leave-page guard; both modes' end delay and its skip |
+| [app-shell-pause.md](app-shell-pause.md), [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md), [app-shell-end-delay.md](app-shell-end-delay.md) | pause controller, pause card, confirmations; restart keys, hand-offs, leave-page guard, quit flush; both modes' end delay and its skip |
 | [app-shell-menu.md](app-shell-menu.md), [app-shell-menu-preview.md](app-shell-menu-preview.md), [app-shell-daily.md](app-shell-daily.md) | main menu, placeholder, the play tiles' previews, last mode and last board choices, the returning player's surfaces; the Daily screen, board codes and `#board=` links |
 | [app-shell-3d.md](app-shell-3d.md), [app-shell-3d-session.md](app-shell-3d-session.md) | the 3D game's flow: adapter flow, entering play, ready card and pointer lock, scene panel; session, board status card, Learn 3D, end sequence |
 | [app-shell-3d-play.md](app-shell-3d-play.md), [app-shell-3d-camera.md](app-shell-3d-camera.md) | the 3D game's play inputs: actions and rumble, keyboard-only, touch and controller play; its camera: the Camera setting's Fly and Orbit, camera aids, spacing, render on demand |
@@ -19,8 +20,8 @@ others:
 | [app-shell-replay.md](app-shell-replay.md) | the replay viewer route, replay files, the 3D replay scene and its free camera |
 | [app-shell-ui.md](app-shell-ui.md), [app-shell-hud.md](app-shell-hud.md) | `js/ui.js` (`UI`), what hides behind a card, controller menus; each mode's counters and live figures, the Classic 2D window's and the 3D overlay's parts, aimed-cell readout |
 | [app-shell-help.md](app-shell-help.md) | help surfaces from the bindings source, help panel, active device, first-use hints |
-| [app-shell-kit.md](app-shell-kit.md), [app-shell-kit-layout.md](app-shell-kit-layout.md), [app-shell-kit-helpers.md](app-shell-kit-helpers.md), [app-shell-themes.md](app-shell-themes.md), [app-shell-theme-runtime.md](app-shell-theme-runtime.md), [app-shell-board-module.md](app-shell-board-module.md) | component kit (catalogue, gallery; shared layout, screen frame) and its behaviour helpers; themes, stylesheets, pre-paint, applier, token reader, deploy files; the board module and its hand-off to both boards |
-| [app-shell-markup.md](app-shell-markup.md), [app-shell-stylesheet.md](app-shell-stylesheet.md) | kit-built screens' markup in `index.html` and the ids the shell wires; `css/style.css`, card motion, pointer sizes |
+| [app-shell-kit.md](app-shell-kit.md), [app-shell-kit-layout.md](app-shell-kit-layout.md), [app-shell-kit-frame.md](app-shell-kit-frame.md), [app-shell-kit-controls.md](app-shell-kit-controls.md), [app-shell-kit-helpers.md](app-shell-kit-helpers.md), [app-shell-themes.md](app-shell-themes.md), [app-shell-theme-runtime.md](app-shell-theme-runtime.md), [app-shell-board-module.md](app-shell-board-module.md) | component kit (catalogue, gallery; controls; shared layout; root area and screen frame) and its behaviour helpers; themes, stylesheets, pre-paint, applier, token reader, deploy files; the board module and its hand-off to both boards |
+| [app-shell-markup.md](app-shell-markup.md), [app-shell-markup-game.md](app-shell-markup-game.md), [app-shell-stylesheet.md](app-shell-stylesheet.md) | kit-built screens' markup in `index.html` and the ids the shell wires — the menu screens; the game's screens, cards and messages; `css/style.css`, card motion, pointer sizes |
 
 `js/main.js` — entry module, exports nothing. Builds the renderer (null
 without WebGL 2; `WEBGL2`), `FlyCamera`, `Input`, `MouseActions`,
@@ -89,21 +90,8 @@ part that owns their topic; `navigation.js` is
   throwing `replay` reports null), ignores an inactive mode's reports, turns
   a throwing `start` into `failed`, and `MODES.on('failed')` routes to the
   mode's `failureScreen`. `activeMode()` is the hosted `mode3d` or `mode2d`.
-- **Context loss.** `webglcontextlost` sets `contextLost`; in a 3D game the
-  adapter reports `failed` → `ctxlost`, otherwise the shell routes there; a
-  later 3D `start` fails at once. `ctxlost` exits lock, hides the other
-  overlays (the menu stays shown), holds them all inert (`holdInert`,
-  [app-shell-navigation.md](app-shell-navigation.md)) and shows `#ctx-lost`
-  (`#ctx-lost-btn` reloads, `#ctx-lost-menu` goes to the menu, released).
-- **No WebGL 2.** `createRenderer()` returns null (three.js's expected
-  console report held back through `THREE.setConsoleFunction`), and `WEBGL2`
-  false is the one flag every 3D-only path reads: `body.no-webgl2` hides
-  `#scene`; no menu demo; the 3D menu entry is disabled with its reason;
-  `MODES.start('3d', …)`, the 3D board choice and Play again on a 3D result
-  do nothing; `__ms.start` throws; the replay viewer gets no box viewer; the
-  frame loop polls the pad and ticks the 2D board and replay viewer, then
-  skips every renderer step; resize, pixel ratio, backdrop and scene
-  palette do nothing.
+- **Context loss and no WebGL 2**:
+  [app-shell-fallbacks.md](app-shell-fallbacks.md).
 - **Start-up.** `await Promise.all([settingsLoaded, recordsLoaded,
   firstUseLoaded, …])` precedes `showMainMenu`. `applySettings` wires the
   owners and one `bindSettingControls` binds every `[data-setting]` control
@@ -137,7 +125,7 @@ replaced by the pause menu).
 - [platform.md](platform.md), [settings.md](settings.md),
   [records.md](records.md), [replay.md](replay.md),
   [rendering.md](rendering.md), [audio.md](audio.md).
-- [testing.md](testing.md) — browser tests drive the game through `__ms`;
+- [testing-files.md](testing-files.md) — browser tests drive the game through `__ms`;
   `tests/shell-*.test.mjs` pin the mode host and 3D adapter among the
   shell's modules.
 

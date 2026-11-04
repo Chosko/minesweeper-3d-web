@@ -113,7 +113,7 @@ fixture theme found by the lookup and kept out of `THEMES`.
 - [settings-page.md](settings-page.md) — the theme list.
 - [app-shell-markup.md](app-shell-markup.md) — `index.html`'s head and its
   `<noscript>`, the fatal card.
-- [testing.md](testing.md) — `tests/theme-registry.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/theme-registry.test.mjs`,
   `tests/theme-conformance.test.mjs`, `tests/tokens.test.mjs`,
   the fixture themes under `tests/fixtures/themes/`.
 

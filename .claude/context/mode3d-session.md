@@ -112,7 +112,7 @@ DOM-free.
 - [input.md](input.md) — the mouse and trigger actions that become the
   session's `reveal` / `toggleFlag` / `chord`.
 - [replay.md](replay.md) — the recorder.
-- [testing.md](testing.md) — `tests/mode3d-session.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/mode3d-session.test.mjs`,
   `tests/replay-3d.test.mjs`; `tests/shell-mode-3d.test.mjs` the figures
   feed and its wiring, `tests/components-game3d.test.mjs` the overlay in
   a browser.

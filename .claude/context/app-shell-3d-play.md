@@ -54,8 +54,8 @@ its key does; `__ms.wheel` goes through `wheel3D`.
   it, and Look at the board opens lockless. `ui.setTouch3D(COARSE_ONLY)`
   makes the card "Tap to play" with the touch gestures in place of the
   keys, and the help surfaces show the touch rows (`TOUCH_DEVICE`,
-  [settings-bindings.md](settings-bindings.md)). `touch3D` (`createTouch3D`,
-  [input.md](input.md)) is mounted on the canvas only while `COARSE_ONLY`,
+  [settings-bindings-rows.md](settings-bindings-rows.md)). `touch3D` (`createTouch3D`,
+  [input-touch.md](input-touch.md)) is mounted on the canvas only while `COARSE_ONLY`,
   zones from `touchZone3D` (below the overlay's top row, `ui.overlayBottom3D()`): it drives the page's
   `mouse`, `view3D().look`, `setSpacing` through `spacingStep` (pinch), and
   the frame loop's `applyTouchStick` (Fly: `moveAxes`; Orbit: the dolly);
@@ -95,12 +95,12 @@ its key does; `__ms.wheel` goes through `wheel3D`.
   inputs turn and the spacing they step.
 - [app-shell-3d.md](app-shell-3d.md), [app-shell-3d-session.md](app-shell-3d-session.md) — the 3D
   game's flow these inputs run inside (`endDelay`, `board3d`, `stopPlayInput`'s callers).
-- [input.md](input.md) — `Input` callbacks, `KeyActions`, the touch machine;
+- [input.md](input.md) — `Input` callbacks, `KeyActions`; [input-touch.md](input-touch.md) — the touch machine;
   [input-camera.md](input-camera.md) — `KeyLook`.
 - [rendering.md](rendering.md) — `setToggles`, `setSpacing`, `setSelected`,
   `sync`, `snapshotBeforeAction`, `flash`.
 - [audio.md](audio.md) — the `sfx` calls.
-- [testing.md](testing.md) — `tests/input-keyboard-3d.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/input-keyboard-3d.test.mjs`,
   `tests/shell-mode-3d.test.mjs` (touch play), `tests/replay-3d.test.mjs`
   (samples taken under each input).
 

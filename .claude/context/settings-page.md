@@ -100,7 +100,7 @@ Page (`js/settings/page.js`)
 
 - **The page** (`css/components.css` head comment, *Settings page*) is a
   `ui-frame` centred on the backdrop at its natural size for the size step
-  the root area takes ([app-shell-kit-layout.md](app-shell-kit-layout.md)
+  the root area takes ([app-shell-kit-frame.md](app-shell-kit-frame.md)
   § The root area) — J-Settings-xl at the desktop step, -l at the compact
   step, -m on the narrowest desktop areas (`css/style.css`) —, shrinking
   to fit a smaller area, Back (`#settings-back`, its arrow alone, named "Back
@@ -132,7 +132,7 @@ Page (`js/settings/page.js`)
 
 - [settings.md](settings.md) — the schema the page is generated from and the
   store the binder writes.
-- [settings-bindings.md](settings-bindings.md) — the rows the Bindings panel
+- [settings-bindings-rows.md](settings-bindings-rows.md) — the rows the Bindings panel
   shows.
 - [app-shell-navigation.md](app-shell-navigation.md) — the Settings screen
   in the router; [app-shell-ui.md](app-shell-ui.md) — `UI.showSettings`, the
@@ -141,7 +141,7 @@ Page (`js/settings/page.js`)
   panel.
 - [app-shell-kit.md](app-shell-kit.md) — the component gallery, which shows
   the theme list.
-- [testing.md](testing.md) — `tests/settings-page.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/settings-page.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

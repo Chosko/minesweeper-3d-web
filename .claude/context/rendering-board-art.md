@@ -78,7 +78,7 @@ time-driven extras are [rendering-effects.md](rendering-effects.md).
   hand-off `js/shell/scene-palette.js`.
 - [tile-art.md](tile-art.md) — the shared tile recipe;
   [classic2d-tile-skin.md](classic2d-tile-skin.md) — the Classic 2D tile skin.
-- [testing.md](testing.md) — `tests/render-3d-feedback.test.mjs` (the atlas's layers and *Joyful
+- [testing-files.md](testing-files.md) — `tests/render-3d-feedback.test.mjs` (the atlas's layers and *Joyful
   tiles*' sampled atlas, selection and confetti, a theme switch in a 3D game),
   `tests/render-3d-selection.test.mjs` (the selection uniforms and confetti colours from the
   module), `tests/tile-art.test.mjs` (the drawing styles).

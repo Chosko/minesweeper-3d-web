@@ -65,7 +65,7 @@ viewers [replay-viewers.md](replay-viewers.md).
 - [replay.md](replay.md) — the format, decoder and sampling intervals.
 - [engine-rules.md](engine-rules.md) — `createGameWithMines`, `snapshot()` /
   `restore()`.
-- [testing.md](testing.md) — `tests/replay-simulator.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/replay-simulator.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

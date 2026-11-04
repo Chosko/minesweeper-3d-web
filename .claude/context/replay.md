@@ -120,12 +120,12 @@ which adds it to the library once its summary is recorded ([app-shell-results.md
 - [engine.md](engine.md) — rule profiles and versions.
 - [engine-rules.md](engine-rules.md) — `CLICK_KINDS`, the state arrays the
   digest reads.
-- [records.md](records.md) — board identity, `boardKey`, the summary record.
+- [records.md](records.md) — board identity, `boardKey`; [records-summary.md](records-summary.md) — the summary record.
 - [classic2d-session.md](classic2d-session.md), [classic2d-mode.md](classic2d-mode.md),
   [mode3d-session.md](mode3d-session.md), [mode3d-adapter.md](mode3d-adapter.md) — the sessions' recorders and the modes' samplers.
-- [app-shell.md](app-shell.md), [app-shell-pause.md](app-shell-pause.md) — the replay on the mode
+- [app-shell.md](app-shell.md), [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — the replay on the mode
   contract and hand-offs; [app-shell-3d.md](app-shell-3d.md) — the frame loop that ticks the 3D sampler.
-- [testing.md](testing.md) — `tests/replay-format`, `-recorder`, `-2d`,
+- [testing-files.md](testing-files.md) — `tests/replay-format`, `-recorder`, `-2d`,
   `-3d`, `-determinism` and `-handoff.test.mjs`, `tests/fixtures/replays/`,
   `dev/measure-replays.mjs`.
 

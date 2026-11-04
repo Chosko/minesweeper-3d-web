@@ -28,7 +28,7 @@ implementation:
   `js/leaderboards/index.js` with one interface and a `local` flag telling
   them apart; the shell hands both the records and the replay library
   through `leaderboards.connect({ records, replays })`, which only the
-  stand-in reads ([leaderboards.md](leaderboards.md)).
+  stand-in reads ([leaderboards-steam.md](leaderboards-steam.md)).
 - `achievements` — on the desktop host the Steam achievements
   (`createSteamAchievements`, `js/achievements/index.js`), with
   `onGameFinished(summary)`, which the results flow calls
@@ -89,15 +89,16 @@ implementation:
   owners; [platform-blobs.md](platform-blobs.md) — the blob
   implementations; [platform-window.md](platform-window.md) — the desktop
   window.
-- [desktop.md](desktop.md) — the host's side of the bridge: its request
+- [desktop-steam.md](desktop-steam.md) — the host's side of the bridge: its request
   and event lists, the Steam state it sends, the closing sequence that
-  sends the flush request.
-- [leaderboards.md](leaderboards.md) — the leaderboards slot's two
+  sends the flush request ([desktop.md](desktop.md)).
+- [leaderboards.md](leaderboards.md), [leaderboards-steam.md](leaderboards-steam.md) — the leaderboards slot's two
   implementations; [app-shell-results.md](app-shell-results.md) — the
   achievements' end-of-game hand-off.
-- [app-shell-pause.md](app-shell-pause.md) — the overlay pause and the
+- [app-shell-pause.md](app-shell-pause.md) — the overlay pause;
+  [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — the
   quit flush's end of the game.
-- [testing.md](testing.md) — `tests/platform-selection.test.mjs`
+- [testing-files.md](testing-files.md) — `tests/platform-selection.test.mjs`
   (selection with a fake bridge, the flags, the host link); the
   leaderboards slot's selection is pinned in
   `tests/leaderboards-local.test.mjs` and

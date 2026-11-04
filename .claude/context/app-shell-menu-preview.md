@@ -85,7 +85,7 @@ Daily screen's use of the binder is
   Daily screen's cube.
 - [app-shell-kit.md](app-shell-kit.md) — the gallery, which draws the tiles
   and the scene panels through these.
-- [testing.md](testing.md) — `tests/shell-menu.test.mjs` (previews).
+- [testing-files.md](testing-files.md) — `tests/shell-menu.test.mjs` (previews).
 
 ## WHEN TO READ THE SOURCE
 

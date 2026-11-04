@@ -85,7 +85,7 @@ Remembered view (`js/records/view-prefs.js`)
 - [platform.md](platform.md) — the document interface `records.view` uses.
 - [app-shell-replay.md](app-shell-replay.md) — the shell's replay files and
   the viewer route.
-- [testing.md](testing.md) — `tests/records-replays.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/records-replays.test.mjs`,
   `tests/records-view-prefs.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

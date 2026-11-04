@@ -98,7 +98,7 @@ its own layer, the marked start cell, cell motion, the end effect — is
   window's chrome — the head, the counter strip, the figures panel beside
   or under the board, the foot line — leaves in the available area (the
   root area: the browser window on the web, the work area at the desktop
-  host, [app-shell-kit-layout.md](app-shell-kit-layout.md) § The root
+  host, [app-shell-kit-frame.md](app-shell-kit-frame.md) § The root
   area), so a board that fits a bare area may scroll in it (Expert does at
   the smaller desktop sizes); the window hugs its board, its board area
   `#c2d-stage` (which the view's container `#c2d-board` fills) sized to the
@@ -115,7 +115,7 @@ its own layer, the marked start cell, cell motion, the end effect — is
   ([app-shell-ui.md](app-shell-ui.md) `placePanel2D`); every other board is
   mounted `framed`, the view placing its own. The window's composition and
   where its panel goes on a narrow window are
-  [classic2d-mode.md](classic2d-mode.md) § Game window.
+  [classic2d-mode-window.md](classic2d-mode-window.md) § Game window.
 
 ## DOMAIN DEPENDENCIES
 
@@ -141,7 +141,7 @@ its own layer, the marked start cell, cell motion, the end effect — is
 - [app-shell-board-module.md](app-shell-board-module.md), [app-shell-2d.md](app-shell-2d.md) — the board module, the board frame
   component, the board tokens and the shell's panel frame;
   [app-shell-ui.md](app-shell-ui.md) — `placePanel2D`.
-- [testing.md](testing.md) — `tests/classic2d-view.test.mjs` the view, pitch,
+- [testing-files.md](testing-files.md) — `tests/classic2d-view.test.mjs` the view, pitch,
   the geometry it lays out on.
 
 ## WHEN TO READ THE SOURCE

@@ -31,7 +31,7 @@ the shown screen's frame.
 
 - **The available area.** At the desktop host `bindDesktopWindow` sizes the
   page's root element — the size container every size step reads
-  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area) —
+  ([app-shell-kit-frame.md](app-shell-kit-frame.md) § The root area) —
   to the available area of the display the window is on: its work area
   (`screen.availWidth` × `screen.availHeight`) while windowed, the whole
   screen in fullscreen, again on every display change, window resize and
@@ -89,9 +89,9 @@ the shown screen's frame.
   `bindDesktopWindow`, the `desktopHost` flag the window buttons read.
 - [desktop.md](desktop.md) — the host's window: frameless and opaque, its
   fullscreen, the size cap at the work area.
-- [app-shell-kit-layout.md](app-shell-kit-layout.md) — the root area, the
+- [app-shell-kit-frame.md](app-shell-kit-frame.md) — the root area, the
   screen frames and the touch step the window sizes and settles.
-- [testing.md](testing.md) — `tests/platform-selection.test.mjs` (the
+- [testing-files.md](testing-files.md) — `tests/platform-selection.test.mjs` (the
   desktop window, its available area and its size reports).
 
 ## WHEN TO READ THE SOURCE

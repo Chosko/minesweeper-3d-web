@@ -94,7 +94,7 @@ not these.
 - Event semantics (what counts as reveal vs chord vs noop, flag direction for
   mixed results) are decided by the callers, not here: `main.js::onAction`
   for the 3D game and `cue` in `js/classic2d/mode.js` for Classic 2D, which
-  mirrors it ([classic2d-mode.md](classic2d-mode.md)).
+  mirrors it ([classic2d-mode-window.md](classic2d-mode-window.md)).
 
 ## DOMAIN DEPENDENCIES
 
@@ -112,7 +112,7 @@ not these.
   state view's `version` pick the sound — and calls
   `unlock()` on start, ready-click, controller resume and after a volume or
   mute change; the M key and the Sound switches set the `muted` setting.
-- [classic2d-mode.md](classic2d-mode.md) — the Classic 2D mode's `sound` option: every
+- [classic2d-mode-window.md](classic2d-mode-window.md) — the Classic 2D mode's `sound` option: every
   2D action, by mouse, keyboard or controller, plays the 3D game's cue for
   its outcome (reveal, flag, chord, noop, explode, win); a flag before the
   first reveal changes nothing under the reference rules and is silent.

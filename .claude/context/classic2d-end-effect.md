@@ -3,7 +3,7 @@
 ## OVERVIEW
 
 `js/classic2d/end-effect.js` is the Classic 2D end effect the mode plays
-during its end delay ([classic2d-mode.md](classic2d-mode.md) § End delay):
+during its end delay ([classic2d-mode-window.md](classic2d-mode-window.md) § End delay):
 the 3D game's win and loss waves and the win confetti at board scale, over
 the board's grid geometry, and their Canvas 2D drawing, in the active
 theme's board module (`end2d`, `palette.confetti`). DOM-free and token-free;
@@ -49,14 +49,14 @@ the board view draws it ([classic2d-board-motion.md](classic2d-board-motion.md))
 
 ## CROSS-REFERENCES
 
-- [classic2d-mode.md](classic2d-mode.md) — the end delay that runs it.
+- [classic2d-mode-window.md](classic2d-mode-window.md) — the end delay that runs it.
 - [classic2d-board-motion.md](classic2d-board-motion.md) — the board view
   drawing it.
 - [geometry.md](geometry.md) — the cell centres and extent it spreads over.
 - [app-shell-board-module.md](app-shell-board-module.md) — `end2d` and the
   confetti palette.
 - [rendering-effects.md](rendering-effects.md) — the 3D waves it mirrors.
-- [testing.md](testing.md) — `tests/classic2d-end-effect.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/classic2d-end-effect.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

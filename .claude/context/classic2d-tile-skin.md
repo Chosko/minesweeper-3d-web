@@ -2,7 +2,9 @@
 
 ## OVERVIEW
 
-How a Classic 2D tile looks. The area overview is
+How a Classic 2D tile looks. The tile cache, its depth steps and the board
+art hand-off are [classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md)'s.
+The area overview is
 [classic2d.md](classic2d.md); how a cell moves, the cell motion player
 `js/cell-motion.js`, is [classic2d-tile-motion.md](classic2d-tile-motion.md).
 
@@ -27,9 +29,6 @@ styles and glyphs — is [tile-art.md](tile-art.md).
   `exploded`, `wrong-flag`, `marked`: the engine's cell states
   ([engine-rules.md](engine-rules.md), `CELL`) plus `pressed` and `marked` (the closed
   start cell a pre-generated board waits for).
-- `DEPTH_STEPS`, `depthStep(depth)` — the depths the cache holds the
-  raised states (closed, pressed, flagged) at, and the step nearest a
-  depth (1, the face's own, for none).
 - `paintTileWith(board, ctx, x, y, size, state, number, depth = 1, cell = null)`
   — one tile at `x, y` from the board module `board`, `size` CSS pixels the
   geometry's tile (a hexagon's across the flats, a triangle's side);
@@ -41,21 +40,8 @@ styles and glyphs — is [tile-art.md](tile-art.md).
 - `OUTLINE_NUMBERS` (`{square, hexagon, triangle}`) — the highest number a
   tile of each outline shape shows: the board module's `GRID_NUMBERS` by
   outline rather than by grid, which a test pins to it.
-- `tileKey(outline, state, number, step = 1)` — the cache's key for one
-  image: the recipe's outline it is drawn in (`square`, `hexagon`,
-  `triangle-up`, `triangle-down`), the state (a revealed one with its
-  number; one past its outline's highest number, or an unknown state, the
-  placeholder) and a raised state's depth step.
-- `createBoardArt()` → `{current(), set(id, board), onChange(listener)}` —
-  a board art hand-off: the module last handed over as `{id, board}` (null
-  until the first) and its subscribers. `BOARD_ART` is the page's one, which
-  the shell feeds (`js/shell/board-art.js`, [app-shell-board-module.md](app-shell-board-module.md))
-  and every skin and the 3D scene's hand-off read.
-- `createTileSkin({art, createCanvas, redraw})` → `{paintTile, drawTile(ctx,
-  x, y, size, state, number, pixelRatio = 1, depth = null, cell = null),
-  board(), invalidate, cacheKey, dispose}` — one skin per board view; `art` defaults
-  to `BOARD_ART`; `redraw` is the view's refit and repaint; `board()` the
-  module it draws from, or null.
+- `DEPTH_STEPS`, `tileKey`, `createBoardArt`, `BOARD_ART` and
+  `createTileSkin` are [classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md)'s.
 
 ## INTERNAL PATTERNS
 
@@ -83,25 +69,6 @@ styles and glyphs — is [tile-art.md](tile-art.md).
 - **Placeholder.** An unknown state, a number outside 0 to its outline's
   highest (`OUTLINE_NUMBERS`), or no board module paints `FALLBACK_COLOR`
   with a black cross, clipped to the outline — visibly wrong on purpose.
-- **Tile cache.** `drawTile` keys the cache on `size|pixelRatio|theme id`
-  (`cacheKey()`) and each image in it by `tileKey` — the recipe's outline,
-  state and depth step. On a key change it drops every image; the first
-  draw of an outline renders all of that outline's images (each state,
-  `revealed-0` up to its highest number, the closed, pressed and flagged
-  faces at every depth step but 1, the placeholder) on offscreen canvases
-  of the outline's box × ratio in device pixels, so a hexagon board caches
-  one outline and a triangle board both orientations, and then every draw
-  is one `drawImage`. A hexagon's or triangle's box sits off the pixel
-  grid: its image is copied at its own size from the device pixel nearest
-  its corner, never resampled. Until a module is handed over it draws and
-  caches nothing.
-- **Depth.** A depth draws from the cached step nearest it, so the motion
-  layer's depth costs a few cached images and never a draw per frame. On a
-  bevel style a pressed tile's slope narrows with the depth as a closed
-  one's does; no shipped theme draws its Classic 2D tiles in bevel.
-- **Invalidation.** Size and ratio changes go through the key. A theme
-  change arrives as a hand-off on `art`: the skin takes the new module,
-  drops the cache and calls `redraw`. `dispose()` unsubscribes.
 - **`MIN_TILE_SIZE`** is the readable floor of decision 10 in
   `docs/UX_REVIEW.md`: the fit rule never goes below it, and a board that
   does not fit at it scrolls. Every state and number of every board module
@@ -127,6 +94,8 @@ styles and glyphs — is [tile-art.md](tile-art.md).
 
 ## CROSS-REFERENCES
 
+- [classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md) — the tile
+  cache, its depth steps and the board art hand-off `BOARD_ART`.
 - [app-shell-board-module.md](app-shell-board-module.md) — owns the board module's shape and
   checks and `js/shell/board-art.js`, which feeds `BOARD_ART`;
   [app-shell-theme-runtime.md](app-shell-theme-runtime.md) — the theme applier, `js/tokens.js` (`FALLBACK_COLOR`).
@@ -139,15 +108,15 @@ styles and glyphs — is [tile-art.md](tile-art.md).
   player.
 - [tile-art.md](tile-art.md) — the recipe the painter draws through.
 - [geometry.md](geometry.md) — the outlines and glyph boxes the board view hands in.
-- [testing.md](testing.md) — `tests/tile-skin.test.mjs` the painter on
+- [testing-files.md](testing-files.md) — `tests/tile-skin.test.mjs` the painter on
   every outline, cache, hand-off and `MIN_TILE_SIZE`.
 
 ## WHEN TO READ THE SOURCE
 
 - Changing how a state looks, or adding a state (the `paintTileWith` switch
   and `TILE_STATES`); a change to the recipe is [tile-art.md](tile-art.md)'s.
-- Changing the cache key, the depth steps or what invalidates the cache
-  (`drawTile`, `build`, the `art.onChange` subscription).
+- Changing the cache or the hand-off:
+  [classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md).
 - A legibility failure in the browser test: read its per-tile glyph pixel
   counts and saved screenshots before changing a board module value or
   glyph geometry.

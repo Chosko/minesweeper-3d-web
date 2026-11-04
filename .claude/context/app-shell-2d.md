@@ -31,7 +31,7 @@ mode configuration themselves are [classic2d.md](classic2d.md).
   reload, toggled by `onToggleSwap` (`#hud-swap` at the right of the game window's foot) and
   mirrored by `ui.setSwap`. `BINDINGS`, the bindings resolver, is handed as
   `bindings` to every flat mode, whose pointer and cursor inputs read their
-  actions through it ([classic2d-input.md](classic2d-input.md)).
+  actions through it ([classic2d-input.md](classic2d-input.md), [classic2d-input-cursor.md](classic2d-input-cursor.md)).
 - **Routes.** Each flat mode's board choice is its own screen —
   `classic-2d-choice`, `hexagon-choice`, `triangle-choice` — opened on its
   last board choice (each loaded at boot by its mode's `loadChoice()`),
@@ -42,7 +42,7 @@ mode configuration themselves are [classic2d.md](classic2d.md).
   `BOARD_FRAME`). The window hugs its board: `ui.sizeBoard2D` measures the
   room its chrome leaves in the available area — the root area, the work
   area at the desktop host, never the desktop window's own size
-  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area) — with the
+  ([app-shell-kit-frame.md](app-shell-kit-frame.md) § The root area) — with the
   window filling it (`c2d--measure`) and sizes `#c2d-stage` to the view's `extent` there, giving back what
   the body or the board column then overflows (below the kit breakpoint the figures row under the board
   wraps at the board's width, never setting the window's), then fits the title
@@ -100,12 +100,12 @@ mode configuration themselves are [classic2d.md](classic2d.md).
 
 ## CROSS-REFERENCES
 
-- [classic2d-mode.md](classic2d-mode.md) — `createClassic2DMode`, end
+- [classic2d-mode.md](classic2d-mode.md), [classic2d-mode-window.md](classic2d-mode-window.md) — `createClassic2DMode`, end
   effect; [classic2d-board-view.md](classic2d-board-view.md) — board view;
   [classic2d-input.md](classic2d-input.md) — button swap.
 - [app-shell-pause.md](app-shell-pause.md) — pause;
   [app-shell-end-delay.md](app-shell-end-delay.md) — end delay.
-- [testing.md](testing.md) — Classic 2D session, board view and button swap
+- [testing-files.md](testing-files.md) — Classic 2D session, board view and button swap
   tests; `tests/shell-router.test.mjs` the flat modes' registration and
   routes; `tests/flat-modes-play.test.mjs` Hexagon and Triangle games
   through the shell.

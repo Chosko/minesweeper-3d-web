@@ -88,7 +88,7 @@ mine positions) is listed in [app-shell.md](app-shell.md) § PUBLIC API.
   state Learn 3D drives.
 - [rendering.md](rendering.md) — `setGame`, `setMark`, `sync`.
 - [audio.md](audio.md) — the win sound.
-- [testing.md](testing.md) — `tests/mode3d-*.test.mjs` (end sequence, the
+- [testing-files.md](testing-files.md) — `tests/mode3d-*.test.mjs` (end sequence, the
   results over the scene and the look).
 
 ## WHEN TO READ THE SOURCE

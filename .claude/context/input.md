@@ -1,4 +1,4 @@
-# Input — DOM input, actions and touch
+# Input — DOM input and actions
 
 ## OVERVIEW
 
@@ -6,8 +6,8 @@ Everything between the player's devices and a 3D game action: keyboard /
 mouse / pointer-lock DOM handling, each key and mouse button read through
 the 3D bindings ([settings-bindings.md](settings-bindings.md)), the
 release-based mouse action state machine (shared by the keyboard's reveal
-and flag keys, the controller's and the touch gestures), drag-to-look, Space's tap-toggle and the 3D touch
-controls. The camera, the orbit, the keyboard look's ramp, the spawn pose,
+and flag keys, the controller's and the touch gestures), drag-to-look and Space's tap-toggle. The 3D
+touch controls are [input-touch.md](input-touch.md). The camera, the orbit, the keyboard look's ramp, the spawn pose,
 the spacing step and picking are [input-camera.md](input-camera.md); the
 view-mode layer, controller polling and the shell navigation layer are
 [input-controller.md](input-controller.md).
@@ -17,7 +17,7 @@ view-mode layer, controller polling and the shell navigation layer are
 | `js/input.js` (DOM half) | `MouseActions`, `KeyActions`, `DragLook`, `TapToggle`, `Input` (DOM listeners), `escResumes` | this file |
 | `js/input.js` (camera half) | `FlyCamera`, `KeyLook`, `OrbitCamera`, `spawnPose`, `offscreenArrow`, spacing | [input-camera.md](input-camera.md) |
 | `js/picking.js` | `pickCell`, `pickCellBrute` | [input-camera.md](input-camera.md) |
-| `js/touch-3d.js` | 3D touch controls: `createTouch3D` (the gesture machine), `touchZone`, `stickAxes`, `applyTouchStick`, `mountTouch3D` | this file |
+| `js/touch-3d.js` | 3D touch controls: `createTouch3D` (the gesture machine), `touchZone`, `stickAxes`, `applyTouchStick`, `mountTouch3D` | [input-touch.md](input-touch.md) |
 | `js/controls.js` | `Controls`: union of keyboard and controller view modes + controller move axes | [input-controller.md](input-controller.md) |
 | `js/gamepad.js` | Gamepad API reader, stick curve, trigger hysteresis, auto-repeat, pad glyphs, spatial menu focus search | [input-controller.md](input-controller.md) |
 | `js/shell/navigation.js` | Topmost layer, an overlay's inert set and Tab wrap, the focus move (`focusMove`), Back inputs, held-button suppression | [input-controller.md](input-controller.md) |
@@ -63,23 +63,6 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   keys still held kept from their auto-repeat until released).
 - `escResumes({repeat, locked})` — whether an Esc press resumes from the pause card: not the press
   that released the lock, not an auto-repeat ([app-shell-pause.md](app-shell-pause.md)).
-
-**js/touch-3d.js** (DOM-free but `mountTouch3D`; mounted only on a coarse-only device)
-- `STICK_RADIUS_PX`, `PINCH_STEP_PX`; `LONG_PRESS_MS`, `TAP_SLOP`, `VIBRATE_MS` re-exported
-  from touch Classic 2D.
-- `touchZone(x, y, {width, top})` → `'stick'` (left half) | `'look'` (right half) | null above `top`.
-- `stickAxes(dx, dy)` → `{f, r}`: the offset over the radius through `stickCurve`, up forward.
-- `applyTouchStick({cam, dt, stick, orbit})` — Fly: `cam.moveAxes(dt, f, r, 0)`; Orbit: `orbit.dollyAxis(dt, f)`.
-- `createTouch3D({mouse, onLook, onSpacing, onTap, vibrate, clock, canAct, canMove})` — `down(id, x, y,
-  zone)`, `move`, `up`, `cancel(id)`, `reset()`, `stick`, `stickView`, `holding`. A look finger presses
-  button 0 as it lands: lifted within `TAP_SLOP` before `LONG_PRESS_MS` it releases (tap, then `onTap`);
-  moved `TAP_SLOP` it is dropped (`cancel`) and turns `onLook(dx, dy)`; held `LONG_PRESS_MS` it is dropped
-  and button 2 pressed and released, with `vibrate`. A second look finger on a pending tap presses
-  button 2 (either lift chords); either moving `TAP_SLOP` or the spread changing `TAP_SLOP` makes a pinch, both presses dropped, one
-  `onSpacing(±1)` per `PINCH_STEP_PX`. A press made or lifted while `canAct()` is false is dropped; a
-  touch begun while `canMove()` is false is ignored.
-- `mountTouch3D({canvas, touch, zone})` — touch pointers on the canvas; cancels the browser's touch
-  gestures and a touch's emulated mouse events there; blur and tab hide reset.
 
 ## INTERNAL PATTERNS
 
@@ -140,7 +123,8 @@ not alter any rule above.
 - [app-shell.md](app-shell.md) — `js/main.js` constructs every object here, maps pad buttons (`handlePad`), runs menu focus navigation and owns the pointer-lock flow; the router and pause controller decide where Back and pause lead.
 - [audio.md](audio.md) — no direct calls; action results in main trigger sound effects.
 - [input-controller.md](input-controller.md) — the controller reader whose triggers drive `MouseActions`; the `Controls` view-mode layer over `Input`'s held keys.
-- [testing.md](testing.md) — `tests/gamepad.test.mjs` (`MouseActions` trigger sequences), `tests/input-keyboard-3d.test.mjs` (`KeyActions`, `Input`'s action and look keys), `tests/input-touch-3d.test.mjs` (the gesture machine).
+- [input-touch.md](input-touch.md) — the 3D touch controls, whose gestures press `MouseActions`.
+- [testing-files.md](testing-files.md) — `tests/gamepad.test.mjs` (`MouseActions` trigger sequences), `tests/input-keyboard-3d.test.mjs` (`KeyActions`, `Input`'s action and look keys).
 
 ## WHEN TO READ THE SOURCE
 
@@ -148,6 +132,5 @@ not alter any rule above.
 - Fixing wheel notch normalisation on a specific browser or trackpad (`Input` wheel handler).
 - Changing which keys are captured, swallowed or exempt from `preventDefault` (`ARROW_KEYS`, `RETURN_KEYS`, keydown handler).
 - Changing how a key or mouse button becomes a 3D action (`actionButton3D`, `KeyActions`, `Input.action` / `holds`); the actions and their default inputs are [settings-bindings.md](settings-bindings.md)'s.
-- Changing a touch gesture's thresholds or zones (`createTouch3D`, `touchZone`, `STICK_RADIUS_PX`, `PINCH_STEP_PX`).
 - Changing the Space tap length or the drag-to-look threshold (`TapToggle`, `SPACE_TAP_MS`, `DragLook`, `DRAG_LOOK_THRESHOLD_PX`).
 - Fixing a pointer-lock failure or re-lock timing issue (`requestLock`, `pointerlockchange`, `unlockedAt`).

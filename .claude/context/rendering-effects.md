@@ -114,7 +114,7 @@ stays true while any runs.
   [app-shell-3d-session.md](app-shell-3d-session.md) — the end sequence; [app-shell-3d-camera.md](app-shell-3d-camera.md) — render on demand.
 - [replay-viewers.md](replay-viewers.md) — the 3D viewer whose state view and recorded camera the renderer draws.
 - [audio.md](audio.md) — no direct link; win/loss sounds fire alongside the waves from main.
-- [testing.md](testing.md) — `tests/render-3d-motion.test.mjs` (cell events, motion instances, the
+- [testing-files.md](testing-files.md) — `tests/render-3d-motion.test.mjs` (cell events, motion instances, the
   motion mesh with the ordinary instance hidden, the solved pulse from the theme's description, the
   drops), `tests/render-3d-feedback.test.mjs` (the solved pulse's rise and fade, its
   `isAnimating()` and its ends; the confetti's colours in a browser),

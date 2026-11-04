@@ -52,7 +52,7 @@ Reset (`js/settings/reset.js`)
   document at start-up, so no store has a reset of its own.
 - **Loose keys on the browser build only.** The `ms3d.*` keys are removed
   on the web build alone, the build split being
-  [settings.md](settings.md)'s loose-key carry-over: given `legacy: null`,
+  [settings-store.md](settings-store.md)'s loose-key carry-over: given `legacy: null`,
   the keys part succeeds with nothing to remove.
 - **Reset wiring.** `js/main.js` builds `RESET` with `storage`, `blobStore`,
   `legacy` (`null` on the Steam build, the settings store's same value),
@@ -80,12 +80,12 @@ Reset (`js/settings/reset.js`)
   (`#set-reset`, `#set-reset-confirm`, the err note).
 - [platform.md](platform.md) — `storage.clear()` and the blob store.
 - [replay-library.md](replay-library.md) — the replay library `waitFor` waits on.
-- [app-shell-pause.md](app-shell-pause.md) — the leave-page guard the
+- [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — the leave-page guard the
   reload bypasses; [app-shell-ui.md](app-shell-ui.md) — `onResetAll`,
   `UI.closeResetConfirm`.
 - [app-shell-navigation.md](app-shell-navigation.md) — `shellBack` and
   `historyBack`.
-- [testing.md](testing.md) — `tests/settings-reset.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/settings-reset.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

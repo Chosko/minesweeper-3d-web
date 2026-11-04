@@ -101,9 +101,10 @@ overriding rule, checked against a recorded observation, not asserted.
   auto-hide, the 3D state view.
 - [geometry.md](geometry.md) — the flat grid geometry that places the square
   and hexagon providers' cells on the page in their index layout.
-- [generation.md](generation.md) — placer, solver, generate loop, worker and
-  client, which run over the cell graph.
-- [testing.md](testing.md) — `tests/engine-*.test.mjs` and the fidelity
+- [generation.md](generation.md) — placer, solver, generate loop;
+  [generation-worker.md](generation-worker.md) — worker and client, which
+  run over the cell graph.
+- [testing-files.md](testing-files.md) — `tests/engine-*.test.mjs` and the fidelity
   observation file.
 
 ## WHEN TO READ THE SOURCE

@@ -102,7 +102,7 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
   the guided board's own card, and the line only before the game started.
   The ready layer `#ready` covers the available area — the root area, the
   work area at the desktop host, never the desktop window's own size
-  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area),
+  ([app-shell-kit-frame.md](app-shell-kit-frame.md) § The root area),
   while the scene's canvas keeps the window's size — and the card's width
   follows the root area's size step (J-Ready-xl, -l, -m, -p), its board
   line in the mono face; its buttons carry the canvas's
@@ -132,7 +132,7 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
   [app-shell-3d-camera.md](app-shell-3d-camera.md) — camera and render on demand.
 - [rendering.md](rendering.md) — `setTarget`, `setGame`, `sync`.
 - [input.md](input.md) — `Input`'s lock callbacks and `isDragLook`.
-- [testing.md](testing.md) — `tests/mode3d-*.test.mjs` (wiring), the
+- [testing-files.md](testing-files.md) — `tests/mode3d-*.test.mjs` (wiring), the
   pointer-lock fallback tests.
 
 ## WHEN TO READ THE SOURCE

@@ -109,7 +109,7 @@ DOM-free at import.
 - [rendering.md](rendering.md) — the renderer the 3D viewer draws on.
 - [app-shell-replay.md](app-shell-replay.md) — `REPLAY_SCENE` and the
   free replay camera in `js/main.js`.
-- [testing.md](testing.md) — `tests/replay-viewer.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/replay-viewer.test.mjs`,
   `tests/replay-viewer-3d.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

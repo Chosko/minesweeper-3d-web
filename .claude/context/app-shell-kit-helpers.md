@@ -78,7 +78,7 @@ code chip and the figures panel. The catalogue those binders follow is [app-shel
   `capabilities.desktopHost` ([platform-host.md](platform-host.md)); with no host a
   press does nothing. Returns the unbind.
 - The root area: `matchRootArea(doc, { ResizeObserver? })` → a `matchMedia`
-  over the root area ([app-shell-kit-layout.md](app-shell-kit-layout.md)
+  over the root area ([app-shell-kit-frame.md](app-shell-kit-frame.md)
   § The root area): `(query)` → `{ matches, addEventListener('change',
   listener), removeEventListener }`, the query's `(min|max)-(width|height)`
   pixel features joined by `and` tested against the root element's box,
@@ -137,9 +137,9 @@ code chip and the figures panel. The catalogue those binders follow is [app-shel
   expects.
 - [app-shell-hud.md](app-shell-hud.md) — the live figures model `bindFigures`
   shows and the panels it binds.
-- [settings-bindings.md](settings-bindings.md) — `keyHintKeys`, the keys
+- [settings-bindings-rows.md](settings-bindings-rows.md) — `keyHintKeys`, the keys
   `showKeyHints` writes.
-- [testing.md](testing.md) — `tests/components.test.mjs` (the helpers).
+- [testing-files.md](testing-files.md) — `tests/components.test.mjs` (the helpers).
 
 ## WHEN TO READ THE SOURCE
 

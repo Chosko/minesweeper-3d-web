@@ -71,12 +71,12 @@ grammar)
 
 ## CROSS-REFERENCES
 
-- [records.md](records.md) — the board identity a code carries, the summary
-  `codeOf` reads.
+- [records.md](records.md) — the board identity a code carries;
+  [records-summary.md](records-summary.md) — the summary `codeOf` reads.
 - [generation.md](generation.md) — the seed and `GENERATOR_VERSION`.
 - [app-shell-daily.md](app-shell-daily.md) — the Daily screen, board codes in
   the board choices and `#board=` links.
-- [testing.md](testing.md) — `tests/records-board-code.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/records-board-code.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

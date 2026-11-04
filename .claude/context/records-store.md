@@ -8,7 +8,7 @@ storage) and persisted by the store (`js/records/store.js`), the one owner
 and only writer of the `records`, `records.history` and
 `records.inProgress` documents through platform storage
 ([platform.md](platform.md)). The board identity and the summary record they
-are built from are in [records.md](records.md).
+are built from are in [records.md](records.md) and [records-summary.md](records-summary.md).
 
 The store records abandoned games and settles the marker itself; a
 finished game is recorded only by a caller of `record()` — the results flow
@@ -124,17 +124,17 @@ Store (`js/records/store.js`)
 
 ## CROSS-REFERENCES
 
-- [records.md](records.md) — board identity, key, the summary record.
+- [records.md](records.md) — board identity, key; [records-summary.md](records-summary.md) — the summary record.
 - [records-screen.md](records-screen.md) — the screen reading the queries.
 - [platform.md](platform.md) — `register`, `load`, `save`, `available` and
   the `newer-version` issue.
 - [app-shell.md](app-shell.md) — `RECORDS` and `__ms.records`;
-  [app-shell-pause.md](app-shell-pause.md) — the pause controller's
+  [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — the pause controller's
   hand-offs; [app-shell-results.md](app-shell-results.md) — the results flow
   that calls `record()`.
 - [replay-library.md](replay-library.md) — the results flow's best pinning
   from the comparison.
-- [testing.md](testing.md) — `tests/records-model*.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/records-model*.test.mjs`,
   `tests/records-store.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

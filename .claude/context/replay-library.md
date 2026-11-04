@@ -11,7 +11,7 @@ personal bests and the replays the player pins, and keeps the newest
 `storage` and `blobStore` — IndexedDB on the web build; on the Steam build the Steam blob
 store `replays` (`REPLAY_STORE`), one file per replay under the save directory's
 `replays.blobs/`, which Steam Cloud syncs with the index document
-([platform.md](platform.md), [desktop.md](desktop.md) § Saves); the library is the same on
+([platform.md](platform.md), [desktop-files.md](desktop-files.md) § Saves); the library is the same on
 both. The results flow adds to it
 ([app-shell-results.md](app-shell-results.md)), the Records screen's library view lists and
 pins ([records-library-view.md](records-library-view.md)), and the viewer reads bytes
@@ -82,7 +82,7 @@ pins ([records-library-view.md](records-library-view.md)), and the viewer reads 
 - [records-store.md](records-store.md) — the comparison whose new bests set
   `setBest`.
 - [records-library-view.md](records-library-view.md) — the library view.
-- [testing.md](testing.md) — `tests/replay-library.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/replay-library.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

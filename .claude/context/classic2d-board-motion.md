@@ -118,13 +118,13 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
   draw on: layout and pitch; [classic2d-board-canvas.md](classic2d-board-canvas.md)
   — redraw, hiding and its other members.
 - [classic2d-tile-motion.md](classic2d-tile-motion.md) — the cell motion
-  player the layer drives; [classic2d-tile-skin.md](classic2d-tile-skin.md)
+  player the layer drives; [classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md)
   — the tile cache and its depth steps the layer draws from.
-- [classic2d-input.md](classic2d-input.md) — the inputs that drive the
+- [classic2d-input.md](classic2d-input.md), [classic2d-input-cursor.md](classic2d-input-cursor.md) — the inputs that drive the
   pressed set and the cursor.
 - [classic2d-end-effect.md](classic2d-end-effect.md) — the end effect the view draws.
 - [geometry.md](geometry.md) — the cell centres and outlines the layers place by.
-- [testing.md](testing.md) — `tests/classic2d-view.test.mjs` its
+- [testing-files.md](testing-files.md) — `tests/classic2d-view.test.mjs` its
   end-effect drawing; `tests/classic2d-motion.test.mjs` the motion layer
   and its event sources.
 

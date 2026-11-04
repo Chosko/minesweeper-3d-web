@@ -120,7 +120,7 @@ permits; they must not alter any rule above.
   orbit's dolly; [app-shell-3d-play.md](app-shell-3d-play.md) — the frame loop that runs `KeyLook`.
 - [settings-appliers.md](settings-appliers.md) — `applyLook` (sensitivity, invert Y), `applyCamera` (the mode).
 - [input-controller.md](input-controller.md) — the sticks that feed `moveAxes` / `lookAxes`.
-- [testing.md](testing.md) — `tests/camera-flight.test.mjs` (forward vector, spacing step, toggle and
+- [testing-files.md](testing-files.md) — `tests/camera-flight.test.mjs` (forward vector, spacing step, toggle and
   camera scaling, fly-through pick rule), `tests/camera-orbit.test.mjs`, `tests/camera-spawn.test.mjs`,
   `tests/input-keyboard-3d.test.mjs` (the ramp).
 

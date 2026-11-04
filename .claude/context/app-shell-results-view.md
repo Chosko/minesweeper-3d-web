@@ -8,7 +8,7 @@ content, its formats — documented in its head comment — and the binder that
 fills `#results`) — the screen over the finished board, and Look at the board
 in `js/main.js`. The flow that records the game and routes to the screen, and
 the screen's actions, are [app-shell-results.md](app-shell-results.md); the
-screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
+screen's markup is [app-shell-markup-game.md](app-shell-markup-game.md) § Screens.
 
 ## PUBLIC API
 
@@ -97,7 +97,7 @@ screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   listeners feed `LOOK_END`.
 - [app-shell-kit-layout.md](app-shell-kit-layout.md) — the results screen's composition
   in the catalogue.
-- [testing.md](testing.md) — `tests/results.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/results.test.mjs`,
   `tests/mode3d-end.test.mjs` (the look).
 
 ## WHEN TO READ THE SOURCE

@@ -135,7 +135,7 @@ shake, ground grid — and the replay and end-of-game behaviour are in
 - [input-camera.md](input-camera.md) — the camera feeds `camera`; picking must use the same pitch and
   Space/hidden visibility rules. [input.md](input.md) — modifier state feeds `setToggles`.
 - [app-shell-replay.md](app-shell-replay.md) — the replay scene's tints, rings and wrong flags.
-- [testing.md](testing.md) — `tests/render-3d-feedback.test.mjs` (`GHOST_ALPHA`, ghosts in
+- [testing-files.md](testing-files.md) — `tests/render-3d-feedback.test.mjs` (`GHOST_ALPHA`, ghosts in
   `stats.trans`, the target rectangle), `tests/camera-flight.test.mjs` (the fly-through constants
   and the near-camera list), `tests/settings-appliers.test.mjs` (`pixelRatioFor`); verification is
   visual via Playwright.

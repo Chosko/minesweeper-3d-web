@@ -60,7 +60,7 @@ Samplers
   [app-shell-3d.md](app-shell-3d.md) — who mounts and ticks the samplers.
 - [input-camera.md](input-camera.md) — `FlyCamera` and its `rescale`.
 - [geometry.md](geometry.md) — the grid geometry whose board units the 2D samples are in.
-- [testing.md](testing.md) — `tests/replay-2d.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/replay-2d.test.mjs`,
   `tests/replay-3d.test.mjs`, `dev/measure-replays.mjs`.
 
 ## WHEN TO READ THE SOURCE

@@ -6,7 +6,7 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers the shell stylesheet `css/style.css` — where each screen sits in its
 frame and what it gives way at each window size — the cards' motion and the
 pointer sizes. The screens' markup and the ids the shell wires are
-[app-shell-markup.md](app-shell-markup.md); the component kit is
+[app-shell-markup.md](app-shell-markup.md) and [app-shell-markup-game.md](app-shell-markup-game.md); the component kit is
 [app-shell-kit.md](app-shell-kit.md); tokens and themes are
 [app-shell-themes.md](app-shell-themes.md).
 
@@ -17,7 +17,7 @@ pointer sizes. The screens' markup and the ids the shell wires are
 ## PUBLIC API
 
 None: styles. The rules select the ids and classes
-[app-shell-markup.md](app-shell-markup.md) lists.
+[app-shell-markup.md](app-shell-markup.md) and [app-shell-markup-game.md](app-shell-markup-game.md) list.
 
 ## INTERNAL PATTERNS
 
@@ -54,12 +54,12 @@ None: styles. The rules select the ids and classes
 
 ## CROSS-REFERENCES
 
-- [app-shell-markup.md](app-shell-markup.md) — the markup these rules place.
+- [app-shell-markup.md](app-shell-markup.md), [app-shell-markup-game.md](app-shell-markup-game.md) — the markup these rules place.
 - [app-shell-kit.md](app-shell-kit.md) — the kit's own stylesheet
   `css/components.css`; [app-shell-themes.md](app-shell-themes.md) — the
   tokens `css/style.css` reads.
 - [testing-browser.md](testing-browser.md) — waiting for a card's motion.
-- [testing.md](testing.md) — `tests/components.test.mjs` (the pointer
+- [testing-files.md](testing-files.md) — `tests/components.test.mjs` (the pointer
   sizes).
 
 ## WHEN TO READ THE SOURCE

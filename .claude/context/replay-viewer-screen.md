@@ -129,7 +129,7 @@ The `#replay` binder (`createReplayView`) is
 - [app-shell-kit-helpers.md](app-shell-kit-helpers.md) — `bindFigures`,
   `bindFiguresLive`, the code chip.
 - [audio.md](audio.md) — the sfx calls a cue makes.
-- [testing.md](testing.md) — `tests/replay-viewer.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/replay-viewer.test.mjs`,
   `tests/replay-viewer-3d.test.mjs`, `tests/results-watch.test.mjs` (fast
   only; Watch replay's browser test is in `tests/results.test.mjs`).
 

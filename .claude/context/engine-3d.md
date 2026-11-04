@@ -76,7 +76,7 @@ as Classic 2D.
   profile, state view); the 3D session drives its actions.
 - [rendering.md](rendering.md), [input-camera.md](input-camera.md) — the 3D renderer and
   picking read the state view.
-- [testing.md](testing.md) — `tests/engine-box-grid.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/engine-box-grid.test.mjs`,
   `tests/engine-3d-profile.test.mjs`, `tests/engine-3d-view.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

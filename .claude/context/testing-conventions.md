@@ -5,10 +5,11 @@
 How the suite's tests are written and what they must not be bent to pass:
 the testing policy, the oracles, seeded randomness, fakes, static checks,
 contrast and timing slack — plus the tests that an unrelated-looking change
-trips. The browser layer — the local server, the environment Playwright runs
-in, inputs and fixed boards, `__ms` — is
-[testing-browser.md](testing-browser.md); where tests go and how the suite
-runs is [testing.md](testing.md).
+trips. The browser layer — the local server, inputs and fixed boards — is
+[testing-browser.md](testing-browser.md), the environment Playwright runs
+in and `__ms` [testing-browser-env.md](testing-browser-env.md); how the
+suite runs is [testing.md](testing.md) and where tests go
+[testing-files.md](testing-files.md).
 
 ## PUBLIC API
 
@@ -93,10 +94,11 @@ Gameplay fidelity to the original is the overriding rule; tests enforce it.
 
 ## CROSS-REFERENCES
 
-- [testing.md](testing.md) — running the suite, the tiers, the shared
-  browser helper, where each test goes.
+- [testing.md](testing.md) — running the suite, the tiers;
+  [testing-files.md](testing-files.md) — where each test goes.
 - [testing-browser.md](testing-browser.md) — the local server, the
-  browser environment, `window.__ms`.
+  shared browser helper; [testing-browser-env.md](testing-browser-env.md)
+  — the browser environment, `window.__ms`.
 
 ## WHEN TO READ THE SOURCE
 

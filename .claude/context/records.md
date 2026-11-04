@@ -4,7 +4,8 @@
 
 The records every records consumer shares: which board a game was played
 on, the one summary record of a played game and the stats derived from it.
-This file is the map of `js/records/`; the personal records (model and
+This file is the map of `js/records/` and holds board identity; the summary
+record is in [records-summary.md](records-summary.md), the personal records (model and
 store) are in [records-store.md](records-store.md), the Records screen in
 [records-screen.md](records-screen.md) and the two files it names.
 DOM-free throughout, apart from the screen's view binders and the history
@@ -14,7 +15,7 @@ chart, which draws on the canvas it is handed.
 | ---- | -------------- | --------- |
 | `js/records/board.js` | Board identity (2D and 3D forms, the 2D one Classic 2D's, Hexagon's or Triangle's), key, parser, label, the square, hexagon and triangle standard boards, cube 3D presets. Imports nothing. | here |
 | `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the daily boards. | [records-board-code.md](records-board-code.md) |
-| `js/records/summary.js` | Summary builder, derived stats, best eligibility. | here |
+| `js/records/summary.js` | Summary builder, derived stats, best eligibility. | [records-summary.md](records-summary.md) |
 | `js/records/model.js` | Records model: bests, per-mode counters, history, comparison, the records format step. No storage. | [records-store.md](records-store.md) |
 | `js/records/store.js` | Records store: the only writer of the personal records and the game-in-progress marker; storage handed in. | [records-store.md](records-store.md) |
 | `js/records/screen.js` | Records screen content, controller and `#records` binder. | [records-screen.md](records-screen.md), [records-screen-view.md](records-screen-view.md) |
@@ -54,7 +55,7 @@ Board identity (`js/records/board.js`; its header documents the key format)
   grid: `STANDARD_BOARDS` (Beginner, Intermediate, Expert) on `square`,
   `STANDARD_BOARDS_HEX` on `hex` and `STANDARD_BOARDS_TRI` on `tri` (equal
   copies of the Hexagon and Triangle board setups' `STANDARD_SIZES`,
-  [classic2d.md](classic2d.md), each held equal by a test);
+  [classic2d-board-setup.md](classic2d-board-setup.md), each held equal by a test);
   `preset3D(identity)` / `PRESETS_3D` (Cube Intro, Beginner,
   Intermediate, Expert — equal to the 3D board choice's `PRESETS`,
   [mode3d.md](mode3d.md)). Null for a custom board, a former preset's
@@ -62,22 +63,7 @@ Board identity (`js/records/board.js`; its header documents the key format)
 - Every function validates through `createBoardIdentity`, so any object with
   a form's fields works and an impossible one throws.
 
-Summary (`js/records/summary.js`)
-- `buildSummary({ engine, outcome?, elapsedMs, pauses?, board, seed,
-  generatorVersion, endedAt?, id? })` → record or null. `engine` is the
-  engine's `summary()` (won/lost) or `counts()` (abandoned)
-  ([engine-rules.md](engine-rules.md)); `counts()` with `bbbv` null — left before the
-  first click — returns null. `id` defaults to `crypto.randomUUID()`.
-- `buildSummary` also takes `startCell`, `daily` (a Daily board's date,
-  required with the daily flag) and `challenge` (`true`).
-- The record: `{ id, board, outcome, elapsedMs, pauses, pausedMs, bbbv,
-  bbbvSolved, clicks, bbbvPerSecond, efficiency, seed, generatorVersion,
-  endedAt, startCell?, daily?, challenge? }` — plain serialisable data; `elapsedMs` includes paused time,
-  `board` a plain copy of the identity (not the key).
-- `countedClicks`, `bbbvPerSecond(summary)`, `efficiency(summary)` —
-  unrounded, null on a zero divisor.
-- `isBestEligible(summary, stat)`, `BEST_STATS = ['time', 'bbbvPerSecond',
-  'efficiency']`, `OUTCOMES = ['won', 'lost', 'abandoned']`.
+The summary builder's API is [records-summary.md](records-summary.md)'s.
 
 ## INTERNAL PATTERNS
 
@@ -94,16 +80,6 @@ Summary (`js/records/summary.js`)
   `boardKey` and rebuilt with `parseBoardKey`, so the format changes only
   with a records format version (bump `BOARD_KEY_FORMAT`); a test pins the
   `board.js` header's description of it.
-- **Validation throws.** `buildSummary` throws a `RangeError` on anything
-  that would poison the records (bad time, seed, generator version, a board
-  disagreeing with the engine's `mineCount` / `dimensions`, impossible 3BV
-  or clicks, a malformed pause span); the full list is its checks.
-- **Derived stats are pure.** The builder fills `bbbvPerSecond` and
-  `efficiency` with the same exported functions any consumer calls, so a
-  recomputation always agrees. Click counting is the engine's; this module
-  only sums.
-- **Best eligibility.** Only a won game counts for a best, only on a stat
-  that is available (`time` always is), and never a challenge.
 
 ## DOMAIN DEPENDENCIES
 
@@ -121,6 +97,8 @@ Summary (`js/records/summary.js`)
 
 ## CROSS-REFERENCES
 
+- [records-summary.md](records-summary.md) — the summary record, its builder,
+  derived stats and best eligibility.
 - [records-board-code.md](records-board-code.md) — board codes, the daily
   seed and the daily boards.
 - [records-store.md](records-store.md) — model, store, documents, marker.
@@ -131,10 +109,10 @@ Summary (`js/records/summary.js`)
 - [replay.md](replay.md) — replays sealed with the summary and keyed by
   `boardKey`.
 - [classic2d.md](classic2d.md), [mode3d.md](mode3d.md) — the callers of the
-  builder, one summary id per game; classic2d.md also holds the Hexagon
+  builder, one summary id per game; classic2d-board-setup.md holds the Hexagon
   and Triangle board setups `STANDARD_BOARDS_HEX` and `STANDARD_BOARDS_TRI`
   mirror.
-- [testing.md](testing.md) — `tests/records-board*.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/records-board*.test.mjs`,
   `tests/records-summary*.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
@@ -146,8 +124,5 @@ Summary (`js/records/summary.js`)
   board: `STANDARD_BOARDS_HEX` or `STANDARD_BOARDS_TRI` together with
   `STANDARD_SIZES` in `js/hexagon/board-setup.js` or
   `js/triangle/board-setup.js`.
-- Adding a summary field or a derived stat: `buildSummary` and `STAT_VALUE`
-  in `summary.js`; a new best stat joins `BEST_STATS` and `model.js`'s
-  `STAT_VALUE` and `BETTER` tables.
-- A builder `RangeError` you do not expect: `buildSummary`'s checks and
-  `checkEngineBoard` in `summary.js`.
+- Adding a summary field or a derived stat, or a builder `RangeError`:
+  [records-summary.md](records-summary.md).

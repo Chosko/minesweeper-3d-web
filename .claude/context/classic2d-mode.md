@@ -1,4 +1,4 @@
-# Classic 2D — mode, game window, sound, end delay
+# Classic 2D — mode, start, feed and generation
 
 ## OVERVIEW
 
@@ -10,8 +10,10 @@ sampler per game, the game window's feed, the sound cue of every action,
 pause by hiding the board, the generation client and pre-generation, and the
 end delay, which plays the end effect
 ([classic2d-end-effect.md](classic2d-end-effect.md)). DOM-free: the
-shell hands in its flow and its sound sink. The area overview is
-[classic2d.md](classic2d.md).
+shell hands in its flow and its sound sink. The game window, the sound
+cues and the end delay are
+[classic2d-mode-window.md](classic2d-mode-window.md)'s; the area overview
+is [classic2d.md](classic2d.md).
 
 ## PUBLIC API
 
@@ -76,31 +78,8 @@ shell hands in its flow and its sound sink. The area overview is
 - **The window's feed.** `flow.hud` gets the timer, mines left and clicks
   when any changed; `flow.figures` the live figures' input (`counts()`,
   flags, mines, `elapsedMs()`) on every count change, else on the timer's
-  new second (`tick`).
-- **Game window** (`#c2d`, ids in [app-shell-hud.md](app-shell-hud.md)): title
-  bar (Pause, the logo, the window buttons), body (counter strip with the
-  icon-only Restart over the board area, the Tap choice on a coarse
-  pointer, and while open the flat live figures column with the controls
-  reminder), foot (the open mode's name and board, size, mines, no-guess; Swap clicks
-  and the live-figures toggle at its right). The window hugs its content,
-  centred above the HUD strip, shrinking to the board column while the
-  live figures are closed: the fit rule works in the room the chrome
-  leaves, and the board area takes the board's extent in it, left-aligned
-  under the counter strip ([app-shell-2d.md](app-shell-2d.md) § Board area
-  and panel). Too narrow for both, the open panel moves under the board;
-  on a phone it hides with its toggle and the window is full-bleed, the
-  board held sideways at the left edge beside a column of the counters,
-  Restart and the Tap choice (`#c2d` in `css/style.css`).
-- **Sound.** Every action the gate passes on — mouse, keyboard or
-  controller — plays the 3D game's cue for its outcome (`cue` in
-  `mode.js`), read from the engine's changed cells and the game's phase:
-  `flag(on, count)` (on when at least half the changed cells are flagged),
-  `explode()` alone for a loss, `reveal(count)` or `chord(count)`, `noop()`
-  for an action while playing that changed nothing, then `win()` once. The
-  mode has no sound setting; volume and mute are the shared `sfx`'s
-  ([audio.md](audio.md)). The first reveal's cue plays when its board
-  arrives, not if the game was restarted or left first; a refused action
-  is silent. A cue never changes or gates an action.
+  new second (`tick`). The game window it feeds is
+  [classic2d-mode-window.md](classic2d-mode-window.md)'s.
 - **Generation client and pre-generation.** One client per instance
   (`createClient`) is made on first use and kept for the page; `warm()`
   warms it as the mode's board choice opens. A finished no-guess game asks it for the next board of the
@@ -113,17 +92,9 @@ shell hands in its flow and its sound sink. The area overview is
   `refused` into `view.pulseMark()` and `flow.hint(START_HINT)`; `restart()`
   keeps `fixed` while the game has not started, else plays free. `tick()` pushes the generating card's progress to
   `flow.progress`, null when the card hides.
-- **End delay.** A win or loss reports can-pause false at once and runs
-  the end delay (`ending`): the view plays the end effect (`WIN` from the
-  last action's cell, `LOSS` from the exploded tile nearest it by the
-  geometry's cell centres), `tick()`
-  drawing each frame at the clock's time since the end; after
-  `END_DELAY_MS` — frames drawn or not — or at `finishNow()` (any press,
-  `pagehide`), the view is drawn in its end state and finished is reported
-  once with the summary and replay. Pause and `hideBoard` are ignored
-  during it; `restart` and `leave` cancel it.
 - **Restart and leave** leave the session (cancelling a pending generation
-  or end delay) and destroy the view, inputs and sampler; `restart` reopens
+  or end delay, [classic2d-mode-window.md](classic2d-mode-window.md) § End
+  delay) and destroy the view, inputs and sampler; `restart` reopens
   the session's own choice. `hideBoard` pauses the session with the board
   (a no-op before the first click or after the end) and drops held inputs.
 
@@ -143,6 +114,8 @@ shell hands in its flow and its sound sink. The area overview is
 
 ## CROSS-REFERENCES
 
+- [classic2d-mode-window.md](classic2d-mode-window.md) — the game window,
+  sound cues and end delay.
 - [classic2d-session.md](classic2d-session.md) — its session;
   [classic2d-board-canvas.md](classic2d-board-canvas.md), [classic2d-input.md](classic2d-input.md) — what it mounts;
   [geometry.md](geometry.md) — the geometry it builds.
@@ -150,12 +123,12 @@ shell hands in its flow and its sound sink. The area overview is
   [app-shell-2d.md](app-shell-2d.md) — the flow, `main.js` handing in `sfx`
   and the button swap; [app-shell-end-delay.md](app-shell-end-delay.md) — the
   end delay's skip.
-- [generation.md](generation.md) — the client and `pregenerate`;
+- [generation-worker.md](generation-worker.md) — the client and `pregenerate`;
   [replay-samplers.md](replay-samplers.md) — the 2D sampler the mode
   mounts; [audio.md](audio.md) — the `sfx` cues, volume and mute.
 - [classic2d-end-effect.md](classic2d-end-effect.md) — the end effect the
   end delay plays.
-- [testing.md](testing.md) — `tests/classic2d-mode.test.mjs` the mode, end
+- [testing-files.md](testing-files.md) — `tests/classic2d-mode.test.mjs` the mode, end
   delay, cues, figures feed and window in a browser;
   `tests/flat-modes.test.mjs` each instance built from its configuration;
   `tests/flat-modes-play.test.mjs` Hexagon and Triangle games in a browser;
@@ -163,7 +136,5 @@ shell hands in its flow and its sound sink. The area overview is
 
 ## WHEN TO READ THE SOURCE
 
-- Changing the 2D end delay: `END_DELAY_MS` and the `finished` handler in
-  `mode.js`.
-- Changing which cue an action plays (`cue` and `act` in `mode.js`; the 3D
-  game's mapping it mirrors is `onAction` in `js/main.js`).
+- Changing the end delay, the cues or the game window:
+  [classic2d-mode-window.md](classic2d-mode-window.md).

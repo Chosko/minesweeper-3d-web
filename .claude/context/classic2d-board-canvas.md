@@ -93,10 +93,10 @@ overview [classic2d.md](classic2d.md).
   feedback, ring, motion and effect members.
 - [classic2d-tile-skin.md](classic2d-tile-skin.md) — the skin the view
   draws through.
-- [classic2d-input.md](classic2d-input.md) — the inputs that drive the
+- [classic2d-input.md](classic2d-input.md), [classic2d-input-cursor.md](classic2d-input-cursor.md) — the inputs that drive the
   pressed set, the cursor and the pan.
 - [engine-rules.md](engine-rules.md) — `changed` lists.
-- [testing.md](testing.md) — `tests/classic2d-view.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/classic2d-view.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

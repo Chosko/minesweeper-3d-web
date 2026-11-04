@@ -45,7 +45,7 @@ tile looks is [classic2d-tile-skin.md](classic2d-tile-skin.md).
   a flood reveal on a board of the largest custom size, and the module's head comment holds
   the measurement and the rule that picks it.
 - **Depth.** A `depth` value is drawn by the 2D motion layer from the tile
-  cache's nearest depth step ([classic2d-tile-skin.md](classic2d-tile-skin.md)),
+  cache's nearest depth step ([classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md)),
   never a draw per frame.
 - **Every flat grid.** The player knows no grid: a theme's one Classic 2D
   motion plays on square, hexagon and triangle boards alike, the 2D motion
@@ -67,7 +67,7 @@ tile looks is [classic2d-tile-skin.md](classic2d-tile-skin.md).
   drives it too.
 - [app-shell-board-module.md](app-shell-board-module.md) — the board
   module's `motion` descriptions and their checks.
-- [testing.md](testing.md) — `tests/cell-motion.test.mjs` the cell motion
+- [testing-files.md](testing-files.md) — `tests/cell-motion.test.mjs` the cell motion
   player.
 
 ## WHEN TO READ THE SOURCE

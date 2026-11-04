@@ -1,4 +1,4 @@
-# App shell — component kit: catalogue, gallery, selected state
+# App shell — component kit: catalogue and gallery
 
 ## OVERVIEW
 
@@ -8,13 +8,15 @@ The kit's behaviour helpers (`js/ui/components.js`) are
 deploy files [app-shell-themes.md](app-shell-themes.md); the board module
 and its hand-off [app-shell-board-module.md](app-shell-board-module.md). The
 shared layout's components — icons, confirm box and notes, surfaces, the
-screen frame, the message card — and the screens composed in the kit are
-[app-shell-kit-layout.md](app-shell-kit-layout.md); the screens' markup is
-[app-shell-markup.md](app-shell-markup.md).
+message card — and the screens composed in the kit are
+[app-shell-kit-layout.md](app-shell-kit-layout.md); the root area and the
+screen frame [app-shell-kit-frame.md](app-shell-kit-frame.md); the controls'
+selected state [app-shell-kit-controls.md](app-shell-kit-controls.md); the
+screens' markup is [app-shell-markup.md](app-shell-markup.md).
 
 | File | Responsibility |
 | ---- | -------------- |
-| `css/components.css` | the component kit's structure (base stylesheet): the root area every size step reads ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area), `ui-*` classes, layout, sizes, the hidden default of every decoration slot; its head comment is the catalogue (element, role, accessible name, markup pattern, states, focus contract, screens built from them) |
+| `css/components.css` | the component kit's structure (base stylesheet): the root area every size step reads ([app-shell-kit-frame.md](app-shell-kit-frame.md) § The root area), `ui-*` classes, layout, sizes, the hidden default of every decoration slot; its head comment is the catalogue (element, role, accessible name, markup pattern, states, focus contract, screens built from them) |
 | `js/ui/kit-catalogue.js` | the kit catalogue as data (DOM-free): every component and composition, its parts, each interactive part's states as the selectors a theme styles, its decoration slots; `CONTRAST_ROLES`; `REQUIRED_TOKENS`, the token set every theme declares |
 | `dev/components.html` | the kit gallery (development only), the theme's page beside the canvas's J-Components artboard: every catalogued component in every state (`data-force` previews) and every decoration slot, and every part J-Components draws, each marked `data-canvas="<part>"` — the quiet button, the go confirm button, the title bar's game logo and its Quit as a stop button, the board choice's panel toggle (unpinned and pinned) and its drawer (closed and open), Swap clicks and the Tap choice, the hint strip, the view chip and the HUD key strip (their text from `js/settings/bindings.js`, as the game's), the board status cards, the confirm box (with its heading, text only, and as a table row) and the notes, the H help card, the crosshair, aim readout and off-screen arrow on a still scene panel, the invalid field, the switch row, the icon set and a button of each size with its icon, the Settings theme list (`settingControlHtml`, bound to the applier: a pick switches the theme), the main menu buttons in their states (`data-canvas` `play-tile`, `small-entry`, `phone-row`; the Classic 2D and Hexagon tiles' boards, each on its grid, by `mountTilePreviews`), and the scene panels the Daily screen and a 3D replay draw into — the Classic 2D demo board by `bindMenuPreview` and its board view, the 3D demo board by the 3D renderer on the panel's own canvas (the still panel without WebGL 2); the overlay's parts carry the ids the theme draws them by and the gallery's `<style>` lays them out as `css/style.css` does in the game. Beside them the parts the artboard does not draw stay as kit coverage (the menu list, the overlay bar, the board frame, the banner, the link, the columns, a counter without its icon, the forced states, the field's adjusted state), with the counters, the figures panel (with its progress bar and pace row, a board with no best's — its bar, no pace row —, and with its head bar) and the results layout `#g-results`; the cards sit apart in the page grid, so no part overlaps another; all under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
 
@@ -89,41 +91,13 @@ and `touch-stick` (`knob`).
   J-Components artboard draws is also marked in the gallery and listed in
   that test file's `CANVAS_PARTS`; every class the gallery shows is
   catalogued or the gallery's own layout, a class no theme draws.
-- **Controls.** Every interactive control is a native `<button>`, `<input>`
-  or `<a>`. Buttons, menu entries, main menu buttons and board options have one
-  selected state — hover and focus alike, no outline; *Joyful tiles* draws
-  them raised at rest, level when selected, sunk when pressed, flat when
-  disabled, except the quiet button, flat with a border ring and sunk in
-  place when selected — and `bindSelectOnHover` keeps it on one control at
-  a time. A board option's chosen state (`aria-pressed`, a fill and a
-  check) is drawn apart from selected, and so is a latched toggle's — Swap
-  clicks, the touch view modes, Show 3BV, Free camera, the board choice
-  panel toggle: a quiet small button carrying `aria-pressed`, quiet while
-  off and the pressed look while on, never a colour.
-  The primary button is always a go (green: confirm or go forward) or a
-  stop (red: the title bar's Quit), each resting in a stronger pastel and
-  taking its full colour when selected; Pause is a secondary button, and
-  a confirm button's key hint is `confirm`, never Enter. A key hint inside
-  a button takes the button's own ink. A main menu button rests in a
-  pastel of its colour on the pastel edge (a small entry the neutral raised
-  surface) and takes its full colour selected (a small entry the stronger
-  neutral), keeping its size; a locked one darkens. Every other
-  control keeps its own hover,
-  `:active`, `:focus-visible` (and `body.pad-nav :focus`) and disabled
-  states, ringed from `--color-focus-ring` with the `--color-focus-halo`
-  halo, which replaces a control's own inset border while it is focused. A
-  board option is selected by a key's focus (`:focus-visible` outside
-  `body.pointer-nav`), the controller's, or, while the pointer is in use,
-  by being the focused option under it — so one its screen focuses when
-  opened by the mouse keeps its resting look. The shell sets
-  `pointer-nav` on mouse input and drops it on a key
-  ([app-shell-ui.md](app-shell-ui.md) § Controller menus).
-  `data-force` previews a state (gallery only). Only the selected segmented
-  option is in the Tab order.
+- **Controls.** Every interactive control's states — the one selected
+  state, chosen, go and stop, focus rings — are
+  [app-shell-kit-controls.md](app-shell-kit-controls.md).
 - **Shared layout.** The icon set, the confirm box and the notes, the
-  surfaces, the slider's fill, the screen frame, the message card and the
-  screens composed in the kit are
-  [app-shell-kit-layout.md](app-shell-kit-layout.md).
+  surfaces, the slider's fill, the message card and the screens composed in
+  the kit are [app-shell-kit-layout.md](app-shell-kit-layout.md); the root
+  area and the screen frame [app-shell-kit-frame.md](app-shell-kit-frame.md).
 
 ## DOMAIN DEPENDENCIES
 
@@ -141,7 +115,10 @@ and `touch-stick` (`knob`).
 ## CROSS-REFERENCES
 
 - [app-shell-kit-layout.md](app-shell-kit-layout.md) — the shared layout's
-  components and the screens composed in them.
+  components and the screens composed in them;
+  [app-shell-kit-frame.md](app-shell-kit-frame.md) — the root area and the
+  screen frame; [app-shell-kit-controls.md](app-shell-kit-controls.md) —
+  the controls' selected state.
 - [app-shell-kit-helpers.md](app-shell-kit-helpers.md) — the binders and
   formats behind the catalogued components.
 - [app-shell-themes.md](app-shell-themes.md) — the theme stylesheets that
@@ -150,10 +127,10 @@ and `touch-stick` (`knob`).
 - [settings-page.md](settings-page.md) — the theme list's markup and binder
   the gallery shows; [app-shell-menu-preview.md](app-shell-menu-preview.md) — the play
   tiles' previews, the scene panel binder and the demo boards the gallery draws;
-  [settings-bindings.md](settings-bindings.md) — the strips' text.
+  [settings-bindings-rows.md](settings-bindings-rows.md) — the strips' text.
 - [app-shell-hud.md](app-shell-hud.md) — the counters and the figures
   panels the in-game components show.
-- [testing.md](testing.md) — `tests/theme-registry.test.mjs` (the kit
+- [testing-files.md](testing-files.md) — `tests/theme-registry.test.mjs` (the kit
   catalogue), `tests/components.test.mjs` (kit, screens, contrast),
   `tests/components-game3d.test.mjs` (the 3D overlay in a browser).
 

@@ -86,7 +86,7 @@ are [app-shell-navigation.md](app-shell-navigation.md)'s; `focusMove`,
 - [input-controller.md](input-controller.md) — the navigation layer
   (`focusMove`, `inertSections`, `tabWrap`, `pickInDirection`).
 - [app-shell-ui.md](app-shell-ui.md) — the controller menus' layers.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (navigation;
+- [testing-files.md](testing-files.md) — `tests/shell-*.test.mjs` (navigation;
   `shell-pad-walk` the walk over every screen, `shell-focus-containment`
   the inert set and Tab wrap).
 

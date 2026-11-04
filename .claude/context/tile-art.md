@@ -105,7 +105,7 @@ the active theme's board module, which hands it every colour and parameter.
 - [geometry.md](geometry.md) — the cell outlines and glyph boxes a
   Classic 2D board hands the painter, which draws in the recipe's outline
   and sets its glyphs in the geometry's glyph box.
-- [testing.md](testing.md) — `tests/tile-art.test.mjs` the drawing styles,
+- [testing-files.md](testing-files.md) — `tests/tile-art.test.mjs` the drawing styles,
   outlines and glyph boxes.
 
 ## WHEN TO READ THE SOURCE

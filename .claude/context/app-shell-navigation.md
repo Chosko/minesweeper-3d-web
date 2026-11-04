@@ -107,7 +107,7 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
 - [input-controller.md](input-controller.md) — the navigation layer
   (`focusMove`, `inertSections`, `tabWrap`, `pickInDirection`);
   [input.md](input.md) — `escResumes`.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (router and its
+- [testing-files.md](testing-files.md) — `tests/shell-*.test.mjs` (router and its
   session-history mirror; `shell-router` Hexagon's and Triangle's board
   choice routes).
 

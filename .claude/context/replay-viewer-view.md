@@ -19,7 +19,7 @@ is the head comment of `css/components.css` (*Replay viewer*) and the
   onDownload?, onOpen?, onCopy?})` → the `#replay` binder (its ids in the
   head comment): a `ui-frame` centred on the backdrop at its natural size
   for the size step the root area takes
-  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area),
+  ([app-shell-kit-frame.md](app-shell-kit-frame.md) § The root area),
   shrinking to fit a smaller area (`#replay-frame`; Back `#rp-back`, its arrow alone, in its title bar and
   the title `#replay-title` its heading), whose body holds the strip across it — the
   figures inline and unlabelled with the code chip `#rp-code` (Copy and
@@ -75,10 +75,10 @@ is the head comment of `css/components.css` (*Replay viewer*) and the
   drives the binder, its commands, keys and figures.
 - [app-shell-replay.md](app-shell-replay.md) — the 3D replay scene drawn in
   the board area.
-- [app-shell-markup.md](app-shell-markup.md) — `#replay` in `index.html`.
+- [app-shell-markup-game.md](app-shell-markup-game.md) — `#replay` in `index.html`.
 - [app-shell-kit-layout.md](app-shell-kit-layout.md), [app-shell-kit-helpers.md](app-shell-kit-helpers.md)
   — the frame, code chip, `bindFigures`, `bindSliderFill`.
-- [testing.md](testing.md) — `tests/replay-viewer.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/replay-viewer.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
