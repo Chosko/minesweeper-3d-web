@@ -14,7 +14,7 @@ suite runs is [testing.md](testing.md) and where tests go
 ## PUBLIC API
 
 `tests/helpers/timing.mjs` — `timed(budget, fn)`, `patience(ms)`,
-`TIME_SLACK` ([testing.md](testing.md) describes their use); the browser
+`TIME_SLACK` (INTERNAL PATTERNS below describes their use); the browser
 helper is [testing-browser.md](testing-browser.md)'s.
 
 ## INTERNAL PATTERNS

@@ -122,7 +122,7 @@ not these.
   and the actions that produce sounds originate there.
 - [rendering.md](rendering.md) — no direct link; the loss flash and reveal
   wave run alongside `explode()` but are driven from `main.js`.
-- [testing.md](testing.md) — no automated test listens to the sounds; verify by ear in a browser.
+- [testing-files.md](testing-files.md) — no automated test listens to the sounds; verify by ear in a browser.
   `tests/settings-appliers.test.mjs` checks that the module keeps no `localStorage` keys;
   `tests/classic2d-mode.test.mjs` pins which cue each Classic 2D action calls on a fake sink, that
   `main.js` hands the mode the one `sfx` instance, and that the mode and the replay viewers import

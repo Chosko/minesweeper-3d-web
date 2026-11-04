@@ -103,7 +103,7 @@ shake, ground grid — and the replay and end-of-game behaviour are in
   keep mapping the full window ([app-shell-3d.md](app-shell-3d.md) § Scene panel). `cellScreen`
   projects onto the whole canvas whatever the target; the replay's rings scale it to the target.
 - **Render resolution.** The pixel ratio is the player's 3D resolution setting
-  ([settings.md](settings.md) states `pixelRatioFor`): `js/main.js::applyPixelRatio` computes it
+  ([settings-appliers.md](settings-appliers.md) states `pixelRatioFor`): `js/main.js::applyPixelRatio` computes it
   for the board shown and calls `setPixelRatio` at each new board and on every setting change. The
   renderer never reads the setting.
 
@@ -131,7 +131,8 @@ shake, ground grid — and the replay and end-of-game behaviour are in
 - [engine-3d.md](engine-3d.md) — the 3D state view this area reads.
 - [app-shell.md](app-shell.md) — `js/main.js` owns the renderer: `sync`/`render` per frame,
   `snapshotBeforeAction` before reveals, `isAnimating`, the pixel ratio, `stats` via `__ms`.
-- [settings.md](settings.md) — the render resolution setting and `pixelRatioFor`.
+- [settings.md](settings.md) — the render resolution setting.
+- [settings-appliers.md](settings-appliers.md) — `pixelRatioFor`.
 - [input-camera.md](input-camera.md) — the camera feeds `camera`; picking must use the same pitch and
   Space/hidden visibility rules. [input.md](input.md) — modifier state feeds `setToggles`.
 - [app-shell-replay.md](app-shell-replay.md) — the replay scene's tints, rings and wrong flags.
