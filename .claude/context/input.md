@@ -3,9 +3,10 @@
 ## OVERVIEW
 
 Everything between the player's devices and a 3D game action: keyboard /
-mouse / pointer-lock DOM handling, the release-based mouse action state
-machine (shared by the keyboard's Enter and ', the controller triggers and
-the touch gestures), drag-to-look, Space's tap-toggle and the 3D touch
+mouse / pointer-lock DOM handling, each key and mouse button read through
+the 3D bindings ([settings-bindings.md](settings-bindings.md)), the
+release-based mouse action state machine (shared by the keyboard's reveal
+and flag keys, the controller's and the touch gestures), drag-to-look, Space's tap-toggle and the 3D touch
 controls. The camera, the orbit, the keyboard look's ramp, the spawn pose,
 the spacing step and picking are [input-camera.md](input-camera.md); the
 view-mode layer, controller polling and the shell navigation layer are
@@ -32,10 +33,14 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   others ignored), `reset()` (forget held state without firing), `cancel(button)` (forget one
   held button without firing; the toggle clears with the last held one); calls
   `onAction('left' | 'right' | 'chord')`, the caller acting on its own selection.
-- `KeyActions(mouse)` — `down(code, repeat?)`, `up(code)` (each → whether `code` is an action key),
-  `held`, `reset()`: Enter (`'Enter'`) is button 0 and ' (`'Quote'`) button 2 of the given
-  `MouseActions`, so every release rule is the mouse's; an auto-repeat presses nothing more, and a
-  release whose press it never took does nothing.
+- `actionButton3D(bindings?, device, input)` → the `MouseActions` button a key or mouse button
+  stands for through the 3D bindings (the defaults when none is given): a reveal input 0, a flag
+  input 2, else null — with no override Enter and the left button 0, ' and the right button 2.
+- `KeyActions(mouse, bindings?)` — `down(code, repeat?)`, `up(code)` (each → whether `code` is an action key),
+  `held` (code → the button its press pressed), `reset()`: a reveal key is button 0 and a flag key
+  button 2 of the given `MouseActions` (`actionButton3D`), so every release rule is the mouse's; an
+  auto-repeat presses nothing more, a held key releases the button it pressed, and a release whose
+  press it never took does nothing.
 - `DragLook({mouse, onLook, threshold = DRAG_LOOK_THRESHOLD_PX})` — `down`, `move(dx, dy)`,
   `up`, `reset()`: drag-to-look over a `MouseActions`. Once the held buttons move `threshold` px
   the mouse actions are reset without firing and all movement goes to `onLook` until every button
@@ -45,14 +50,17 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   not `active` is ignored.
 - `Input(opts)` — installs window/document listeners in the constructor (no teardown). opts:
   `canvas`, `mouse`, `isActive()`, `onLook(dx, dy)`, `onWheel(notches)`, optional
-  `onKey(code, event)`, `onLockChange(locked)`, `onLockError()`, `isDragLook()`, `canAct()` (Enter / '
-  act on the board; default `isActive`), `canLook()` (the arrows look, their default prevented;
-  default `isActive`). Reads: `has(code)`, `shift`, `ctrl`, `space` (held, or tapped on through
-  `spaceToggle`), `move`, `lookKeys` (`{x, y}` from the arrows held, opposite arrows cancel), `locked`,
+  `onKey(code, event)`, `onLockChange(locked)`, `onLockError()`, `isDragLook()`, `canAct()` (the
+  reveal and flag keys act on the board; default `isActive`), `canLook()` (the arrows look, their
+  default prevented; default `isActive`), `bindings` (the resolver; `defaultBindings()`). Reads:
+  `has(code)`, `action(code)` (its 3D action or null), `holds(action)`, `shift` (neighbours held),
+  `ctrl` (show hidden), `space` (aim-through held, or tapped on through `spaceToggle`), `move`
+  (`{w, a, s, d, q, e}`: forward, left, back, right, down, up held), `lookKeys` (`{x, y}` from the arrows held, opposite arrows cancel), `locked`,
   `unlockedAt`, `lastKey` (`{code, repeat, locked}`, recorded before `onKey`), `lockSupported`,
   `dragLook` (drag-to-look on and the pointer unlocked; then canvas presses go through `drag`, its
   `DragLook`), `actions` (its `KeyActions`). `requestLock()`, `exitLock()`, `releaseAll()` (keys,
-  Space toggle, action keys, mouse, drag).
+  Space toggle, action keys, mouse, drag), `drop()` (`releaseAll` on a change of the bindings, the
+  keys still held kept from their auto-repeat until released).
 - `escResumes({repeat, locked})` — whether an Esc press resumes from the pause card: not the press
   that released the lock, not an auto-repeat ([app-shell-pause.md](app-shell-pause.md)).
 
@@ -77,24 +85,28 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
 
 - **Actions fire on release.** Releasing one button while the other is held fires `'chord'`;
   the next release of the other button only clears the toggle. A release without a matching
-  `down` is ignored; every fire is gated on `hasSelection()`. The controller triggers (RT = button
-  0, LT = button 2), the keyboard's Enter and ' and the touch gestures (a look finger = button 0, a
-  long-press or second finger = button 2) drive the same `MouseActions`, so chord semantics stay
-  identical across devices — do not build a second state machine.
+  `down` is ignored; every fire is gated on `hasSelection()`. The mouse buttons, the controller's
+  reveal and flag buttons (RT = button 0, LT = button 2 by default), the keyboard's reveal and flag
+  keys — each translated through the bindings to button 0 or 2 — and the touch gestures (a look
+  finger = button 0, a long-press or second finger = button 2) drive the same `MouseActions`, so
+  chord semantics stay identical across devices — do not build a second state machine. A mouse
+  button bound to nothing acts on nothing; in drag-to-look it still drags the look.
 - **Game rules are not here.** `onAction` in `js/main.js` hands `'left'` / `'right'` / `'chord'`
   to the 3D game session as `reveal` / `toggleFlag` / `chord`; what a gesture does before the board
   exists is the session's ([mode3d-session.md](mode3d-session.md)).
 - **Held state must be dropped, never fired**, on blur, tab hide, pointer-lock loss
-  (`Input.releaseAll`), and on pause / disconnect / leaving play (`Controls.releasePad`,
+  (`Input.releaseAll`), a change of the bindings (`Input.drop`, subscribed to the resolver), and on
+  pause / disconnect / leaving play (`Controls.releasePad`,
   `input.actions.reset()`, `input.spaceToggle.reset()` and `input.drag.reset()` in `js/main.js`'s
-  `stopPlayInput`). An Enter or ' released where it may not act is dropped from `held`, never fired.
-- **Space is a tap-toggle as well as a hold** — the keyboard's Space only; every other view-mode
-  key and the controller's RB stay hold-only. The 3D camera sampler reads `Controls.space` like
+  `stopPlayInput`). A reveal or flag key released where it may not act is dropped from `held`, never fired.
+- **Space is a tap-toggle as well as a hold** — the keyboard's aim-through key (Space by default)
+  only; every other view-mode key and the controller's aim-through button stay hold-only. The 3D camera sampler reads `Controls.space` like
   any view mode.
 - **DOM gating.** Mouse move / buttons are processed only when `locked && isActive()` (or through
   `DragLook` when `dragLook`); the wheel and `preventDefault` on game keys only when `isActive()`.
-  `GAME_KEYS` (WASDQE, Space, Shift, Ctrl) are always tracked; the arrows (`ARROW_KEYS`) are always
-  tracked, their default prevented only while `canLook()`; Enter and ' act, their default (button
+  The keys bound to a held 3D action (by default WASDQE, Space, Shift, Ctrl) are always tracked, by
+  code, and read through the bindings on each getter; the arrows (`ARROW_KEYS`) are always tracked,
+  their default prevented only while `canLook()`; the reveal and flag keys act, their default (button
   activation, quick find) prevented, only while `canAct()`. Ctrl+other keys and `RETURN_KEYS`
   (`Home`, `KeyR`: back to the start view, ahead of `F2` and the results screen's `R`,
   [app-shell-3d-camera.md](app-shell-3d-camera.md)) are swallowed while active. `onKey` skips auto-repeat except for
@@ -134,8 +146,8 @@ not alter any rule above.
 
 - Changing the chord / release behaviour or adding a new action type (`MouseActions.up`).
 - Fixing wheel notch normalisation on a specific browser or trackpad (`Input` wheel handler).
-- Changing which keys are captured, swallowed or exempt from `preventDefault` (`GAME_KEYS`, `ARROW_KEYS`, `ACTION_KEYS`, keydown handler).
-- Changing the keyboard's action keys (`ACTION_KEYS`, `KeyActions`).
+- Changing which keys are captured, swallowed or exempt from `preventDefault` (`ARROW_KEYS`, `RETURN_KEYS`, keydown handler).
+- Changing how a key or mouse button becomes a 3D action (`actionButton3D`, `KeyActions`, `Input.action` / `holds`); the actions and their default inputs are [settings-bindings.md](settings-bindings.md)'s.
 - Changing a touch gesture's thresholds or zones (`createTouch3D`, `touchZone`, `STICK_RADIUS_PX`, `PINCH_STEP_PX`).
 - Changing the Space tap length or the drag-to-look threshold (`TapToggle`, `SPACE_TAP_MS`, `DragLook`, `DRAG_LOOK_THRESHOLD_PX`).
 - Fixing a pointer-lock failure or re-lock timing issue (`requestLock`, `pointerlockchange`, `unlockedAt`).

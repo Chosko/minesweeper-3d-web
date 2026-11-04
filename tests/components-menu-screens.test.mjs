@@ -24,7 +24,7 @@ const SHOTS = process.env.MS_SHOTS === '1';
 
 // The debug hook's surface, pinned so the screen rebuild leaves it unchanged.
 const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'spawnPose', 'THREE', 'start', 'learn', 'learnBoard', 'learnPrompts', 'forcePlay',
-  'controls', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
+  'controls', 'bindings', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
   'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'replays', 'board2D', 'game2D', 'watch', 'daily'];
 
 test('in a browser, the menu and the screens it opens meet the contrast contract', async (t) => {

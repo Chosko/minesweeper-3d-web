@@ -59,8 +59,8 @@ part that owns their topic; `navigation.js` is
   `abandoned` listeners receive `{mode, summary, replay}`.
 
 `window.__ms` (tests, Playwright)
-- getters `state` (`S`), `game`, `renderer`, `camera`, `controls`, `pads`,
-  `fps`, `frameStats` (`{renders, skipped}`), `modes`, `pauser`, `settings`,
+- getters `state` (`S`), `game`, `renderer`, `camera`, `controls`,
+  `bindings` (the bindings resolver), `pads`, `fps`, `frameStats` (`{renders, skipped}`), `modes`, `pauser`, `settings`,
   `records`, `replays`, `replayViewer`, `board2D`, `game2D` (the open flat
   board's view and engine game — Classic 2D's, Hexagon's or Triangle's), `daily` (the daily boards held since the menu
   showed: `has(code)`, `take(code)`); `THREE`, `spawnPose(X, Y, Z)`.

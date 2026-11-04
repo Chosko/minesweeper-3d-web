@@ -448,7 +448,7 @@ test('Hexagon and Triangle are registered with the mode host under the menu entr
   }
   const fn = MAIN.slice(MAIN.indexOf('function flatMode('), MAIN.indexOf('\n}\n', MAIN.indexOf('function flatMode(')));
   assert.match(fn, /const lastChoice = createLastChoice\(\{ storage, config \}\);/, 'its last board choice, its configuration\'s document');
-  assert.match(fn, /MODES\.register\(config\.id, \(report\) => createClassic2DMode\(report, \{ config, flow, lastChoice, sound: sfx, buttonSwap: BUTTON_SWAP \}\)\)/, 'the Classic 2D mode over its configuration');
+  assert.match(fn, /MODES\.register\(config\.id, \(report\) => createClassic2DMode\(report, \{ config, flow, lastChoice, sound: sfx, buttonSwap: BUTTON_SWAP, bindings: BINDINGS \}\)\)/, 'the Classic 2D mode over its configuration');
   assert.match(fn, /openBoardChoice: \(choice\) => SHELL\.go\(screen, \{ data: \{ choice \} \}\)/, 'its board choice is its own screen');
   assert.match(fn, /const screen = `\$\{config\.id\}-choice`;/);
   assert.match(fn, /root: document\.getElementById\(`\$\{prefix\}-choice`\)/);

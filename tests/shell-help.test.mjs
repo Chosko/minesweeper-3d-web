@@ -151,9 +151,9 @@ test('Space: a short tap turns aim-through on until the next tap; a hold works a
 
 test('the keyboard Input feeds Space through the tap toggle; the controller\'s hold button is unchanged', () => {
   const src = read('js/input.js');
-  assert.match(src, /get space\(\) \{ return this\.keys\.has\('Space'\) \|\| this\.spaceToggle\.on; \}/);
+  assert.match(src, /get space\(\) \{ return this\.holds\('aimThrough'\) \|\| this\.spaceToggle\.on; \}/);
   assert.match(src, /releaseAll\(\) \{[^}]*this\.spaceToggle\.reset\(\)/);
-  assert.match(read('js/main.js'), /controls\.pad\.space = held\(BTN\.RB\);/, 'the controller keeps its hold');
+  assert.match(read('js/main.js'), /Object\.assign\(controls\.pad, acts\.modes\);/, 'the controller keeps its hold');
 });
 
 // ---------------------------------------------------------------- " · no-guess"

@@ -156,7 +156,7 @@ Feature: input-rebinding
 
 ## 112. Classic 2D and 3D input read their actions through the bindings
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/input.js, js/controls.js, js/main.js, js/shell/mode-3d.js, js/classic2d/pointer-input.js, js/classic2d/cursor-input.js, tests/input-bindings.test.mjs
 Preconditions: 111

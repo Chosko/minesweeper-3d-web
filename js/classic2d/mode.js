@@ -70,6 +70,8 @@
 //               pre-generated boards.
 //   buttonSwap  the page's mouse button swap (js/classic2d/button-swap.js), handed to every game's
 //               pointer input; none by default.
+//   bindings    the bindings resolver (js/settings/resolver.js) every game's pointer and cursor input
+//               reads its actions through; the defaults when not given.
 //
 // client is that one client, through which the shell pre-generates the daily board
 // (js/shell/daily.js). warm() spawns and warms the client's worker (the board choice opening), so the first no-guess
@@ -179,6 +181,7 @@ export function createClassic2DMode(report, {
   generatingDelayMs,
   place,
   buttonSwap = null,
+  bindings = null,
 }) {
   const time = clock ?? globalClock;
   let game = null; // { session, view, pointer, cursor, touch, sampler, offs, last, ending }
@@ -334,9 +337,10 @@ export function createClassic2DMode(report, {
     const cursorView = Object.create(view, {
       setCursor: { value: (c) => { view.setCursor(c); sampler?.cursor(c); } },
     });
-    const pointer = mount.pointer({ view, session: gate, ...(buttonSwap ? { swap: buttonSwap } : {}) });
+    const bound = bindings ? { bindings } : {};
+    const pointer = mount.pointer({ view, session: gate, ...(buttonSwap ? { swap: buttonSwap } : {}), ...bound });
     const cursor = mount.cursor({
-      view: cursorView, session: gate, geometry, onPadCue: (kind) => flow.padCue?.(kind), ...(session.fixed ? { start: session.fixed.startCell } : {}),
+      view: cursorView, session: gate, geometry, onPadCue: (kind) => flow.padCue?.(kind), ...(session.fixed ? { start: session.fixed.startCell } : {}), ...bound,
     });
     const touch = mount.touch
       ? mount.touch({ view, session: gate, flagMode: () => tapMode === 'flag', onUserScroll: () => flow.scrolled?.() })

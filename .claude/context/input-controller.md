@@ -10,7 +10,7 @@ touch side is [input.md](input.md), the camera and picking
 
 | File | Implements |
 | --- | --- |
-| `js/controls.js` | `Controls`: union of keyboard and controller view modes + controller move axes |
+| `js/controls.js` | `Controls`: union of keyboard and controller view modes + controller move axes; the controller's 3D actions through the bindings; the Start + Y chord kept from them |
 | `js/gamepad.js` | Gamepad API reader, stick curve, trigger hysteresis, auto-repeat, pad glyphs, rumble pulses, spatial menu focus search |
 | `js/shell/navigation.js` | Topmost layer, default-focus fallback, an open overlay's inert set and Tab wrap, the focus move (`focusMove`), Back inputs, the arrow keys' focus moves, held-button suppression across screen changes |
 
@@ -25,6 +25,16 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   Fields `pad` (`{shift, space, ctrl}`) and `axes` (`{f, r, u}`) are written by the caller each frame;
   `releasePad()` zeroes both. `touch` holds the 3D touch toolbar's latched modes: `toggle(mode)`
   flips one, `clearTouch()` clears them (a new game, the leave); `releasePad` leaves them.
+- `padActions3D({held, pressed, released}, bindings?)` → `{modes: {shift, space, ctrl}, move: {f,
+  r, u}, press, release}`: one poll's buttons (read after the held-button suppression) through the
+  3D bindings ([settings-bindings.md](settings-bindings.md)) — the view modes held, the move
+  buttons held as axes (each clamped to -1..1), and the `MouseActions` buttons (0 reveal, 2 flag)
+  pressed and released, 0 first. With no override: LB / RB / Y the view modes, A / B up / down,
+  RT / LT buttons 0 / 2.
+- `createStartChord()` → `update(p, pressed, restarts?)` (once per poll, before any button is
+  translated: whether Y was pressed while Start is held; `restarts` false on a screen where the
+  chord does not restart, where Y is left to that screen), `keeps(b)` (the chord's Y, through the poll of its
+  release: the caller reads it as neither held nor released, so its binding never fires).
 
 **js/gamepad.js** (no DOM access at import; Node-testable)
 - `BTN` (standard-mapping indices A..HOME), `NUM_BUTTONS` (17), `STICK_DEADZONE`,
@@ -75,9 +85,9 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   one shared `held` array, so a switch or disconnect yields `released` edges. Disconnects are
   processed before connects. LT/RT use `triggerHeld`. All helpers tolerate NaN / missing fields.
 - **Shell navigation sits between the reader and every action.** `handlePad` calls
-  `nav.update(p.held)` each poll and reads buttons only through `nav.held` / `nav.pressed`; every
-  screen change calls `screenChanged()`, so a button held through the
-  change is ignored until released. Back is `isBackKey` from the keyboard and `backButtons(screen)`
+  `nav.update(p.held)` each poll and reads buttons only through `nav.held` / `nav.pressed`, less
+  the Start + Y chord's Y (`createStartChord`); every screen change and every change of the
+  bindings calls `screenChanged()`, so a button held through the change is ignored until released. Back is `isBackKey` from the keyboard and `backButtons(screen)`
   from the controller (neither B nor View is Back on a board); both, and the
   browser's Back, resolve through the router ([app-shell-navigation.md](app-shell-navigation.md)). The arrow keys take
   the D-pad's focus move off the boards, Records and the replay viewer, unless the focused
@@ -95,7 +105,7 @@ enforces.
 
 ## CROSS-REFERENCES
 
-- [input.md](input.md) — the `MouseActions` the triggers drive (RT = button 0, LT = button 2);
+- [input.md](input.md) — the `MouseActions` the reveal and flag buttons drive (RT = button 0, LT = button 2 by default);
   [input-camera.md](input-camera.md) — the `FlyCamera.moveAxes` / `lookAxes` and orbit the sticks feed.
 - [app-shell.md](app-shell.md) — `handlePad`; [app-shell-ui.md](app-shell-ui.md) — menu focus
   navigation with `pickInDirection` / `Repeat`; [app-shell-navigation.md](app-shell-navigation.md),

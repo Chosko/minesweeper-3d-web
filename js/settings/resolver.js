@@ -29,6 +29,9 @@
 //   reset(mode, device)                  → Promise of { ok: true }: that catalogue's defaults on that device.
 //   onChange(fn)                         → unsubscribe; fn(current) after each change of the overrides,
 //                                          the store's load included.
+// defaultBindings() → one resolver over no overrides, never changing: what an input layer handed no
+//   resolver reads (made on the first call, so a module cycle through bindings.js never meets it
+//   half-built).
 // Classic 2D, Hexagon and Triangle resolve through the flat catalogue, so they give the same answers
 // and a change made for one applies to all three. A write saves through the store like any setting:
 // a save that fails keeps the change for the session and the store tells the player once. An
@@ -177,4 +180,10 @@ export function createBindings({ store }) {
       return () => { listeners.delete(fn); };
     },
   };
+}
+
+let defaults = null;
+export function defaultBindings() {
+  defaults ??= createBindings({ store: { get: () => undefined, set: async () => {}, onChange: () => () => {} } });
+  return defaults;
 }

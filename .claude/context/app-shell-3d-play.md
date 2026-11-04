@@ -19,8 +19,8 @@ themselves are [input.md](input.md) and [input-camera.md](input-camera.md).
 
 `js/main.js` exports nothing; the 3D surface of `__ms` (`key`, `wheel`,
 `click`, …) is listed in [app-shell.md](app-shell.md) § PUBLIC API. `__ms.key`
-presses and releases Enter and ' through `input.actions` as their keys do;
-`__ms.wheel` goes through `wheel3D`.
+holds and releases a key, a reveal or flag key through `input.actions` as
+its key does; `__ms.wheel` goes through `wheel3D`.
 
 ## INTERNAL PATTERNS
 
@@ -32,18 +32,19 @@ presses and releases Enter and ' through `input.actions` as their keys do;
   a flag sound carries the changed-cell count and a flag click on a number
   hands `r.changed` to `renderer.flash`.
 - **Rumble.** `padRumble(steps)` plays a `js/gamepad.js` pattern on the
-  active pad ([input-controller.md](input-controller.md)): `PAD_PRESS` on a
-  trigger's press in `padPlaying` (the cue that its action comes on
-  release), `PAD_FLAG` when a flag action made with the controller
+  active pad ([input-controller.md](input-controller.md)): `PAD_PRESS` on the
+  press of a reveal or flag button (the triggers by default) in `padPlaying`
+  (the cue that its action comes on release), `PAD_FLAG` when a flag action made with the controller
   (`padActing`) placed or removed a flag, `PAD_BOOM` with the explosion
   (`boom`). Classic 2D's `padCue` answers through the same function.
-- **Keyboard-only play.** The arrows look and Enter / ' act through
+- **Keyboard-only play.** The arrows look and the reveal and flag keys
+  (Enter / ' by default) act through
   `Input`'s `canLook` and `canAct` ([input.md](input.md)): both hold in play
   outside the end delay and a failed board's offer, `canAct` only while
   the pointer is locked or play is lockless (where the mouse buttons and
   triggers act), `canLook` also in the look at a finished board. Each frame
   `keyLook.update(view3D(), dt, x, y)` turns the camera from
-  `input.lookKeys`; `stopPlayInput` drops a held Enter / ' with
+  `input.lookKeys`; `stopPlayInput` drops a held reveal or flag key with
   `input.actions.reset()`.
 - **Coarse-only devices: touch play.** Every lock request goes through
   `requestLock3D()`, which makes none while `COARSE_ONLY` (coarse and no
@@ -69,11 +70,15 @@ presses and releases Enter and ' through `input.actions` as their keys do;
   (`lookTouch`) and its tap (`onTap`) ends the look.
 - **Controller in play.** `padPlaying`: Start presses the overlay's pause
   button — the controller's only pause —, View presses
-  `#hud-figures-toggle` while it shows (`padToggleFigures`), X toggles help,
-  RT / LT drive `mouse` as buttons 0 / 2, LB / RB / Y hold the view modes,
-  the sticks go through `padSticks` (left moves, right looks through
-  `view3D().lookAxes`), A / B move up / down in Fly, the D-pad steps the
-  spacing. While the status card shows, `padStatus3D` takes over: View
+  `#hud-figures-toggle` while it shows (`padToggleFigures`), X toggles help
+  and the D-pad's ↑ ↓ step the spacing — reserved inputs, which no binding
+  holds; the other buttons go through `padActions3D` over `BINDINGS`
+  ([input-controller.md](input-controller.md)): a reveal or flag button
+  (RT / LT by default) drives `mouse` as button 0 / 2, a view-mode button
+  (LB / RB / Y) holds it in `controls.pad`, and a move button (A / B: up /
+  down) adds to the sticks' axes, which `padSticks` sets (left moves, right
+  looks through `view3D().lookAxes`); in Orbit only the forward axis
+  counts. While the status card shows, `padStatus3D` takes over: View
   there cancels a board being generated (`backGame('pad')`).
 - **The camera** — Fly and Orbit (`view3D()`), the camera aids, spacing
   (`setSpacing`, `spacingStep`) and render on demand — is

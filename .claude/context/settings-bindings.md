@@ -14,8 +14,10 @@ surfaces follow. `js/settings/resolver.js` joins the catalogues' defaults
 with the player's overrides, the `bindings` setting
 ([settings.md](settings.md)), into the current bindings every help surface
 draws from. Both are DOM-free; each module's head comment lists every
-function. The input layers read their own fixed keys and buttons, and the
-page shows the bindings read-only.
+function. Every mode's input layer reads its actions through the resolver
+([input.md](input.md), [input-controller.md](input-controller.md),
+[classic2d-input.md](classic2d-input.md)), and the page shows the bindings
+read-only.
 
 ## PUBLIC API
 
@@ -39,7 +41,9 @@ page shows the bindings read-only.
   inputsFor(mode, device, action), bind(mode, device, action, slot, input),
   clear(mode, device, action, slot), reset(mode, device), onChange(fn) }`;
   `bind`'s swap and refusals (`reserved`, `unknown`, `last`) and `clear`'s
-  (`empty`, `last`) are in its head comment.
+  (`empty`, `last`) are in its head comment; `defaultBindings()` — one
+  resolver over no overrides, made on its first call, which an input layer
+  handed no resolver reads.
 - **Rows.** `BINDING_MODES` (`classic-2d`, `3d`), `BINDING_DEVICES`
   (`keyboard`, `controller`), `TOUCH_DEVICE` (`touch`, both modes),
   `bindingDevices(mode)`, `BINDINGS[mode][device]` — frozen `[input,
@@ -130,9 +134,16 @@ page shows the bindings read-only.
   `READY_3D`, `HINT_ROWS`, `HINT_TEMPLATES`, `REMINDER_ROWS`, `HUD_STRIP`,
   `HELP_FOOT`), never in markup.
 - **Current bindings everywhere.** `js/main.js` creates the resolver over
-  the settings store and hands it to `UI.setBindings`, which redraws every
-  bindings surface now and on each of the resolver's changes; the Settings
-  page's list reads it through `bindingsSectionHtml`.
+  the settings store before the input layers, hands it to each of them — the
+  3D `Input` and `padActions3D`, every flat mode's pointer and cursor
+  inputs — and to `UI.setBindings`, which redraws every bindings surface now
+  and on each of the resolver's changes; the Settings page's list reads it
+  through `bindingsSectionHtml`. An input layer asks on each input, so a
+  change applies from the next one, and drops what is held on each change.
+  No binding can hold a reserved input, so a lookup of one resolves to
+  nothing; the shell acts on the reserved inputs itself, and tests the
+  Start + Y chord before any button is looked up
+  ([app-shell-pause.md](app-shell-pause.md)).
 - **Resolver rules.** One catalogue and one device are validated and fall
   back together; a write stores only the actions that differ from their
   defaults (`overridesOf`), so stored garbage leaves at the first write.

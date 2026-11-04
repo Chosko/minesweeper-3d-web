@@ -770,8 +770,9 @@ test('the old per-size best times are neither read nor written, and are left whe
 test('3D actions come from the existing mouse state machine and controller mapping', () => {
   const main = code('js/main.js');
   assert.match(main, /new MouseActions\(onAction, hasSelection\)/);
-  assert.match(main, /if \(pressed\(BTN\.RT\)\) mouse\.down\(0\);/);
-  assert.match(main, /if \(pressed\(BTN\.LT\)\) mouse\.down\(2\);/);
+  assert.match(main, /const acts = padActions3D\(\{ held, pressed, released: .*\}, BINDINGS\);/, 'the controller through the 3D bindings');
+  assert.match(main, /for \(const b of acts\.press\) mouse\.down\(b\);/);
+  assert.match(main, /for \(const b of acts\.release\) mouse\.up\(b\);/);
 });
 
 // ---------------------------------------------------------------- in a browser

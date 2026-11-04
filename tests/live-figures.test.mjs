@@ -224,7 +224,7 @@ test('the controller\'s View button shows or hides the live figures in both mode
   assert.ok(board.indexOf('backButtons(') > board.indexOf('board2d.failure || board2d.generating'), 'Back only on the board status card');
   const play = fn('padPlaying');
   assert.match(play, /if \(pressed\(BTN\.BACK\)\) padToggleFigures\('hud-figures-toggle'\);/, 'the 3D overlay\'s toggle');
-  assert.match(play, /controls\.pad\.space = held\(BTN\.RB\);/, 'RB stays the Space view mode in 3D');
+  assert.match(play, /Object\.assign\(controls\.pad, acts\.modes\);/, 'the view modes through the 3D bindings, RB the Space view mode by default');
   assert.doesNotMatch(play, /backButtons\(/, 'View no longer pauses 3D play');
   const toggle = fn('padToggleFigures');
   assert.match(toggle, /checkVisibility\(\)/, 'nothing where the toggle is hidden (a phone, Learn 3D)');

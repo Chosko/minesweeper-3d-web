@@ -5,7 +5,7 @@ import { FlyCamera, OrbitCamera, orbitRange, MouseActions, Input, KeyLook, SPACI
 import { pickCell, pickCellBrute } from './picking.js';
 import { UI, clampSettings, NO_MOUSE_MSG, boardLine3D, boardLine2D } from './ui.js';
 import * as audio from './audio.js';
-import { Controls } from './controls.js';
+import { Controls, padActions3D, createStartChord } from './controls.js';
 import { createTouch3D, mountTouch3D, applyTouchStick, touchZone, VIBRATE_MS } from './touch-3d.js';
 import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, STICK_DEADZONE, PAD_PRESS, PAD_FLAG, PAD_BOOM, padPulse } from './gamepad.js';
 import { createRouter } from './shell/router.js';
@@ -24,7 +24,7 @@ import { createFiguresPanel } from './shell/live-figures.js';
 import { aimReadout } from './readability.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice } from './settings/bindings.js';
-import { createPauseController, restartInput, RESTART_NOTICE } from './shell/pause.js';
+import { createPauseController, restartInput, RESTART_NOTICE, RESTART_SCREENS } from './shell/pause.js';
 import { createLockFallback } from './shell/lock-fallback.js';
 import { createEndSkip } from './shell/end-skip.js';
 import { bindScenePalette, parseRgb } from './shell/scene-palette.js';
@@ -250,6 +250,20 @@ function cancelGeneration() {
   return true;
 }
 
+// ---------- settings store and bindings ----------
+// The store loads before the first screen shows; each setting's owner applies it by subscribing.
+// The loose ms3d.* keys are the browser build's alone: the Steam build hands the store and Reset all
+// data no legacy reader or remover (null), the web build leaves them their localStorage default.
+const LOOSE_KEYS = capabilities.desktopHost ? null : undefined;
+const SETTINGS = createSettingsStore({
+  storage,
+  legacy: LOOSE_KEYS,
+  onNotKept: () => ui.toast('Settings could not be saved in this browser. They last until you close the page.', 4000),
+});
+const settingsLoaded = SETTINGS.load();
+// The bindings resolver over the bindings setting: every input layer reads its actions through it.
+const BINDINGS = createBindings({ store: SETTINGS });
+
 const mouse = new MouseActions(onAction, hasSelection);
 // The ready card's pointer-lock refusals: from the second, it offers drag-to-look and the controller.
 const LOCK_FALLBACK = createLockFallback();
@@ -258,7 +272,8 @@ const input = new Input({
   mouse,
   isActive: () => (S.mode === 'playing' && !endDelay()) || looking(), // the look flies with mouse look, keys and wheel; its presses are LOOK_END's
   isDragLook: () => S.dragLook && S.lockless,
-  // Enter / ' act where the mouse buttons and the triggers act on the board; the arrows look where the mouse looks
+  bindings: BINDINGS,
+  // the reveal and flag keys act where the mouse buttons and the triggers act on the board; the arrows look where the mouse looks
   canAct: () => S.mode === 'playing' && !endDelay() && !board3d.failure && (input.locked || S.lockless),
   canLook: () => (S.mode === 'playing' && !endDelay() && !board3d.failure) || looking(),
   onLook: (dx, dy) => view3D().look(dx, dy),
@@ -331,20 +346,24 @@ function clearTouchModes() {
 const keyLook = new KeyLook(); // the arrows' look, ramped from each press
 
 // Fullscreen + Keyboard Lock (where supported) so Ctrl+W/Ctrl+S etc. reach the game instead of the browser.
-const LOCK_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Space', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight'];
+// The keys locked are the 3D keys held for an action: its moves and view modes as currently bound.
+const HELD_3D = ['forward', 'back', 'left', 'right', 'down', 'up', 'aimThrough', 'showHidden', 'neighbours'];
+const lockKeys = () => HELD_3D.flatMap((action) => BINDINGS.inputsFor('3d', 'keyboard', action));
 // The fullscreen setting's applier calls these; F flips the setting.
 function enterFullscreen() {
   const d = document;
   const el = d.documentElement;
   if (!el.requestFullscreen) return Promise.reject(new Error('fullscreen is not supported'));
   return el.requestFullscreen({ navigationUI: 'hide' }).then(() => {
-    navigator.keyboard?.lock?.(LOCK_KEYS).catch(() => {});
+    navigator.keyboard?.lock?.(lockKeys()).catch(() => {});
     if (S.mode === 'playing' && !S.lockless && !d.pointerLockElement) requestLock3D();
   });
 }
 function exitFullscreen() { return document.exitFullscreen?.(); }
 function toggleFullscreen() { SETTINGS.set('fullscreen', !document.fullscreenElement); }
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) navigator.keyboard?.unlock?.(); });
+// A rebinding in fullscreen locks the keys now bound.
+BINDINGS.onChange(() => { if (document.fullscreenElement) navigator.keyboard?.lock?.(lockKeys()).catch(() => {}); });
 
 /**
  * Every spacing change in play (the wheel, the D-pad, X, the debug hook): the camera's position scales
@@ -465,18 +484,7 @@ bindBoardArt({ applier: THEME, fonts: document.fonts });
 THEME.start({ notice: (text) => ui.toast(text, 4000) }).catch(() => showFatal());
 
 // ---------- settings ----------
-// The store loads before the first screen shows; each setting's owner applies it by subscribing.
-// The loose ms3d.* keys are the browser build's alone: the Steam build hands the store and Reset all
-// data no legacy reader or remover (null), the web build leaves them their localStorage default.
-const LOOSE_KEYS = capabilities.desktopHost ? null : undefined;
-const SETTINGS = createSettingsStore({
-  storage,
-  legacy: LOOSE_KEYS,
-  onNotKept: () => ui.toast('Settings could not be saved in this browser. They last until you close the page.', 4000),
-});
-const settingsLoaded = SETTINGS.load();
-// The bindings resolver over the bindings setting: every help surface shows its current bindings.
-const BINDINGS = createBindings({ store: SETTINGS });
+// Every help surface shows the current bindings.
 ui.setBindings(BINDINGS);
 applySettings(SETTINGS, {
   theme: THEME,
@@ -731,7 +739,7 @@ function answer2D(answer) {
   if (S.mode === 'paused') PAUSE.resume(padGesture ? 'pad' : 'pointer');
   answer();
 }
-const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { config: CLASSIC_2D, flow: FLOW_2D, lastChoice: LAST_CHOICE_2D, sound: sfx, buttonSwap: BUTTON_SWAP }));
+const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { config: CLASSIC_2D, flow: FLOW_2D, lastChoice: LAST_CHOICE_2D, sound: sfx, buttonSwap: BUTTON_SWAP, bindings: BINDINGS }));
 /** Every flat mode on the Classic 2D flow by mode id — its mode and last board choice; Hexagon and Triangle join as flatMode registers them. */
 const FLAT_2D = new Map([['classic-2d', { mode: mode2d, lastChoice: LAST_CHOICE_2D }]]);
 /** The active flat mode, whose game the Classic 2D window hosts — Classic 2D, Hexagon or Triangle —, or null. */
@@ -767,7 +775,7 @@ function flatMode(config, prefix) {
   const lastChoice = createLastChoice({ storage, config });
   const screen = `${config.id}-choice`;
   const flow = { ...FLOW_2D, openBoardChoice: (choice) => SHELL.go(screen, { data: { choice } }) };
-  const mode = MODES.register(config.id, (report) => createClassic2DMode(report, { config, flow, lastChoice, sound: sfx, buttonSwap: BUTTON_SWAP }));
+  const mode = MODES.register(config.id, (report) => createClassic2DMode(report, { config, flow, lastChoice, sound: sfx, buttonSwap: BUTTON_SWAP, bindings: BINDINGS }));
   FLAT_2D.set(config.id, { mode, lastChoice });
   let held = null; // the screen as Records found it, for the way back
   const choice = bindBoardChoice({
@@ -1782,6 +1790,8 @@ document.getElementById('ctx-lost-menu').addEventListener('click', () => showMai
 let padGesture = false; // a UI click is being made with the controller
 let padActing = false; // a MouseActions call is being made with the controller
 const nav = createHeldSuppressor(); // buttons held through a screen change: ignored until released
+BINDINGS.onChange(() => nav.screenChanged()); // and through a change of the bindings: dropped, not fired
+const START_Y = createStartChord(); // Start + Y, kept from the bindings
 const padRep = {
   up: new Repeat(), down: new Repeat(), left: new Repeat(), right: new Repeat(),
   inc: new Repeat(), dec: new Repeat(), spUp: new Repeat(), spDown: new Repeat(),
@@ -2043,18 +2053,20 @@ for (const t of ['mousedown', 'mousemove']) {
 /** One controller poll result -> game / menu actions. Runs once per frame. */
 function handlePad(p, dt, now) {
   nav.update(p.held);
-  const held = (b) => nav.held(p, b);
-  const pressed = (b) => nav.pressed(p, b);
+  // Start + Y is read before any button reaches the bindings; the chord's Y reads as not held through its release.
+  const chord = START_Y.update(p, (b) => nav.pressed(p, b), RESTART_SCREENS.includes(S.mode));
+  const held = (b) => !START_Y.keeps(b) && nav.held(p, b);
+  const pressed = (b) => !START_Y.keeps(b) && nav.pressed(p, b);
   if (p.active) needRender = true;
   // An end delay: a button pressed ends it and does nothing else; the held ones stay off the results card.
-  const anyPressed = p.pressed.some((_, b) => pressed(b));
+  const anyPressed = p.pressed.some((_, b) => nav.pressed(p, b));
   if (END_SKIP.pad(anyPressed)) { controls.releasePad(); return; }
   // The look: a button pressed brings the results card back and does nothing else; the sticks fly.
   if (LOOK_END.pad(anyPressed)) { if (looking()) padLook(p, dt); else controls.releasePad(); return; }
   // Start + Y: Y pressed while Start is held restarts, in play and on the pause card. Start's own
   // press already paused (or resumed), so Start is read unsuppressed; the buttons still held are
   // suppressed so Y does not act on the new board.
-  if (p.held[BTN.START] && pressed(BTN.Y) && restartInput('pad', { screen: S.mode, blocked: restartBlocked() })) {
+  if (chord && restartInput('pad', { screen: S.mode, blocked: restartBlocked() })) {
     PAUSE.restart('pad');
     layerChanged();
     return;
@@ -2071,21 +2083,22 @@ function padPlaying(p, held, pressed, dt, now) {
   if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; } // the overlay's pause button: Start alone pauses
   if (pressed(BTN.BACK)) padToggleFigures('hud-figures-toggle');
   if (pressed(BTN.X)) ui.userToggleHelp();
-  // Triggers drive the same release-based state machine as the mouse (both = chord via its toggle);
-  // a trigger's press pulses, the cue that its action comes on release.
-  if (pressed(BTN.RT) || pressed(BTN.LT)) padRumble(PAD_PRESS);
+  // The other buttons through the 3D bindings. Reveal and flag (the triggers by default) drive the same
+  // release-based state machine as the mouse (both = chord via its toggle); their press pulses, the cue
+  // that the action comes on release.
+  const acts = padActions3D({ held, pressed, released: (b) => !START_Y.keeps(b) && Boolean(p.released[b]) }, BINDINGS);
+  if (acts.press.length) padRumble(PAD_PRESS);
   padActing = true;
   try {
-    if (pressed(BTN.RT)) mouse.down(0);
-    if (pressed(BTN.LT)) mouse.down(2);
-    if (p.released[BTN.RT]) mouse.up(0);
-    if (p.released[BTN.LT]) mouse.up(2);
+    for (const b of acts.press) mouse.down(b);
+    for (const b of acts.release) mouse.up(b);
   } finally { padActing = false; }
-  controls.pad.shift = held(BTN.LB);
-  controls.pad.space = held(BTN.RB);
-  controls.pad.ctrl = held(BTN.Y);
+  Object.assign(controls.pad, acts.modes);
   padSticks(p, dt);
-  controls.axes.u = cameraMode === 'orbit' ? 0 : (held(BTN.A) ? 1 : 0) - (held(BTN.B) ? 1 : 0); // unused in Orbit: the board stays centred
+  const clamp = (v) => Math.max(-1, Math.min(1, v));
+  controls.axes.f = clamp(controls.axes.f + acts.move.f);
+  if (cameraMode !== 'orbit') controls.axes.r = clamp(controls.axes.r + acts.move.r);
+  controls.axes.u = cameraMode === 'orbit' ? 0 : acts.move.u; // unused in Orbit: the board stays centred
   const notches = padRep.spUp.update(held(BTN.UP), now) - padRep.spDown.update(held(BTN.DOWN), now);
   if (notches) setSpacing(spacingStep({ spacing: S.spacing }, notches).spacing); // one step a press and a repeat
 }
@@ -2428,6 +2441,8 @@ window.__ms = {
   /** Enter playing mode without pointer lock (headless tests). */
   forcePlay() { enterPlaying(true); },
   get controls() { return controls; },
+  /** The bindings resolver: current, actionFor, inputsFor, bind, clear, reset, onChange. */
+  get bindings() { return BINDINGS; },
   get pads() { return pads; },
   pause() { pauseGame('key'); },
   cellCenter,

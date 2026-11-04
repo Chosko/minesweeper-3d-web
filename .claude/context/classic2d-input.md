@@ -5,7 +5,10 @@
 The Classic 2D board's inputs, each a state machine over the session's
 actions plus a mount that wires it to the board view and the session. Every
 input rule reads a profile marker, so a rule change is a profile change,
-not a new state machine. The area overview is [classic2d.md](classic2d.md).
+not a new state machine; every mouse button, key and controller button
+means what the flat modes' bindings say
+([settings-bindings.md](settings-bindings.md)), which Hexagon and Triangle
+read too. The area overview is [classic2d.md](classic2d.md).
 
 - `js/classic2d/pointer-input.js` — the mouse press-and-release state
   machine and `mountPointerInput`. DOM-free at import.
@@ -20,15 +23,19 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
 ## PUBLIC API
 
 `js/classic2d/pointer-input.js`
-- `BUTTON` (`LEFT` 0, `MIDDLE` 1, `RIGHT` 2).
+- `BUTTON` (`LEFT` 0, `MIDDLE` 1, `RIGHT` 2, `CHORD` `'chord'`).
+- `pointerButton(bindings?, b)` → the logical button physical button `b`
+  stands for through the flat bindings: the first reveal input `LEFT`, the
+  second `MIDDLE`, a flag input `RIGHT`, a chord input `CHORD`, else null —
+  each button itself with no override.
 - `pointerRules(profile?)` → frozen `{chordInputs, revealInputs,
   flagToggle, pressFeedback, releaseOffCell}`, the reference profile's by
   default ([engine.md](engine.md)).
 - `createPointerInput({graph, game, onPress, onAction, rules?, active?})` →
-  `{down(button, c), up(button, c), move(c), reset(), holding}` — `c` the
-  cell under the pointer or -1; `onPress(cells)` on every change of the
+  `{down(button, c), up(button, c), move(c), reset(), holding}` — `button` a
+  logical button, `c` the cell under the pointer or -1; `onPress(cells)` on every change of the
   pressed set; `onAction(kind, c)` with `'reveal' | 'toggleFlag' | 'chord'`.
-- `mountPointerInput({view, session, graph?, win?, rules?, swap?})` →
+- `mountPointerInput({view, session, graph?, win?, rules?, swap?, bindings?})` →
   `{input, destroy()}`.
 
 `js/classic2d/button-swap.js`
@@ -48,34 +55,43 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
   onUserScroll?})` → `{input, destroy()}`.
 
 `js/classic2d/cursor-input.js`
-- `CURSOR_KEYS` (key code → `up`/`down`/`left`/`right`/`reveal`/`flag`/
-  `chord`), `PAD_MAP` (`BTN` index → the same), `STICK_THRESHOLD`.
+- `CURSOR_KEYS` (the default key codes → `up`/`down`/`left`/`right`/
+  `reveal`/`flag`/`chord`), `PAD_MAP` (the default `BTN` indices → the
+  same), both derived from the flat catalogue's defaults; `STICK_THRESHOLD`.
 - `createCursorInput({grid, geometry?, game, onPress, onAction, onCursor?, onUse?,
-  onPadCue?, rules?, active?, delay?, interval?, start?})` → `{cell, setCell(c), move(dx, dy),
+  onPadCue?, rules?, active?, delay?, interval?, start?, bindings?})` → `{cell, setCell(c), move(dx, dy),
   hold(source, dir), let(source, dir), tick(now), down(source, button),
-  up(source, button), pad(poll, now), reset(), holding, moving}` —
+  up(source, button), pad(poll, now), reset(), drop(), holding, moving}` — `drop()`
+  as `reset()` but the controller buttons still held stay ignored until
+  released and the stick's lean is kept (a change of the bindings);
   `start` the cell the cursor starts on (0; a daily's or a challenge's
   forced start cell, through `mountCursorInput`'s `start`); `onUse()` before each cursor input the board takes;
-  `onPadCue(kind)` a controller press the shell answers with a rumble — `'flag'` when X or LT placed or
-  removed a flag, else `'press'` when RT or LT was pressed while the board takes input (keys, A and Y
-  never report); `poll` a
+  `onPadCue(kind)` a controller press the shell answers with a rumble — `'flag'` when a controller button
+  (X or LT by default) placed or removed a flag, else `'press'` when a trigger (RT or LT, whatever it
+  is bound to) was pressed while the board takes input (keys never report; by default neither do A
+  and Y); `poll` a
   `GamepadReader` poll after the shell's held-button suppression
   ([input-controller.md](input-controller.md)).
 - `mountCursorInput({view, session, grid?, geometry?, win?, rules?, delay?,
-  interval?, onPadCue?, start?})` → `{input, pad(poll, now?), shown, destroy()}`.
+  interval?, onPadCue?, start?, bindings?})` → `{input, pad(poll, now?), shown, destroy()}`.
 
 ## INTERNAL PATTERNS
 
 - **Pointer input.** Reveal and chord act on the release of the last reveal
   button, a flag on the right press; a left + right gesture acts on the
-  left release, as a chord only. The mount listens for `mousedown` on the
+  left release, as a chord only; the chord button (a mouse button bound to
+  chord) shows the reveal buttons' feedback and chords a number on its
+  release, never revealing. Each physical button is translated at its press
+  through the bindings (`pointerButton`), then the swap, and its release
+  takes the same translation; a button bound to nothing is left to the
+  page, and a change of the bindings drops every held button. The mount listens for `mousedown` on the
   canvas and `mousemove` / `mouseup` / `blur` on the page (a second button
   held during the first fires no `pointerdown`), suppresses the context
   menu, takes input only while the session is `ready` or `playing` and not
   paused, and leaves a `PAN_MODIFIER` + primary press on a scrolling board
   to the pan (read from the physical button).
-- **Button swap.** It translates the physical button in front of the state
-  machine, never the finished action, so a swapped left press on a closed
+- **Button swap.** It translates the logical button the bindings produce,
+  in front of the state machine, never the finished action, so a swapped left press on a closed
   cell flags at once and a swapped right press reveals on release, with the
   press feedback and chords of the button it stands for. The translation is
   chosen at the press (the cell's state read from `session.game`) and kept
@@ -98,11 +114,16 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
   pinch: `view.zoom(tile at start × spread ratio, midpoint, board point
   under the start midpoint)`; lifting a finger ends the gesture. Input is
   taken while the session is `ready` or `playing` and not paused.
-- **Cursor input.** Space / Enter and A / RT only reveal (nothing on a
-  number), F and X / LT flag (on the press), D and Y only chord; reveal and
-  flag held together are left + right, chording when `chordInputs` has
-  `left+right`. B, Start and Back are unmapped: Start is the shell's
-  pause, Back its live-figures toggle, and B does nothing on the board. Press
+- **Cursor input.** Keys and controller buttons are read through the
+  bindings (`actionFor`), each meaning the action it had at its press until
+  its release; a change of the bindings drops every held input. Reveal —
+  Space / Enter (Numpad Enter as Enter) and A / RT by default — only
+  reveals (nothing on a number), flag — F and X / LT — flags on the press,
+  chord — D and Y — only chords; reveal and flag held together are left +
+  right, chording when `chordInputs` has `left+right`. B, Start and Back
+  are reserved, never bound: Start is the shell's pause, Back its
+  live-figures toggle, and B does nothing on the board; the shell keeps the
+  Start + Y chord's Y from the cursor. Press
   feedback and a held press under a moving cursor read the same profile
   markers as the pointer input. Each step up, down, left or right is the
   board's grid geometry's `neighbour` query (the square geometry of the
@@ -147,5 +168,6 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
 - Changing when the button swap trades buttons, or where it sits in the
   mouse path (`press` / `release` in `button-swap.js`; `onDown`, `onUp`
   and `closedAt` in `mountPointerInput`).
-- Changing a key or controller binding, or the cursor's repeat
-  (`CURSOR_KEYS`, `PAD_MAP`, `createCursorInput`).
+- Changing how a key or controller button reaches the cursor, or its
+  repeat (`createCursorInput`, `mountCursorInput`); a default binding is
+  the flat catalogue's ([settings-bindings.md](settings-bindings.md)).

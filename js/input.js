@@ -1,5 +1,8 @@
 // Free-fly camera (CameraInput.cs), pointer lock, keyboard/mouse state and the original
 // "act on button release" + chord-toggle logic (Minesweeper.cs LeftButtonDown/RightButtonDown).
+// Keys and mouse buttons mean what the 3D bindings say (js/settings/resolver.js actionFor).
+
+import { defaultBindings } from './settings/resolver.js';
 
 const DEG = Math.PI / 180;
 export const MOVE_SPEED = 50; // units / s
@@ -356,29 +359,46 @@ export class MouseActions {
   }
 }
 
-/** The keyboard's reveal and flag keys (event.code) and the mouse button each stands for. */
-const ACTION_KEYS = new Map([['Enter', 0], ['Quote', 2]]);
+/** The MouseActions button a 3D action stands for: reveal the left (0), flag the right (2). */
+const ACTION_BUTTON = Object.freeze({ reveal: 0, flag: 2 });
 
 /**
- * The keyboard's reveal and flag keys over the mouse's own MouseActions: Enter is button 0, ' is
- * button 2, so every release rule (chord, toggle, selection guard) is the mouse's. down(code, repeat)
- * and up(code) return whether the key is an action key; an auto-repeat presses nothing more, and a
- * release whose press this object never took (made outside play) does nothing. reset() forgets held keys.
+ * The MouseActions button (0 reveal, 2 flag) that `input` of `device` ('keyboard' or 'mouse') stands
+ * for through the 3D bindings (the defaults when none is given), or null: with no override Enter and
+ * the left button are 0, ' and the right button 2.
+ */
+export function actionButton3D(bindings = defaultBindings(), device, input) {
+  const action = bindings.actionFor('3d', device, input);
+  return Object.hasOwn(ACTION_BUTTON, action ?? '') ? ACTION_BUTTON[action] : null;
+}
+
+/**
+ * The keyboard's reveal and flag keys over the mouse's own MouseActions: a reveal key (Enter by
+ * default) is button 0, a flag key (') button 2, through `bindings`, so every release rule (chord,
+ * toggle, selection guard) is the mouse's. down(code, repeat) and up(code) return whether the key is an
+ * action key; an auto-repeat presses nothing more, and a release whose press this object never took
+ * (made outside play) does nothing. A held key releases the button it pressed. reset() forgets held keys.
  */
 export class KeyActions {
-  constructor(mouse) {
+  constructor(mouse, bindings = defaultBindings()) {
     this.mouse = mouse;
-    this.held = new Set();
+    this.bindings = bindings;
+    this.held = new Map(); // key code → the button its press pressed
   }
   down(code, repeat = false) {
-    if (!ACTION_KEYS.has(code)) return false;
-    if (!repeat && !this.held.has(code)) { this.held.add(code); this.mouse.down(ACTION_KEYS.get(code)); }
+    const button = this.held.get(code) ?? actionButton3D(this.bindings, 'keyboard', code);
+    if (button === null) return false;
+    if (!repeat && !this.held.has(code)) { this.held.set(code, button); this.mouse.down(button); }
     return true;
   }
   up(code) {
-    if (!ACTION_KEYS.has(code)) return false;
-    if (this.held.delete(code)) this.mouse.up(ACTION_KEYS.get(code));
-    return true;
+    if (this.held.has(code)) {
+      const button = this.held.get(code);
+      this.held.delete(code);
+      this.mouse.up(button);
+      return true;
+    }
+    return actionButton3D(this.bindings, 'keyboard', code) !== null;
   }
   reset() { this.held.clear(); }
 }
@@ -457,8 +477,6 @@ export class TapToggle {
   }
 }
 
-const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Space',
-  'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight']);
 // The arrow keys: keyboard look in play (Input.lookKeys); they reach onKey on every keydown, the browser's
 // key repeats included, for the shell's menu focus moves.
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
@@ -474,20 +492,30 @@ const RETURN_KEYS = new Set(['Home', 'KeyR']);
  */
 export function escResumes(press) { return !press.repeat && !press.locked; }
 
+/** The held 3D actions and the Input getter each one feeds: the view modes, and `move`'s keys. */
+const MOVE_KEYS = Object.freeze({ w: 'forward', a: 'left', s: 'back', d: 'right', q: 'down', e: 'up' });
+
 /**
  * DOM input: keyboard state, pointer lock, mouse buttons/look/wheel, the keyboard's look and action keys.
  * opts: { canvas, isActive(): bool (playing & locked), onLook(dx,dy), onWheel(notches),
  *         mouse: MouseActions, onKey(code) (non-held keys e.g. H/M), onLockChange(locked),
- *         canAct(): bool (Enter / ' act on the board; default isActive),
+ *         canAct(): bool (the reveal and flag keys act on the board; default isActive),
  *         canLook(): bool (the arrows look, their default prevented; default isActive),
- *         isDragLook(): bool (drag-to-look play: the mouse acts and looks without pointer lock) }
+ *         isDragLook(): bool (drag-to-look play: the mouse acts and looks without pointer lock),
+ *         bindings (the bindings resolver keys and mouse buttons are read through; the defaults) }
+ * The held keys are tracked by code and read through the bindings, so `shift`, `space`, `ctrl` and
+ * `move` are the 3D actions held; a mouse button presses the MouseActions button its action stands
+ * for (actionButton3D), and one bound to nothing acts on nothing. A change of the bindings drops every
+ * held input (drop()).
  */
 export class Input {
   constructor(opts) {
     this.o = opts;
+    this.bindings = opts.bindings ?? defaultBindings();
     this.keys = new Set();
-    this.spaceToggle = new TapToggle(); // Space: tap-toggle as well as hold
-    this.actions = new KeyActions(opts.mouse); // Enter / ' on the mouse's own state machine
+    this.dropped = new Set(); // keys held through a binding change: their auto-repeat holds nothing
+    this.spaceToggle = new TapToggle(); // the aim-through key: tap-toggle as well as hold
+    this.actions = new KeyActions(opts.mouse, this.bindings); // the reveal and flag keys on the mouse's own state machine
     this.canAct = () => (opts.canAct ?? opts.isActive)();
     this.canLook = () => (opts.canLook ?? opts.isActive)();
     this.drag = new DragLook({ mouse: opts.mouse, onLook: (dx, dy) => this.o.onLook(dx, dy) });
@@ -497,31 +525,36 @@ export class Input {
     this._lockPending = false; // a lock request whose failure has not been reported yet
     const doc = document;
     window.addEventListener('keydown', (e) => {
+      const action = this.action(e.code);
       if (ARROW_KEYS.has(e.code)) { // keyboard look; their focus moves outside play
         this.keys.add(e.code);
         if (this.canLook()) e.preventDefault();
-      } else if (ACTION_KEYS.has(e.code)) { // reveal / flag: no button activation, no quick find
+      } else if (this.actions.held.has(e.code) || actionButton3D(this.bindings, 'keyboard', e.code) !== null) { // reveal / flag: no button activation, no quick find
         if (this.canAct()) { e.preventDefault(); this.actions.down(e.code, e.repeat); }
-      } else if (GAME_KEYS.has(e.code)) {
+      } else if (action) { // a held action: a move or a view mode
         if (this.o.isActive()) e.preventDefault();
-        this.keys.add(e.code);
+        if (!(e.repeat && this.dropped.has(e.code))) this.keys.add(e.code);
       } else if (RETURN_KEYS.has(e.code) && this.o.isActive()) e.preventDefault();
       else if (e.ctrlKey && this.o.isActive()) {
         // Ctrl is the "show hidden cells" key: swallow Ctrl+<key> browser shortcuts where allowed
         e.preventDefault();
       }
-      if (e.code === 'Space' && !e.repeat) this.spaceToggle.down(performance.now(), this.o.isActive());
+      if (action === 'aimThrough' && !e.repeat) this.spaceToggle.down(performance.now(), this.o.isActive());
       this.lastKey = { code: e.code, repeat: e.repeat, locked: this.locked };
       if (!e.repeat || ARROW_KEYS.has(e.code)) this.o.onKey?.(e.code, e);
     });
     window.addEventListener('keyup', (e) => {
+      const action = this.action(e.code);
       this.keys.delete(e.code);
-      if (ACTION_KEYS.has(e.code)) {
+      this.dropped.delete(e.code);
+      const acts = this.actions.held.has(e.code) || Object.hasOwn(ACTION_BUTTON, action ?? '');
+      if (acts) {
         if (this.canAct()) { e.preventDefault(); this.actions.up(e.code); } else this.actions.held.delete(e.code); // dropped, never fired
       }
-      if (e.code === 'Space') this.spaceToggle.up(performance.now());
-      if (GAME_KEYS.has(e.code) && this.o.isActive()) e.preventDefault();
+      if (action === 'aimThrough') this.spaceToggle.up(performance.now());
+      if (action && !acts && this.o.isActive()) e.preventDefault();
     });
+    this.bindings.onChange(() => this.drop());
     window.addEventListener('blur', () => this.releaseAll());
     doc.addEventListener('visibilitychange', () => { if (doc.hidden) this.releaseAll(); });
 
@@ -545,20 +578,22 @@ export class Input {
     });
     doc.addEventListener('mousedown', (e) => {
       if (!this.o.isActive()) return;
+      const button = actionButton3D(this.bindings, 'mouse', e.button);
       if (this.locked) {
         e.preventDefault();
-        this.o.mouse.down(e.button);
+        if (button !== null) this.o.mouse.down(button);
       } else if (this.dragLook && e.target === this.o.canvas) { // a press on the overlay bar is the bar's
         e.preventDefault();
-        this.drag.down(e.button);
+        this.drag.down(button ?? `unbound ${e.button}`); // a button bound to nothing still drags the look
       }
     });
     doc.addEventListener('mouseup', (e) => {
       if (!this.o.isActive()) return;
+      const button = actionButton3D(this.bindings, 'mouse', e.button);
       if (this.locked) {
         e.preventDefault();
-        this.o.mouse.up(e.button);
-      } else if (this.dragLook) this.drag.up(e.button);
+        if (button !== null) this.o.mouse.up(button);
+      } else if (this.dragLook) this.drag.up(button ?? `unbound ${e.button}`);
     });
     doc.addEventListener('contextmenu', (e) => {
       if (e.target === this.o.canvas || this.locked) e.preventDefault();
@@ -585,21 +620,36 @@ export class Input {
     this.drag.reset();
   }
 
+  /** As releaseAll, for a change of the bindings: the keys still held stay dropped through their auto-repeat. */
+  drop() {
+    for (const code of this.keys) this.dropped.add(code);
+    this.releaseAll();
+  }
+
+  /** The 3D action key `code` is bound to, or null. */
+  action(code) { return this.bindings.actionFor('3d', 'keyboard', code); }
+
+  /** Whether a key bound to `action` is held. */
+  holds(action) {
+    for (const code of this.keys) if (this.action(code) === action) return true;
+    return false;
+  }
+
   /** Drag-to-look play is on, and the pointer is not locked. */
   get dragLook() { return !this.locked && !!this.o.isDragLook?.(); }
 
   has(code) { return this.keys.has(code); }
-  get shift() { return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'); }
-  get ctrl() { return this.keys.has('ControlLeft') || this.keys.has('ControlRight'); }
-  get space() { return this.keys.has('Space') || this.spaceToggle.on; }
+  get shift() { return this.holds('neighbours'); }
+  get ctrl() { return this.holds('showHidden'); }
+  get space() { return this.holds('aimThrough') || this.spaceToggle.on; }
   /** The arrows held, for KeyLook: x -1 left / +1 right, y -1 up / +1 down; opposite arrows cancel. */
   get lookKeys() {
     const k = this.keys;
     return { x: k.has('ArrowRight') - k.has('ArrowLeft'), y: k.has('ArrowDown') - k.has('ArrowUp') };
   }
+  /** The move actions held, by their default keys: w forward, a left, s back, d right, q down, e up. */
   get move() {
-    const k = this.keys;
-    return { w: k.has('KeyW'), a: k.has('KeyA'), s: k.has('KeyS'), d: k.has('KeyD'), q: k.has('KeyQ'), e: k.has('KeyE') };
+    return Object.fromEntries(Object.entries(MOVE_KEYS).map(([k, action]) => [k, this.holds(action)]));
   }
 
   get lockSupported() { return typeof Element !== 'undefined' && 'requestPointerLock' in Element.prototype; }

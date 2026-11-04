@@ -98,10 +98,16 @@ head comment. Both modes' end delay and its skip are
   `F2` (default always prevented) → `PAUSE.restart('key')`; `R` on `results`
   → `RESULTS.playAgain('key')`. `Enter` on `results` is its own listener
   (`resultsEnter`, [app-shell-results-view.md](app-shell-results-view.md)). `handlePad`
-  reads Start + Y after the end delay's skip: Y pressed while Start is held
-  (read unsuppressed) → `PAUSE.restart('pad')`, then `layerChanged()`.
+  reads Start + Y first, before any button reaches the bindings
+  (`START_Y`, `createStartChord`, [input-controller.md](input-controller.md)),
+  and acts on it after the end delay's skip: Y pressed while Start is held
+  (Start read unsuppressed) → `PAUSE.restart('pad')`, then `layerChanged()`;
+  on a `RESTART_SCREENS` screen the chord's Y reads as neither held nor
+  released through its release, whatever it is bound to.
   `restartBlocked()` — an end delay or an open confirmation — stops all
-  three ([app-shell-end-delay.md](app-shell-end-delay.md)).
+  three ([app-shell-end-delay.md](app-shell-end-delay.md)). All three are
+  reserved inputs, which no binding takes
+  ([settings-bindings.md](settings-bindings.md)).
 - **Hand-offs.** `PAUSE.attach(name, listener)`: `finished` and `abandoned`
   with the sealed replay beside the summary; `inProgress` at game started,
   at every pause of a started, unfinished game and on `pagehide`. The
