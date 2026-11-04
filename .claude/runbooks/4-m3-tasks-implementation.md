@@ -121,7 +121,7 @@ Context:
 
 Done: 2026-11-04, commit `3c01ffe` (10 files, +533/-12). Decision: the Steam achievements object gains `start({ history })`, called from `js/main.js` once the records load — catch-up needs the records, created after the platform; `onGameFinished` unlocks before it.
 
-## [ ] 19. Implement task 102 — Steamworks achievement definitions, threshold calibration and overlay check
+## [x] 19. Implement task 102 — Steamworks achievement definitions, threshold calibration and overlay check
 
 Depends on: 4, 6, 18
 
@@ -136,12 +136,16 @@ Context:
 /task-implement 102 --review
 ```
 
+Done: 2026-11-04, commit `8a75132` (4 files, +50/-21). Decision: the records held only Beginner games, so thresholds were set from typical boards and the user's choice — Classic Expert speed 1 / 1.5 / 2.5 3BV/s, efficiency 100 % / 130 %, cube Expert speed 0.2 3BV/s (a 30-minute game); the Steamworks descriptions quote these numbers. The 14 achievements carry placeholder icons on Steamworks.
+
 ## [ ] 20. Implement task 103 — Update documentation for feature `steam-achievements`
 
 Depends on: 17, 18, 19
 
 Context:
 - 2026-11-04 (from step 18): `.claude/context/platform.md` still says the achievements slot is empty. The Steam achievements object has a `start({ history })` method the feature document does not name, called from `js/main.js` with `RECORDS.games()` (a new copy of the whole history); before it `catchUp()` does nothing, and catch-up may run twice at start-up, harmlessly. `js/platform/bridge-client.js` gains `achievementsSet`, `setAchievement` and `storeStats`.
+
+- 2026-11-04 (from step 19): the thresholds are final, not provisional — Classic Expert speed 1 / 1.5 / 2.5 3BV/s, efficiency 100 % / 130 %, cube Expert speed 0.2 3BV/s — pinned by a test, and the feature document's open questions are replaced by a thresholds-and-display-text section. Changing a threshold means changing its Steamworks description too. Achievement icons on Steamworks are placeholders; final art is still to be authored. Catch-up unlocks history-earned achievements at launch, before any game.
 
 ```prompt
 /task-implement 103 --review
