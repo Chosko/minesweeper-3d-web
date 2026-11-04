@@ -525,14 +525,14 @@ its Claude Design canvas, with no backlog task:
 
 ```
 /theme-implement <canvas-url> <theme-id> [name="<display name>"]
-/theme-implement catch-up <changelog-url> <theme-id> [<canvas-url>]
+/theme-implement catch-up <theme-id> [<canvas-url>]
 ```
 
 The skill writes the theme to the theme contract, passes the conformance tests and the full suite,
 and commits the theme; when the design needs something the contract cannot express, it stops,
-writing nothing, and names the task needed. `catch-up` updates a theme from the design changelog's
-entries since its last catch-up and, once the update lands, records the new catch-up in the
-changelog.
+writing nothing, and names the task needed. `catch-up` updates a theme from the design changelog
+entries the design ledger records and the theme has not implemented, checks each of their points,
+and marks them implemented for the theme in the ledger.
 
 ## Design changes made in Claude Design
 
@@ -540,8 +540,8 @@ A design change previewed directly on the Claude Design canvas is logged as an e
 changelog, a Claude Docs document; entries are never edited once logged, and a correction is a newer
 entry. The project's `design-catch-up` Claude skill brings the repository up to date with the
 entries it has not caught up with: it amends the domain layer, plans the work as tasks, plan
-placements and an implementation runbook through the pipeline's own commands, behind one gate, and
-records what it caught up in [.claude/DESIGN-LEDGER.md](.claude/DESIGN-LEDGER.md), which also names
+placements and an implementation runbook — ending with `/theme-implement catch-up` for each theme
+the entries name — through the pipeline's own commands, behind one gate, and records what it caught up in [.claude/DESIGN-LEDGER.md](.claude/DESIGN-LEDGER.md), which also names
 the changelog:
 
 ```
