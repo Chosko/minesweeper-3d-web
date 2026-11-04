@@ -138,7 +138,7 @@ Context:
 
 Done: 2026-11-04, commit `8a75132` (4 files, +50/-21). Decision: the records held only Beginner games, so thresholds were set from typical boards and the user's choice — Classic Expert speed 1 / 1.5 / 2.5 3BV/s, efficiency 100 % / 130 %, cube Expert speed 0.2 3BV/s (a 30-minute game); the Steamworks descriptions quote these numbers. The 14 achievements carry placeholder icons on Steamworks.
 
-## [ ] 20. Implement task 103 — Update documentation for feature `steam-achievements`
+## [x] 20. Implement task 103 — Update documentation for feature `steam-achievements`
 
 Depends on: 17, 18, 19
 
@@ -150,6 +150,8 @@ Context:
 ```prompt
 /task-implement 103 --review
 ```
+
+Done: 2026-11-04, commit `b1049f7` (7 files, +136/-5). Premise wrong: the step-18 note was stale — `platform.md` names no achievements slot, and `platform-host.md` already describes the filled slot and `start({ history })`.
 
 ## [ ] 21. Implement task 104 — Leaderboard screen: board picker, scope tabs, entries and states
 
