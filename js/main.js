@@ -1018,6 +1018,9 @@ const REPLAYS = createReplayLibrary({
   onNotSaved: () => ui.toast('Replays cannot be saved in this browser — this session\'s replays will not be kept.', 4000),
 });
 REPLAYS.load();
+// The web build's local leaderboards rank the player's own wins from the records and link the
+// replays the library keeps; the Steam leaderboards ignore both.
+leaderboards.connect({ records: RECORDS, replays: REPLAYS });
 // Before the desktop host quits: a game in play ends as closing the page ends it, and the host waits
 // (bounded by its own timeout) until every save that queued is written.
 addFlushHook(async () => {

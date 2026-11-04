@@ -1,7 +1,10 @@
-// The Steam build's leaderboards (steam-leaderboards): the submission, its outbox and the Steam
-// submitter, the best cache, the reader and the replay fetcher, wired over the desktop host's bridge
-// client (no DOM). The platform fills its `leaderboards` slot with this (js/platform/index.js); the
-// results flow's end-of-game hand-off calls submit.
+// The leaderboards (steam-leaderboards), one module for both builds: the Steam build's — the
+// submission, its outbox and the Steam submitter, the best cache, the reader and the replay
+// fetcher, wired over the desktop host's bridge client — and the web build's local stand-in,
+// createLocalLeaderboards (js/leaderboards/local.js), with the same interface (no DOM). The platform
+// fills its `leaderboards` slot with one of the two (js/platform/index.js); the results flow's
+// end-of-game hand-off calls submit, and the game shell connects the records and the replay
+// library, which only the stand-in reads.
 //
 // createSteamLeaderboards({ client, capabilities, storage, openBlobStore, log? }) → leaderboards
 //   client         the platform's client of the desktop host's page bridge.
@@ -15,6 +18,8 @@
 //                  reading the best cache.
 //   entries, standing  the reader's (js/leaderboards/reader.js).
 //   replayFor      the replay fetcher's (js/leaderboards/replay-fetch.js).
+//   local          false; the stand-in's is true.
+//   connect({ records, replays })  nothing: the Steam leaderboards read Steam.
 //   started        the submission's start() Promise: the outbox loaded and flushed. It starts at
 //                  once; each time Steam reports it is logged on (watchLoggedOn) the best cache
 //                  reads what it has not read yet and the outbox flushes.
@@ -30,6 +35,8 @@ import { createSteamSubmitter } from './steam-submitter.js';
 import { createBestCache } from './best-cache.js';
 import { createFinder, createReader } from './reader.js';
 import { createReplayFetcher } from './replay-fetch.js';
+
+export { createLocalLeaderboards } from './local.js';
 
 export function watchLoggedOn(client) {
   const listeners = new Set();
@@ -75,6 +82,8 @@ export function createSteamLeaderboards({ client, capabilities, storage, openBlo
   onLoggedOn(() => { reading = reading.then(() => bestCache.load()); });
 
   return {
+    local: false,
+    connect() {},
     submit: (summary, replay) => submission.submit(summary, replay),
     state: (id) => submission.state(id),
     onChange: (fn) => submission.onChange(fn),

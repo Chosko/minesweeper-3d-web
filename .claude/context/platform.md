@@ -50,8 +50,9 @@ over ([app-shell-theme-runtime.md](app-shell-theme-runtime.md)).
 
 Platform module (`js/platform/index.js`) — what callers import: `storage`
 and its methods `register`, `load`, `save`, `clear`, `available` by name;
-`blobStore`; `leaderboards` — on the desktop host the Steam leaderboards
-(`js/leaderboards/index.js`), null on the web until its stand-in fills it —
+`blobStore`; `leaderboards` — on the desktop host the Steam leaderboards,
+on the web the local stand-in (`js/leaderboards/local.js`), both from
+`js/leaderboards/index.js` —
 and `achievements` (null until its feature fills it); `capabilities`, the live flags of what the host offers, which
 callers read instead of testing for the platform — `desktopHost` (the
 bridge is present), `steam` (the host runs the Steam adapter, not the

@@ -121,7 +121,7 @@ test('without the bridge the platform selects the browser implementations and lo
 
 test('js/platform/index.js selects once at start-up from the global the preload sets', () => {
   const index = read('js/platform/index.js');
-  assert.match(index, /selectPlatform\(\{ bridge: findBridge\(globalThis\), browser: BROWSER \}\)/);
+  assert.match(index, /selectPlatform\(\{ bridge: findBridge\(globalThis\), browser: BROWSER_SLOTS \}\)/);
   assert.match(index, /export const capabilities = PLATFORM\.capabilities;/);
 });
 

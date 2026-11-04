@@ -9,11 +9,13 @@
 // for Electron or the bridge: the web build's storage is the browser backend
 // (js/platform/browser-backend.js) for documents, and IndexedDB (js/platform/indexeddb-blob-store.js)
 // for blobs, falling back to memory (js/platform/memory-blob-store.js) when IndexedDB is unavailable
-// or refuses to open; leaderboards and achievements have no local stand-in yet (null).
+// or refuses to open; the leaderboards are the local stand-in over the player's own wins
+// (js/leaderboards/local.js); achievements have no local stand-in yet (null).
 //
 // Exports `storage` and its methods `register`, `load`, `save`, `clear`, `available` — the interface
 // documented in js/platform/storage.js —, `blobStore`, the interface documented in
-// js/platform/blob-store.js, `leaderboards`, `achievements`, and `capabilities`, the flags of what
+// js/platform/blob-store.js, `leaderboards`, the interface documented in js/leaderboards/index.js on
+// either build, `achievements`, and `capabilities`, the flags of what
 // the host offers (js/platform/capabilities.js), with the latest Steam state. From the host link
 // (linkHost, js/platform/bridge-client.js): `onOverlayActivated(listener)`, called when the Steam
 // overlay opens, and `addFlushHook(hook)`, a hook the host's flush before quitting awaits — with
@@ -32,7 +34,7 @@ import { openSteamBlobStore, REPLAY_STORE } from './steam-blob-store.js';
 import { createCapabilities } from './capabilities.js';
 import { findBridge, createBridgeClient, linkHost } from './bridge-client.js';
 import { bindWindowActions } from './window-actions.js';
-import { createSteamLeaderboards } from '../leaderboards/index.js';
+import { createSteamLeaderboards, createLocalLeaderboards } from '../leaderboards/index.js';
 
 /** Every storage and blob request the Steam implementations have in flight, for the quit flush. */
 const STEAM_SAVES = createSaveTracker();
@@ -58,13 +60,13 @@ export const STEAM_SLOTS = Object.freeze({
 });
 
 /** The web build's implementation of each slot. */
-const BROWSER = Object.freeze({
+export const BROWSER_SLOTS = Object.freeze({
   storage: () => createStorage({ backend: createBrowserBackend() }),
   blobStore: () => createBlobStore({
     open: () => openIndexedDBBlobStore(),
     fallback: () => createMemoryBlobStore(),
   }),
-  leaderboards: () => null,
+  leaderboards: () => createLocalLeaderboards(),
   achievements: () => null,
 });
 
@@ -91,7 +93,7 @@ export function selectPlatform({ bridge, browser, steam = STEAM_SLOTS }) {
   };
 }
 
-const PLATFORM = selectPlatform({ bridge: findBridge(globalThis), browser: BROWSER });
+const PLATFORM = selectPlatform({ bridge: findBridge(globalThis), browser: BROWSER_SLOTS });
 
 export const storage = PLATFORM.storage;
 export const { register, load, save, clear, available } = storage;

@@ -16,7 +16,7 @@ Feature: steam-cloud-saves
 
 ## 98. Local leaderboards stand-in for the web build
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/leaderboards/local.js, js/leaderboards/index.js, js/platform/index.js, tests/leaderboards-local.test.mjs
 Preconditions: none
