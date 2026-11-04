@@ -244,12 +244,14 @@ Context:
 
 Done: 2026-11-04, commit `3880759` (19 files, +1154/-296). Decision: the bindings setting is a schema entry `bindings` of a new type `overrides`, validated by the resolver (`js/settings/resolver.js`), with no control of its own; the flat modes also reserve H, M and Shift, and F1–F12 are reserved everywhere; a swap that would leave the other action with no input on its device is refused (`last`). The shell key hints stay fixed.
 
-## [ ] 29. Implement task 112 — Classic 2D and 3D input read their actions through the bindings
+## [~] 29. Implement task 112 — Classic 2D and 3D input read their actions through the bindings
 
 Depends on: 28
 
 Context:
 - 2026-11-04 (from step 28): the input layers still read their own fixed keys — switching them to the resolver (`js/settings/resolver.js`) is this step. Numpad Enter counts as Enter in the flat modes only (Classic 2D, Hexagon, Triangle reveal); 3D keeps Enter-only reveal. The flat modes reserve B, H, M and Shift, and F1–F12 are reserved everywhere. `UI.setBindings(resolver)` is wired in `js/main.js`, and every help surface redraws on a binding change.
+
+- 2026-11-04 (interrupted): the run was stopped mid-step at the user's request. Task 112's work sits uncommitted in the worktree `.claude/worktrees/runbook-4-step-29` (branch `wt/runbook-4-step-29`, base `38343ef`): code, tests and context files, review round 1 run and its three findings fixed, nothing committed. Finish it there — tests, round 2, commit, rebase onto main — or remove the worktree to re-run the step from scratch.
 
 ```prompt
 /task-implement 112 --review --rounds 2
