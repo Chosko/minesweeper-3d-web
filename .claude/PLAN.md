@@ -1,7 +1,7 @@
 # Plan
 
 Roadmap: .claude/domain/product-roadmap.md
-Last reconciled: 2026-10-23
+Last reconciled: 2026-11-05
 
 ---
 
@@ -31,7 +31,7 @@ Features: theme-system, shared-screen-layout, in-game-layout, themed-board-art-a
 
 ## m2c-flat-grids — Hexagon and Triangle join the game
 
-Status: [PLANNED]
+Status: [SHIPPED]
 Covers: product-design.md § Hexagon, product-design.md § Triangle, product-design.md § Main menu and game shell, product-design.md § Daily board, product-design.md § Visual design system
 Features: flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, flat-grid-modes, flat-grid-records-replays, flat-grid-menu-entries
 
