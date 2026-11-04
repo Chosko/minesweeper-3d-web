@@ -244,18 +244,18 @@ Context:
 
 Done: 2026-11-04, commit `3880759` (19 files, +1154/-296). Decision: the bindings setting is a schema entry `bindings` of a new type `overrides`, validated by the resolver (`js/settings/resolver.js`), with no control of its own; the flat modes also reserve H, M and Shift, and F1–F12 are reserved everywhere; a swap that would leave the other action with no input on its device is refused (`last`). The shell key hints stay fixed.
 
-## [~] 29. Implement task 112 — Classic 2D and 3D input read their actions through the bindings
+## [x] 29. Implement task 112 — Classic 2D and 3D input read their actions through the bindings
 
 Depends on: 28
 
 Context:
 - 2026-11-04 (from step 28): the input layers still read their own fixed keys — switching them to the resolver (`js/settings/resolver.js`) is this step. Numpad Enter counts as Enter in the flat modes only (Classic 2D, Hexagon, Triangle reveal); 3D keeps Enter-only reveal. The flat modes reserve B, H, M and Shift, and F1–F12 are reserved everywhere. `UI.setBindings(resolver)` is wired in `js/main.js`, and every help surface redraws on a binding change.
 
-- 2026-11-04 (interrupted): the run was stopped mid-step at the user's request. Task 112's work sits uncommitted in the worktree `.claude/worktrees/runbook-4-step-29` (branch `wt/runbook-4-step-29`, base `38343ef`): code, tests and context files, review round 1 run and its three findings fixed, nothing committed. Finish it there — tests, round 2, commit, rebase onto main — or remove the worktree to re-run the step from scratch.
-
 ```prompt
 /task-implement 112 --review --rounds 2
 ```
+
+Done: 2026-11-04, commit `a708d1c` (24 files, +1003/-239). Two review rounds, nothing blocking. Deferred to step 30: the resolver accepts a mouse button bound to an action other than reveal, flag or chord, and no input layer fires it.
 
 ## [ ] 30. Implement task 113 — Rebinding controls on the Settings page
 
@@ -267,6 +267,8 @@ Context:
 - Task 113 builds into the framed Settings page and waits on task 171 (themes-tasks-implementation step 60); the owner supplies an artboard drawing the rebinding panels.
 
 - 2026-11-04 (from step 28): the `bindings` setting (type `overrides`) has no Settings control of its own — this step adds it. A swap that would leave the other action with no input on its device is refused with reason `last`; reserved inputs are B, H, M and Shift in the flat modes, the shell's Back, and F1–F12. `keyHintKeys` accepts a catalogue action and shows its current inputs.
+
+- 2026-11-04 (from step 29): `bind` accepts a mouse button on any catalogue action, but the input layers fire a mouse button only for reveal, flag and chord — a mouse button bound to a 3D move or view mode, or to a flat cursor move, is saved and does nothing. Settle it here: the mouse tab offers only reveal, flag and chord and the resolver refuses the rest, or the layers learn to honour them.
 
 ```prompt
 /task-implement 113 --review
