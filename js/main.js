@@ -34,6 +34,7 @@ import { bindBoardArt } from './shell/board-art.js';
 import { BOARD_ART } from './classic2d/tile-skin.js';
 import { storage, blobStore, leaderboards, achievements, capabilities, onOverlayActivated, addFlushHook, bindDesktopWindow } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
+import { createBindings } from './settings/resolver.js';
 import { createRecordsStore } from './records/store.js';
 import { countedClicks } from './records/summary.js';
 import { createResultsFlow } from './results/flow.js';
@@ -474,6 +475,9 @@ const SETTINGS = createSettingsStore({
   onNotKept: () => ui.toast('Settings could not be saved in this browser. They last until you close the page.', 4000),
 });
 const settingsLoaded = SETTINGS.load();
+// The bindings resolver over the bindings setting: every help surface shows its current bindings.
+const BINDINGS = createBindings({ store: SETTINGS });
+ui.setBindings(BINDINGS);
 applySettings(SETTINGS, {
   theme: THEME,
   sfx: typeof sfx.setVolume === 'function' ? sfx : null,

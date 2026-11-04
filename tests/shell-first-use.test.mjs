@@ -235,7 +235,7 @@ test('the scroll hint reads "Drag to pan · pinch to zoom" on a coarse-only devi
   assert.equal(hintText('scrollHint', 'keyboard'), 'Wheel scrolls · Shift+wheel sideways');
   assert.equal(hintText('scrollHint', 'controller'), 'Wheel scrolls · Shift+wheel sideways');
   const ui = read('js/ui.js');
-  assert.match(ui, /scroll \? hintText\('scrollHint', this\._bindDevice\(this\._mode\), this\._glyphs\)/,
+  assert.match(ui, /scroll \? hintText\('scrollHint', this\._bindDevice\(this\._mode\), this\._glyphs, this\._bindings\)/,
     'the clipped-board hint takes the touch text where the help surfaces take the touch rows');
   assert.match(ui, /_bindDevice\(mode\) \{\n    return this\._touch && this\._device === 'keyboard' \? 'touch' : this\._device;/,
     'on a coarse-only device (setTouch3D), unless a controller is in use');
@@ -249,7 +249,7 @@ test('on a coarse-only device each mode\'s hint strip reads its touch wording, u
   assert.equal(text(hintStripHtml('3d', 'touch')), 'Tap reveal · Long-press flag · Two-finger tap chord');
   for (const mode of ['classic-2d', '3d']) assert.doesNotMatch(hintStripHtml(mode, 'touch', GLYPHS.xbox), /<kbd/, `${mode}: no key or pad glyph`);
   const ui = read('js/ui.js');
-  assert.match(ui, /: hintStripHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs\)/,
+  assert.match(ui, /: hintStripHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs, this\._bindings\)/,
     'the mode\'s strip takes the device the bindings lists take: touch on a coarse-only device, the controller while it is in use');
 });
 
@@ -375,7 +375,7 @@ test('on a coarse-only device the auto-hide toast and the aim hint name the touc
   assert.equal(hintText('aimHint', 'touch', GLYPHS.xbox), 'Tap the Space button to aim through numbers.');
   // Both are drawn for the device the help surfaces speak for: touch unless a controller is in use.
   const ui = read('js/ui.js');
-  assert.match(ui, /hint\(name\) \{\s*return hintText\(name, this\._bindDevice\(this\._mode\), this\._glyphs\);/);
+  assert.match(ui, /hint\(name\) \{\s*return hintText\(name, this\._bindDevice\(this\._mode\), this\._glyphs, this\._bindings\);/);
   assert.match(MAIN, /ui\.toast\(ui\.hint\('autoHide'\), 4000, \{ firstUse: true \}\)/);
   assert.match(MAIN, /ui\.toast\(ui\.hint\('aimHint'\), 4000, \{ firstUse: true \}\)/);
   assert.doesNotMatch(MAIN, /hintText\(/, 'the shell never picks a hint\'s device itself');

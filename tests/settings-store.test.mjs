@@ -55,6 +55,7 @@ const EXPECTED_DEFAULTS = {
   aimReadout: true,
   fieldOfView: 60,
   camera: 'fly',
+  bindings: {},
 };
 
 // ---------------------------------------------------------------- schema
@@ -81,7 +82,7 @@ test('the schema declares every setting with its type, range or values, and defa
   );
   for (const key of SETTING_KEYS) {
     assert.equal(SCHEMA[key].key, key);
-    assert.equal(SCHEMA[key].default, EXPECTED_DEFAULTS[key]);
+    assert.deepEqual(SCHEMA[key].default, EXPECTED_DEFAULTS[key]);
     assert.ok(isValid(key, SCHEMA[key].default), `${key} default is valid`);
   }
   assert.ok(Object.isFrozen(SCHEMA) && Object.isFrozen(SCHEMA.theme) && Object.isFrozen(DEFAULTS));
@@ -125,7 +126,7 @@ test('the format step maps a stored light or dark to Joyful tiles; a version-1 d
     const { store, stored } = setup({ initial: { [SETTINGS_DOC]: raw(1, before) } });
     await store.load();
     assert.equal(store.get('theme'), 'joyful-tiles', `a stored ${theme}`);
-    for (const key of SETTING_KEYS.filter((k) => k !== 'theme')) assert.equal(store.get(key), before[key], `${theme}: ${key} intact`);
+    for (const key of SETTING_KEYS.filter((k) => k !== 'theme')) assert.deepEqual(store.get(key), before[key], `${theme}: ${key} intact`);
     assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: { ...before, theme: 'joyful-tiles' } }, 'saved back at the new version');
   }
   const { store } = setup({ initial: { [SETTINGS_DOC]: raw(1, { lookSensitivity: 2, theme: 'dark' }) } });
@@ -264,12 +265,12 @@ test('the field of view: 45 for a first start that carries over a legacy value, 
 test('a document that is not an object loads as every default', async () => {
   const { store } = setup({ initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, [1, 2]) } });
   await store.load();
-  for (const key of SETTING_KEYS) assert.equal(store.get(key), EXPECTED_DEFAULTS[key]);
+  for (const key of SETTING_KEYS) assert.deepEqual(store.get(key), EXPECTED_DEFAULTS[key]);
 });
 
 test('get returns a valid default before load, and throws on an unknown key', () => {
   const { store } = setup();
-  for (const key of SETTING_KEYS) assert.equal(store.get(key), EXPECTED_DEFAULTS[key]);
+  for (const key of SETTING_KEYS) assert.deepEqual(store.get(key), EXPECTED_DEFAULTS[key]);
   assert.throws(() => store.get('nope'), /unknown setting/);
   assert.throws(() => store.set('nope', 1), /unknown setting/);
   assert.throws(() => store.set('theme', FIXTURE_ID), /before load/);
@@ -384,7 +385,7 @@ test('with no settings document the legacy keys are read once and written into t
     ['ms3d.invertY', 'ms3d.lookSens', 'ms3d.muted', 'ms3d.volume'],
   );
   const expected = { ...EXPECTED_DEFAULTS, lookSensitivity: 2.5, invertY: true, volume: 0.3, muted: true, fieldOfView: 45 };
-  for (const key of SETTING_KEYS) assert.equal(store.get(key), expected[key]);
+  for (const key of SETTING_KEYS) assert.deepEqual(store.get(key), expected[key]);
   assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: settingsPart(expected) });
   assert.deepEqual(machine(), { version: MACHINE_SETTINGS_VERSION, data: { lookSensitivity: 2.5, renderResolution: 'auto' } }, 'the sensitivity in the machine settings document');
 
@@ -411,7 +412,7 @@ test('missing or garbage legacy values take the defaults', async () => {
   const legacy = legacyOf({ 'ms3d.lookSens': 'abc', 'ms3d.volume': '' });
   const { store, stored } = setup({ legacy });
   await store.load();
-  for (const key of SETTING_KEYS) assert.equal(store.get(key), EXPECTED_DEFAULTS[key]);
+  for (const key of SETTING_KEYS) assert.deepEqual(store.get(key), EXPECTED_DEFAULTS[key]);
   assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: settingsPart(EXPECTED_DEFAULTS) });
 });
 
@@ -419,7 +420,7 @@ test('a legacy reader that throws is treated as no legacy values', async () => {
   const legacy = { get() { throw new Error('SecurityError'); } };
   const { store } = setup({ legacy });
   await store.load();
-  for (const key of SETTING_KEYS) assert.equal(store.get(key), EXPECTED_DEFAULTS[key]);
+  for (const key of SETTING_KEYS) assert.deepEqual(store.get(key), EXPECTED_DEFAULTS[key]);
 });
 
 // ---------------------------------------------------------------- failure
@@ -429,7 +430,7 @@ test('unreadable storage gives every default and carries nothing over', async ()
   const { store, backend } = setup({ legacy, initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, { theme: FIXTURE_ID }) } });
   backend.read = async () => { throw new Error('denied'); };
   await store.load();
-  for (const key of SETTING_KEYS) assert.equal(store.get(key), EXPECTED_DEFAULTS[key]);
+  for (const key of SETTING_KEYS) assert.deepEqual(store.get(key), EXPECTED_DEFAULTS[key]);
   assert.deepEqual(legacy.reads, []);
 });
 
@@ -573,7 +574,7 @@ test('the Steam build hands the store no legacy reader: a first start reads no l
     const store = createSettingsStore({ storage: createStorage({ backend }), legacy: null });
     await store.load();
     assert.equal(touched, 0, 'browser storage never read');
-    for (const key of SETTING_KEYS) assert.equal(store.get(key), EXPECTED_DEFAULTS[key], `${key}: the default`);
+    for (const key of SETTING_KEYS) assert.deepEqual(store.get(key), EXPECTED_DEFAULTS[key], `${key}: the default`);
     assert.ok(backend.documents.has(SETTINGS_DOC) && backend.documents.has(MACHINE_SETTINGS_DOC), 'both documents saved');
   } finally {
     if (saved) Object.defineProperty(globalThis, 'localStorage', saved);

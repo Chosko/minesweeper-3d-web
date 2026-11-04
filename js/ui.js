@@ -133,6 +133,8 @@ export class UI {
     this._device = 'keyboard'; // the active device: 'keyboard' (and mouse) | 'controller'
     this._glyphs = GLYPHS.generic; // the active controller's, for the bindings shown
     this._camera = 'fly'; // the Camera setting, whose 3D rows the bindings show: 'fly' | 'orbit'
+    this._bindings = null; // the bindings resolver every help surface reads (setBindings); the defaults until set
+    this._unbindBindings = () => {};
     this._mapping = 'standard';
     this._muted = false;
     this._hint = false; // the hint strip shows
@@ -408,7 +410,7 @@ export class UI {
         options[i].tabIndex = st.tabIndex;
       });
     }
-    this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera, { mode, device });
+    this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera, { mode, device, bindings: this._bindings });
   }
   /** Close the Settings page's Reset all data confirmation (Back); false when none is open. */
   closeResetConfirm() {
@@ -669,8 +671,8 @@ export class UI {
     if (on) {
       if (learn) this.el.hintStripText.textContent = this.hint(learn);
       else {
-        this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._bindDevice(this._mode), this._glyphs)
-          : hintStripHtml(this._mode, this._bindDevice(this._mode), this._glyphs);
+        this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._bindDevice(this._mode), this._glyphs, this._bindings)
+          : hintStripHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._bindings);
       }
     }
     this.el.hintClose.classList.toggle('hidden', this._hintKind === 'learn');
@@ -901,6 +903,16 @@ export class UI {
     this._device = device;
     this._renderBindings();
   }
+  /**
+   * The bindings resolver (js/settings/resolver.js) every help surface reads: each redraws with the
+   * current bindings now and after every change of them.
+   */
+  setBindings(bindings) {
+    this._unbindBindings();
+    this._bindings = bindings;
+    this._unbindBindings = bindings ? bindings.onChange(() => this._renderBindings()) : () => {};
+    this._renderBindings();
+  }
   /** The Camera setting ('fly' | 'orbit'): the 3D rows, the ready card's among them, follow it. */
   setCamera(camera) {
     if (camera === this._camera) return;
@@ -918,21 +930,21 @@ export class UI {
   }
   /** A one-time hint's or Learn 3D prompt's text (js/settings/bindings.js HINT_TEXT) for the device the help surfaces speak for. */
   hint(name) {
-    return hintText(name, this._bindDevice(this._mode), this._glyphs);
+    return hintText(name, this._bindDevice(this._mode), this._glyphs, this._bindings);
   }
   /** The device a help surface of `mode` speaks for: on a touch device, touch unless a controller is in use. */
   _bindDevice(mode) {
     return this._touch && this._device === 'keyboard' ? 'touch' : this._device;
   }
   _renderHelp() {
-    this.el.helpList.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
+    this.el.helpList.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera, this._bindings);
     this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._bindDevice(this._mode), this._glyphs)}${this._note()}`;
   }
   /** Each figures panel's controls reminder: its mode's main bindings for the active device. */
   _renderReminder() {
     const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
     for (const [el, mode] of [[this.el.c2dReminder, 'classic-2d'], [this.el.hudReminder, '3d']]) {
-      el.innerHTML = reminderKeys(mode, this._bindDevice(mode), this._glyphs).map(({ keys, label }) => {
+      el.innerHTML = reminderKeys(mode, this._bindDevice(mode), this._glyphs, this._bindings).map(({ keys, label }) => {
         const caps = keys.map((k) => `<kbd class="ui-key-hint__key">${esc(k.text)}</kbd>`).join('+');
         return `<span class="ui-key-hint${keys.every((k) => k.pad) ? ' ui-key-hint--pad' : ''}">${caps}<span class="ui-key-hint__label">${esc(label)}</span></span>`;
       }).join('');
@@ -946,12 +958,12 @@ export class UI {
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
-    for (const id of ['c2d-choice', 'hex-choice', 'tri-choice', 'c2d', 'hud', 'board-choice', 'daily', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
+    for (const id of ['c2d-choice', 'hex-choice', 'tri-choice', 'c2d', 'hud', 'board-choice', 'daily', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs, { mode: this._mode, bindings: this._bindings }));
     this._renderReminder();
     this._renderHelp();
     this._renderHudStrip();
-    this.el.pauseControls.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
-    this.el.readyKeys.innerHTML = readyListHtml(this._touch ? 'touch' : 'keyboard', this._glyphs, this._camera);
+    this.el.pauseControls.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera, this._bindings);
+    this.el.readyKeys.innerHTML = readyListHtml(this._touch ? 'touch' : 'keyboard', this._glyphs, this._camera, this._bindings);
     if (this._hint) this.setHintStrip(true, { scroll: this._hintKind === 'scroll', learn: this._learnHint });
     if (!this.el.settings.classList.contains('hidden')) this._renderSettingsBindings();
   }

@@ -146,7 +146,7 @@ Feature: results-steam-rank
 
 ## 111. Action catalogue, bindings resolver and the bindings setting
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/settings/bindings.js, js/settings/resolver.js, js/settings/schema.js, js/settings/store.js, js/ui.js, js/ui/components.js, tests/settings-bindings.test.mjs
 Preconditions: none

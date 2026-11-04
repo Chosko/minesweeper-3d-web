@@ -41,9 +41,10 @@ code chip and the figures panel. The catalogue those binders follow is [app-shel
   each returns an unbind.
 - `showKeyHints(root, keysFor)`: fills every `.ui-key-hint[data-action]`
   under `root` with the keys `keysFor(action)` gives (the bindings source's
-  `keyHintKeys` for the active device), `ui-key-hint--pad` for controller
+  `keyHintKeys` for the active device: a shell action's fixed keys, a
+  catalogue action's current bindings), `ui-key-hint--pad` for controller
   buttons, hidden with none (touch); `UI` calls it on every device change
-  ([app-shell-help.md](app-shell-help.md)).
+  and every change of the bindings ([app-shell-help.md](app-shell-help.md)).
 - `PAGER_WINDOW` (the numbered pages shown), `pagerState(page, pages)` → `{hidden, page, pages,
   first, last, numbers: [{page, label, current}]}`; `bindPager(nav, {onPage,
   name?})` → `{show(state)}`: fills a `.ui-pager` with First, the numbered

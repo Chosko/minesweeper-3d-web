@@ -7,8 +7,9 @@ the validated values and persisting them through platform storage, the
 appliers that carry each value to its owner
 ([settings-appliers.md](settings-appliers.md)), the Settings page
 ([settings-page.md](settings-page.md)) with Reset all data
-([settings-reset.md](settings-reset.md)) and the bindings source every
-help surface reads ([settings-bindings.md](settings-bindings.md)). Every
+([settings-reset.md](settings-reset.md)), and the action catalogues, the
+bindings resolver and the bindings source every help surface reads
+([settings-bindings.md](settings-bindings.md)). Every
 module is DOM-free; `js/main.js` wires them ([app-shell.md](app-shell.md)).
 Each module's head comment states its full contract.
 
@@ -19,7 +20,8 @@ Each module's head comment states its full contract.
 | `js/settings/appliers.js` | each setting's effect, applied by its owner subscribing to the store; the render-resolution pixel-ratio rule ([settings-appliers.md](settings-appliers.md)) |
 | `js/settings/page.js` | the Settings page and the control binder ([settings-page.md](settings-page.md)), the Data panel's binder ([settings-reset.md](settings-reset.md)) |
 | `js/settings/reset.js` | Reset all data ([settings-reset.md](settings-reset.md)) |
-| `js/settings/bindings.js` | the bindings source and the active device ([settings-bindings.md](settings-bindings.md)) |
+| `js/settings/bindings.js` | the action catalogues, the bindings source and the active device ([settings-bindings.md](settings-bindings.md)) |
+| `js/settings/resolver.js` | the bindings resolver: the catalogues' defaults joined with the `bindings` setting, both directions, bind / clear / reset through the store ([settings-bindings.md](settings-bindings.md)) |
 
 | Setting | Type | Range / values | Default | Applied to |
 | --- | --- | --- | --- | --- |
@@ -34,11 +36,12 @@ Each module's head comment states its full contract.
 | `muted` | boolean | | false | `sfx.setMuted`, the HUD strip (`UI.setSound`), the Sound switch of the page and the pause card (on while false) |
 | `aimReadout` | boolean | | true | "3D neighbour count": the aimed-cell readout beside the crosshair, read each frame by `updateReadout` in `js/main.js` ([app-shell-3d-camera.md](app-shell-3d-camera.md)) |
 | `fieldOfView` | number | `SCHEMA`'s min–max (degrees) | `SCHEMA`'s (`EXISTING_FIELD_OF_VIEW` for an existing install) | the 3D renderer camera's vertical `fov` and projection, then a redraw — play, the menu backdrop and the 3D replay viewer |
+| `bindings` | overrides | a plain object: catalogue → device → action → inputs, only the actions the player changed; the resolver validates the rest | `{}` | the bindings resolver (`js/settings/resolver.js`), which every help surface reads ([settings-bindings.md](settings-bindings.md)) |
 | `camera` | choice | `fly`, `orbit` | `fly` | the 3D camera's mode: `js/main.js`'s `setCameraMode`, also mid-game ([app-shell-3d-camera.md](app-shell-3d-camera.md)), and the 3D rows every help surface shows ([settings-bindings.md](settings-bindings.md)) |
 
 ## PUBLIC API
 
-- Schema: `SCHEMA` (frozen `{ key, type: 'number' | 'boolean' | 'choice',
+- Schema: `SCHEMA` (frozen `{ key, type: 'number' | 'boolean' | 'choice' | 'overrides',
   min?, max?, values?, default, known? }` per setting; a choice with
   `known(value)` accepts what it accepts — the theme's `values` are
   `THEMES`' ids in catalogue order, its `known` is `isRegisteredTheme`),

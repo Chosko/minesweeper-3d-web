@@ -54,10 +54,12 @@
 //                                focused control inside keeps the focus.
 // bindSettingsLayout(root, { matchMedia? }) → unbind: places the sections for the area now and on
 //                                every change of a layout's media.
-// bindingsSectionHtml(glyphs?, camera?, { mode?, device? }) → the bindings list (dl.ui-controls) of one
-//                                mode (default Classic 2D) for one input device (default the keyboard;
-//                                one the mode does not list falls back to its first), controller
-//                                buttons in `glyphs`, 3D's for the Camera setting's `camera`.
+// bindingsSectionHtml(glyphs?, camera?, { mode?, device?, bindings? }) → the bindings list
+//                                (dl.ui-controls) of one mode (default Classic 2D) for one input device
+//                                (default the keyboard; one the mode does not list falls back to its
+//                                first), controller buttons in `glyphs`, 3D's for the Camera setting's
+//                                `camera`, from the current `bindings` (js/settings/resolver.js; the
+//                                defaults when none is given).
 // bindSettingControls(elements, store, { onUserChange?, theme?, themeSheet? }) → unbind. Each element
 //   is a control root carrying data-setting: it shows the store's value (also the loaded one, and
 //   every change made elsewhere) and writes the player's change to the store at once; onUserChange(key)
@@ -360,10 +362,10 @@ export function bindResetPanel({ open, panel, yes, no, note }, { reset, desktopH
   };
 }
 
-export function bindingsSectionHtml(glyphs, camera, { mode = BINDING_MODES[0].id, device = 'keyboard' } = {}) {
+export function bindingsSectionHtml(glyphs, camera, { mode = BINDING_MODES[0].id, device = 'keyboard', bindings = null } = {}) {
   const devices = bindingDevices(mode);
   const shown = devices.some((d) => d.id === device) ? device : devices[0].id;
-  return `<dl class="ui-controls">${bindingsListHtml(bindingRows(mode, shown, camera), glyphs)}</dl>`;
+  return `<dl class="ui-controls">${bindingsListHtml(bindingRows(mode, shown, camera, bindings), glyphs)}</dl>`;
 }
 
 const hasClass = (el, cls) => (el.getAttribute('class') ?? '').split(/\s+/).includes(cls);

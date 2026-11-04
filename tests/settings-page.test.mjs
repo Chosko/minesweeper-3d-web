@@ -29,6 +29,8 @@ import { patience } from './helpers/timing.mjs';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
+// The settings the page gives a control: all but the bindings overrides, which its Bindings panel shows.
+const CONTROL_KEYS = SETTING_KEYS.filter((key) => SCHEMA[key].type !== 'overrides');
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 // The test-only second theme: a registered id the theme setting accepts.
@@ -189,7 +191,7 @@ test('the 3D ready card lists the canvas\'s six short rows on the keyboard and m
   const ready = index.slice(index.indexOf('<section id="ready"'), index.indexOf('<section id="ctx-lost"'));
   assert.match(ready, /<dl id="ready-keys" class="ui-controls ready-keys"><\/dl>/, 'the list is filled from the bindings source, not written in the markup');
   assert.doesNotMatch(ready, /data-camera=|class="ready-touch"/, 'no hard-coded key lines');
-  assert.match(read('js/ui.js'), /this\.el\.readyKeys\.innerHTML = readyListHtml\(this\._touch \? 'touch' : 'keyboard', this\._glyphs, this\._camera\);/);
+  assert.match(read('js/ui.js'), /this\.el\.readyKeys\.innerHTML = readyListHtml\(this\._touch \? 'touch' : 'keyboard', this\._glyphs, this\._camera, this\._bindings\);/);
 });
 
 test('both modes list F2 as Restart on the keyboard and Start + Y on the controller', () => {
@@ -307,7 +309,7 @@ test('the 3D bindings follow the Camera setting: Orbit rotates and dollies, from
   assert.ok(!section.includes('>Fly<'));
   const ui = read('js/ui.js');
   assert.match(ui, /setCamera\(camera\)/, 'the help surfaces follow the setting');
-  assert.match(ui, /bindingsSectionHtml\(this\._glyphs, this\._camera, \{ mode, device \}\)/);
+  assert.match(ui, /bindingsSectionHtml\(this\._glyphs, this\._camera, \{ mode, device, bindings: this\._bindings \}\)/);
 });
 
 test('bindingsListHtml renders keys in plain words, controller buttons as the pad\'s glyphs, no key caps, and escapes text', () => {
@@ -327,7 +329,7 @@ test('the in-game help reads the same bindings source', () => {
   assert.match(help, /<dl class="ui-controls"><\/dl>/, 'the help list is filled from the bindings source, not written in the markup');
   const ui = read('js/ui.js');
   assert.match(ui, /from '\.\/settings\/bindings\.js'/);
-  assert.match(ui, /helpListHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs, this\._camera\)/, 'the help panel shows the active mode\'s help rows for the active device (touch on a touch device) and camera');
+  assert.match(ui, /helpListHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs, this\._camera, this\._bindings\)/, 'the help panel shows the active mode\'s help rows for the active device (touch on a touch device) and camera');
   assert.match(ui, /helpFootHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs\)/, 'its foot line follows the same device');
   assert.equal(bindingsHtml('3d', 'controller', GLYPHS.xbox), bindingsListHtml(bindingRows('3d', 'controller'), GLYPHS.xbox), 'the component is the source\'s rows');
 });
@@ -339,8 +341,8 @@ test('the page has the controls, graphics, theme and audio sections, holding eve
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.settings), [
     ['lookSensitivity', 'invertY', 'camera', 'confirmRestart'], ['fullscreen', 'renderResolution', 'boardScale', 'aimReadout', 'fieldOfView'], ['theme'], ['muted', 'volume'],
   ]);
-  assert.deepEqual(SETTINGS_SECTIONS.flatMap((s) => s.settings).sort(), [...SETTING_KEYS].sort(), 'every schema entry has its control');
-  for (const key of SETTING_KEYS) assert.ok(SETTING_LABELS[key], `${key} has a label`);
+  assert.deepEqual(SETTINGS_SECTIONS.flatMap((s) => s.settings).sort(), [...CONTROL_KEYS].sort(), 'every schema entry but the bindings has its control');
+  for (const key of CONTROL_KEYS) assert.ok(SETTING_LABELS[key], `${key} has a label`);
 });
 
 test('the audio on/off control reads Sound and comes before Volume; no Mute label remains', () => {
@@ -409,7 +411,7 @@ test('each control\'s kind and range come from its schema entry', () => {
 
 test('the page markup is kit components only, one bound control per setting', () => {
   const html = settingsPageHtml();
-  for (const key of SETTING_KEYS) {
+  for (const key of CONTROL_KEYS) {
     assert.equal([...html.matchAll(new RegExp(`data-setting="${key}"`, 'g'))].length, 1, `${key} appears once`);
     if (key !== 'theme') assert.ok(html.includes(settingControlHtml(key)), `${key} uses its generated control`);
   }
@@ -434,7 +436,7 @@ test('the page markup is kit components only, one bound control per setting', ()
 test('each setting is a row of its name and its control, the 3D-only ones noted as the canvas draws them', () => {
   const html = settingsPageHtml();
   assert.deepEqual(SETTING_NOTES, { lookSensitivity: '3D', camera: '3D', fieldOfView: '3D' });
-  for (const key of SETTING_KEYS.filter((k) => k !== 'theme')) {
+  for (const key of CONTROL_KEYS.filter((k) => k !== 'theme')) {
     const note = SETTING_NOTES[key] ? `<span class="ui-text ui-text--muted" id="set-${key}-note">${SETTING_NOTES[key]}</span>` : '';
     assert.ok(html.includes(`<div class="ui-row" data-setting-row="${key}">${settingControlHtml(key)}${note}</div>`), `${key}: one row`);
   }

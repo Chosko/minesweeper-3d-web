@@ -329,10 +329,11 @@ export function initComponents(root) {
 
 /**
  * Fills every `.ui-key-hint[data-action]` under `root` with the keys keysFor(action) gives — a list
- * of { text, pad }, the bindings source's keyHintKeys for the active device — as its
+ * of { text, pad }, the bindings source's keyHintKeys for the active device: a shell action's fixed
+ * keys, or a catalogue action's current bindings — as its
  * `.ui-key-hint__key` kbd elements, ahead of its label; a hint of controller buttons takes
  * `ui-key-hint--pad`, and a hint with no keys (touch) is hidden. Call it again on every change of the
- * active device.
+ * active device or the bindings.
  */
 export function showKeyHints(root, keysFor) {
   for (const hint of root.querySelectorAll('.ui-key-hint[data-action]')) {
