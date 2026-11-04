@@ -265,7 +265,7 @@ Context:
 
 Done: 2026-11-04, commit `a708d1c` (24 files, +1003/-239). Two review rounds, nothing blocking. Deferred to step 30: the resolver accepts a mouse button bound to an action other than reveal, flag or chord, and no input layer fires it.
 
-## [ ] 30. Implement task 113 — Rebinding controls on the Settings page
+## [!] 30. Implement task 113 — Rebinding controls on the Settings page
 
 Depends on: 28, 29
 
@@ -281,6 +281,8 @@ Context:
 ```prompt
 /task-implement 113 --review
 ```
+
+Done: Stopped at the owner's choice — no artboard on the design canvas draws the rebinding panels (the `J-Settings-*` artboards draw only the read-only bindings list); task 113 stays `[MISSING]`. 2026-11-04, no commit — nothing was implemented. The mouse-button question (step 29's note) is still open. Re-run once the artboard is published.
 
 ## [ ] 31. Implement task 114 — Update documentation for feature `input-rebinding`
 
