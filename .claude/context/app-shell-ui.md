@@ -22,39 +22,50 @@ overlay's parts and the aimed-cell readout are
   1×1×1 board clamps to 0); `startGame` clamps with it.
 - `fmtDims`, `pauseLine(time, minesLeft)`, `NO_MOUSE_MSG`, `TOUCH_MSG`,
   `boardLine3D(s, {mines?})` (`"6 × 6 × 6 · 10 mines · no-guess"`);
-  Classic 2D's `boardTitle2D`
-  (`"Classic 2D · Expert"`), its size line `boardLine2D` and foot line
+  the Classic 2D window's `boardTitle2D` — the open mode's name from
+  `MODE_NAMES` ([app-shell-daily.md](app-shell-daily.md)) and the board
+  (`"Classic 2D · Expert"`, `"Hexagon · Beginner"`) —, its size line `boardLine2D` and foot line
   `boardFoot2D` (the size line with *No-guess* capitalised); 3D's
-  `boardTitle3D` (`"3D · Cube Intermediate"`) and `shortTitle3D` (`"3D"`);
+  `boardTitle3D` (`"3D · Cube Intermediate"`);
   `figuresLine` (re-exported). The pause card's board line joins a mode's
   title to its size line (`boardLine2D`, `boardLine3D` with mines).
-- `UI(cb)` — callbacks are named after the control they serve
+- `UI(cb, { desktopHost? })` — callbacks are named after the control they serve
   (`onMenuEntry`, `onBack`, `onReady*`, `onResume`, `onRestart`,
-  `onMainMenu`, `onPause`, `onToggleSwap`, `onTapMode`,
+  `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleFigures`, `onTapMode`,
   `onDismissHint(mode, kind)`, `on{Retry,Standard,OfferMenu,Cancel}{2D,3D}`,
   `onStandardWait3D`, `onLearnEnd(won)`, `onLearnBack`, `onBackToStart`,
-  `onResetAll`). Method groups:
-  - screens: `showMenu`, `showBoardChoice`, `showBoardChoice2D`,
+  `onResetAll`); the second argument `{ desktopHost? }` — the Steam build,
+  `capabilities.desktopHost` — picks the Data panel's wording, the line
+  above Reset all data and its confirmation
+  ([settings-reset.md](settings-reset.md)). Method groups:
+  - screens: `showMenu`, `showBoardChoice`, `showBoardChoice2D(id?)` (a
+    flat mode's board choice: `#c2d-choice` by default, `#hex-choice`,
+    `#tri-choice`),
     `showComingSoon(title)`, `showDaily`, `showRecords`, `showSettings`, `showReady(board, msg,
     {rules, blocked})`, `setReadyPending`, `showPlaying`, `showClassic2D`,
     `showPause({state, time, minesLeft, note, mode})`, `updatePause`,
     `showReplay` / `hideReplay` (`body.replaying`: no HUD, view chips, tools
     strip, help, hint strip or toast shows or appears over the viewer),
     `replayRing(x, y, kind)` (a 3D replay's press ring on the layer over its scene, `#replay-scene-over`, at x, y in the board area);
-  - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`,
+  - Classic 2D: `setSwap`, `setFigures2D(open)` (the live figures panel shown or hidden by `#c2d`'s `data-figures="open"`, its toggle pressed while open), `setTapMode('reveal' | 'flag')`,
     `placePanel2D(rect, radius)` (the board frame at `rect`, its corner radius set as `--board-frame-radius`; a null `rect` hides it),
-    `sizeBoard2D(extent)` (the board area `#c2d-stage` at the board's extent in the room the window's chrome leaves, measured under `#c2d.c2d--measure`; → whether it changed),
-    `setBoard2D`, `updateFigures2D(input, {tick, bests})`,
-    `setBoardStatus` (the card centred on the board column `#c2d-main`,
-    `_centreStatus2D`, again on every `placePanel2D`); 3D `setBoardStatus3D`
+    `sizeBoard2D(extent)` (the board area `#c2d-stage` at the board's extent in the room the window's chrome leaves, measured under `#c2d.c2d--measure`, giving back what the body or the board column then overflows, then `fitTitle2D`; → whether it changed),
+    `fitTitle2D()` (the title bar fitted to the board column, `fitTitleBar`; the frame's `min-width` its least width, so only a column narrower than Pause and the window buttons widens the window),
+    `setBoard2D(board)` (the foot line: `boardTitle2D`, then `boardFoot2D`), `updateFigures2D(input, {tick, bests})`,
+    `setBoardStatus` (the card centred on the board column `#c2d-main` in
+    the root's own coordinates, its `--status-room` the game window's width
+    about that centre — on the pause card `#pause-card` and its width while
+    the pause card shows —, `statusPlace` through `_centreStatus2D`, again
+    on every `placePanel2D`); 3D `setBoardStatus3D`
     (progress by `progressLine`); on either a failure offering nothing
     shows Back alone, with the arrow icon;
-  - menu: `setLastMode` (the Last played chip), `setEntryUnavailable`,
-    `setBuild` (the build label);
+  - menu: `setEntryUnavailable` (a play tile's reason, long and short, its
+    lock and its locked preview), `setBuild` (the build label);
   - confirmations: `showConfirm({title, message, confirmLabel}, onYes, onNo)`,
     `isConfirmOpen`, `closeConfirm`, `closeResetConfirm` (→ false when none
     is open);
-  - HUD: `setBoard` (the 3D title and the pause card's full board line),
+  - HUD: `setBoard` (the pause card's full 3D board line; the overlay names
+    no board), `setFigures3D(open)` (the 3D panel and its toggle's state),
     `setLearn(on)` (Learn 3D's overlay), `updateHud(time, minesLeft,
     clicks?)`, `updateFigures3D(input, {tick, bests})`, `overlayBottom3D()`
     (the overlay's top row's bottom, for the touch zones), `setModes`,
@@ -68,7 +79,9 @@ overlay's parts and the aimed-cell readout are
     `_bindDevice` gives), `dismissHint`, `setDevice`, `setPad` (also fills every
     `[data-pad-glyph]` slot, the Records screen's LB / RB and LT / RT hints),
     `setCamera('fly' | 'orbit')` (the 3D rows, the ready card's among
-    them, follow the Camera setting), `flash`,
+    them, follow the Camera setting), `setBindings(resolver)` (every
+    bindings surface redraws from its current bindings, now and on each of
+    its changes), `flash`,
     `toast(msg, ms, { firstUse })` (the text into `#toast-text`, the icon kept; `firstUse` marks a first-use hint's toast `toast--first-use`, never shown over the results), `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `isPauseVisible`, `setReadyMessage`.
   HUD writes (`updateHud`, `updateFigures*`, `setArrow`, `setReadout`)
   touch the DOM only on change.
@@ -80,8 +93,8 @@ overlay's parts and the aimed-cell readout are
   [app-shell-hud.md](app-shell-hud.md).
 - **Behind a card.** While the 3D ready card (not pending), the pause card
   or the results show, `#hud` is hidden — the 3D overlay, the key strip,
-  the hint strip — and the Classic 2D window keeps its board and title
-  alone; while the 3D board status card shows, `#hud` is hidden under its
+  the hint strip — and the Classic 2D window keeps its board and its
+  title bar's logo alone; while the 3D board status card shows, `#hud` is hidden under its
   scrim. `css/style.css` does it from those screens' visibility
   (`body:has(…)`); `UI` toggles nothing for it.
 - **Help surfaces, the active device and first-use hints** are
@@ -119,7 +132,7 @@ overlay's parts and the aimed-cell readout are
 - [input-controller.md](input-controller.md) — the navigation layer;
   [app-shell-focus.md](app-shell-focus.md) — the focus walk.
 - [app-shell-kit.md](app-shell-kit.md) — the in-game components.
-- [testing.md](testing.md) — `tests/components.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/components.test.mjs`,
   `tests/settings-*.test.mjs`, `tests/shell-pad-walk.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

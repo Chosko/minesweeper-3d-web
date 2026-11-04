@@ -8,8 +8,9 @@
 //               session's records stay correct in memory.
 //
 //   load()               → Promise, awaited before the first screen; repeated calls return the
-//                          first call's Promise. Reads the three documents once; an m1 records
-//                          document (version 1) is stepped up by upgradeRecords and saved back.
+//                          first call's Promise. Reads the three documents once; a records
+//                          document of version 1 or 4 is stepped up by upgradeRecords (the modes
+//                          it lacks start at zero) and saved back.
 //                          A missing or corrupt records document beside an intact history, or one
 //                          whose counters lack the completed games' figures (versions 1 and 2), is
 //                          rebuilt from the history and saved; with no history such a document
@@ -40,12 +41,14 @@
 //   boardsPlayed(mode?), bests(board), counters(board), winRate(board), completedWinRate(board),
 //   history(board), overall(mode?), overallWinRate(mode?), overallCompletedWinRate(mode?) — the
 //   model's queries.
+//   games()              → a copy of the whole history: every recorded game in play order, in
+//                          compact form, every board and mode — what achievement catch-up reads.
 // record, begin and checkpoint before load() throw: that is a programming error.
 
 import { createRecordsModel, upgradeRecords, hasCompletedCounters } from './model.js';
 
 export const RECORDS_DOC = 'records';
-export const RECORDS_VERSION = 4;
+export const RECORDS_VERSION = 5;
 export const HISTORY_DOC = 'records.history';
 export const HISTORY_VERSION = 2;
 export const IN_PROGRESS_DOC = 'records.inProgress';
@@ -57,9 +60,10 @@ const QUERIES = [
 // The records format steps: 1 → 2 adds the 3D overall counters; 2 → 3 changes nothing itself, as
 // the completed games' counters come from the history, which load() rebuilds the records from;
 // 3 → 4, with the history's 1 → 2, changes nothing either: it marks the documents that may hold
-// Daily boards and challenges, so an older build refuses them instead of misreading them.
+// Daily boards and challenges, so an older build refuses them instead of misreading them; 4 → 5
+// adds the Hexagon and Triangle overall counters at zero.
 const same = (doc) => doc;
-const UPGRADES = { 1: upgradeRecords, 2: same, 3: same };
+const UPGRADES = { 1: upgradeRecords, 2: same, 3: same, 4: upgradeRecords };
 const HISTORY_UPGRADES = { 1: same };
 
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -183,6 +187,8 @@ export function createRecordsStore({ storage, onNotSaved = () => {} }) {
     available() { return persists(); },
 
     settled() { return queue; },
+
+    games() { return model.documents().history; },
 
     attach(pauser) {
       const offs = [

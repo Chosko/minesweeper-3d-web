@@ -4,7 +4,10 @@
 // (js/classic2d/board-view.js), which draws the cursor as a focus ring, and to the session
 // (js/classic2d/session.js). DOM-free at import.
 //
-// The mapping — B, Start and Back are the shell's (back / pause) and never act on the board:
+// Keys and controller buttons mean what the flat modes' bindings say (js/settings/resolver.js
+// actionFor): an action of the flat catalogue, or nothing. B, Start and Back are reserved and never
+// act on the board (Start is the shell's pause, Back its live-figures toggle, B nothing here). The
+// actions, with their default inputs (CURSOR_KEYS, PAD_MAP):
 //   reveal  Space, Enter; controller A, RT   — held on a closed cell, it shows the pressed
 //                                              feedback; released there, it reveals. It never
 //                                              chords: there is no "smart" button.
@@ -13,14 +16,17 @@
 //                                              flagToggle).
 //   chord   D; controller Y                  — held, it shows the pressed feedback; released on a
 //                                              revealed number, it chords; it never reveals.
+//   up, down, left, right  the arrow keys; the d-pad  — a step of the cursor, with auto-repeat.
 //   A reveal and a flag input held together (both triggers) are left + right: the reveal's release
 //   chords a number when the profile's chordInputs has 'left+right', and never reveals.
+// An input means the action it was bound to at its press until its release; when the bindings
+// change, every held input is dropped without firing (drop()).
 // Pressed feedback (pressFeedback) and what a move does to a held press (releaseOffCell) read the
 // same profile markers as the pointer input (pointerRules): the press follows the cursor and the
 // release acts where it is.
 //
 // createCursorInput({ grid, geometry?, game, onPress, onAction, onCursor?, onUse?, onPadCue?, rules?,
-//                    active?, delay?, interval?, start? })
+//                    active?, delay?, interval?, start?, bindings? })
 //   grid      the board's cell graph provider (width, height, graph).
 //   geometry  the board's grid geometry (js/geometry/index.js), the square geometry of the grid's
 //             size when not given; one built for another size than the grid is a RangeError. Each
@@ -34,12 +40,15 @@
 //   onUse     () → a cursor input was used while the board takes input: a direction held (key,
 //             d-pad or the stick past STICK_THRESHOLD) or a button pressed, before it acts.
 //   onPadCue  (kind) → a controller press the shell answers with a rumble: 'flag' when a controller
-//             button (X, LT) placed or removed a flag, else 'press' when RT or LT was pressed while
-//             the board takes input. Keys, A and Y never report.
+//             button (X or LT by default) placed or removed a flag, else 'press' when a trigger (RT
+//             or LT, whatever it is bound to) was pressed while the board takes input. Keys never
+//             report; by default neither do A and Y.
 //   active    () → false while the board takes no input: no press, no action, no move.
 //   delay, interval  the auto-repeat timing of a held direction (js/gamepad.js Repeat).
 //   start     the cell the cursor starts on: 0 by default, a forced start cell's on a daily or a
 //             challenge (js/classic2d/session.js).
+//   bindings  the bindings resolver the controller's buttons are read through; the defaults when
+//             not given.
 //
 //   cell, setCell(c), move(dx, dy)     the cursor; move takes |dx| steps right (left when
 //                                      negative), then |dy| down (up), each stopping at the board's
@@ -51,48 +60,35 @@
 //   pad(poll, now)                     a GamepadReader poll ({ held, ls }) after the shell's held-
 //                                      button suppression; maps the buttons and stick, then ticks.
 //   reset()                            forgets every held input without firing (focus loss, pause).
+//   drop()                             as reset(), and the controller buttons still held stay
+//                                      ignored until released (a change of the bindings).
 //   holding, moving                    whether a button / a direction is held.
 //
-// mountCursorInput({ view, session, grid?, geometry?, win?, rules?, delay?, interval?, onPadCue?, start? }) → { input, pad,
+// mountCursorInput({ view, session, grid?, geometry?, win?, rules?, delay?, interval?, onPadCue?, start?, bindings? }) → { input, pad,
 // shown, destroy() }: keys on the page (`win`) — the system key repeat ignored, a held direction
-// repeated on animation frames — and held inputs dropped on blur. pad(poll, now?) is for the
-// shell's controller poll. Keys with Ctrl, Alt or Meta and every key not in CURSOR_KEYS are left
-// alone. The ring is on demand: no ring when the board opens; the first cursor key or controller
+// repeated on animation frames — and held inputs dropped on blur and on a change of the bindings.
+// pad(poll, now?) is for the shell's controller poll. Keys with Ctrl, Alt or Meta and every key
+// bound to no flat action are left alone. The ring is on demand: no ring when the board opens; the first cursor key or controller
 // input shows it on the cursor's cell (view.setCursor) and keeps that cell in view; the next mouse
 // action on the board — a button pressed on the canvas or the pointer moving over it — hides it
 // (view.setCursor(-1)), the cursor keeping its cell, until the next cursor or controller input.
 // `shown` is whether the ring shows.
 
-import { BTN, Repeat, stickCurve } from '../gamepad.js';
+import { BTN, NUM_BUTTONS, Repeat, stickCurve } from '../gamepad.js';
 import { CELL } from '../engine/rules.js';
 import { pointerRules } from './pointer-input.js';
 import { createGeometry } from '../geometry/index.js';
+import { DEFAULT_CURRENT } from '../settings/bindings.js';
+import { defaultBindings } from '../settings/resolver.js';
 
-/** Key codes and what they do on the board. */
-export const CURSOR_KEYS = Object.freeze({
-  ArrowUp: 'up',
-  ArrowDown: 'down',
-  ArrowLeft: 'left',
-  ArrowRight: 'right',
-  Space: 'reveal',
-  Enter: 'reveal',
-  NumpadEnter: 'reveal',
-  KeyF: 'flag',
-  KeyD: 'chord',
-});
+const byInput = (device) => Object.fromEntries(Object.entries(DEFAULT_CURRENT.flat[device])
+  .flatMap(([action, inputs]) => inputs.map((input) => [input, action])));
 
-/** Controller buttons (standard mapping) and what they do on the board. */
-export const PAD_MAP = Object.freeze({
-  [BTN.A]: 'reveal',
-  [BTN.RT]: 'reveal',
-  [BTN.X]: 'flag',
-  [BTN.LT]: 'flag',
-  [BTN.Y]: 'chord',
-  [BTN.UP]: 'up',
-  [BTN.DOWN]: 'down',
-  [BTN.LEFT]: 'left',
-  [BTN.RIGHT]: 'right',
-});
+/** The default key codes and what they do on the board (Numpad Enter reads as Enter). */
+export const CURSOR_KEYS = Object.freeze({ ...byInput('keyboard'), NumpadEnter: 'reveal' });
+
+/** The default controller buttons (standard mapping) and what they do on the board. */
+export const PAD_MAP = Object.freeze(byInput('controller'));
 
 /** How far the curved left stick must lean on an axis to hold that direction. */
 export const STICK_THRESHOLD = 0.25;
@@ -101,12 +97,12 @@ const STEP = Object.freeze({ up: [0, -1], down: [0, 1], left: [-1, 0], right: [1
 const DIRECTIONS = Object.keys(STEP);
 const BUTTONS = ['reveal', 'flag', 'chord'];
 const padSource = (b) => `pad:${b}`;
-const PAD_SOURCES = new Set(Object.keys(PAD_MAP).map(padSource));
+const isPadSource = (source) => String(source).startsWith('pad:');
 const TRIGGER_SOURCES = new Set([BTN.LT, BTN.RT].map(padSource));
 
 export function createCursorInput({
   grid, geometry = null, game, onPress, onAction, onCursor = () => {}, onUse = () => {}, onPadCue = () => {},
-  rules = pointerRules(), active = () => true, delay, interval, start = 0,
+  rules = pointerRules(), active = () => true, delay, interval, start = 0, bindings = defaultBindings(),
 }) {
   const geo = geometry ?? createGeometry('square', grid.width, grid.height);
   if (geo.width !== grid.width || geo.height !== grid.height) {
@@ -124,7 +120,7 @@ export function createCursorInput({
   let cancelled = false;
   let shown = [];
   let pressEvent = 'press'; // the feedback's cell event: chordPress for a number's neighbours
-  const padHeld = new Set();
+  const padHeld = new Map(); // controller button → the action it was bound to at its press (null: none, or dropped)
   const stickHeld = new Set();
 
   const pressing = () => held.reveal.size > 0 || held.chord.size > 0;
@@ -249,7 +245,7 @@ export function createCursorInput({
       if (button === 'chord' || held.flag.size > 0) chordOnly = true;
     }
     refresh();
-    if (flagged && PAD_SOURCES.has(source)) onPadCue('flag');
+    if (flagged && isPadSource(source)) onPadCue('flag');
     else if (TRIGGER_SOURCES.has(source)) onPadCue('press');
   }
 
@@ -257,7 +253,7 @@ export function createCursorInput({
     const set = held[button];
     if (!set || !set.delete(source)) return;
     if (button === 'flag') {
-      if (!held.flag.size && !chordOnly && rules.flagToggle === 'right-release' && toggleFlag() && PAD_SOURCES.has(source)) onPadCue('flag');
+      if (!held.flag.size && !chordOnly && rules.flagToggle === 'right-release' && toggleFlag() && isPadSource(source)) onPadCue('flag');
     } else if (!pressing()) {
       release();
       chordOnly = false;
@@ -269,13 +265,19 @@ export function createCursorInput({
 
   function pad(poll, now) {
     const h = poll?.held ?? [];
-    for (const [index, what] of Object.entries(PAD_MAP)) {
-      const b = Number(index);
+    for (let b = 0; b < Math.max(h.length, NUM_BUTTONS); b++) {
       const source = padSource(b);
       const on = Boolean(h[b]);
       if (on === padHeld.has(b)) continue;
-      if (on) padHeld.add(b);
-      else padHeld.delete(b);
+      let what;
+      if (on) {
+        what = bindings.actionFor('classic-2d', 'controller', b);
+        padHeld.set(b, what);
+      } else {
+        what = padHeld.get(b);
+        padHeld.delete(b);
+      }
+      if (!what) continue;
       if (STEP[what]) {
         if (on) hold(source, what);
         else letGo(source, what);
@@ -296,14 +298,29 @@ export function createCursorInput({
     tick(now);
   }
 
-  function reset() {
+  function forget() {
     for (const b of BUTTONS) held[b].clear();
-    for (const d of DIRECTIONS) { dirs[d].clear(); repeats[d].reset(); }
-    padHeld.clear();
-    stickHeld.clear();
     chordOnly = false;
     chordButton = false;
     cancelled = false;
+  }
+
+  function reset() {
+    forget();
+    for (const d of DIRECTIONS) { dirs[d].clear(); repeats[d].reset(); }
+    padHeld.clear();
+    stickHeld.clear();
+    refresh();
+  }
+
+  // The stick is no binding: its lean is kept, every bound input forgotten.
+  function drop() {
+    forget();
+    for (const d of DIRECTIONS) {
+      for (const source of dirs[d]) if (source !== 'stick') dirs[d].delete(source);
+      if (!dirs[d].size) repeats[d].reset();
+    }
+    for (const b of padHeld.keys()) padHeld.set(b, null);
     refresh();
   }
 
@@ -320,6 +337,7 @@ export function createCursorInput({
     up,
     pad,
     reset,
+    drop,
   };
 }
 
@@ -327,6 +345,7 @@ const PLAYABLE = new Set(['ready', 'playing']);
 
 export function mountCursorInput({
   view, session, grid = session.setup.grid, geometry, win = globalThis, rules, delay, interval, onPadCue, start,
+  bindings = defaultBindings(),
 }) {
   const active = () => PLAYABLE.has(session.state) && !session.paused;
   const now = () => win.performance.now();
@@ -341,6 +360,7 @@ export function mountCursorInput({
     interval,
     onPadCue,
     start,
+    bindings,
     onPress: (cells, event) => view.setPressed(cells, event),
     onAction: (kind, c) => session[kind](c),
     onCursor: (c) => {
@@ -372,11 +392,13 @@ export function mountCursorInput({
     if (input.moving) frame = win.requestAnimationFrame(loop);
   };
 
+  const keyHeld = new Map(); // key code → the action it was bound to at its press
   const onKeyDown = (event) => {
-    const what = CURSOR_KEYS[event.code];
+    const what = keyHeld.get(event.code) ?? bindings.actionFor('classic-2d', 'keyboard', event.code);
     if (!what || event.ctrlKey || event.altKey || event.metaKey || !active()) return;
     event.preventDefault();
     if (event.repeat) return;
+    keyHeld.set(event.code, what);
     if (STEP[what]) {
       input.hold(event.code, what);
       input.tick(now());
@@ -386,12 +408,14 @@ export function mountCursorInput({
     }
   };
   const onKeyUp = (event) => {
-    const what = CURSOR_KEYS[event.code];
+    const what = keyHeld.get(event.code);
     if (!what) return;
+    keyHeld.delete(event.code);
     if (STEP[what]) input.let(event.code, what);
     else input.up(event.code, what);
   };
-  const onBlur = () => input.reset();
+  const onBlur = () => { input.reset(); keyHeld.clear(); };
+  const offBindings = bindings.onChange(() => { input.drop(); keyHeld.clear(); });
 
   win.addEventListener('keydown', onKeyDown);
   win.addEventListener('keyup', onKeyUp);
@@ -411,6 +435,7 @@ export function mountCursorInput({
       canvas?.removeEventListener?.('mousemove', onMouse);
       if (frame !== null) win.cancelAnimationFrame(frame);
       frame = null;
+      offBindings();
       input.reset();
     },
   };

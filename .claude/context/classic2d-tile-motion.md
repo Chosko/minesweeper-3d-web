@@ -42,16 +42,22 @@ tile looks is [classic2d-tile-skin.md](classic2d-tile-skin.md).
   restarts it; a `null` description, or a new cell past the cap, starts
   nothing and drops the cell's running animation, so it shows its new
   state at once. `MOTION_CAP` is measured by `dev/measure-cell-motion.mjs`,
-  a flood reveal on a 100 × 100 board, and the module's head comment holds
+  a flood reveal on a board of the largest custom size, and the module's head comment holds
   the measurement and the rule that picks it.
 - **Depth.** A `depth` value is drawn by the 2D motion layer from the tile
-  cache's nearest depth step ([classic2d-tile-skin.md](classic2d-tile-skin.md)),
+  cache's nearest depth step ([classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md)),
   never a draw per frame.
+- **Every flat grid.** The player knows no grid: a theme's one Classic 2D
+  motion plays on square, hexagon and triangle boards alike, the 2D motion
+  layer drawing each cell about its geometry's centre
+  ([classic2d-board-motion.md](classic2d-board-motion.md)).
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/themed-board-art-and-motion.md](../domain/features/themed-board-art-and-motion.md)
   — the cell motion player, the motion description and its vocabulary.
+- [../domain/features/hex-tri-board-art.md](../domain/features/hex-tri-board-art.md)
+  — the Classic 2D motion, unchanged, on hexagon and triangle tiles.
 
 ## CROSS-REFERENCES
 
@@ -61,7 +67,7 @@ tile looks is [classic2d-tile-skin.md](classic2d-tile-skin.md).
   drives it too.
 - [app-shell-board-module.md](app-shell-board-module.md) — the board
   module's `motion` descriptions and their checks.
-- [testing.md](testing.md) — `tests/cell-motion.test.mjs` the cell motion
+- [testing-files.md](testing-files.md) — `tests/cell-motion.test.mjs` the cell motion
   player.
 
 ## WHEN TO READ THE SOURCE

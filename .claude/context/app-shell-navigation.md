@@ -34,7 +34,7 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   `history.go(-n)` until the depth equals `router.stack.length`),
   `popstate(state)`, `depth`, `pending`.
 - `storedSet(getStorage, key, limit?)` → `{has, add}` — superseded loads in
-  session storage (`ms3d.history.superseded`, newest 50); unusable storage
+  session storage (`ms3d.history.superseded`, the newest `limit`, its default in `storedSet`); unusable storage
   reads as empty.
 
 ## INTERNAL PATTERNS
@@ -42,18 +42,23 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
 - **The router owns the screen.** Every screen change is `SHELL.go`;
   nothing else toggles a screen. `S.mode` is a getter over `SHELL.current`:
   `menu | board-choice | coming-soon | daily | records | classic-2d-choice |
-  settings | ready | playing | classic-2d | paused | results | replay |
-  ctxlost`. In the 3D game only `playing` moves the camera, runs the timer and
+  hexagon-choice | triangle-choice | settings | ready | playing |
+  classic-2d | paused | results | replay | ctxlost` — each flat mode's
+  board choice its own screen, every flat game on `classic-2d`
+  ([app-shell-2d.md](app-shell-2d.md) § Flat modes). In the 3D game only `playing` moves the camera, runs the timer and
   accepts actions (`hasSelection`, `Input.isActive`); the Classic 2D board
-  takes input and runs its timer on `classic-2d`. Every
+  takes input and runs its timer on `classic-2d`. A flat mode's board
+  choice screen is listed beside Classic 2D's wherever the shell lists
+  screens: `LAYER_SCREEN`, the menu backdrop's screens, `sceneOff` and
+  the layers the context-lost card makes inert. Every
   router change sets `needRender`, calls `HISTORY.sync()`, `layerChanged()`
   and `sync3D`, and refreshes the hint strip.
 - **Back stack.** `go` stacks the screen it leaves; going to a stacked
   screen unwinds to it; `replace` swaps without stacking (`ready` hands over
   to `playing` that way). Back is the screen's own `back` when declared —
   `ready` → `readyBack` (board choice for a fresh board, pause for a
-  started game; a keyboard Back within 500 ms of a lock release is
-  ignored), `playing` / `classic-2d` → `backGame` (cancels a board being
+  started game; a keyboard Back just after a lock release — within the
+  window `js/main.js`'s `ready` screen sets — is ignored), `playing` / `classic-2d` → `backGame` (cancels a board being
   generated, else pause), `paused` → `resumeFromPause` (the menu once the
   game has ended, else resume), `results` → menu, `replay` → its `returnTo`
   (the menu when none), `ctxlost` → menu — else the stacked screen.
@@ -62,7 +67,8 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   [app-shell-daily.md](app-shell-daily.md)): followed once
   at boot after the main menu shows and on `hashchange`, then removed with
   `history.replaceState(history.state, …)`, so the entry keeps its stamp and
-  no entry is added. A hash entry the browser pushed carries no stamp, and
+  no entry is added — for a code of any mode, the flat modes' and 3D's
+  alike. A hash entry the browser pushed carries no stamp, and
   `HISTORY.popstate` ignores it.
 - **Session history.** `HISTORY` mirrors the back stack: the router's
   `onChange` calls `sync()`, the window's `popstate` goes to `popstate`, and
@@ -81,8 +87,8 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   reaches it through `Input`'s `onKey`; the board choices', placeholder's
   and Settings page's Back buttons through `onBack`, the Records screen's
   `#records-back` through its view's `onBack`; controller back buttons
-  through `padMenus` (on a board, `padBoard2D` and `padPlaying` turn them
-  into `backGame('pad')`). Pointer-locked Esc:
+  through `padMenus` (on a board none is Back; over a board status card
+  `padBoard2D` and `padStatus3D` turn them into `backGame('pad')`). Pointer-locked Esc:
   [app-shell-3d.md](app-shell-3d.md) § Pointer lock; Esc on the pause card:
   [app-shell-pause.md](app-shell-pause.md). Each Back Esc triggers carries
   its back key hint inside it (`ui-key-hint data-action="back"`, none on
@@ -101,8 +107,9 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
 - [input-controller.md](input-controller.md) — the navigation layer
   (`focusMove`, `inertSections`, `tabWrap`, `pickInDirection`);
   [input.md](input.md) — `escResumes`.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (router and its
-  session-history mirror).
+- [testing-files.md](testing-files.md) — `tests/shell-*.test.mjs` (router and its
+  session-history mirror; `shell-router` Hexagon's and Triangle's board
+  choice routes).
 
 ## WHEN TO READ THE SOURCE
 

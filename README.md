@@ -339,10 +339,12 @@ and rumbles on an explosion. Some browsers only start sound after a key press or
   after every game.
 - **Pause menu** (`Esc`): resume, go back to the start view (3D), restart or return to the main menu.
 - **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y, volume, the 3D neighbour count and
-  the 3D field of view (45°–90°). They are saved in `localStorage`. The defaults match the original,
+  the 3D field of view (45°–90°). They are saved in the browser's `localStorage` (as files on the
+  desktop build — see [Desktop build (Steam)](#desktop-build-steam)). The defaults match the original,
   except the 3D neighbour count, which is on, and the field of view, 60° (45° in the original, which
   a browser that already had settings keeps). The Settings page's Data panel offers the same two exports as the Records screen first; then "Reset all data" deletes the records, history, replays, settings, last board choices and first-use hints
-  from this browser, after a confirmation, and starts the game again as a new player's.
+  from this browser (from this computer on the desktop build), after a confirmation, and starts the
+  game again as a new player's.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
   chording, actions that change nothing, explosions and wins. They can be muted.
 - **Visual polish:** both boards are drawn in the chosen theme: procedurally drawn tiles and cubes
@@ -438,6 +440,61 @@ Then open the URL it prints (by default http://localhost:8080). The game does no
 `file://`, because ES modules need a server.
 3D needs WebGL 2; Classic 2D, Records and Settings run without it.
 
+## Desktop build (Steam)
+
+The Windows desktop build is an Electron application under `desktop/` that loads the same game
+files and talks to Steam through the Steamworks binding steamworks-ffi-node. It needs Node and
+Windows x64. To run it from the repository:
+
+```sh
+cd desktop
+npm install
+npm start
+```
+
+Without Steam the game plays fully with local saves. To run it against Steam in development:
+
+1. Copy `desktop/steampipe/config.example.json` to `desktop/steampipe/config.json` and fill in the
+   app id, the Windows depot id, the private branch to set the build live on (empty to upload
+   without setting it live) and a description. The file is git-ignored; the ids live nowhere else.
+2. Put `steam_api64.dll` from the Steamworks SDK (`redistributable_bin/win64/`) in
+   `desktop/redist/`, also git-ignored.
+3. Run `npm run appid` in `desktop/`, which writes the app id file a development run reads, then
+   `npm start` with the Steam client running and logged in.
+
+A private Steam build:
+
+1. `npm run package` in `desktop/` lays out the unpacked build in `desktop/out/win-x64/` —
+   `Minesweeper3D.exe`, the game files, the binding, the app id from the Steam config and the
+   Steam API library from `desktop/redist/`. Started outside Steam, the packaged build asks Steam to
+   relaunch it.
+2. `npm run steampipe` renders the SteamPipe app and depot build scripts into
+   `desktop/out/steampipe/` and prints the SteamCMD command that uploads the build and sets it live
+   on the config's private branch.
+3. Or `./deploy-steam.sh` from the repository root does both and uploads, with SteamCMD's path and
+   the builder account in the git-ignored `desktop/steampipe/deploy.env` (`STEAMCMD=…`,
+   `STEAM_LOGIN=…`) or the environment; `--dry-run` stops before the upload and prints its command.
+
+The desktop build keeps everything it saves as files under its user-data directory, never in
+browser storage. The `saves\` directory holds the settings, records, stats history, the replay
+library and its replays, the last mode and board choices and the game's other saved state. Steam
+Cloud syncs it between the player's machines, uploading when the game quits and downloading before
+it starts, and when both machines changed it Steam asks at launch which copy to keep. The `prefs\`
+directory beside it holds the machine settings (look sensitivity and render resolution), which stay
+on the machine that saved them, as do the window state and the crash log. The game saves and plays
+the same whether or not Steam is running or online. Before the app is released Steam Cloud does not
+sync on its own; how to turn it on for testing is [dev/steam/README.md](dev/steam/README.md).
+
+The Steam build has achievements, shown by Steam's overlay: a first Classic 2D win on Beginner, on
+Intermediate and on Expert, an Expert win with no-guess off, three Expert speed tiers in 3BV/s, two
+efficiency tiers and a win without placing a flag on Intermediate or Expert, a win on each of the
+three 3D cubes and a fast win on the Expert cube. Only a win on a standard board counts — custom and
+Daily boards earn none — and a game won while Steam was away unlocks its achievement the next time
+the game runs with Steam.
+
+How the host is built — the window, the adapter, the page bridge, the file service, quitting and
+the packaging — is [.claude/context/desktop.md](.claude/context/desktop.md)'s.
+
 ## Tests
 
 The tests use Node's built-in test runner (no dependencies): unit tests for the rules engine and the
@@ -477,6 +534,23 @@ writing nothing, and names the task needed. `catch-up` updates a theme from the 
 entries since its last catch-up and, once the update lands, records the new catch-up in the
 changelog.
 
+## Design changes made in Claude Design
+
+A design change previewed directly on the Claude Design canvas is logged as an entry in the design
+changelog, a Claude Docs document; entries are never edited once logged, and a correction is a newer
+entry. The project's `design-catch-up` Claude skill brings the repository up to date with the
+entries it has not caught up with: it amends the domain layer, plans the work as tasks, plan
+placements and an implementation runbook through the pipeline's own commands, behind one gate, and
+records what it caught up in [.claude/DESIGN-LEDGER.md](.claude/DESIGN-LEDGER.md), which also names
+the changelog:
+
+```
+/design-catch-up [<changelog-url>] [since="<YYYY-MM-DD HH:MM>"] [--quick]
+```
+
+`--quick` implements small entries at once, one `/quick-implement` commit each; the next run without
+it documents them.
+
 ## Project structure
 
 ```
@@ -501,6 +575,11 @@ js/gamepad.js           Controller polling, stick curve, trigger hysteresis, but
 js/ui.js                Menus, HUD, pause menu, settings (DOM only, no game rules)
 js/textures.js          Procedurally drawn tile textures (canvas 2D -> texture array)
 js/audio.js             Synthesized sound effects (Web Audio)
+js/platform/            Platform layer: storage, blob store and their Steam implementations, start-up
+                        selection, capability flags, the page's side of the desktop bridge and the desktop window
+desktop/                Windows desktop host: Electron main process, Steam adapter, page bridge, file service
+                        for the saves, packaging and SteamPipe scripts
+deploy-steam.sh         Packages the desktop build and uploads it to Steam as a private build
 tests/gamepad.test.mjs  Controller helpers, analog camera moves and trigger -> mouse-action sequences
 docs/ORIGINAL_SPEC.md   Description of the original game's behaviour
 vendor/three/           three.js r186, a single minified ES module, with its licence

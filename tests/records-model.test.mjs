@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createBoardIdentity, boardKey } from '../js/records/board.js';
+import { createBoardIdentity, boardKey, boardLabel } from '../js/records/board.js';
 import { buildSummary } from '../js/records/summary.js';
 import { createSeededSource } from '../js/generation/random.js';
 import {
@@ -9,6 +9,7 @@ import {
   compactSummary,
   rebuildRecords,
   emptyRecords,
+  MODES,
   daysInARow,
   nextDay,
 } from '../js/records/model.js';
@@ -432,7 +433,7 @@ test('documents: plain, serialisable, and the board record carries its identity'
   const docs = m.documents();
   assert.deepEqual(JSON.parse(JSON.stringify(docs)), docs);
   assert.deepEqual(docs.records.boards[boardKey(CUSTOM_A)].board, { ...CUSTOM_A });
-  assert.deepEqual(Object.keys(docs.records.overall), ['classic-2d', '3d']);
+  assert.deepEqual(Object.keys(docs.records.overall), ['classic-2d', 'hexagon', 'triangle', '3d']);
 });
 
 // ---------- queries ----------
@@ -469,6 +470,75 @@ test('queries: results are copies, so a caller cannot change the records', () =>
   assert.equal(m.counters(BEGINNER).games, 1);
   assert.equal(m.history(BEGINNER)[0].elapsedMs, 10000);
   assert.equal(m.overall().wins, 1);
+});
+
+// ---------- hexagon and triangle ----------
+
+const hexagon = (width, height, mines, noGuess = false) =>
+  createBoardIdentity({ mode: 'hexagon', grid: 'hex', width, height, mines, noGuess });
+const triangle = (width, height, mines, noGuess = false) =>
+  createBoardIdentity({ mode: 'triangle', grid: 'tri', width, height, mines, noGuess });
+
+test('modes: Hexagon and Triangle are modes of their own, in menu order between Classic 2D and 3D', () => {
+  assert.deepEqual([...MODES], ['classic-2d', 'hexagon', 'triangle', '3d']);
+  assert.ok(Object.isFrozen(MODES));
+  const zero = { games: 0, wins: 0, currentStreak: 0, longestStreak: 0, completed: 0, currentCompletedStreak: 0, longestCompletedStreak: 0 };
+  assert.deepEqual(emptyRecords().overall, { 'classic-2d': zero, hexagon: zero, triangle: zero, '3d': zero });
+});
+
+test('modes: a hexagon or triangle game counts on its board and its own mode only, never moving a Classic 2D streak', () => {
+  const m = createRecordsModel();
+  m.record(game({ board: BEGINNER }));
+  m.record(game({ board: BEGINNER }));
+  m.record(game({ board: hexagon(9, 9, 13), outcome: 'lost' }));
+  m.record(game({ board: triangle(13, 7, 8), outcome: 'abandoned' }));
+  m.record(game({ board: triangle(13, 7, 8) }));
+  assert.deepEqual(m.overall('classic-2d'), C(2, 2, 2, 2, 2, 2, 2));
+  assert.deepEqual(m.counters(BEGINNER), C(2, 2, 2, 2, 2, 2, 2));
+  assert.deepEqual(m.overall('hexagon'), C(1, 0, 0, 0, 1, 0, 0));
+  assert.deepEqual(m.counters(hexagon(9, 9, 13)), C(1, 0, 0, 0, 1, 0, 0));
+  assert.deepEqual(m.overall('triangle'), C(2, 1, 1, 1, 1, 1, 1));
+  assert.deepEqual(m.overall('3d'), C(0, 0, 0, 0, 0, 0, 0));
+  assert.equal(m.overallWinRate('hexagon'), 0);
+  assert.equal(m.overallWinRate('triangle'), 0.5);
+  assert.equal(m.bests(hexagon(9, 9, 13)).time, null);
+  assert.equal(m.bests(triangle(13, 7, 8)).time.value, 10000);
+  assert.deepEqual(m.counters(square(9, 9, 13)), C(0, 0, 0, 0, 0, 0, 0), 'a hexagon board is not the square board of its size');
+});
+
+test('modes: rebuilding from the history rebuilds the Hexagon and Triangle counters', () => {
+  const m = createRecordsModel();
+  for (const [board, outcome] of [[hexagon(9, 9, 13), 'won'], [triangle(41, 17, 103), 'lost'], [BEGINNER, 'won'], [hexagon(20, 12, 50), 'won']]) {
+    m.record(game({ board, outcome }));
+  }
+  const docs = m.documents();
+  assert.deepEqual(rebuildRecords(docs.history), docs.records);
+  assert.deepEqual(docs.records.overall.hexagon, C(2, 2, 2, 2, 2, 2, 2));
+  assert.deepEqual(docs.records.overall.triangle, C(1, 0, 0, 0, 1, 0, 0));
+  assert.deepEqual(createRecordsModel({ history: docs.history }).documents(), docs);
+});
+
+test('boards played: each new mode lists its standard boards without then with no-guess, then custom boards by last played', () => {
+  const m = createRecordsModel();
+  const hex = [hexagon(9, 9, 10), hexagon(30, 16, 100, true), hexagon(16, 16, 50), hexagon(20, 12, 50), hexagon(9, 9, 13), hexagon(30, 16, 100)];
+  const tri = [triangle(25, 13, 36, true), triangle(10, 10, 20), triangle(13, 7, 8), triangle(25, 13, 36)];
+  for (const board of [...hex, ...tri, BEGINNER]) m.record(game({ board }));
+  assert.deepEqual(m.boardsPlayed('hexagon').map((b) => b.key), [
+    boardKey(hexagon(9, 9, 13)), boardKey(hexagon(16, 16, 50)), boardKey(hexagon(30, 16, 100)), boardKey(hexagon(30, 16, 100, true)),
+    boardKey(hexagon(20, 12, 50)), boardKey(hexagon(9, 9, 10)),
+  ]);
+  assert.deepEqual(m.boardsPlayed('triangle').map((b) => b.key), [
+    boardKey(triangle(13, 7, 8)), boardKey(triangle(25, 13, 36)), boardKey(triangle(25, 13, 36, true)), boardKey(triangle(10, 10, 20)),
+  ]);
+  for (const mode of ['hexagon', 'triangle']) assert.ok(m.boardsPlayed(mode).every((b) => !b.board.daily && b.board.mode === mode));
+  assert.deepEqual(m.boardsPlayed().map((b) => b.key), [boardKey(BEGINNER)]);
+  assert.deepEqual(m.boardsPlayed('hexagon')[0].board, { ...hexagon(9, 9, 13) });
+});
+
+test('labels: a hexagon or triangle standard board takes its grid\'s standard name', () => {
+  assert.equal(boardLabel(hexagon(30, 16, 100, true)), 'Expert · no-guess');
+  assert.equal(boardLabel(triangle(13, 7, 8)), 'Beginner');
+  assert.equal(boardLabel(hexagon(9, 9, 10)), '9 × 9 · 10 mines');
 });
 
 test('module: DOM-free and storage-free', () => {

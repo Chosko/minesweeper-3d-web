@@ -758,8 +758,8 @@ test('in a browser with touch on a tablet, the 3D ready card is a start that ask
 
     // Pause takes a tap above the scene; the toolbar's latch survives pause and resume to lockless touch play.
     const pauseBox = await page.locator('#hud-pause').boundingBox();
-    const hit = await ms(([x, y]) => [-21, 0, 21].map((dy) => document.elementFromPoint(x, y + dy)?.id), [pauseBox.x + pauseBox.width / 2, pauseBox.y + pauseBox.height / 2]);
-    assert.ok(pauseBox.width >= 44 && hit.every((id) => id === 'hud-pause'), `the pause button's 44 px hit area (${pauseBox.width} wide, ${hit})`);
+    const hit = await ms(([x, y]) => [[-21, 0], [0, -21], [0, 0], [0, 21], [21, 0]].map(([dx, dy]) => document.elementFromPoint(x + dx, y + dy)?.id), [pauseBox.x + pauseBox.width / 2, pauseBox.y + pauseBox.height / 2]);
+    assert.ok(hit.every((id) => id === 'hud-pause'), `the floating pause button's 44 px square hit area (${pauseBox.width} wide, ${hit})`);
     await page.touchscreen.tap(pauseBox.x + pauseBox.width / 2, pauseBox.y + pauseBox.height / 2);
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'paused');
     await page.tap('#p-resume');

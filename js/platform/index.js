@@ -1,24 +1,113 @@
-// The platform module: the one place a storage implementation is selected, once, when the
-// module is first evaluated at start-up. Callers import the storage interface and the blob store
-// from here and never an implementation: the web build selects the browser backend
-// (js/platform/browser-backend.js) for documents, and IndexedDB
-// (js/platform/indexeddb-blob-store.js) for blobs, falling back to memory
-// (js/platform/memory-blob-store.js) when IndexedDB is unavailable or refuses to open.
+// The platform module: the one place the platform's implementations are selected, once, when the
+// module is first evaluated at start-up. It looks for the page bridge the desktop host exposes
+// (js/platform/bridge-client.js): present, each slot takes its Steam implementation (STEAM_SLOTS,
+// which the Steam features fill — storage and the replay store from steam-cloud-saves, files the
+// desktop host keeps (js/platform/steam-storage.js, js/platform/steam-blob-store.js), the
+// leaderboards from steam-leaderboards (js/leaderboards/index.js, its outbox in a blob store of its
+// own), the achievements from steam-achievements (js/achievements/index.js)); absent, or for a slot
+// no Steam feature has filled, the browser implementation or local stand-in. Callers import what is
+// selected from here and never an implementation, nor test for Electron or the bridge: the web
+// build's storage is the browser backend
+// (js/platform/browser-backend.js) for documents, and IndexedDB (js/platform/indexeddb-blob-store.js)
+// for blobs, falling back to memory (js/platform/memory-blob-store.js) when IndexedDB is unavailable
+// or refuses to open; the leaderboards are the local stand-in over the player's own wins
+// (js/leaderboards/local.js); achievements have no local stand-in yet (null).
 //
 // Exports `storage` and its methods `register`, `load`, `save`, `clear`, `available` — the interface
-// documented in js/platform/storage.js — and `blobStore`, the interface documented in
-// js/platform/blob-store.js.
+// documented in js/platform/storage.js —, `blobStore`, the interface documented in
+// js/platform/blob-store.js, `leaderboards`, the interface documented in js/leaderboards/index.js on
+// either build, `achievements`, and `capabilities`, the flags of what
+// the host offers (js/platform/capabilities.js), with the latest Steam state. From the host link
+// (linkHost, js/platform/bridge-client.js): `onOverlayActivated(listener)`, called when the Steam
+// overlay opens, and `addFlushHook(hook)`, a hook the host's flush before quitting awaits — with
+// the bridge, every storage and blob request in flight is already one; and
+// `bindDesktopWindow({ document, setIcon, fullArea })`, the desktop window driven from the page
+// (js/platform/window-actions.js). The web build has no host: every flag is off, no overlay or
+// flush ever comes, and the desktop window does nothing.
 
 import { createStorage } from './storage.js';
 import { createBrowserBackend } from './browser-backend.js';
 import { createBlobStore } from './blob-store.js';
 import { openIndexedDBBlobStore } from './indexeddb-blob-store.js';
 import { createMemoryBlobStore } from './memory-blob-store.js';
+import { createSteamBackend, createSaveTracker } from './steam-storage.js';
+import { openSteamBlobStore, REPLAY_STORE } from './steam-blob-store.js';
+import { createCapabilities } from './capabilities.js';
+import { findBridge, createBridgeClient, linkHost } from './bridge-client.js';
+import { bindWindowActions } from './window-actions.js';
+import { createSteamLeaderboards, createLocalLeaderboards } from '../leaderboards/index.js';
+import { createSteamAchievements } from '../achievements/index.js';
 
-export const storage = createStorage({ backend: createBrowserBackend() });
-export const { register, load, save, clear, available } = storage;
+/** Every storage and blob request the Steam implementations have in flight, for the quit flush. */
+const STEAM_SAVES = createSaveTracker();
 
-export const blobStore = createBlobStore({
-  open: () => openIndexedDBBlobStore(),
+/** A blob store of the save directory opened under `name`, falling back to memory. */
+const steamBlobStore = (client, name) => createBlobStore({
+  open: () => openSteamBlobStore({ client, name, track: STEAM_SAVES.track }),
   fallback: () => createMemoryBlobStore(),
 });
+
+/**
+ * The Steam implementation of each slot, a factory of the bridge client and of what is selected
+ * before it (the capability flags and the earlier slots: { capabilities, storage, blobStore, … });
+ * null keeps the browser one.
+ */
+export const STEAM_SLOTS = Object.freeze({
+  storage: (client) => createStorage({ backend: createSteamBackend({ client, track: STEAM_SAVES.track }) }),
+  blobStore: (client) => steamBlobStore(client, REPLAY_STORE),
+  leaderboards: (client, { storage, capabilities }) => createSteamLeaderboards({
+    client, capabilities, storage, openBlobStore: (name) => steamBlobStore(client, name),
+  }),
+  achievements: (client, { capabilities }) => createSteamAchievements({ client, capabilities }),
+});
+
+/** The web build's implementation of each slot. */
+export const BROWSER_SLOTS = Object.freeze({
+  storage: () => createStorage({ backend: createBrowserBackend() }),
+  blobStore: () => createBlobStore({
+    open: () => openIndexedDBBlobStore(),
+    fallback: () => createMemoryBlobStore(),
+  }),
+  leaderboards: () => createLocalLeaderboards(),
+  achievements: () => null,
+});
+
+/**
+ * Selects every slot for `bridge` (the preload's object, or null) → { host: 'desktop' | 'browser',
+ * client (the bridge client or null), storage, blobStore, leaderboards, achievements, capabilities }.
+ */
+export function selectPlatform({ bridge, browser, steam = STEAM_SLOTS }) {
+  const client = bridge ? createBridgeClient(bridge) : null;
+  const selected = { capabilities: createCapabilities({ desktopHost: client !== null }) };
+  const pick = (slot) => (client && typeof steam[slot] === 'function' ? steam[slot](client, selected) : browser[slot]());
+  selected.storage = pick('storage');
+  selected.blobStore = pick('blobStore');
+  selected.leaderboards = pick('leaderboards');
+  selected.achievements = pick('achievements');
+  return {
+    host: client ? 'desktop' : 'browser',
+    client,
+    storage: selected.storage,
+    blobStore: selected.blobStore,
+    leaderboards: selected.leaderboards,
+    achievements: selected.achievements,
+    capabilities: selected.capabilities,
+  };
+}
+
+const PLATFORM = selectPlatform({ bridge: findBridge(globalThis), browser: BROWSER_SLOTS });
+
+export const storage = PLATFORM.storage;
+export const { register, load, save, clear, available } = storage;
+export const blobStore = PLATFORM.blobStore;
+export const leaderboards = PLATFORM.leaderboards;
+export const achievements = PLATFORM.achievements;
+export const capabilities = PLATFORM.capabilities;
+
+export const { onOverlayActivated, addFlushHook } = linkHost({ client: PLATFORM.client, capabilities });
+if (PLATFORM.client) addFlushHook(() => STEAM_SAVES.settled());
+
+/** The desktop window driven from the page; nothing on the web. */
+export function bindDesktopWindow({ document, setIcon, fullArea }) {
+  return bindWindowActions({ client: PLATFORM.client, document, setIcon, fullArea });
+}

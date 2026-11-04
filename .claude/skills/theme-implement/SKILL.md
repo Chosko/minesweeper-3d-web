@@ -191,10 +191,10 @@ STEP 6 — VERIFY
 
 Follow `./references/verification.md`: run the conformance tests and then the
 full suite, fixing only this run's own files until both pass; then render the
-gallery and every reproducible artboard screen under the theme, show them
-beside the artboards, and name every difference the run could not close. A
-catch-up also checks each theme and present point of its pending entries, per
-`./references/changelog.md` § *Verifying*.
+gallery, the hexagon and triangle tiles and every reproducible artboard screen
+under the theme, show them beside the artboards, and name every difference the
+run could not close. A catch-up also checks each theme and present point of
+its pending entries, per `./references/changelog.md` § *Verifying*.
 
 A failure the run cannot fix in its own files — a test that needs a change
 outside the theme's folder and its registry entry — is a stop: name the task

@@ -34,9 +34,12 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
   of an engine change list's cell from its state after the change — reveal
   (from closed, pressed or flagged), flag, unflag.
 - `createMotionLayer({canvas, place, paint, frames, clip?, onSettle?,
-  now?, cap?})` (`place(cell)` → the tile `{x, y, size}` and its centre
-  `cx, cy` from the geometry, the tile's middle when absent; the cell is
-  scaled and offset round that centre) → `{start(cell, event, before, after, description),
+  now?, cap?})` (`place(cell)` → the tile `{x, y, size, width?, height?}`
+  — its box's corner, the tile size and the box's size, `size` × `size`
+  when absent — and its centre `cx, cy` from the geometry, the box's middle
+  when absent; the cell is drawn with its box where it sits from that
+  centre, scaled and offset round it, its brightness pass over the whole
+  box) → `{start(cell, event, before, after, description),
   drop(cell), has(cell), cells, frame(), dropAll() → cells, resize(width,
   height, pixelRatio), dispose()}` over the cell motion player
   ([classic2d-tile-motion.md](classic2d-tile-motion.md)).
@@ -56,13 +59,19 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
   module's `cursor` — the ring round its inner band, the band's outer edge
   `radius.px` outside the tile and its corners `radius.tile` × the tile
   plus `radius.px`; without one a square ring in `CURSOR_RING` just outside
-  the tile.
+  the tile. On a hexagon or triangle board either ring follows the cell's
+  outline grown outward (`growOutline`, stroked through `outlinePath`,
+  [tile-art.md](tile-art.md)) instead of the square: the module's band
+  each edge's same distance out, its corners `radius.tile` × the outline's
+  height plus `radius.px`; the fallback straight-cornered, half its width
+  out.
 - **Marked start cell.** While closed and not pressed the marked cell is
   drawn as the skin's `marked` tile — the module's marked face under its
   dashed ring ([classic2d-tile-skin.md](classic2d-tile-skin.md)) — in the
   game, the menu preview and the Daily preview alike, all through
   `setMark`; any other state draws as itself. During `pulseMark` the ring
-  is drawn again over the tile, twice as wide, on the board canvas.
+  is drawn again over the tile, twice as wide, on the board canvas — in the
+  cell's glyph box on a hexagon or triangle board.
 - **Cell motion.** With a `layer`, the view plays the board module's cell
   motion on the motion layer: press or chord press for the cells gaining
   the pressed set and release for closed cells losing it, and reveal, flag
@@ -70,7 +79,8 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
   list starts none and drops any running on its cells, the end effect
   drawing them, and Classic 2D has no solved pulse. Only cells in view
   start an event. While a cell animates its slot is drawn as bare ground
-  and the layer draws the cell from the tile cache — centred on its tile,
+  and the layer draws the cell from the tile cache — about its geometry's
+  centre, a hexagon's or triangle's box placed from it,
   offset, scaled and turned per the player's values, the face its flip
   shows, at its opacity, its brightness a second pass over the painted cell
   alone (toward white above 1, toward black below), its depth the cache's
@@ -84,7 +94,10 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
 - **End effect drawing.** Over the skin's static tiles: each tile from
   `shownState`, drawn through `drawWave` with its `waveAt` from the skin's
   board module — scaled about its centre, its light clipped to the rounded
-  tile — then the confetti in the module's colours after all tiles, clipped
+  tile; on a hexagon or triangle board `drawWave` takes the cell's outline,
+  so the scale is about the geometry's centre and the light fills the
+  outline rounded by the grid's corner radius × the outline's height — then
+  the confetti in the module's colours after all tiles, clipped
   to the view; without a module the tiles alone. A full repaint draws the
   same moment. Without an
   effect a won game's closed tiles are drawn as flags (`wonState`). The
@@ -96,6 +109,8 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
   — the cursor ring and the 2D motion layer.
 - [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
   — pressed feedback and the focus ring.
+- [../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md)
+  — cell motion around the geometry's centre, the end effect over its extent.
 
 ## CROSS-REFERENCES
 
@@ -103,12 +118,13 @@ and `mountBoardView` [classic2d-board-canvas.md](classic2d-board-canvas.md); the
   draw on: layout and pitch; [classic2d-board-canvas.md](classic2d-board-canvas.md)
   — redraw, hiding and its other members.
 - [classic2d-tile-motion.md](classic2d-tile-motion.md) — the cell motion
-  player the layer drives; [classic2d-tile-skin.md](classic2d-tile-skin.md)
+  player the layer drives; [classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md)
   — the tile cache and its depth steps the layer draws from.
-- [classic2d-input.md](classic2d-input.md) — the inputs that drive the
+- [classic2d-input.md](classic2d-input.md), [classic2d-input-cursor.md](classic2d-input-cursor.md) — the inputs that drive the
   pressed set and the cursor.
 - [classic2d-end-effect.md](classic2d-end-effect.md) — the end effect the view draws.
-- [testing.md](testing.md) — `tests/classic2d-view.test.mjs` its
+- [geometry.md](geometry.md) — the cell centres and outlines the layers place by.
+- [testing-files.md](testing-files.md) — `tests/classic2d-view.test.mjs` its
   end-effect drawing; `tests/classic2d-motion.test.mjs` the motion layer
   and its event sources.
 

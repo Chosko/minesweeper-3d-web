@@ -76,8 +76,7 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
 - **Scene panel.** `syncScenePanel` (every router change, window resize,
   the Daily body's scroll, and a `ResizeObserver` on the panel's stage)
   hands `renderer.setTarget` the rectangle of the shown screen's live
-  scene panel (`.ui-scene-panel--live`: the menu's 3D preview, the Daily
-  screen's cube) or, on the replay viewer, a 3D replay's board area
+  scene panel (`.ui-scene-panel--live`: the Daily screen's cube) or, on the replay viewer, a 3D replay's board area
   (`#replay.replay--scene #replay-stage`; the viewer opening or a 2D
   replay has none), and null — the full window — everywhere else
   ([rendering.md](rendering.md) § Internal patterns, *Target rectangle*). The
@@ -87,8 +86,8 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
   `#replay-scene-over` (`REPLAY_OVER`) takes the same rectangle and shows
   while it does: the free-camera notice and the press rings sit on it,
   above the canvas.
-  `body.scene-off` hides the canvas where no scene shows: a menu preview
-  other than the 3D one, the board choices, the Daily screen with no 3D
+  `body.scene-off` hides the canvas where no scene shows: the main menu
+  (its 3D tile a still), the board choices, the Daily screen with no 3D
   panel in view. The menu screens behind them hold the demo board
   (`showMenuBackdrop`), orbiting.
 - **`sync3D`** (every router change) resumes the session on `playing` and
@@ -101,8 +100,12 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
   small box." on the success fill, with `#ready-learn-btn` → `startLearn`,
   outside the Click to play button) while `FIRST_USE.rules3D`; neither on
   the guided board's own card, and the line only before the game started.
-  The card's width follows the window's size step (J-Ready-xl, -l, -m,
-  -p), its board line in the mono face; its buttons carry the canvas's
+  The ready layer `#ready` covers the available area — the root area, the
+  work area at the desktop host, never the desktop window's own size
+  ([app-shell-kit-frame.md](app-shell-kit-frame.md) § The root area),
+  while the scene's canvas keeps the window's size — and the card's width
+  follows the root area's size step (J-Ready-xl, -l, -m, -p), its board
+  line in the mono face; its buttons carry the canvas's
   icons (Back the arrow, Click to play the mouse — `ui.setTouch3D` swaps
   in the hand for Tap to play —, Learn 3D the cube, drag-to-look the
   hand), and the blocked offer's controller line names A as text. On a
@@ -129,7 +132,7 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
   [app-shell-3d-camera.md](app-shell-3d-camera.md) — camera and render on demand.
 - [rendering.md](rendering.md) — `setTarget`, `setGame`, `sync`.
 - [input.md](input.md) — `Input`'s lock callbacks and `isDragLook`.
-- [testing.md](testing.md) — `tests/mode3d-*.test.mjs` (wiring), the
+- [testing-files.md](testing-files.md) — `tests/mode3d-*.test.mjs` (wiring), the
   pointer-lock fallback tests.
 
 ## WHEN TO READ THE SOURCE

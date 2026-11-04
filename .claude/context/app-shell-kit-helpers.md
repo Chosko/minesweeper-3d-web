@@ -4,9 +4,9 @@
 
 The component kit's behaviour (`js/ui/components.js`): the counter formats,
 the binders of sliders, segmented choices, tabs, the one selected control,
-key hints, the pager, the icon set with the button's leading icon, the code
-chip and the figures panel. The catalogue
-those binders follow is [app-shell-kit.md](app-shell-kit.md).
+key hints, the pager, the icon set with the button's leading icon, the game
+logo, the title bar's window buttons, the root area's `matchMedia`, the
+code chip and the figures panel. The catalogue those binders follow is [app-shell-kit.md](app-shell-kit.md).
 
 | File | Responsibility |
 | ---- | -------------- |
@@ -35,15 +35,16 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   `bindTabs(list, {onChange})` (a `ui-tabs` tablist, Left / Right select,
   the selected tab alone in the Tab order), `bindSelectOnHover(root)` (the
   one selected control: a moving mouse focuses the enabled
-  `SELECT_ON_HOVER` control under it — a button, menu entry, mode entry or
-  board option — a disabled mode entry included),
+  `SELECT_ON_HOVER` control under it — a button, menu entry, main menu
+  button or board option — a disabled play tile included),
   `initComponents(root)` (every slider, segmented choice and tablist) —
   each returns an unbind.
 - `showKeyHints(root, keysFor)`: fills every `.ui-key-hint[data-action]`
   under `root` with the keys `keysFor(action)` gives (the bindings source's
-  `keyHintKeys` for the active device), `ui-key-hint--pad` for controller
+  `keyHintKeys` for the active device: a shell action's fixed keys, a
+  catalogue action's current bindings), `ui-key-hint--pad` for controller
   buttons, hidden with none (touch); `UI` calls it on every device change
-  ([app-shell-help.md](app-shell-help.md)).
+  and every change of the bindings ([app-shell-help.md](app-shell-help.md)).
 - `PAGER_WINDOW` (the numbered pages shown), `pagerState(page, pages)` → `{hidden, page, pages,
   first, last, numbers: [{page, label, current}]}`; `bindPager(nav, {onPage,
   name?})` → `{show(state)}`: fills a `.ui-pager` with First, the numbered
@@ -63,6 +64,27 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   built the Settings page; `createButton(doc, {label, icon?, variant?,
   size?, iconOnly?})` builds a kit button. How an icon and its button are
   named is [app-shell-kit-layout.md](app-shell-kit-layout.md)'s.
+- The game logo: `LOGO_WORDS` (MINESWEEPER and 3D), `drawLogo(logo)` (fills
+  a `.ui-logo` heading with one `aria-hidden` `ui-logo__word` per word, a
+  `ui-logo__letter` per letter; once), `applyLogos(root)` (every
+  `.ui-logo` under `root`); `logoScale(room, natural)` (the largest
+  `LOGO_STEP` of the logo that fits, at most 1, 0 under `LOGO_FLOOR`) and
+  `fitTitleBar(head)` (the head's logo zoomed to it, or `data-logo="hidden"`
+  under the floor; → the head's least width with no logo, or null).
+- The title bar's window buttons: `WINDOW_BUTTONS` (`minimise`,
+  `fullscreen`, `quit`, their order), `bindWindowButtons(root,
+  {capabilities, actions})` — one delegated listener for every
+  `[data-window]` under `root`, calling `actions[name]` only while
+  `capabilities.desktopHost` ([platform-host.md](platform-host.md)); with no host a
+  press does nothing. Returns the unbind.
+- The root area: `matchRootArea(doc, { ResizeObserver? })` → a `matchMedia`
+  over the root area ([app-shell-kit-frame.md](app-shell-kit-frame.md)
+  § The root area): `(query)` → `{ matches, addEventListener('change',
+  listener), removeEventListener }`, the query's `(min|max)-(width|height)`
+  pixel features joined by `and` tested against the root element's box,
+  each flip of the match reported once to the listeners through a
+  `ResizeObserver` on it; any other query throws a `RangeError`. The
+  Settings page's layout reads it ([settings-page.md](settings-page.md)).
 - The note: `setNote(el, text, {tone?, icon?})` writes `text` into `el`'s
   `.ui-note__text` after its leading icon (making the text part on first
   use, in place of any plain text), `tone` (`NOTE_TONES`: `'warn'`,
@@ -115,9 +137,9 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   expects.
 - [app-shell-hud.md](app-shell-hud.md) — the live figures model `bindFigures`
   shows and the panels it binds.
-- [settings-bindings.md](settings-bindings.md) — `keyHintKeys`, the keys
+- [settings-bindings-rows.md](settings-bindings-rows.md) — `keyHintKeys`, the keys
   `showKeyHints` writes.
-- [testing.md](testing.md) — `tests/components.test.mjs` (the helpers).
+- [testing-files.md](testing-files.md) — `tests/components.test.mjs` (the helpers).
 
 ## WHEN TO READ THE SOURCE
 

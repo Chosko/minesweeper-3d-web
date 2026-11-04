@@ -1,0 +1,14 @@
+// The SteamPipe app build script, a template: `npm run steampipe` fills each placeholder in double braces from
+// desktop/steampipe/config.json and the build directory, and writes the result to desktop/out/steampipe/.
+"AppBuild"
+{
+	"AppID" "{{appId}}"
+	"Desc" "{{description}}"
+	"ContentRoot" "{{contentRoot}}"
+	"BuildOutput" "{{buildOutput}}"
+	"SetLive" "{{branch}}"
+	"Depots"
+	{
+		"{{depotId}}" "{{depotScript}}"
+	}
+}

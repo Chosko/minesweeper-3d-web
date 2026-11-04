@@ -2,7 +2,9 @@
 // and default. The store's validation and the Settings page's controls are both driven from it, so
 // a setting is added here and nowhere else. DOM-free.
 //
-// Types: 'number' ({ min, max }, finite, inclusive), 'boolean', 'choice' ({ values }).
+// Types: 'number' ({ min, max }, finite, inclusive), 'boolean', 'choice' ({ values }), 'overrides'
+// (a plain object: the player's input bindings, whose content the bindings resolver validates —
+// js/settings/resolver.js; it has no control of its own on the page).
 //
 // The theme is a choice among the theme registry's ids (js/themes/registry.js): its values are the
 // catalogue's ids in order, and a choice carrying `known(value)` accepts what that predicate accepts —
@@ -29,6 +31,7 @@ export const SCHEMA = Object.freeze({
   aimReadout: boolean('aimReadout', true),
   fieldOfView: number('fieldOfView', 45, 90, 60), // the 3D camera's vertical field of view, degrees
   camera: choice('camera', ['fly', 'orbit'], 'fly'), // the 3D camera: first-person flight or the orbit around the board centre
+  bindings: Object.freeze({ key: 'bindings', type: 'overrides', default: Object.freeze({}) }), // the player's rebound inputs per catalogue, device and action
 });
 
 export const SETTING_KEYS = Object.freeze(Object.keys(SCHEMA));
@@ -43,6 +46,7 @@ export function isValid(key, value) {
     case 'number': return typeof value === 'number' && Number.isFinite(value) && value >= entry.min && value <= entry.max;
     case 'boolean': return typeof value === 'boolean';
     case 'choice': return entry.known ? entry.known(value) : entry.values.includes(value);
+    case 'overrides': return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
     default: return false;
   }
 }

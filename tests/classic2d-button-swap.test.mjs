@@ -240,10 +240,11 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
   }
 });
 
-test('the 3D overlay never shows the swap toggle: it sits in the Classic 2D window\'s head', () => {
+test('the 3D overlay never shows the swap toggle: it sits at the right of the Classic 2D window\'s foot', () => {
   const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
   const window2D = html.slice(html.indexOf('<section id="c2d"'), html.indexOf('<section id="c2d-status"'));
   const hud = html.slice(html.indexOf('<div id="hud"'), html.indexOf('<div id="crosshair"'));
-  assert.match(window2D, /<div class="ui-frame__start"><button type="button" id="hud-swap"/);
+  assert.match(window2D, /<div class="ui-actions ui-actions--row" id="c2d-tools"><button type="button" id="hud-swap"/);
+  assert.ok(window2D.indexOf('id="hud-swap"') > window2D.indexOf('<footer class="ui-frame__foot">'), 'in the foot, not the title bar');
   assert.doesNotMatch(hud, /hud-swap/);
 });

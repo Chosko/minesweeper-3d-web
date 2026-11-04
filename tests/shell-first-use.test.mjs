@@ -23,7 +23,9 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const text = (html) => html.replace(/<[^>]+>/g, '').replace(/&middot;/g, '·');
 
 // A records store's per-mode game counters, as the first use is seeded from them.
-const records = (games2d, games3d) => ({ overall: (mode) => ({ games: mode === '3d' ? games3d : games2d, wins: 0, currentStreak: 0, longestStreak: 0 }) });
+const records = (games2d, games3d, others = {}) => ({
+  overall: (mode) => ({ games: mode === '3d' ? games3d : mode === 'classic-2d' ? games2d : others[mode] ?? 0, wins: 0, currentStreak: 0, longestStreak: 0 }),
+});
 const stored = (data) => createMemoryBackend({ initial: { [FIRST_USE_DOC]: JSON.stringify({ version: FIRST_USE_VERSION, data }) } });
 const docOf = (backend) => JSON.parse(backend.documents.get(FIRST_USE_DOC)).data;
 const settle = () => new Promise((r) => setTimeout(r, 0));
@@ -74,6 +76,28 @@ test('when the document is first created it is seeded from the records\' per-mod
   assert.equal(veteran.inFirstGames('3d'), false);
 });
 
+test('Classic 2D\'s record is seeded from the games of every mode sharing it; 3D\'s from its own', async () => {
+  const backend = createMemoryBackend();
+  const mixed = createFirstUse({ storage: createStorage({ backend }), records: records(1, 0, { hexagon: 2, triangle: 4 }) });
+  await mixed.load();
+  assert.deepEqual(docOf(backend).games, { 'classic-2d': 7, '3d': 0 });
+  assert.equal(docOf(backend).finished3D, false, 'flat games never count as the finished 3D one');
+
+  for (const only of ['hexagon', 'triangle']) {
+    const below = createFirstUse({ storage: createStorage({ backend: createMemoryBackend() }), records: records(0, 0, { [only]: FIRST_GAMES - 1 }) });
+    await below.load();
+    assert.equal(below.inFirstGames(only), true, `${FIRST_GAMES - 1} ${only} games: the next is still in the window`);
+    const played = createFirstUse({ storage: createStorage({ backend: createMemoryBackend() }), records: records(0, 0, { [only]: FIRST_GAMES }) });
+    await played.load();
+    assert.equal(played.inFirstGames(only), false, `${FIRST_GAMES} ${only} games count as ${FIRST_GAMES} Classic 2D games`);
+    assert.equal(played.inFirstGames('classic-2d'), false);
+  }
+
+  const odd = createFirstUse({ storage: createStorage({ backend: createMemoryBackend() }), records: records(2, 0, { hexagon: 'x', triangle: -1 }) });
+  await odd.load();
+  assert.equal(odd.inFirstGames('classic-2d'), true, 'a counter that is not a count adds nothing');
+});
+
 test('a stored document is read back, not seeded again; a malformed one is seeded afresh', async () => {
   const data = { games: { 'classic-2d': 1, '3d': 4 }, finished3D: false, autoHideToast: true, aimHint: false, dismissed: { 'classic-2d': true, '3d': false } };
   const first = createFirstUse({ storage: createStorage({ backend: stored(data) }), records: records(30, 30) });
@@ -112,6 +136,30 @@ test('a game counts toward the three when the mode reports game started; a finis
   assert.equal(first.rules3D, false);
   await settle();
   assert.equal(docOf(backend).finished3D, true);
+});
+
+test('a Hexagon or Triangle game shares Classic 2D\'s first-use record: its games, its dismissal and its strip', async () => {
+  const backend = createMemoryBackend();
+  const first = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });
+  await first.load();
+  first.gameStarted('hexagon');
+  first.gameStarted('triangle');
+  first.gameStarted('classic-2d');
+  assert.equal(first.inFirstGames('classic-2d'), false, 'three flat games end Classic 2D\'s window');
+  assert.equal(first.inFirstGames('hexagon'), false);
+  assert.equal(first.inFirstGames('triangle'), false);
+  assert.equal(first.inFirstGames('3d'), true, 'the 3D window is its own');
+  await settle();
+  assert.equal(docOf(backend).games['classic-2d'], 3);
+  assert.deepEqual(Object.keys(docOf(backend).games).sort(), ['3d', 'classic-2d'], 'no record of their own is stored');
+  first.dismiss('triangle');
+  assert.equal(first.dismissed('classic-2d'), true, 'dismissed in one flat mode, dismissed in all');
+  assert.equal(first.dismissed('hexagon'), true);
+  assert.equal(first.dismissed('3d'), false);
+  const base = { screen: 'classic-2d', eligible: true, used: true, dismissed: false };
+  assert.equal(stripShown({ ...base, mode: 'hexagon' }), true, 'the flat modes play in the Classic 2D window');
+  assert.equal(stripShown({ ...base, mode: 'triangle', used: false, touchOnly: true }), true);
+  assert.equal(stripShown({ ...base, mode: 'hexagon', used: false }), false);
 });
 
 test('a Learn 3D game counts toward no window; its win marks the rules block seen, its loss does not', async () => {
@@ -187,7 +235,7 @@ test('the scroll hint reads "Drag to pan · pinch to zoom" on a coarse-only devi
   assert.equal(hintText('scrollHint', 'keyboard'), 'Wheel scrolls · Shift+wheel sideways');
   assert.equal(hintText('scrollHint', 'controller'), 'Wheel scrolls · Shift+wheel sideways');
   const ui = read('js/ui.js');
-  assert.match(ui, /scroll \? hintText\('scrollHint', this\._bindDevice\(this\._mode\), this\._glyphs\)/,
+  assert.match(ui, /scroll \? hintText\('scrollHint', this\._bindDevice\(this\._mode\), this\._glyphs, this\._bindings\)/,
     'the clipped-board hint takes the touch text where the help surfaces take the touch rows');
   assert.match(ui, /_bindDevice\(mode\) \{\n    return this\._touch && this\._device === 'keyboard' \? 'touch' : this\._device;/,
     'on a coarse-only device (setTouch3D), unless a controller is in use');
@@ -201,7 +249,7 @@ test('on a coarse-only device each mode\'s hint strip reads its touch wording, u
   assert.equal(text(hintStripHtml('3d', 'touch')), 'Tap reveal · Long-press flag · Two-finger tap chord');
   for (const mode of ['classic-2d', '3d']) assert.doesNotMatch(hintStripHtml(mode, 'touch', GLYPHS.xbox), /<kbd/, `${mode}: no key or pad glyph`);
   const ui = read('js/ui.js');
-  assert.match(ui, /: hintStripHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs\)/,
+  assert.match(ui, /: hintStripHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs, this\._bindings\)/,
     'the mode\'s strip takes the device the bindings lists take: touch on a coarse-only device, the controller while it is in use');
 });
 
@@ -327,7 +375,7 @@ test('on a coarse-only device the auto-hide toast and the aim hint name the touc
   assert.equal(hintText('aimHint', 'touch', GLYPHS.xbox), 'Tap the Space button to aim through numbers.');
   // Both are drawn for the device the help surfaces speak for: touch unless a controller is in use.
   const ui = read('js/ui.js');
-  assert.match(ui, /hint\(name\) \{\s*return hintText\(name, this\._bindDevice\(this\._mode\), this\._glyphs\);/);
+  assert.match(ui, /hint\(name\) \{\s*return hintText\(name, this\._bindDevice\(this\._mode\), this\._glyphs, this\._bindings\);/);
   assert.match(MAIN, /ui\.toast\(ui\.hint\('autoHide'\), 4000, \{ firstUse: true \}\)/);
   assert.match(MAIN, /ui\.toast\(ui\.hint\('aimHint'\), 4000, \{ firstUse: true \}\)/);
   assert.doesNotMatch(MAIN, /hintText\(/, 'the shell never picks a hint\'s device itself');

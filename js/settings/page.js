@@ -23,7 +23,7 @@
 //                                the schema default), carrying data-setting="key"; ids are `set-<key>`.
 //                                With labelledBy, a choice shows no label of its own and takes its
 //                                name from that element; `themes` is settingControl's.
-// settingsPageHtml()           → one kit column composition (ui-columns, #settings-columns) of the
+// settingsPageHtml({ desktopHost? }) → one kit column composition (ui-columns, #settings-columns) of the
 //                                SETTINGS_COLUMNS, each a ui-column stacking its sections (ui-panel,
 //                                data-section naming it, under its ui-section-label): a section per
 //                                SETTINGS_SECTIONS entry, each setting a ui-row of its control and,
@@ -34,27 +34,32 @@
 //                                first the export — its muted line (EXPORT_LINE) and the small
 //                                "Export history (CSV)" and "Export all (JSON)" with their download
 //                                icons (#set-export-actions, bound by bindExportActions,
-//                                js/records/export.js) — then a rule, the reset's line, the "Reset
-//                                all data…" button with its trash icon, under it the hidden failure
-//                                (an err note), and the hidden confirmation (a confirm box:
-//                                RESET_MESSAGE, Reset all data with its trash icon beside Cancel). A
+//                                js/records/export.js) — then a rule, the reset's line (the game's
+//                                data kept "in this browser", or "on this computer" when
+//                                desktopHost), the "Reset all data…" button with its trash icon,
+//                                under it the hidden failure (an err note), and the hidden
+//                                confirmation (a confirm box: RESET_MESSAGE, or
+//                                RESET_MESSAGE_DESKTOP when desktopHost — the
+//                                Steam build —, Reset all data with its trash icon beside Cancel). A
 //                                control whose label is its section's title is named by the section
 //                                label. The columns are the widest window's, and a section
 //                                SETTINGS_COLUMNS does not list joins the last column.
-// SETTINGS_LAYOUTS             → the page's columns by window size, widest first: each { media,
-//                                columns }, media the query a window matches (null: any window),
+// SETTINGS_LAYOUTS             → the page's columns by root area size, widest first: each { media,
+//                                columns }, media the query the area matches (null: any area),
 //                                columns a stack of section ids per column.
 // settingsColumnsFor(matches)  → the columns of the first layout whose media matches(media) holds.
 // placeSettingsSections(root, columns) → moves root's sections (#settings-columns) into one
 //                                ui-column per stack, in order: independent stacks, never shared
 //                                rows. A section the columns do not list joins the last column; a
 //                                focused control inside keeps the focus.
-// bindSettingsLayout(root, { matchMedia? }) → unbind: places the sections for the window now and on
+// bindSettingsLayout(root, { matchMedia? }) → unbind: places the sections for the area now and on
 //                                every change of a layout's media.
-// bindingsSectionHtml(glyphs?, camera?, { mode?, device? }) → the bindings list (dl.ui-controls) of one
-//                                mode (default Classic 2D) for one input device (default the keyboard;
-//                                one the mode does not list falls back to its first), controller
-//                                buttons in `glyphs`, 3D's for the Camera setting's `camera`.
+// bindingsSectionHtml(glyphs?, camera?, { mode?, device?, bindings? }) → the bindings list
+//                                (dl.ui-controls) of one mode (default Classic 2D) for one input device
+//                                (default the keyboard; one the mode does not list falls back to its
+//                                first), controller buttons in `glyphs`, 3D's for the Camera setting's
+//                                `camera`, from the current `bindings` (js/settings/resolver.js; the
+//                                defaults when none is given).
 // bindSettingControls(elements, store, { onUserChange?, theme?, themeSheet? }) → unbind. Each element
 //   is a control root carrying data-setting: it shows the store's value (also the loaded one, and
 //   every change made elsewhere) and writes the player's change to the store at once; onUserChange(key)
@@ -66,11 +71,12 @@
 // themeSwatchColors(cssText, id) → { token: value } for each SWATCH_TOKENS entry the theme's token
 //   block (the rule whose selector is :root[data-theme="<id>"]) declares; swatchBackground(colors) →
 //   the swatch's background, a stripe per token.
-// bindResetPanel({ open, panel, yes, no, note }, { reset }) → { isOpen, close, clear }. The Data
-//   panel's elements: `open` shows the confirmation `panel` in its place with focus on Cancel
-//   (`no`); Cancel or close() hides it and focuses `open` again. Confirming (`yes`) calls reset()
-//   once → Promise of { ok } (the page reloads) or { ok: false, message }, which closes the
-//   confirmation and shows the message in the err note `note` (RESET_FAILURE when the reset threw);
+// bindResetPanel({ open, panel, yes, no, note }, { reset, desktopHost? }) → { isOpen, close, clear }.
+//   The Data panel's elements: `open` shows the confirmation `panel` in its place with focus on
+//   Cancel (`no`); Cancel or close() hides it and focuses `open` again. Confirming (`yes`) calls
+//   reset() once → Promise of { ok } (the page reloads) or { ok: false, message }, which closes the
+//   confirmation and shows the message in the err note `note` (when the reset threw, the build's
+//   failure line: RESET_FAILURE, or RESET_FAILURE_DESKTOP when desktopHost);
 //   the action stays available. close() → false when nothing is open; clear() closes it and the
 //   note, without moving focus.
 
@@ -80,7 +86,7 @@ import { SITE_ROOT } from '../themes/applier.js';
 import { BINDING_MODES, bindingDevices, bindingRows, bindingsListHtml } from './bindings.js';
 import { formatSliderValue, decimalsOf, segmentedState, bindSegmented, bindSliderFill, setNote, iconMarkup } from '../ui/components.js';
 import { EXPORT_LINE } from '../records/export.js';
-import { RESET_FAILURE } from './reset.js';
+import { RESET_FAILURE, RESET_FAILURE_DESKTOP } from './reset.js';
 
 export const SETTINGS_SECTIONS = Object.freeze([
   Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY', 'camera', 'confirmRestart']) }),
@@ -126,9 +132,9 @@ export const SETTINGS_COLUMNS = Object.freeze([
   Object.freeze(['bindings', 'data']),
 ]);
 
-/** The page's columns by window size, widest first: three on the widest windows, two from the kit breakpoint, then one in the phone's order. */
+/** The page's columns by window size, widest first: three on the widest windows above the compact step's height, two from the kit breakpoint, then one in the phone's order. */
 export const SETTINGS_LAYOUTS = Object.freeze([
-  Object.freeze({ media: '(min-width: 1600px)', columns: SETTINGS_COLUMNS }),
+  Object.freeze({ media: '(min-width: 1600px) and (min-height: 821px)', columns: SETTINGS_COLUMNS }),
   Object.freeze({ media: '(min-width: 1024px)', columns: Object.freeze([Object.freeze(['controls', 'graphics', 'audio']), Object.freeze(['theme', 'data', 'bindings'])]) }),
   Object.freeze({ media: null, columns: Object.freeze([Object.freeze(['controls', 'graphics', 'theme', 'audio', 'bindings', 'data'])]) }),
 ]);
@@ -268,40 +274,43 @@ function bindingsPanelHtml() {
     + '<div id="settings-bindings"></div></section>';
 }
 
-export function settingsPageHtml() {
+export function settingsPageHtml({ desktopHost = false } = {}) {
   const panels = new Map(SETTINGS_SECTIONS.map((s) => [s.id, `${sectionOpen(s.id)}${sectionLabel(s.id, s.title)}`
     + `${s.settings.map((k) => (SETTING_LABELS[k] === s.title
       ? settingControlHtml(k, undefined, { labelledBy: `set-sec-${s.id}` }) : settingRowHtml(k))).join('')}</section>`]));
   panels.set('bindings', bindingsPanelHtml());
-  panels.set('data', dataPanelHtml());
+  panels.set('data', dataPanelHtml(desktopHost));
   const listed = new Set(SETTINGS_COLUMNS.flat());
   const columns = SETTINGS_COLUMNS.map((ids, i) => [...ids, ...(i === SETTINGS_COLUMNS.length - 1 ? [...panels.keys()].filter((id) => !listed.has(id)) : [])]);
   return `<div class="ui-columns" id="settings-columns">${columns.map((ids) => `<div class="ui-column">${ids.map((id) => panels.get(id)).join('')}</div>`).join('')}</div>`;
 }
 
-export const RESET_MESSAGE = 'Delete your records, game history, replays, settings, last board choices (Classic 2D and 3D) '
-  + 'and first-use hints from this browser? This cannot be undone.';
+const resetMessage = (where) => 'Delete your records, game history, replays, settings, last board choices (Classic 2D and 3D) '
+  + `and first-use hints from ${where}? This cannot be undone.`;
+/** The Reset all data confirmation: on the web build, and on the Steam build. */
+export const RESET_MESSAGE = resetMessage('this browser');
+export const RESET_MESSAGE_DESKTOP = resetMessage('this computer');
 
 // The Data panel: the place of everything about the player's stored data.
-function dataPanelHtml() {
+function dataPanelHtml(desktopHost) {
   return `${sectionOpen('data', ' id="settings-data"')}${sectionLabel('data', 'Data')}<div class="ui-actions" id="set-data-body">`
     + `<p class="ui-text ui-text--muted" id="set-export-text">${EXPORT_LINE}</p>`
     + '<div class="ui-actions ui-actions--row" id="set-export-actions">'
     + '<button type="button" class="ui-button ui-button--secondary ui-button--sm" id="set-export-csv" data-icon="download">Export history (CSV)</button>'
     + '<button type="button" class="ui-button ui-button--secondary ui-button--sm" id="set-export-json" data-icon="download">Export all (JSON)</button>'
     + '</div><hr class="ui-divider">'
-    + '<p class="ui-text">Delete everything the game keeps in this browser and start over as a new player.</p>'
+    + `<p class="ui-text">Delete everything the game keeps ${desktopHost ? 'on this computer' : 'in this browser'} and start over as a new player.</p>`
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset" data-icon="trash">Reset all data…</button>'
     + '<p class="ui-note ui-note--err hidden" id="set-reset-note" role="status" data-icon="warning"><span class="ui-note__text"></span></p>'
     + '<div class="ui-confirm hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">'
-    + `<p class="ui-confirm__text" id="set-reset-text">${RESET_MESSAGE}</p>`
+    + `<p class="ui-confirm__text" id="set-reset-text">${desktopHost ? RESET_MESSAGE_DESKTOP : RESET_MESSAGE}</p>`
     + '<div class="ui-actions ui-actions--row">'
     + '<button type="button" class="ui-button ui-button--danger" id="set-reset-yes" data-icon="trash">Reset all data</button>'
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel</button>'
     + '</div></div></div></section>';
 }
 
-export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
+export function bindResetPanel({ open, panel, yes, no, note }, { reset, desktopHost = false }) {
   let busy = false;
   const show = (el, on) => el.classList.toggle('hidden', !on);
   const isOpen = () => !panel.classList.contains('hidden');
@@ -337,7 +346,7 @@ export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
     yes.disabled = false;
     no.disabled = false;
     if (result?.ok) return; // the page reloads
-    setNote(note, result?.message ?? RESET_FAILURE);
+    setNote(note, result?.message ?? (desktopHost ? RESET_FAILURE_DESKTOP : RESET_FAILURE));
     show(note, true);
     close();
   });
@@ -353,10 +362,10 @@ export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
   };
 }
 
-export function bindingsSectionHtml(glyphs, camera, { mode = BINDING_MODES[0].id, device = 'keyboard' } = {}) {
+export function bindingsSectionHtml(glyphs, camera, { mode = BINDING_MODES[0].id, device = 'keyboard', bindings = null } = {}) {
   const devices = bindingDevices(mode);
   const shown = devices.some((d) => d.id === device) ? device : devices[0].id;
-  return `<dl class="ui-controls">${bindingsListHtml(bindingRows(mode, shown, camera), glyphs)}</dl>`;
+  return `<dl class="ui-controls">${bindingsListHtml(bindingRows(mode, shown, camera, bindings), glyphs)}</dl>`;
 }
 
 const hasClass = (el, cls) => (el.getAttribute('class') ?? '').split(/\s+/).includes(cls);

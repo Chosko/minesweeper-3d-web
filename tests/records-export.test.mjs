@@ -1,4 +1,4 @@
-// Records export (js/records/export.js): the CSV of every game of both modes (header, order,
+// Records export (js/records/export.js): the CSV of every game of every mode (header, order,
 // rounding, RFC 4180 escaping, the replay columns), the JSON of the history and the replays'
 // listing, the file names, the disabled empty export, the injected download through a Blob and an
 // object URL, and the export actions' binder.
@@ -47,11 +47,22 @@ const LIBRARY = library([
 const NOW = new Date(2026, 9, 14, 9, 5);
 const parseCsv = (text) => text.trimEnd().split('\r\n').map((line) => line.split(','));
 
-test('the export gathers every game of every board in both modes, newest first', () => {
+test('the export gathers every game of every board in every mode, newest first', () => {
   const games = exportGames(store(GAMES));
   assert.deepEqual(games.map((g) => g.entry.id), ['b', 'c', 'a']);
   assert.equal(games[0].board.mode, '3d');
   assert.deepEqual(exportGames({ boardsPlayed() { throw new Error('unreadable'); } }), [], 'an unreadable store exports nothing');
+});
+
+test('the export gathers the Hexagon and Triangle games too, and a Hexagon game alone enables it', () => {
+  const HEX = createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 9, height: 9, mines: 13, noGuess: false });
+  const TRI = createBoardIdentity({ mode: 'triangle', grid: 'tri', width: 13, height: 7, mines: 8, noGuess: true });
+  const records = store([...GAMES, summary(HEX, { id: 'h', endedAt: '2026-10-04T12:00:00.000Z' }), summary(TRI, { id: 't', endedAt: '2026-10-05T12:00:00.000Z' })]);
+  assert.deepEqual(exportGames(records).map((g) => [g.entry.id, g.board.mode]), [['t', 'triangle'], ['h', 'hexagon'], ['b', '3d'], ['c', 'classic-2d'], ['a', 'classic-2d']]);
+  const [, ...rows] = parseCsv(exportCsv({ records, now: NOW }).text);
+  assert.deepEqual(rows.slice(0, 2).map((r) => [r[1], r[2], r[3]]), [['triangle', 'triangle:tri:13x7:8:no-guess', 'Beginner · no-guess'], ['hexagon', 'hexagon:hex:9x9:13:guess', 'Beginner']]);
+  assert.deepEqual(JSON.parse(exportJson({ records, now: NOW }).text).games.slice(0, 2).map((g) => g.id), ['t', 'h']);
+  assert.equal(createRecordsExport({ records: store([summary(HEX, { id: 'h' })]) }).hasGames(), true);
 });
 
 test('the CSV: its header, one row per game newest first, rounding and the replay columns', () => {

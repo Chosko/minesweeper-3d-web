@@ -17,14 +17,15 @@ viewers [replay-viewers.md](replay-viewers.md).
 
 ## PUBLIC API
 
-- `SNAPSHOT_MIN_CELLS` (8000), `SNAPSHOT_INTERVAL` (2000 actions),
-  `SNAPSHOT_MEMORY` (64 MB); `REFUSAL` (`NEWER`, `UNREADABLE`);
+- `SNAPSHOT_MIN_CELLS`, `SNAPSHOT_INTERVAL` (actions),
+  `SNAPSHOT_MEMORY` (bytes); `REFUSAL` (`NEWER`, `UNREADABLE`);
   `ReplayRefusedError`.
 - `openReplay(input)` → `{ok: true, replay}` or `{ok: false, reason,
   message}` (`NEWER` for a newer format, profile or rules version).
 - `createSimulator(input, opts?)` → `{replay, grid, game, duration, length,
-  seek(t), seekIndex(i), indexAt(t), outcome(i), stats()}`; `game`
-  read-only, always the same object. A frame is `{time, index, phase,
+  seek(t), seekIndex(i), indexAt(t), outcome(i), stats()}`; `grid` the
+  square, hexagon, triangle or box grid built from the header's graph
+  kind; `game` read-only, always the same object. A frame is `{time, index, phase,
   minesLeft, explodedCell, bbbv, bbbvSolved, clicks, state, game,
   changed}`, `changed` an ascending `Int32Array`. `outcome(i)` →
   `{changed, count, before, after}` once playback applied action `i`
@@ -33,7 +34,7 @@ viewers [replay-viewers.md](replay-viewers.md).
 - `verify(input)` → `{ok: true, result: 'reproduces'}`, `{ok: false,
   result: 'differs', field, expected, actual}` or `{ok: false, result:
   'refused', reason, message}`.
-- `SPEEDS` (`[0.25, 0.5, 1, 2, 4]`), `DEFAULT_SPEED`, `LEAD_IN_MS` (500);
+- `SPEEDS` (the speed choices, as multipliers), `DEFAULT_SPEED`, `LEAD_IN_MS`;
   `createPlaybackClock({duration, speed?})`.
 
 ## INTERNAL PATTERNS
@@ -49,7 +50,7 @@ viewers [replay-viewers.md](replay-viewers.md).
   every cell.
 - **The clock.** It runs over the duration plus `LEAD_IN_MS`; game time is
   the clock's time less the lead-in, so the start position sits at game
-  time -500 ([replay-viewer-screen.md](replay-viewer-screen.md) § The
+  time `-LEAD_IN_MS` ([replay-viewer-screen.md](replay-viewer-screen.md) § The
   timeline).
 
 ## DOMAIN DEPENDENCIES
@@ -64,7 +65,7 @@ viewers [replay-viewers.md](replay-viewers.md).
 - [replay.md](replay.md) — the format, decoder and sampling intervals.
 - [engine-rules.md](engine-rules.md) — `createGameWithMines`, `snapshot()` /
   `restore()`.
-- [testing.md](testing.md) — `tests/replay-simulator.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/replay-simulator.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

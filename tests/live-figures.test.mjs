@@ -1,9 +1,14 @@
 // Live figures model (js/shell/live-figures.js): 3BV progress, pace vs PB, 3BV/s, clicks with the
 // live efficiency and flags with mines left, from a game's counts, its elapsed time and the board's
-// bests; the neutral placeholder for a figure the inputs cannot yet produce; the change helper.
+// bests; the neutral placeholder for a figure the inputs cannot yet produce; the change helper; the
+// panel's open state, one stored view preference every mode shares.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { liveFigures, changedFigures, FIGURES, PLACEHOLDER } from '../js/shell/live-figures.js';
+import { readFileSync } from 'node:fs';
+import { liveFigures, changedFigures, FIGURES, PLACEHOLDER, FIGURES_PANEL_DOC, FIGURES_PANEL_VERSION, createFiguresPanel } from '../js/shell/live-figures.js';
+import { BOARD_PANEL_DOC } from '../js/shell/returning.js';
+import { createStorage } from '../js/platform/storage.js';
+import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { buildSummary } from '../js/records/summary.js';
 import { createBoardIdentity } from '../js/records/board.js';
 import { DASH, formatEfficiency } from '../js/results/view.js';
@@ -145,4 +150,83 @@ test('the change helper reports a figure appearing or disappearing', () => {
 
 test('the change helper treats no previous figures as every figure changed', () => {
   assert.deepEqual(changedFigures(null, liveFigures(input())), [...FIGURES]);
+});
+
+// ---------------------------------------------------------------- the panel's open state
+
+const doc = (version, data) => JSON.stringify({ version, data });
+function panelSetup({ initial = {}, available = true, failWrites = false } = {}) {
+  const backend = createMemoryBackend({ initial, available });
+  if (failWrites) backend.write = async () => { throw new Error('refused'); };
+  const storage = createStorage({ backend });
+  return { backend, storage, panel: createFiguresPanel({ storage }) };
+}
+
+test('the live figures panel\'s open state is the shell.liveFigures document at version 1, registered by the preference, beside the board choice pin', () => {
+  assert.equal(FIGURES_PANEL_DOC, 'shell.liveFigures');
+  assert.equal(FIGURES_PANEL_VERSION, 1);
+  assert.notEqual(FIGURES_PANEL_DOC, BOARD_PANEL_DOC, 'its own document');
+  const { storage } = panelSetup();
+  assert.throws(() => storage.register(FIGURES_PANEL_DOC, 1), /already|registered/i, 'registered once, by the preference');
+});
+
+test('the panel is closed while nothing is stored; a stored state loads, every change is saved and kept after a reload', async () => {
+  const fresh = panelSetup();
+  assert.equal(fresh.panel.open, false);
+  assert.equal(await fresh.panel.load(), false, 'closed when nothing is stored');
+  const { panel, backend } = panelSetup({ initial: { [FIGURES_PANEL_DOC]: doc(1, { open: true }) } });
+  assert.equal(await panel.load(), true);
+  assert.equal(panel.open, true);
+  const saving = panel.setOpen(false);
+  assert.equal(panel.open, false, 'the state follows at once, before the save settles');
+  await saving;
+  assert.deepEqual(JSON.parse(backend.documents.get(FIGURES_PANEL_DOC)), { version: 1, data: { open: false } });
+  await panel.setOpen(true);
+  const again = panelSetup({ initial: Object.fromEntries(backend.documents) });
+  assert.equal(await again.panel.load(), true, 'kept across sessions');
+});
+
+test('a malformed or newer panel document reads as closed; a failed save keeps the state for the session', async () => {
+  for (const text of [doc(1, { open: 'yes' }), doc(1, null), doc(1, [true]), 'not json', doc(2, { open: true })]) {
+    const { panel } = panelSetup({ initial: { [FIGURES_PANEL_DOC]: text } });
+    assert.equal(await panel.load(), false, text);
+  }
+  for (const opts of [{ failWrites: true }, { available: false }]) {
+    const { panel } = panelSetup(opts);
+    await panel.load();
+    const result = await panel.setOpen(true);
+    assert.equal(result.ok, false);
+    assert.equal(panel.open, true);
+  }
+});
+
+test('one preference, loaded before the first screen, drives the Classic 2D window\'s and the 3D overlay\'s panels and their toggles', () => {
+  const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  assert.match(main, /const LIVE_FIGURES = createFiguresPanel\(\{ storage \}\);/);
+  assert.match(main, /await Promise\.all\(\[[^\]]*LIVE_FIGURES\.load\(\)\.catch\(\(\) => \{\}\)[^\]]*\]\);\nui\.setFigures2D\(LIVE_FIGURES\.open\);\nui\.setFigures3D\(LIVE_FIGURES\.open\);\nshowMainMenu\(\);/, 'the window and the 3D overlay open on the stored state');
+  assert.match(main, /onToggleFigures: \(\) => toggleFigures\(\),/);
+  const toggle = main.slice(main.indexOf('function toggleFigures('), main.indexOf('}', main.indexOf('function toggleFigures(')) + 1);
+  assert.match(toggle, /LIVE_FIGURES\.setOpen\(!LIVE_FIGURES\.open\)/, 'the toggle flips the one stored state');
+  assert.match(toggle, /ui\.setFigures2D\(LIVE_FIGURES\.open\)/);
+  assert.match(toggle, /ui\.setFigures3D\(LIVE_FIGURES\.open\)/, 'the 3D overlay\'s panel under the same state');
+  assert.match(toggle, /size2D\(\)/, 'and the window refits its board to the room left');
+});
+
+test('the controller\'s View button shows or hides the live figures in both modes, never the board, and pauses nothing', () => {
+  const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  const fn = (name) => { const start = main.indexOf(`function ${name}(`); return main.slice(start, main.indexOf('\n}\n', start)); };
+  const board = fn('padBoard2D');
+  const view = board.indexOf('pressed(BTN.BACK)');
+  assert.ok(view > 0, 'padBoard2D reads View');
+  assert.ok(view < board.indexOf('flat2D()?.pad('), 'before the board\'s cursor input');
+  assert.match(board, /if \(pressed\(BTN\.BACK\)\) \{ padToggleFigures\('c2d-figures-toggle'\); return; \}/, 'the window\'s own toggle');
+  assert.doesNotMatch(board, /BTN\.RB/, 'RB is no longer the Classic 2D toggle');
+  assert.ok(board.indexOf('backButtons(') > board.indexOf('board2d.failure || board2d.generating'), 'Back only on the board status card');
+  const play = fn('padPlaying');
+  assert.match(play, /if \(pressed\(BTN\.BACK\)\) padToggleFigures\('hud-figures-toggle'\);/, 'the 3D overlay\'s toggle');
+  assert.match(play, /Object\.assign\(controls\.pad, acts\.modes\);/, 'the view modes through the 3D bindings, RB the Space view mode by default');
+  assert.doesNotMatch(play, /backButtons\(/, 'View no longer pauses 3D play');
+  const toggle = fn('padToggleFigures');
+  assert.match(toggle, /checkVisibility\(\)/, 'nothing where the toggle is hidden (a phone, Learn 3D)');
+  assert.match(toggle, /padClick\(/);
 });

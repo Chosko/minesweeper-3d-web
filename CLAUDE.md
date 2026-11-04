@@ -1,6 +1,8 @@
 # Minesweeper 3D
 
 Interaction policy: unattended
+Parallel policy: 4
+Pipeline dashboard policy: on
 
 ## Navigation
 
@@ -12,6 +14,12 @@ the source" section indicates it is necessary.
 For product and domain knowledge — what this product is, how its features
 are designed, and why the architecture is what it is — read
 `.claude/domain/INDEX.md`, then only the domain files relevant to your task.
+
+## Running costs
+
+Pelion Games' costs, earnings and partner balance live in a Google Sheet, never
+in this repo. Read `docs/running-costs.md` before answering a question about
+spend or writing to the sheet.
 
 ## Tasks implementation
 
@@ -74,6 +82,12 @@ next, who needs the rule, not the road to it. Every edit follows these rules.
 10. **No drifting numbers.** Documentation states no precise number the code
     can change — a count, a size, a timing. It names the thing instead, and
     the code or the one authority file that enumerates it holds the number.
+    A number the code does not own stays: one fixed by geometry or the
+    game's rules, by `docs/ORIGINAL_SPEC.md` or by an outside standard; a
+    code or identifier the doc must name, including a version number a
+    behaviour or upgrade step depends on; an example of an output format; a
+    fixed name of a past board or a product; a fact about the environment;
+    a design count written in words.
 
 <!-- chosko-llm:git-commit-style:begin v0.2.0 -->
 

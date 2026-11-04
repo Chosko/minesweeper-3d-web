@@ -11,7 +11,7 @@
 // its markup carries that component's class) }. A slot: { name, selector }, an element present in
 // the markup, marked data-slot="<name>", and hidden unless a theme styles it into view.
 //
-// States. On buttons, menu entries, mode entries and board options hover and focus are one
+// States. On buttons, menu entries, main menu buttons and board options hover and focus are one
 // `selected` state (screen-components § Scope and non-goals), so those parts carry default,
 // selected, pressed and disabled, and a board option also `chosen`, the board it holds, apart from
 // selected, as does a latched toggle while latched on. Every other control carries default, hover,
@@ -22,7 +22,7 @@ export const STATES = Object.freeze(['default', 'hover', 'pressed', 'focused', '
 
 const focus = (sel) => `${sel}:focus-visible, body.pad-nav ${sel}:focus`;
 
-// A button, menu entry, mode entry or board option: hover and focus are its selected state; `extra`
+// A button, menu entry, main menu button or board option: hover and focus are its selected state; `extra`
 // adds `chosen`.
 const selectable = (name, sel, extra = {}) => Object.freeze({
   name, selector: sel, optional: false, interactive: true,
@@ -148,23 +148,43 @@ export const KIT_CATALOGUE = Object.freeze([
     base: 'ui-button',
     parts: [selectable('button', '.ui-button--danger')],
   }),
+  // The button colour rule's primary variants, worn beside ui-button--primary: go, the green button
+  // that confirms or goes forward; stop, the red one of the title bar's Quit.
+  component('ui-button--go', {
+    base: 'ui-button',
+    parts: [selectable('button', '.ui-button--go')],
+  }),
+  component('ui-button--stop', {
+    base: 'ui-button',
+    parts: [selectable('button', '.ui-button--stop')],
+  }),
   // A row or chip action; with aria-pressed a latched toggle, `chosen` while latched on.
   component('ui-button--quiet', {
     base: 'ui-button',
     variants: ['ui-button--sm'],
     parts: [selectable('button', '.ui-button--quiet', { chosen: '.ui-button--quiet[aria-pressed="true"]' })],
   }),
-  // The game's title: three words on one line, each in its own accent.
-  component('ui-wordmark', { parts: [part('word', '.ui-wordmark__word')] }),
+  // The game logo, the straight one at rest: MINESWEEPER a game colour per letter, 3D in yellow.
+  component('ui-logo', { parts: [part('word', '.ui-logo__word'), part('letter', '.ui-logo__letter')] }),
   component('ui-backdrop'),
-  // The white action foot (ui-frame__foot--action) ends a screen's bar of actions; the game window keeps the plain foot.
+  // The head is the game's title bar: Back as an arrow icon (none on the main menu; Pause in its place in
+  // the Classic 2D game window), the game logo in the centre and the window buttons — Minimise,
+  // Fullscreen / Windowed and Quit, the stop button — at the end, each icon-only; the screen's name is
+  // the body heading, its control at the heading's right (the game window has none). The white action foot (ui-frame__foot--action) ends a screen's bar of actions; the game
+  // window keeps the plain foot.
   component('ui-frame', {
     variants: ['ui-frame__foot--action'],
     parts: [
       part('head', '.ui-frame__head'),
-      part('back', '.ui-frame__start .ui-button', { optional: true, as: 'ui-button--secondary' }),
+      part('back', '.ui-frame__start > .ui-frame__back', { optional: true, as: 'ui-button--secondary' }),
+      part('logo', '.ui-frame__logo', { optional: true, as: 'ui-logo' }),
+      part('window', '.ui-frame__end > .ui-frame__window', { optional: true }),
+      part('minimise', '.ui-frame__window [data-window="minimise"]', { optional: true, as: 'ui-button--secondary' }),
+      part('fullscreen', '.ui-frame__window [data-window="fullscreen"]', { optional: true, as: 'ui-button--secondary' }),
+      part('quit', '.ui-frame__window [data-window="quit"]', { optional: true, as: 'ui-button--stop' }),
+      part('heading', '.ui-frame__heading', { optional: true }),
       part('title', '.ui-frame__title'),
-      part('action', '.ui-frame__end .ui-button', { optional: true, as: 'ui-button--primary' }),
+      part('action', '.ui-frame__action', { optional: true }),
       part('body', '.ui-frame__body'),
       part('foot', '.ui-frame__foot', { optional: true }),
       part('status', '.ui-frame__status', { optional: true }),
@@ -172,16 +192,33 @@ export const KIT_CATALOGUE = Object.freeze([
     ],
     slots: [slot('window-chrome', '.ui-frame__chrome')],
   }),
-  // Each entry's accent follows its data-entry; the selected entry is taller, with a bigger icon and label.
-  // A disabled entry is aria-disabled, so it can still be selected and show its preview.
-  component('ui-mode-entry', {
+  // The main menu buttons. A play tile: a mode's colour (its data-entry) and its own preview, a
+  // square on the dark scene ground, --light on translucent white, --locked while it cannot open;
+  // ui-play-tile--row the phone row. A disabled tile is aria-disabled, so it can still be selected.
+  component('ui-play-tile', {
+    variants: ['ui-play-tile--row', 'ui-play-tile__preview--light', 'ui-play-tile__preview--locked'],
     parts: [
-      selectable('entry', '.ui-mode-entry', { disabled: '.ui-mode-entry[aria-disabled="true"]' }),
-      part('icon', '.ui-mode-entry__icon'),
-      part('label', '.ui-mode-entry__label'),
-      part('reason', '.ui-mode-entry__reason', { optional: true }),
-      part('last', '.ui-mode-entry .ui-chip', { optional: true, as: 'ui-chip' }),
-      part('lock', '.ui-mode-entry__lock', { optional: true }),
+      selectable('tile', '.ui-play-tile', { disabled: '.ui-play-tile[aria-disabled="true"]' }),
+      part('side', '.ui-play-tile__side'),
+      part('top', '.ui-play-tile__top'),
+      part('icon', '.ui-play-tile__icon'),
+      part('text', '.ui-play-tile__text'),
+      part('label', '.ui-play-tile__label'),
+      part('reason', '.ui-play-tile__reason', { optional: true }),
+      part('lock', '.ui-play-tile__lock', { optional: true }),
+      part('preview', '.ui-play-tile__preview'),
+      part('art', '.ui-play-tile__art'),
+      part('badge', '.ui-play-tile__badge', { optional: true }),
+      part('still', '.ui-play-tile__still', { optional: true }),
+      part('calendar', '.ui-play-tile__calendar', { optional: true }),
+    ],
+  }),
+  // A small entry: a place (Records, Settings), neutral.
+  component('ui-small-entry', {
+    parts: [
+      selectable('entry', '.ui-small-entry'),
+      part('icon', '.ui-small-entry__icon'),
+      part('label', '.ui-small-entry__label'),
     ],
   }),
   component('ui-option', {
@@ -191,11 +228,21 @@ export const KIT_CATALOGUE = Object.freeze([
       part('badge', '.ui-option__badge', { optional: true }),
       part('line', '.ui-option__line', { optional: true }),
       part('name', '.ui-option__name'),
-      part('last', '.ui-option .ui-chip', { optional: true, as: 'ui-chip' }),
+      part('chip', '.ui-option .ui-chip', { optional: true, as: 'ui-chip' }),
       part('meta', '.ui-option__meta', { optional: true }),
       part('size', '.ui-option__size', { optional: true }),
       part('density', '.ui-option__density', { optional: true }),
       part('check', '.ui-option__check'),
+    ],
+  }),
+  // The board choice panel: beside the options on a desktop window, its bar hidden; on a phone a
+  // full-width bar over its body, `chosen` while open (aria-expanded), its label a section label's.
+  component('ui-drawer', {
+    parts: [
+      selectable('bar', '.ui-drawer__bar', { chosen: '.ui-drawer__bar[aria-expanded="true"]' }),
+      part('label', '.ui-drawer__label'),
+      part('chevron', '.ui-drawer__chevron'),
+      part('body', '.ui-drawer__body'),
     ],
   }),
   component('ui-section-label', {
@@ -288,7 +335,7 @@ export const KIT_CATALOGUE = Object.freeze([
     parts: [
       part('head', '.ui-figures__head', { optional: true }),
       part('title', '.ui-figures__title', { optional: true }),
-      part('action', '.ui-figures__action', { optional: true, as: 'ui-button--primary' }),
+      part('action', '.ui-figures__action', { optional: true, as: 'ui-button--secondary' }),
       part('body', '.ui-figures__body'),
       part('foot', '.ui-figures__foot', { optional: true }),
       part('live', '.ui-figures__live'),
@@ -327,7 +374,7 @@ export const KIT_CATALOGUE = Object.freeze([
     variants: ['ui-columns--two', 'ui-columns--pair'],
     parts: [part('column', '.ui-column'), part('span', '.ui-columns__span')],
   }),
-  composition('ui-mode-list'),
+  composition('ui-mode-list', { parts: [part('tiles', '.ui-mode-list__tiles'), part('places', '.ui-mode-list__places')] }),
   composition('ui-options'),
   composition('ui-key-hints'),
   composition('ui-list'),

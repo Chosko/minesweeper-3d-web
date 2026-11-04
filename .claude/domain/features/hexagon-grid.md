@@ -2,7 +2,7 @@
 
 The hexagonal board as the rules engine, the generator and the flat board
 see it. A board of W × H is W columns of H flat-top hexagons, and every odd
-column sits half a tile lower. A tile's neighbours are the tiles that share a
+column sits half a row lower. A tile's neighbours are the tiles that share a
 side: 6 in the interior, fewer at the edge. This feature also sets the
 Hexagon mode's standard boards and custom limits, and how a hexagon board is
 named in the records and spelled in a board code.
@@ -28,19 +28,24 @@ In scope (m2c-flat-grids):
 - A `hex` graph description for board generation and the generation worker,
   and its marked start cell, at the centre column and row like the square
   grid's.
-- The hexagon geometry: flat-top tiles in columns, odd columns half a tile
-  lower, sized across the flats. Hit-testing follows the hexagon outline,
-  and a press in a gap goes to the nearest tile. The floor is 26 px across
+- The hexagon geometry: flat-top tiles in columns, sized across the flats,
+  odd columns half a row step (the tile plus the gap) lower, so every pair
+  of facing sides is one gap apart. A press anywhere in the board's
+  rectangle goes to the tile whose centre is nearest, a tie to the lower
+  index, so hit-testing follows the hexagon outline and a press in a gap
+  goes to the nearest tile. The floor is 26 px across
   the flats, the square floor's aim target. Cursor moves: up and down within
   the column; left and right to the adjacent column at the same row index,
   so the cursor zig-zags along a row.
 - The standard boards, as drawn on the Hexagon board sheet: Beginner 9 × 9
   with 13 mines, Intermediate 16 × 16 with 50, Expert 30 × 16 with 100.
   Beginner's and Intermediate's densities give the matching Classic 2D
-  board's chance that a safe tile is an opening. Expert's is lower: the
-  mine count at which no-guess generation clears within board generation's
-  attempt budget on every seed measured, by the same margin as Classic 2D
-  Expert (`dev/measure-noguess-hex.mjs`). They are fixed once records
+  board's chance that a safe tile is an opening. Expert's is lower, so that
+  no-guess generation clears within board generation's attempt
+  budget: measured at Expert's mine count, it met the budget on every seed,
+  from the marked start cell and from any other first click alike
+  (`dev/measure-noguess-hex.mjs`), and the no-guess tests hold Hexagon
+  Expert to that. They are fixed once records
   exist: a later change would make earlier games custom-board records.
 - Custom boards: 1 to 100 a side, as Classic 2D. Mines run from 1 to
   Classic 2D's cap for the same cell count, at most cells − 1, so the first
@@ -80,12 +85,15 @@ graph they supply; seeded generation in a Web Worker (see
 - **Geometry** — the hexagon implementation of `flat-grid-geometry`: column
   and row steps from the tile size and gap, the hexagon outline, its slot for
   hit-testing, the cursor moves above, the floor and the scale cap.
-- **Board setup values** — the standard sizes and the custom limits, which
-  the Hexagon board choice and the board-code parser both read.
+- **Board setup values** — the standard sizes and the custom limits in
+  `js/hexagon/board-setup.js`, which the Hexagon board choice and the
+  board-code parser both read. It takes Classic 2D's custom limits and
+  validation by re-export; only the standard sizes are its own.
 - **Board identity** — the 2D form with mode `hexagon` and grid `hex`. The
   key format already carries mode and grid, so no key format change. The
   standard names are recognised from exact size and mine count on the `hex`
-  grid.
+  grid, against the records' own copy of the standard sizes, which a test
+  holds equal to the board setup's.
 
 ## Data and state
 

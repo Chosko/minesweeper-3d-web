@@ -9,6 +9,7 @@ import { BOARD as JOYFUL_BOARD } from '../themes/joyful-tiles/board.js';
 import { THEMES, DEFAULT_THEME_ID, registerTheme, themeById } from '../js/themes/registry.js';
 import { createThemeApplier, themeIdFor, START_FALLBACK, SWITCH_FAILED } from '../js/themes/applier.js';
 import { SETTINGS_VERSION } from '../js/settings/store.js';
+import { PRE_PAINT_GLOBAL } from '../desktop/bridge.js';
 import { FIXTURE_THEME } from './fixtures/themes/fixture-theme.js';
 import { browserSuite } from './helpers/browser.mjs';
 
@@ -94,8 +95,9 @@ function fakeDoc({ fail = [], failFonts = false } = {}) {
 
 // Runs js/theme.js the way the browser does: a classic script against a global that carries
 // `document` (and `localStorage` when given).
-function loadThemeScript({ fake = fakeDoc(), storage } = {}) {
-  const ctx = vm.createContext({ document: fake.doc, ...(storage === undefined ? {} : { localStorage: storage }) });
+function loadThemeScript({ fake = fakeDoc(), storage, globals = {} } = {}) {
+  const scope = { document: fake.doc, ...(storage === undefined ? {} : { localStorage: storage }) };
+  const ctx = vm.createContext(Object.defineProperties(scope, Object.getOwnPropertyDescriptors(globals)));
   vm.runInContext(THEME_SRC, ctx);
   return { boot: ctx.msThemeBoot, prePaint: ctx.msThemePrePaint, ...fake };
 }
@@ -198,6 +200,49 @@ test('the pre-paint script reads the settings document at the store\'s version a
   });
   boot.ready.catch(() => {});
   assert.equal(boot.id, FIXTURE_ID, 'a registered id saved at the store\'s version starts in that theme');
+});
+
+// A global whose localStorage records every access, as the Steam build must never make one.
+function watchedGlobals(globals, storage = stubStorage(settingsDoc(FIXTURE_ID, SETTINGS_VERSION))) {
+  const reads = [];
+  const scope = { ...globals };
+  Object.defineProperty(scope, 'localStorage', { enumerable: true, get() { reads.push('localStorage'); return storage; } });
+  Object.defineProperty(scope, 'sessionStorage', { enumerable: true, get() { reads.push('sessionStorage'); return storage; } });
+  return { scope, reads };
+}
+
+test('the pre-paint script prefers the theme id the desktop host hands over, mapped like a stored one', () => {
+  const stylesheets = { [THEME_ID]: 'themes/joyful-tiles/theme.css', [FIXTURE_ID]: FIXTURE_THEME.stylesheet };
+  const { prePaint } = loadThemeScript();
+  for (const [handed, want] of [[FIXTURE_ID, FIXTURE_ID], [THEME_ID, THEME_ID], ['dark', THEME_ID], ['sepia', THEME_ID], [null, THEME_ID]]) {
+    const fake = fakeDoc();
+    const boot = prePaint.boot({ doc: fake.doc, hostTheme: handed, storage: stubStorage(settingsDoc(FIXTURE_ID === want ? THEME_ID : FIXTURE_ID, SETTINGS_VERSION)), stylesheets });
+    boot.ready.catch(() => {});
+    assert.equal(boot.id, want, `handed ${handed}: the host's id wins over browser storage`);
+  }
+  assert.equal(prePaint.readHostTheme({ [prePaint.HOST_GLOBAL]: { theme: FIXTURE_ID } }), FIXTURE_ID);
+  assert.equal(prePaint.readHostTheme({ [prePaint.HOST_GLOBAL]: { theme: null } }), null, 'the host read no theme');
+  assert.equal(prePaint.readHostTheme({ [prePaint.HOST_GLOBAL]: { theme: 7 } }), null);
+  assert.equal(prePaint.readHostTheme({}), undefined, 'no host: the web build');
+});
+
+test('on the desktop host the pre-paint script applies the handed-over id and reads no browser storage', () => {
+  for (const theme of [THEME_ID, null]) {
+    const { scope, reads } = watchedGlobals({ [PRE_PAINT_GLOBAL]: Object.freeze({ theme }) });
+    const { root, boot, sheets } = loadThemeScript({ globals: scope });
+    assert.equal(boot.id, THEME_ID);
+    assert.equal(root.getAttribute('data-theme'), THEME_ID);
+    assert.deepEqual(sheets(), [THEME_ID]);
+    assert.deepEqual(reads, [], `handed ${theme}: no browser storage is touched`);
+  }
+  const { scope, reads } = watchedGlobals({});
+  loadThemeScript({ globals: scope });
+  assert.deepEqual(reads, ['localStorage'], 'the web build reads its settings document from localStorage');
+});
+
+test('the pre-paint script reads the global the desktop host\'s preload exposes', () => {
+  const { prePaint } = loadThemeScript();
+  assert.equal(prePaint.HOST_GLOBAL, PRE_PAINT_GLOBAL);
 });
 
 test('the pre-paint mapping keeps a registered id and maps the rest, as the run-time applier does', () => {

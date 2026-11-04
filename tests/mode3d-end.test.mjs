@@ -330,7 +330,7 @@ test('every pause in js/main.js goes through the guard that ignores it during th
   assert.match(guard, /PAUSE\.pause\(/);
   assert.match(fnBody(MAIN, 'endDelay'), /activeMode\(\)\?\.ending/, 'either mode\'s end delay');
   assert.match(fnBody(MAIN, 'activeMode'), /mode3d/);
-  assert.match(fnBody(MAIN, 'activeMode'), /mode2d/);
+  assert.match(fnBody(MAIN, 'activeMode'), /flat2D\(\)/, 'or the active flat mode');
 });
 
 test('during the end delay a press ends it and nothing else acts: the shell consumes it before any other listener', () => {

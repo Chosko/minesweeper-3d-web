@@ -70,7 +70,7 @@ Tasks: 24, 25, 26, 27, 28, 204, 205
 Status: [DONE]
 Doc: .claude/domain/features/settings.md
 Source: product-design.md § Main menu and game shell (m1-classic-2d)
-Tasks: 39, 40, 41, 42
+Tasks: 39, 40, 41, 42, 296, 297
 
 ---
 
@@ -173,7 +173,7 @@ Tasks: 61, 62, 63, 64
 
 ---
 
-## 3d-results-records-screens — 3D results screen after the end effect, and the Records 2D | 3D switch
+## 3d-results-records-screens — 3D results screen after the end effect, and the Records mode switch (Classic 2D, Hexagon, Triangle, 3D)
 
 Status: [DONE]
 Doc: .claude/domain/features/3d-results-records-screens.md
@@ -184,25 +184,25 @@ Tasks: 81, 82, 83
 
 ## steam-desktop-host — Electron host for Windows, Steamworks capability adapter, page bridge and SteamPipe build
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/steam-desktop-host.md
 Source: product-design.md § Steam features (m3-on-steam)
-Tasks: 84, 85, 86, 87, 88, 89, 90
+Tasks: 84, 85, 86, 87, 88, 89, 90, 294, 295, 300, 301
 
 ---
 
 ## steam-cloud-saves — Save files in the user-data directory, synced by Steam Auto-Cloud
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/steam-cloud-saves.md
 Source: product-design.md § Steam features (m3-on-steam)
-Tasks: 91, 92, 93, 94
+Tasks: 91, 92, 93, 298, 299
 
 ---
 
 ## steam-leaderboards — Free-play Steam leaderboards: catalogue, verified submission with replay, offline outbox, queries
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/steam-leaderboards.md
 Source: product-design.md § Steam features (m3-on-steam)
 Tasks: 95, 96, 97, 98, 99
@@ -220,7 +220,7 @@ Tasks: 104, 105, 106
 
 ## steam-achievements — The m3 milestone achievements for Classic 2D and 3D, evaluated per game and caught up from history
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/steam-achievements.md
 Source: product-design.md § Steam features (m3-on-steam)
 Tasks: 100, 101, 102, 103
@@ -277,7 +277,7 @@ Tasks: 180, 181, 182, 183, 184, 185, 186, 187, 213, 224, 225, 226, 227, 246
 Status: [DONE]
 Doc: .claude/domain/features/shared-screen-layout.md
 Source: product-design.md § Visual design system (m2b-themes)
-Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 206, 209, 210, 211, 212, 218, 219, 220, 221, 222, 223, 228, 229, 230, 233, 234, 235, 237, 238, 239, 240, 241, 242, 244
+Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 206, 209, 210, 211, 212, 218, 219, 220, 221, 222, 223, 228, 229, 230, 233, 234, 235, 237, 238, 239, 240, 241, 242, 244, 281, 282, 283, 284, 285, 289, 290, 292
 
 ---
 
@@ -286,7 +286,7 @@ Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 206, 209, 210, 211
 Status: [DONE]
 Doc: .claude/domain/features/in-game-layout.md
 Source: product-design.md § Visual design system (m2b-themes)
-Tasks: 174, 175, 176, 177, 178, 179, 231, 232, 236, 245
+Tasks: 174, 175, 176, 177, 178, 179, 231, 232, 236, 245, 286, 287, 288, 291, 293
 
 ---
 
@@ -301,7 +301,7 @@ Tasks: 188, 189
 
 ## flat-grid-geometry — Flat grid geometry: Classic 2D's board, inputs, sampler and 2D viewer over a grid geometry
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/flat-grid-geometry.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
 Tasks: 248, 249, 250, 251, 252, 253
@@ -310,7 +310,7 @@ Tasks: 248, 249, 250, 251, 252, 253
 
 ## hexagon-grid — Hexagon grid: graph, generation kind, geometry, standard boards, limits, identity and code token
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/hexagon-grid.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
 Tasks: 254, 255, 256, 257
@@ -319,7 +319,7 @@ Tasks: 254, 255, 256, 257
 
 ## triangle-grid — Triangle grid: graph, generation kind, geometry, standard boards, limits, identity and code token
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/triangle-grid.md
 Source: product-design.md § Triangle (m2c-flat-grids)
 Tasks: 258, 259, 260, 261
@@ -328,7 +328,7 @@ Tasks: 258, 259, 260, 261
 
 ## hex-tri-board-art — Hexagon and triangle tiles in the board module and tile recipe, with Joyful tiles' values
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/hex-tri-board-art.md
 Source: product-design.md § Visual design system (m2c-flat-grids)
 Tasks: 262, 263, 264, 265, 266
@@ -337,7 +337,7 @@ Tasks: 262, 263, 264, 265, 266
 
 ## flat-grid-modes — Hexagon and Triangle modes: board choice, last choice, session, game window, inputs and results
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/flat-grid-modes.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
 Tasks: 267, 268, 269, 270, 271
@@ -346,7 +346,7 @@ Tasks: 267, 268, 269, 270, 271
 
 ## flat-grid-records-replays — Hexagon and Triangle in records, the Records mode switch, and their replays
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/flat-grid-records-replays.md
 Source: product-design.md § Hexagon (m2c-flat-grids)
 Tasks: 272, 273, 274, 275, 276
@@ -355,7 +355,7 @@ Tasks: 272, 273, 274, 275, 276
 
 ## flat-grid-menu-entries — Hexagon and Triangle menu entries open their modes, with previews and the last mode played
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/flat-grid-menu-entries.md
 Source: product-design.md § Main menu and game shell (m2c-flat-grids)
 Tasks: 277, 278, 279, 280

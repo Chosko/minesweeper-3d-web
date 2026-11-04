@@ -168,7 +168,7 @@ test('the kit catalogue declares every component the stylesheet head documents',
   const documented = ['ui-button--primary', 'ui-button--secondary', 'ui-menu', 'ui-card', 'ui-panel', 'ui-banner', 'ui-toggle',
     'ui-slider', 'ui-segmented', 'ui-stat', 'ui-stat--tile', 'ui-code', 'ui-pager', 'ui-field', 'ui-link', 'ui-spinner',
     'ui-overlay-bar', 'ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns',
-    'ui-button--danger', 'ui-backdrop', 'ui-frame', 'ui-mode-entry', 'ui-option', 'ui-section-label', 'ui-key-hint',
+    'ui-button--danger', 'ui-backdrop', 'ui-frame', 'ui-play-tile', 'ui-small-entry', 'ui-option', 'ui-section-label', 'ui-key-hint',
     'ui-chip', 'ui-list-row', 'ui-scene-panel', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-toast',
     'ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list', 'ui-confirm', 'ui-note'];
   for (const name of documented) {

@@ -21,7 +21,10 @@ registry, the theme folders and the stylesheets they load are
 `js/theme.js` — `globalThis.msThemeBoot` `{id, fellBackFrom, link, ready}`
 (`ready` resolves once the active stylesheet loaded, rejects when the
 default's fails); `globalThis.msThemePrePaint` for tests (`STYLESHEETS`,
-`DEFAULT_THEME`, `themeIdOf`, `readStoredTheme`, `boot`).
+`DEFAULT_THEME`, `HOST_GLOBAL`, `themeIdOf`, `readStoredTheme`,
+`readHostTheme`, `boot`). `boot({ doc, storage, hostTheme?, base?,
+stylesheets? })` takes `hostTheme`, when not `undefined`, in place of
+reading `storage`.
 
 `js/themes/applier.js` — `themeApplier()` (the page's one applier, over
 `msThemeBoot`); `createThemeApplier({doc, boot, base?, importModule?,
@@ -40,11 +43,17 @@ getStyle, theme, dev?, log?})`.
 
 ## INTERNAL PATTERNS
 
-- **Pre-paint.** `js/theme.js` runs synchronously in `<head>`;
-  `readStoredTheme` reads the settings document (`ms3d:doc:settings`, at
-  any version the store has written) straight from `localStorage`, and
-  `themeIdOf` maps it as `themeIdFor` does — a value the store's format
-  step retires ([settings.md](settings.md)) or an unknown or absent id → the
+- **Pre-paint.** `js/theme.js` runs synchronously in `<head>`. On the
+  desktop host it takes the stored theme id the host hands over — the
+  frozen `ms3dPrePaint` `{ theme }` global (`HOST_GLOBAL`) the preload
+  exposes, read by the main process from the settings document's file each
+  time the page loads, null for none ([desktop-files.md](desktop-files.md) § Pre-paint
+  theme) — through `readHostTheme`, and never reads browser storage. On
+  the web, with no such global, `readStoredTheme` reads the settings
+  document (`ms3d:doc:settings`, at any version the store has written)
+  straight from `localStorage`. Either way `themeIdOf` maps the id as
+  `themeIdFor` does — a value the store's format
+  step retires ([settings-store.md](settings-store.md)) or an unknown or absent id → the
   default. It cannot import the registry, so `STYLESHEETS` mirrors its
   id → stylesheet table (`tests/theme.test.mjs` keeps the two equal). A non-default
   stylesheet that fails falls back to the default here. It never writes:
@@ -68,6 +77,8 @@ getStyle, theme, dev?, log?})`.
 
 - [../domain/features/theme-system.md](../domain/features/theme-system.md)
   — the applier and its failure contract.
+- [../domain/features/steam-cloud-saves.md](../domain/features/steam-cloud-saves.md)
+  — the pre-paint theme id the desktop host hands over.
 - [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
   — the token reader.
 
@@ -81,11 +92,13 @@ getStyle, theme, dev?, log?})`.
   settings document `readStoredTheme` reads;
   [settings-appliers.md](settings-appliers.md) — the theme applier's
   caller; [settings-page.md](settings-page.md) — the theme list.
-- [testing.md](testing.md) — `tests/theme.test.mjs` (the pre-paint
+- [testing-files.md](testing-files.md) — `tests/theme.test.mjs` (the pre-paint
   script, the applier, the token reader).
 
 ## WHEN TO READ THE SOURCE
 
-- Changing how start-up reads the stored theme (`readStoredTheme`, kept in
-  step with the settings document's key and versions), or the switch order
+- Changing how start-up reads the stored theme (`readStoredTheme` and
+  `readHostTheme`, kept in step with the settings document's key and
+  versions — the host's copy of the versions is `SETTINGS_VERSIONS` in
+  `desktop/file-service.js`), or the switch order
   and failure handling (`switchTo` and `start` in `js/themes/applier.js`).

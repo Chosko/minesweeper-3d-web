@@ -502,8 +502,9 @@ test('every pause source in the shell goes through the pause controller', () => 
   assert.match(MAIN, /cancelGeneration: \(\) => cancelGeneration\(\)/, 'the controller cancels through the active mode');
   assert.match(MAIN, /onLockChange: \(locked\) => \{[\s\S]*?backGame\('key'\)[\s\S]*?\n {2}\},\n {2}onLockError/,
     'the Esc the browser consumes to release the pointer lock is that Back');
-  assert.match(MAIN, /function padPlaying\([\s\S]*?backButtons\(S\.mode\)\.some\(pressed\)\) \{ backGame\('pad'\)/, 'the controller\'s back button in 3D play');
-  assert.match(MAIN, /function padBoard2D\([\s\S]*?backButtons\(S\.mode\)\.some\(pressed\)\) \{ backGame\('pad'\)/, 'and on the Classic 2D board');
+  assert.match(MAIN, /function padStatus3D\([\s\S]*?backButtons\(S\.mode, \{ card: true \}\)\.some\(pressed\)\) \{ backGame\('pad'\)/, 'the controller\'s back button over the 3D board status card');
+  assert.match(MAIN, /function padBoard2D\([\s\S]*?backButtons\(S\.mode, \{ card: true \}\)\.some\(pressed\)\) \{ backGame\('pad'\)/, 'and over the Classic 2D one');
+  assert.match(MAIN, /function padPlaying\([\s\S]*?if \(pressed\(BTN\.START\)\) \{ padClick\(document\.getElementById\('hud-pause'\)\)/, 'Start alone pauses 3D play');
 });
 
 test('the failure offer of both modes renders above the pause card', () => {
@@ -560,7 +561,7 @@ test('the pause card in the shared layout: the card and its settings in one colu
     'the Controls panel: its title over one binding per row');
   // The actions with their icons and the key hints of the keys that work on the card: Back (Esc) resumes, F2 restarts.
   const actions = card.slice(at('id="pause-actions"'), at('id="pause-confirm"'));
-  assert.match(actions, /<button id="p-resume" class="ui-button ui-button--primary" type="button" data-icon="play">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  assert.match(actions, /<button id="p-resume" class="ui-button ui-button--primary ui-button--go" type="button" data-icon="play">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
   assert.match(actions, /<button id="p-home" class="ui-button ui-button--secondary" type="button" data-icon="cube">Back to start<\/button>/);
   assert.match(actions, /<button id="p-restart" class="ui-button ui-button--secondary" type="button" data-icon="restart"><span data-label>Restart<\/span> <span class="ui-key-hint" data-action="restart" aria-hidden="true"><\/span><\/button>/);
   assert.match(actions, /<button id="p-menu" class="ui-button ui-button--secondary" type="button" data-icon="arrow-left">Main menu<\/button>/);
@@ -605,7 +606,7 @@ test('the generating and failed-board cards: the spinner beside the title and pr
     assert.ok(card.indexOf(`id="${p}-status-text"`) < card.indexOf(`id="${p}-wait"`), 'the failure line above the actions');
   }
   const css = read('css/style.css');
-  assert.match(css, /#c2d-status, #m3d-status \{[^}]*width: min\(480px, calc\(100vw - 2 \* var\(--space-4\)\)\)/, 'as wide as the canvas draws them, inside a phone');
+  assert.match(css, /#c2d-status, #m3d-status \{[^}]*width: min\(480px, calc\(100cqw - 2 \* var\(--space-4\)\)\)/, 'as wide as the canvas draws them, inside a phone');
 });
 
 // ---------------------------------------------------------------- browser: pause / resume / restart / menu in 3D
@@ -662,7 +663,7 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await ms(() => document.getElementById('pause-sub').textContent), 'No game in progress: the board is not started yet.');
     assert.equal(await visible('p-resume'), false, 'nothing to resume');
     assert.deepEqual(await ms(() => [...document.querySelectorAll('#pause-actions > button:not(.hidden)')].map((b) => b.id)), ['p-restart', 'p-menu'], 'Restart, then Main menu');
-    assert.equal(await ms(() => document.getElementById('p-restart').classList.contains('ui-button--primary')), true, 'Restart is the primary action');
+    assert.equal(await ms(() => ['ui-button--primary', 'ui-button--go'].every((c) => document.getElementById('p-restart').classList.contains(c))), true, 'Restart is the green primary action');
     assert.equal(await ms(() => document.querySelector('#p-restart [data-label]').textContent), 'Restart');
     assert.equal(await ms(() => document.activeElement?.id), 'p-restart', 'Restart takes the focus');
     await frames(3);
@@ -900,9 +901,10 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     await page.click('#c2d-pause');
     assert.equal(await mode(), 'paused');
     assert.equal(await shown('c2d-status'), false, 'the generating card does not show over the pause card');
-    assert.deepEqual(await ms(() => ['c2d-counters', 'c2d-figures', 'c2d-pause', 'c2d-size', 'hud-tools', 'hud-tap', 'c2d-title', 'c2d-board']
-      .map((id) => getComputedStyle(document.getElementById(id)).visibility)), ['hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'visible', 'visible'],
-    'behind the pause card the window shows its board and its title alone');
+    assert.deepEqual(await ms(() => ['c2d-counters', 'c2d-figures', 'c2d-pause', 'c2d-size', 'c2d-title', 'c2d-figures-toggle', 'hud-tools', 'hud-tap', 'c2d-board']
+      .map((id) => getComputedStyle(document.getElementById(id)).visibility)), ['hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'visible'],
+    'behind the pause card the window shows its board alone');
+    assert.equal(await ms(() => getComputedStyle(document.querySelector('#c2d-frame .ui-frame__logo')).visibility), 'visible', 'under the title bar\'s logo');
     await page.click('#p-resume');
     assert.equal(await mode(), 'classic-2d');
     assert.equal(await shown('c2d-status'), true);
@@ -1000,7 +1002,7 @@ test('in a browser, F2 and the controller\'s Start + Y restart a Classic 2D game
     };
 
     await page.click('#menu-entry-classic-2d');
-    if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
+    await page.evaluate((on) => { const s = document.getElementById('c2d-noguess'); if (s.checked !== on) s.click(); }, false); // the switch sits in the closed panel
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
@@ -1080,9 +1082,9 @@ test('in a browser with touch on a phone, the toolbar clears the overlay\'s coun
     const overlap = await ms(() => {
       const tb = document.getElementById('touch-modes').getBoundingClientRect();
       const apart = (el) => { const r = el.getBoundingClientRect(); return tb.top >= r.bottom || tb.bottom <= r.top || tb.left >= r.right || tb.right <= r.left; };
-      return !apart(document.getElementById('hud-counters')) || !apart(document.querySelector('#hud-figures .ui-figures__head'));
+      return !apart(document.getElementById('hud-counters')) || !apart(document.getElementById('hud-pause'));
     });
-    assert.equal(overlap, false, 'the toolbar is clear of the overlay\'s counters and title bar');
+    assert.equal(overlap, false, 'the toolbar is clear of the overlay\'s counters and Pause');
     await ms(() => { globalThis.__ms.aimAt(3); globalThis.__ms.click('left'); });
     await page.tap('#touch-modes [data-mode="ctrl"]');
     const pauseBox = await page.locator('#hud-pause').boundingBox();

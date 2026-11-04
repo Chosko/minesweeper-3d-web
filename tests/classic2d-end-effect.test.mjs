@@ -211,6 +211,28 @@ test('a tile\'s wave is drawn about its centre, its light clipped to the rounded
   assert.ok(!calls.some((c) => c[0] === 'scale' || c[0] === 'fill'), 'unscaled and unlit');
 });
 
+test('a hexagon or triangle tile\'s wave is drawn about its outline\'s centre, its light filled in the outline at its radius, never its box', () => {
+  const calls = [];
+  const ctx = new Proxy({}, {
+    get: (target, prop) => (prop in target ? target[prop] : (...args) => calls.push([prop, args, target.fillStyle, target.globalAlpha])),
+    set: (target, prop, value) => { target[prop] = value; return true; },
+  });
+  const points = [[20, 20], [60, 20], [40, 54.64]]; // a triangle pointing down, in canvas pixels
+  const outline = { points, centre: [40, 31.55], radius: 2 };
+  drawWave(ctx, 20, 20, 40, { scale: 1.2, flash: 0.4 }, JOYFUL, () => calls.push(['paint']), outline);
+  const ops = calls.map((c) => c[0]);
+  assert.deepEqual(calls.find((c) => c[0] === 'translate')[1], [40, 31.55], 'scaled about the outline\'s centre');
+  assert.deepEqual(calls.find((c) => c[0] === 'scale')[1], [1.2, 1.2]);
+  assert.ok(ops.indexOf('paint') < ops.indexOf('fill'), 'the light over the tile');
+  const corners = calls.filter((c) => c[0] === 'arcTo');
+  assert.equal(corners.length, 3, 'one rounded corner per corner of the outline, none of a box');
+  assert.deepEqual(corners.map((c) => [c[1][0], c[1][1]]), points, 'round the outline\'s corners');
+  assert.ok(corners.every((c) => c[1][4] <= 2), 'at the outline\'s radius');
+  const fill = calls.find((c) => c[0] === 'fill');
+  assert.deepEqual([fill[2], fill[3]], [JOYFUL.end2d.light, 0.4], 'in the module\'s light at the wave\'s share');
+  assert.ok(!ops.includes('fillRect'));
+});
+
 test('the confetti is drawn in the colours it is handed: the board module\'s', () => {
   const calls = [];
   const ctx = new Proxy({}, {

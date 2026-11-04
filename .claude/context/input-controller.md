@@ -10,7 +10,7 @@ touch side is [input.md](input.md), the camera and picking
 
 | File | Implements |
 | --- | --- |
-| `js/controls.js` | `Controls`: union of keyboard and controller view modes + controller move axes |
+| `js/controls.js` | `Controls`: union of keyboard and controller view modes + controller move axes; the controller's 3D actions through the bindings; the Start + Y chord kept from them |
 | `js/gamepad.js` | Gamepad API reader, stick curve, trigger hysteresis, auto-repeat, pad glyphs, rumble pulses, spatial menu focus search |
 | `js/shell/navigation.js` | Topmost layer, default-focus fallback, an open overlay's inert set and Tab wrap, the focus move (`focusMove`), Back inputs, the arrow keys' focus moves, held-button suppression across screen changes |
 
@@ -25,12 +25,22 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   Fields `pad` (`{shift, space, ctrl}`) and `axes` (`{f, r, u}`) are written by the caller each frame;
   `releasePad()` zeroes both. `touch` holds the 3D touch toolbar's latched modes: `toggle(mode)`
   flips one, `clearTouch()` clears them (a new game, the leave); `releasePad` leaves them.
+- `padActions3D({held, pressed, released}, bindings?)` → `{modes: {shift, space, ctrl}, move: {f,
+  r, u}, press, release}`: one poll's buttons (read after the held-button suppression) through the
+  3D bindings ([settings-bindings.md](settings-bindings.md)) — the view modes held, the move
+  buttons held as axes (each clamped to -1..1), and the `MouseActions` buttons (0 reveal, 2 flag)
+  pressed and released, 0 first. With no override: LB / RB / Y the view modes, A / B up / down,
+  RT / LT buttons 0 / 2.
+- `createStartChord()` → `update(p, pressed, restarts?)` (once per poll, before any button is
+  translated: whether Y was pressed while Start is held; `restarts` false on a screen where the
+  chord does not restart, where Y is left to that screen), `keeps(b)` (the chord's Y, through the poll of its
+  release: the caller reads it as neither held nor released, so its binding never fires).
 
 **js/gamepad.js** (no DOM access at import; Node-testable)
 - `BTN` (standard-mapping indices A..HOME), `NUM_BUTTONS` (17), `STICK_DEADZONE`,
   `STICK_EXPONENT`, `TRIGGER_ON`, `TRIGGER_OFF`.
 - `stickCurve(x, y, dz?, exp?)` → `[x, y]`; `triggerHeld(wasHeld, value, on?, off?)`;
-  `Repeat(delay = 380, interval = 60)` — `update(held, now)` → fire count, `reset()`.
+  `Repeat(delay, interval)` (ms; defaults in its constructor) — `update(held, now)` → fire count, `reset()`.
 - `padFamily(id)` → `'playstation' | 'xbox' | 'nintendo' | 'generic'`; `GLYPHS`; `padGlyphs(id)`.
 - `PAD_PRESS` (a trigger pressed on a board), `PAD_FLAG` (a controller flag: two pulses),
   `PAD_BOOM` (a mine) — frozen `{at, effect}` pulse patterns; `padPulse(pad, steps, {setTimeout?})`
@@ -38,8 +48,8 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   nothing and a rejecting or throwing effect is swallowed.
 - `pickInDirection(from, cands, dir)` — spatial focus step over `[{rect, item}]`: a candidate counts
   when its centre lies past `from`'s and it overlaps `from` on the perpendicular axis or its centre
-  lies within 45° of the direction; score = gap along + 2 × perpendicular gap, centre distance the
-  tie-break.
+  lies within 45° of the direction; score = gap along + the perpendicular gap weighted above it, centre
+  distance the tie-break.
 - `GamepadReader({getGamepads?, onConnect?, onDisconnect?, onActiveChange?})` — `poll()` →
   `{pad, held, pressed, released, ls, rs, active}` (button arrays indexed by `BTN`);
   `activePad()`, `connected`.
@@ -51,13 +61,17 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   while `open` is null. `tabWrap(items, cur, back)` → where Tab (Shift+Tab when `back`) goes inside
   an open overlay: the last stop to the first, the first to the last, focus outside to the first
   (last); null leaves it to the browser.
-- `focusMove(items, cur, dir, {spatial, groupOf?})` → the control a focus move lands on, or null.
-  Down / Up from inside a group (`groupOf(item)`: a table, a menu) take the next / previous item in
-  DOM order; otherwise `spatial(dir)`'s pick wins, and Down / Up landing in a group land on its first
-  / last item; with no pick, the next item in DOM order for Down and Right, the previous for Up and
-  Left; no wrap past either end.
+- `focusMove(items, cur, dir, {spatial, groupOf?, rowOf?})` → the control a focus move lands on, or
+  null. Down / Up from inside a group (`groupOf(item)`: a table, a menu) take the next / previous
+  item in DOM order; Right / Left from inside a row (`rowOf(item)`: a window's title bar) take the
+  next / previous item of the row and go nowhere past its ends; otherwise `spatial(dir)`'s pick
+  wins, and Down / Up landing in a group land on its first / last item; with no pick, the next item
+  in DOM order for Down and Right, the previous for Up and Left, Up landing in a row on its first
+  item; no wrap past either end.
 - `isBackKey(code)` — Esc is Back on every screen (Pause while playing);
-  `backButtons(screen)` → `[BTN.BACK]` on `'playing'`, else `[BTN.B, BTN.BACK]`.
+  `backButtons(screen, { card })` → none on the boards (`'playing'`, `'classic-2d'`), where
+  Start pauses and View is the live-figures toggle; over a board status card (`card`)
+  `[BTN.BACK]` in 3D and `[BTN.B, BTN.BACK]` in Classic 2D; elsewhere `[BTN.B, BTN.BACK]`.
 - `arrowDirection(code)`; `keepsArrow(control, dir)` — range, number and text inputs and a
   textarea keep Left/Right, a select every arrow.
 - `createHeldSuppressor()` → `update(held)` (once per poll, before acting), `screenChanged()`,
@@ -71,16 +85,16 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   one shared `held` array, so a switch or disconnect yields `released` edges. Disconnects are
   processed before connects. LT/RT use `triggerHeld`. All helpers tolerate NaN / missing fields.
 - **Shell navigation sits between the reader and every action.** `handlePad` calls
-  `nav.update(p.held)` each poll and reads buttons only through `nav.held` / `nav.pressed`; every
-  screen change calls `screenChanged()`, so a button held through the
-  change is ignored until released. Back is `isBackKey` from the keyboard and `backButtons(screen)`
-  from the controller (B is Back only off the board, where it moves down); both, and the
+  `nav.update(p.held)` each poll and reads buttons only through `nav.held` / `nav.pressed`, less
+  the Start + Y chord's Y (`createStartChord`); every screen change and every change of the
+  bindings calls `screenChanged()`, so a button held through the change is ignored until released. Back is `isBackKey` from the keyboard and `backButtons(screen)`
+  from the controller (neither B nor View is Back on a board); both, and the
   browser's Back, resolve through the router ([app-shell-navigation.md](app-shell-navigation.md)). The arrow keys take
   the D-pad's focus move off the boards, Records and the replay viewer, unless the focused
   control `keepsArrow`.
 - **Rumble never interrupts play.** Every pulse goes through `padPulse` on the active pad; its
   callers are the shell's ([app-shell-3d-play.md](app-shell-3d-play.md), the Classic 2D mode's `padCue`).
-- **Repeat** fires once on press, then after `delay` every `interval`, at most 4 per tick, and
+- **Repeat** fires once on press, then after `delay` every `interval`, a bounded number of fires per tick, and
   resynchronizes after a stall instead of bursting.
 
 ## DOMAIN DEPENDENCIES
@@ -91,15 +105,15 @@ enforces.
 
 ## CROSS-REFERENCES
 
-- [input.md](input.md) — the `MouseActions` the triggers drive (RT = button 0, LT = button 2);
+- [input.md](input.md) — the `MouseActions` the reveal and flag buttons drive (RT = button 0, LT = button 2 by default);
   [input-camera.md](input-camera.md) — the `FlyCamera.moveAxes` / `lookAxes` and orbit the sticks feed.
 - [app-shell.md](app-shell.md) — `handlePad`; [app-shell-ui.md](app-shell-ui.md) — menu focus
   navigation with `pickInDirection` / `Repeat`; [app-shell-navigation.md](app-shell-navigation.md),
   [app-shell-pause.md](app-shell-pause.md) — the router and pause controller Back resolves through.
 - [rendering.md](rendering.md) — the renderer toggles `Controls.shift/space/ctrl` feed.
-- [classic2d-input.md](classic2d-input.md) — the Classic 2D cursor input reuses `BTN`, `Repeat`
-  and `stickCurve` and reads `GamepadReader` polls; B, Start and Back stay the shell's there too.
-- [testing.md](testing.md) — `tests/gamepad.test.mjs` covers the gamepad helpers, rumble,
+- [classic2d-input-cursor.md](classic2d-input-cursor.md) — the Classic 2D cursor input reuses `BTN`, `Repeat`
+  and `stickCurve` and reads `GamepadReader` polls; B, Start and Back are unmapped there.
+- [testing-files.md](testing-files.md) — `tests/gamepad.test.mjs` covers the gamepad helpers, rumble,
   `GamepadReader` and `Controls`; `tests/shell-router.test.mjs` the shell navigation helpers;
   `tests/shell-pad-walk.test.mjs` the controller's walk over every screen;
   `tests/shell-focus-containment.test.mjs` the inert set and the Tab wrap.

@@ -44,7 +44,9 @@ In scope (m2b-themes):
   fractions of the tile size, so both scale with it; the cursor ring's
   radius follows the tile's, and the board frame's radius scales with the
   tile too. The cursor ring draws outside the tile, covering none of its
-  face, on a layer of its own, so it moves without redrawing a cell. The
+  face, on a layer of its own, so it moves without redrawing a cell; on a
+  hexagon or triangle board it traces the cell's outline, its corners
+  measured on the outline's height. The
   marked start cell is drawn from the module's marked face — in the game,
   the menu preview and the Daily preview.
 - **The board frame** — a plain frame whose padding is the module's gap,

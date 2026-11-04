@@ -1,4 +1,4 @@
-# App shell — component kit: shared layout, icons, screen frame
+# App shell — component kit: shared layout, icons, panels, cards
 
 ## OVERVIEW
 
@@ -6,10 +6,14 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 How the catalogued components of the shared layout behave and look: the
 icon set and the button's leading-icon slot, the confirm box and the
 notes, the surfaces (stat tile, muted panel, table, pager, code chip), the
-slider's fill, the screen frame and the scene panel, the message card and
-its scrim, and the screens composed in the kit. The catalogue itself, its
-data, the gallery and the selected-state contract are
-[app-shell-kit.md](app-shell-kit.md); the helpers that build and bind these
+slider's fill, the
+board choice panel and its drawer, the scene panel, the message card and
+its scrim, and the screens composed in the kit. The root area and the
+screen frame with its title bar and the game logo are
+[app-shell-kit-frame.md](app-shell-kit-frame.md). The catalogue itself, its
+data and the gallery are [app-shell-kit.md](app-shell-kit.md); the
+selected-state contract
+[app-shell-kit-controls.md](app-shell-kit-controls.md); the helpers that build and bind these
 parts are [app-shell-kit-helpers.md](app-shell-kit-helpers.md).
 
 | File | Responsibility |
@@ -36,7 +40,7 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   `aria-label`. The helpers that draw an icon into a button are
   [app-shell-kit-helpers.md](app-shell-kit-helpers.md)'s; a button in
   `index.html` names its set icon with `data-icon`. The icons inline in
-  `index.html` (Restart, Pause, Swap clicks, the message cards' badges and
+  `index.html` (the 3D overlay's Restart and Pause, Swap clicks, the message cards' badges and
   the fatal card's Reload) are svg outside the set.
 - **The confirm box and the notes.** Every confirmation is a `ui-confirm`
   — the danger fill, an optional heading, its text, then a
@@ -53,8 +57,8 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
 - **The surfaces.** The stat tile `ui-stat--tile` is plain by default
   (white, its border, no drop) with `ui-stat--warm` the cream tile on its
   edge; `data-new-best` rings it inside in the head colour, and its note
-  may carry an inline Watch `ui-link`. `ui-panel--muted` is a sunk panel
-  with no border and no drop. The table rules each full row, sets row
+  may carry an inline Watch `ui-link`. `ui-panel--muted` is the panel on
+  the sunk fill, keeping the panel's border and drop edge. The table rules each full row, sets row
   labels bold and their values in the monospace face, and on a phone
   stacks a details table's labels (a table with no `thead`) over their values. The pager's buttons are
   lighter than the kit's buttons, the current page an ink fill. The code chip has
@@ -67,20 +71,16 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   (`bindSliderFill`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md))
   sets on the input; the kit's slider binder and the Settings and pause
   controls' binder both install it.
-- **The screen frame.** Every non-game screen is a `ui-frame` on a
-  `ui-backdrop`, sized to its content and never larger than the window: a
-  head (Back with its back key hint, the title centred, an optional
-  action), a body that scrolls vertically while head and foot stay in
-  view, and a foot — a status line, or a bottom bar of the selection's
-  summary beside the screen's actions; the `window-chrome` slot is hidden
-  unless a theme draws it. The head and foot, their titles and the small
-  buttons follow the window-size steps — desktop, compact for the smaller
-  desktop windows, touch for a phone upright or sideways — whose values the
-  theme stylesheet holds; the title stays on one line. A screen's bar of
-  actions (the board choices, Daily, results) is the white action foot
-  `ui-frame__foot--action`, a bottom bar on a phone (the results' in flow
-  at the card's end); the Classic 2D game
-  window keeps the head-coloured foot. A `ui-scene-panel` is a framed region a mode's
+- **The board choice panel.** A board choice's settings, Custom form, code
+  field and bests sit in a `ui-drawer` beside the Board list, behind a
+  `ui-divider--vertical` shown only while it is open; the window widens
+  for it and stays centred. On a desktop window the drawer's bar is hidden
+  and the panel toggle in the heading pins it, drawn sunk while pinned; on
+  a phone the toggle is gone and the drawer is a full-width raised bar
+  under the Board list that, open, lies flat on a cream band ending with a
+  line, its label naming what it holds. Its behaviour is
+  [classic2d-board-choice.md](classic2d-board-choice.md) § Board choice panel.
+- **Scene panels.** A `ui-scene-panel` is a framed region a mode's
   own renderer draws into: a Classic 2D board view, the 3D scene through
   the renderer's target rectangle while the panel is `--live`
   ([app-shell-3d.md](app-shell-3d.md) § Scene panel), or a card with an
@@ -95,34 +95,36 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   confirmation, the 3D ready card, the context-lost card, the Learn 3D end
   card, the results screen, the replay viewer, the toast, the fatal card,
   the no-JavaScript notice and the 404 page — are
-  each described, element by element and by window size, at the end of the
+  each described, element by element and by size step, at the end of the
   head comment of `css/components.css`; the gallery shows the results
   layout. Their markup, the ids the shell wires and the pointer sizes are
-  [app-shell-markup.md](app-shell-markup.md).
+  [app-shell-markup.md](app-shell-markup.md) and [app-shell-markup-game.md](app-shell-markup-game.md).
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
-  — the shared layout's components, the screen frame, the scene panel and
-  every screen composed in them.
+  — the shared layout's components, the scene panel and every screen
+  composed in them.
 - [../domain/features/screen-components.md](../domain/features/screen-components.md)
   — the kit-built screens.
 
 ## CROSS-REFERENCES
 
+- [app-shell-kit-frame.md](app-shell-kit-frame.md) — the root area and the
+  screen frame every screen sits in.
 - [app-shell-kit.md](app-shell-kit.md) — the catalogue these components are
   entries of, and the gallery that shows them.
 - [app-shell-kit-helpers.md](app-shell-kit-helpers.md) — the icon set,
   `setNote`, the code chip and the slider's fill updater.
-- [app-shell-markup.md](app-shell-markup.md) — the screens' markup;
+- [app-shell-markup.md](app-shell-markup.md), [app-shell-markup-game.md](app-shell-markup-game.md) — the screens' markup;
   [app-shell-stylesheet.md](app-shell-stylesheet.md) — their placement.
 - [app-shell-3d.md](app-shell-3d.md) § Scene panel — the 3D scene in a
   panel.
-- [testing.md](testing.md) — `tests/components.test.mjs` (kit, screens,
+- [testing-files.md](testing-files.md) — `tests/components.test.mjs` (kit, screens,
   contrast).
 
 ## WHEN TO READ THE SOURCE
 
-- A screen's composition by window size: the end of the head comment of
+- A screen's composition by size step: the end of the head comment of
   `css/components.css`.
-- A component's metrics by window step: the base and the theme stylesheets.
+- A component's metrics by size step: the base and the theme stylesheets.

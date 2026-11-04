@@ -66,9 +66,11 @@ only through `steam-desktop-host`'s bridge and capability adapter.
 - **Catalogue.** Maps a board identity from `game-summary` and
   `3d-game-records` to a leaderboard name, or to none. Names are derived
   from the board's mode, standard size and no-guess setting and never
-  change once published. The leaderboards are created in the Steamworks app
-  settings — ascending sort, time-in-milliseconds display — and the game
-  only finds them, never creates them.
+  change once published. The leaderboards are created from a Steam client by
+  `dev/steam/create-boards.mjs` — ascending sort, time-in-milliseconds
+  display — because a leaderboard made on the Steamworks site with Writes
+  Trusted refuses client uploads (`dev/steam/README.md`); the game only finds
+  them, never creates them.
 - **Eligibility.** A game is submitted when it was won, its board is in the
   catalogue, and a sealed replay exists for it. A won game without a replay
   is never submitted, because every entry carries its replay. A game that
@@ -124,7 +126,9 @@ only through `steam-desktop-host`'s bridge and capability adapter.
 - **Outbox blob store** — the pending replays, one per outbox entry, deleted
   once the entry is submitted or dropped.
 - **Shared replay files** — in Steam remote storage, one per leaderboard,
-  replaced when a new best is attached.
+  replaced when a new best is attached. Sharing the rewritten file gives it
+  a new handle, and the earlier handle keeps returning the earlier file, so
+  an entry's attachment stays readable until the entry is replaced.
 - **Best cache** — in memory for the session.
 
 ## Interfaces and contracts
@@ -172,9 +176,5 @@ only through `steam-desktop-host`'s bridge and capability adapter.
 
 ## Open questions
 
-- Whether replacing a shared replay file under the same name keeps earlier
-  attachments readable until their entry is replaced. Checked by the
-  binding spike; if not, each best gets a new file name and the previous
-  one is deleted after the new attachment succeeds.
 - The size of the "around me" range and of a global page. Set with
   `leaderboard-screen`'s layout; blocks only the constants.

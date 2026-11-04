@@ -112,6 +112,25 @@ test('the picker lists the three standard boards, the three no-guess ones, the D
   assert.equal(new Set(boards.map((b) => b.key)).size, boards.length, 'a standard board played is not listed twice');
 });
 
+test('the Hexagon and Triangle pickers list their Daily board as "Daily" after their standard boards, its days in a row as for Classic 2D', () => {
+  for (const [mode, grid, width, height, mines, code] of [['hexagon', 'hex', 30, 16, 100, 'HEN'], ['triangle', 'tri', 41, 17, 103, 'TEN']]) {
+    const plainDaily = createBoardIdentity({ mode, grid, width, height, mines, noGuess: true });
+    const dailyBoard = createBoardIdentity({ ...plainDaily, daily: true });
+    const daily = (date) => game(dailyBoard, { daily: date, startCell: 0, endedAt: `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6)}T12:00:00.000Z` });
+    const store = fakeStore({ games: [daily('20261009'), daily('20261010')] });
+    const boards = pickerBoards(store, mode);
+    assert.deepEqual(boards.map((b) => b.label), [...STANDARD_LABELS, DAILY_OPTION], `${mode}: the Daily board after the standard boards, listed once`);
+    assert.equal(boards[6].key, boardKey(dailyBoard));
+    assert.equal(pickerBoards(fakeStore(), mode)[6].label, DAILY_OPTION, `${mode}: listed with no game played`);
+    const c = recordsContent(store, { mode, boardKey: boardKey(dailyBoard), now: new Date(2026, 9, 11, 9) });
+    assert.equal(c.board.key, boardKey(dailyBoard));
+    assert.deepEqual(['currentStreak', 'longestStreak'].map((k) => [stat(c.counters, k).label, stat(c.counters, k).value]),
+      [['Days in a row', '2'], ['Longest days in a row', '2']]);
+    assert.match(c.games.rows[0].code, new RegExp(`^${code}-20261010-`), 'a daily row shows its daily form');
+    assert.ok(!pickerBoards(store, 'classic-2d').some((b) => b.key === boardKey(dailyBoard)), 'never in another mode\'s picker');
+  }
+});
+
 test('the last board played is the one whose latest game ended last; none before any game', () => {
   assert.equal(lastBoardPlayed(fakeStore()), null);
   const store = fakeStore({ games: [
@@ -303,19 +322,27 @@ test('stepBoard walks the picker forward and back in its order, held at either e
   assert.equal(screen.page, 0, 'a new board starts on its first games page');
 });
 
-test('the triggers choose the mode through setMode: LT 2D, RT 3D', () => {
-  assert.deepEqual(TRIGGER_MODES, { lt: 'classic-2d', rt: '3d' });
+test('the triggers step the mode through stepMode in the switch\'s order, held at either end: LT the previous, RT the next', () => {
+  assert.deepEqual(TRIGGER_MODES, { lt: -1, rt: 1 });
   const store = fakeStore({ games: [game(BEGINNER)] });
   const view = fakeView();
   const screen = createRecordsScreen({ records: store, view });
   screen.show({ boardKey: boardKey(BEGINNER) });
-  screen.setMode(TRIGGER_MODES.rt);
-  assert.equal(screen.mode, '3d');
-  assert.equal(view.shown.at(-1).mode, '3d');
   const drawn = view.shown.length;
-  screen.setMode(TRIGGER_MODES.rt);
-  assert.equal(view.shown.length, drawn, 'the mode already shown: nothing');
-  screen.setMode(TRIGGER_MODES.lt);
+  assert.equal(screen.stepMode(TRIGGER_MODES.lt), false, 'LT at Classic 2D: held');
+  assert.equal(view.shown.length, drawn, 'held at the first mode: nothing redrawn');
+  const walked = [];
+  while (screen.stepMode(TRIGGER_MODES.rt)) walked.push(screen.mode);
+  assert.deepEqual(walked, ['hexagon', 'triangle', '3d'], 'RT steps through the switch\'s order');
+  assert.equal(view.shown.at(-1).mode, '3d');
+  const atEnd = view.shown.length;
+  assert.equal(screen.stepMode(TRIGGER_MODES.rt), false, 'RT at 3D: held');
+  assert.equal(view.shown.length, atEnd, 'held at the last mode: nothing redrawn');
+  assert.equal(screen.stepMode(TRIGGER_MODES.lt), true);
+  assert.equal(screen.mode, 'triangle', 'LT: the previous mode');
+  assert.equal(screen.stepMode(0), false, 'no step: nothing');
+  screen.stepMode(-1);
+  screen.stepMode(-1);
   assert.equal(screen.mode, 'classic-2d');
   assert.equal(screen.board, boardKey(BEGINNER), 'back on the mode\'s last board played');
 });
@@ -545,9 +572,12 @@ test('the records screen is the kit composition: picker, figures, overall, note 
   const option = (value, on) => `<button type="button" class="ui-segmented__option" role="radio" aria-checked="${on}" data-value="${value}">`;
   const tab = (value, on) => `<button type="button" class="ui-tabs__tab" role="tab" aria-selected="${on}" id="records-tab-${value}" aria-controls="records-${value}" data-value="${value}">`;
   assert.deepEqual(buttons, [
-    '<button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-to-menu data-icon="arrow-left" aria-label="Back to Main menu">',
-    option('classic-2d', true), option('3d', false),
-    option('classic-2d', true), option('3d', false),
+    '<button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-to-menu data-icon="arrow-left" aria-label="Back to Main menu" title="Back">',
+    '<button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="minimise" data-icon="minimise" aria-label="Minimise" title="Minimise">',
+    '<button type="button" class="ui-button ui-button--secondary ui-button--sm" data-window="fullscreen" data-icon="fullscreen" aria-label="Fullscreen" title="Fullscreen">',
+    '<button type="button" class="ui-button ui-button--primary ui-button--stop ui-button--sm" data-window="quit" data-icon="close" aria-label="Quit" title="Quit">',
+    option('classic-2d', true), option('hexagon', false), option('triangle', false), option('3d', false),
+    option('classic-2d', true), option('hexagon', false), option('triangle', false), option('3d', false),
     '<button type="button" id="records-export-csv" class="ui-button ui-button--secondary ui-button--sm" data-icon="download">',
     '<button type="button" id="records-export-json" class="ui-button ui-button--secondary ui-button--sm" data-icon="download">',
     option('all', true), option('12m', false), option('30d', false), option('7d', false),
@@ -579,13 +609,13 @@ test('the board\'s figures sit on the frame under section labels: three plain st
   assert.match(read('themes/joyful-tiles/theme.css'), /#records-counters > \.ui-stat \{ border-radius: 12px; background: var\(--color-surface-sunk\); \}/, 'the counters sunk');
 });
 
-test('the screen is a frame: Back, the title and the switch in its head; the picker, then two columns — figures and export; history and the tabs — then the note', () => {
+test('the screen is a frame: Back in its title bar, the title and the switch its heading; the picker, then two columns — figures and export; history and the tabs — then the note', () => {
   const at = (needle) => { const i = RECORDS_HTML.indexOf(needle); assert.ok(i >= 0, needle); return i; };
   const head = RECORDS_HTML.slice(at('<header class="ui-frame__head">'), at('</header>'));
-  assert.ok(head.includes('id="records-back"') && head.includes('id="records-title"') && head.includes('id="records-mode"'), 'Back, the title and the switch in the head');
-  assert.match(head, /<div class="ui-frame__start"><button type="button" id="records-back"[^>]*><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
-    '"Main menu" led by its arrow, "Back" on a phone');
-  assert.match(head, /<div class="ui-frame__end">/);
+  const heading = RECORDS_HTML.slice(at('<div class="ui-frame__heading">'), at('<div class="ui-frame__body" id="records-body">'));
+  assert.ok(head.includes('id="records-back"') && heading.includes('id="records-title"') && heading.includes('id="records-mode"'), 'Back in the title bar; the title and the switch in the heading');
+  assert.match(head, /<div class="ui-frame__start"><button type="button" id="records-back"[^>]*><\/button><\/div>/, 'Back, its arrow alone');
+  assert.match(heading, /<h2 class="ui-frame__title" id="records-title">Records<\/h2>\s*<div class="ui-frame__action"><div data-pad-hinted>/, 'the switch at the heading\'s right, between its controller glyphs');
   assert.ok(at('id="records-picker"') > at('<div class="ui-frame__body" id="records-body">'), 'the picker in the body');
   assert.ok(at('id="records-picker"') < at('<div class="ui-columns ui-columns--two" id="records-columns">'), 'the picker above both columns');
   const cols = RECORDS_HTML.slice(at('<div class="ui-columns ui-columns--two" id="records-columns">'));
@@ -729,8 +759,8 @@ test('in a browser, the menu opens the records screen on the last board played, 
     const options = await page.evaluate(() => [...document.querySelectorAll('#records-picker .ui-segmented__option')].map((o) => o.textContent));
     assert.deepEqual(options, [...STANDARD_LABELS, DAILY_OPTION]);
     assert.equal(await active(), 'Beginner', 'the picker takes default focus');
-    assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('records-back'); return [b.hasAttribute('data-to-menu'), b.getAttribute('aria-label'), b.innerText.split('\n')[0].trim()]; }),
-      [true, 'Back to Main menu', 'Main menu'], 'opened from the menu, Back reads Main menu');
+    assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('records-back'); return [b.hasAttribute('data-to-menu'), b.getAttribute('aria-label'), b.innerText.trim()]; }),
+      [true, 'Back to Main menu', ''], 'opened from the menu, Back is named Back to Main menu, its arrow alone');
     assert.equal(await text('records-games-empty'), 'No games on this board yet.', 'the list says the board has no games');
     assert.equal(await visible('records-games-empty'), true);
     assert.deepEqual(await page.evaluate(() => ['records-filters', 'records-won-only', 'records-charts', 'records-averages', 'records-tabs']

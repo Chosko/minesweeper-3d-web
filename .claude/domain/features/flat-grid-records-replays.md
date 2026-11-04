@@ -39,8 +39,9 @@ In scope (m2c-flat-grids):
   3D, in menu order, as the canvas's Records artboards draw it. Records
   opens on the mode and board last played. The board picker, bests,
   counters, averages, history charts, Recent games, Top 10, the Replays
-  tab, exports and the controller's LB / RB and LT / RT work per mode as
-  they do for Classic 2D. The overall row is titled for the mode.
+  tab, exports and the controller's LB / RB work per mode as they do for
+  Classic 2D. LT / RT step through the switch's modes in its order,
+  stopping at either end. The overall row is titled for the mode.
 - **Replay recording**: the 2D recorder over the new graphs, with actions,
   pauses, the cursor stream, and pointer samples in the geometry's board
   units at Classic 2D's sampling interval. The board code goes into the

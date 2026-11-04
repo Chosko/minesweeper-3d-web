@@ -1,7 +1,8 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
 // value display and fill, the segmented choice's and the tabs' selection, the one selected control
 // under a moving mouse, the key hints, the figures panel's live part, the pager, the icon set with
-// the button's and the note's leading icon, the note's text, and the code chip. The logic is plain
+// the button's and the note's leading icon, the note's text, the game logo, the title bar's window
+// buttons, and the code chip. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
 
@@ -285,12 +286,12 @@ export function bindPager(nav, { onPage, name = '' } = {}) {
 
 // ---------------------------------------------------------------- one selected control
 
-/** The controls whose hover and focus are one selected state: buttons, menu entries, mode entries and board options. */
-export const SELECT_ON_HOVER = '.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option';
+/** The controls whose hover and focus are one selected state: buttons, menu entries, main menu buttons and board options. */
+export const SELECT_ON_HOVER = '.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option';
 
 /**
- * Moving the mouse over an enabled button, menu entry, mode entry or board option focuses it (without
- * scrolling), and over a disabled mode entry too (aria-disabled: it stays selectable and opens nothing),
+ * Moving the mouse over an enabled button, menu entry, main menu button or board option focuses it
+ * (without scrolling), and over a disabled play tile too (aria-disabled: it stays selectable and opens nothing),
  * so the selected control is always the focused one; a control that never takes focus (data-no-focus:
  * the in-game toggles that leave the keys to the board) is left alone. One delegated listener on `root` (the document)
  * serves every such control, present and future. A mousemove that did not move the pointer (one a
@@ -306,7 +307,7 @@ export function bindSelectOnHover(root) {
     last = at;
     const el = e.target?.closest?.(SELECT_ON_HOVER);
     if (!el || el.disabled || el.hasAttribute('data-no-focus')) return;
-    if (el.getAttribute('aria-disabled') === 'true' && !el.matches?.('.ui-mode-entry')) return;
+    if (el.getAttribute('aria-disabled') === 'true' && !el.matches?.('.ui-play-tile')) return;
     if (el.ownerDocument?.activeElement === el) return;
     el.focus({ preventScroll: true });
   };
@@ -328,10 +329,11 @@ export function initComponents(root) {
 
 /**
  * Fills every `.ui-key-hint[data-action]` under `root` with the keys keysFor(action) gives — a list
- * of { text, pad }, the bindings source's keyHintKeys for the active device — as its
+ * of { text, pad }, the bindings source's keyHintKeys for the active device: a shell action's fixed
+ * keys, or a catalogue action's current bindings — as its
  * `.ui-key-hint__key` kbd elements, ahead of its label; a hint of controller buttons takes
  * `ui-key-hint--pad`, and a hint with no keys (touch) is hidden. Call it again on every change of the
- * active device.
+ * active device or the bindings.
  */
 export function showKeyHints(root, keysFor) {
   for (const hint of root.querySelectorAll('.ui-key-hint[data-action]')) {
@@ -451,6 +453,7 @@ export const ICONS = Object.freeze({
   copy: icon(2.3, ['rect', { x: '8', y: '8', width: '12', height: '12', rx: '2' }], p('M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3')),
   link: icon(2.3, p('M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1'), p('M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1')),
   chart: icon(2.3, p('M3 3v18h18'), p('M7 15l4-5 3 3 5-7')),
+  panel: icon(2.3, ['rect', { x: '3', y: '4', width: '18', height: '16', rx: '3' }], p('M14 4v16')),
   shuffle: icon(2.3, p('M3 6h4l10 12h4M3 18h4l3-3.6M14 9.6L17 6h4M18 3l3 3-3 3M18 15l3 3-3 3')),
   grid: icon(2.3, ['rect', { x: '3', y: '3', width: '18', height: '18', rx: '2' }], p('M9 3v18M15 3v18M3 9h18M3 15h18')),
   cube: icon(2.3, p('M12 2l9 5v10l-9 5-9-5V7z'), p('M12 12l9-5M12 12v10M12 12L3 7')),
@@ -468,6 +471,9 @@ export const ICONS = Object.freeze({
   hand: icon(2.3, p('M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a6 6 0 0 1-4.6-2.2L3 16a1.6 1.6 0 0 1 2.4-2.1L8 16')),
   check: icon(3, p('M5 12l5 5 9-10')),
   close: icon(2.6, p('M6 6l12 12M18 6L6 18')),
+  minimise: icon(2.4, p('M6 17h12')),
+  fullscreen: icon(2.4, p('M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5')),
+  windowed: icon(2.4, p('M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5')),
   info: icon(2.3, ['circle', { cx: '12', cy: '12', r: '9' }], p('M12 11v6M12 7.5v.5')),
   warning: icon(2.3, p('M12 3l10 18H2z'), p('M12 10v5M12 18v.5')),
 });
@@ -560,19 +566,165 @@ export function setNote(el, text, { tone, icon } = {}) {
 }
 
 /**
- * A kit button: createButton(doc, { label, icon?, variant ('primary' | 'secondary' (default) |
- * 'quiet' | 'danger'), size ('sm' | 'lg'; none is md), iconOnly? }). The icon leads the label; an
- * icon-only button shows no text and is named by aria-label.
+ * A kit button: createButton(doc, { label, icon?, variant ('go' | 'stop' — the primary button in
+ * its green or red — | 'secondary' (default) | 'quiet' | 'danger'), size ('sm' | 'lg'; none is md),
+ * iconOnly? }). The icon leads the label; an icon-only button shows no text and is named by aria-label.
  */
 export function createButton(doc, { label, icon: name = null, variant = 'secondary', size = null, iconOnly = false }) {
   if (iconOnly && !label) throw new Error('an icon-only button needs a label for its name');
   const b = doc.createElement('button');
   b.type = 'button';
-  b.className = `ui-button ui-button--${variant}${size ? ` ui-button--${size}` : ''}`;
+  if (!['go', 'stop', 'secondary', 'quiet', 'danger'].includes(variant)) throw new Error(`a button: unknown variant "${variant}"`);
+  const colour = variant === 'go' || variant === 'stop' ? `ui-button--primary ui-button--${variant}` : `ui-button--${variant}`;
+  b.className = `ui-button ${colour}${size ? ` ui-button--${size}` : ''}`;
   if (iconOnly) b.setAttribute('aria-label', label);
   else b.append(label);
   if (name) setButtonIcon(b, name);
   return b;
+}
+
+// ---------------------------------------------------------------- the game logo
+
+/** The game logo's words, drawn letter by letter: each letter takes its game colour from the theme. */
+export const LOGO_WORDS = Object.freeze(['MINESWEEPER', '3D']);
+
+/**
+ * Draws the game logo into `logo` (a .ui-logo heading, named by its aria-label): one
+ * .ui-logo__word per word of LOGO_WORDS, hidden from assistive technology, each holding one
+ * .ui-logo__letter per letter. A logo already drawn is left as it is. Returns the logo.
+ */
+export function drawLogo(logo) {
+  if (logo.querySelector(':scope > .ui-logo__word')) return logo;
+  const doc = logo.ownerDocument;
+  for (const text of LOGO_WORDS) {
+    const word = doc.createElement('span');
+    word.className = 'ui-logo__word';
+    word.setAttribute('aria-hidden', 'true');
+    for (const ch of text) {
+      const letter = doc.createElement('span');
+      letter.className = 'ui-logo__letter';
+      letter.textContent = ch;
+      word.append(letter);
+    }
+    logo.append(word);
+  }
+  return logo;
+}
+
+/** Draws every `.ui-logo` under `root`. */
+export function applyLogos(root) {
+  for (const logo of root.querySelectorAll('.ui-logo')) drawLogo(logo);
+}
+
+/** The steps the title bar's logo scales down by, and the least it takes before it hides. */
+export const LOGO_STEP = 0.1;
+export const LOGO_FLOOR = 0.5;
+
+/**
+ * The title bar logo's scale in `room` CSS pixels, `natural` its width at full size: the largest
+ * LOGO_STEP that fits, never above 1, or 0 (hidden) under LOGO_FLOOR. An undrawn logo stays at 1.
+ */
+export function logoScale(room, natural) {
+  if (!(natural > 0)) return 1;
+  const steps = Math.floor(Math.min(1, room / natural) / LOGO_STEP + 1e-6);
+  const scale = Math.round(steps * LOGO_STEP * 10) / 10;
+  return scale >= LOGO_FLOOR ? scale : 0;
+}
+
+/**
+ * Fits a title bar (`.ui-frame__head`) holding the logo to its own width: the logo scaled
+ * (its zoom, logoScale) into the room its start and end leave, or hidden under the floor
+ * (data-logo="hidden"). Returns the least width the head needs with the logo hidden — its
+ * padding, gaps, start and end — or null with no logo.
+ */
+export function fitTitleBar(head) {
+  const logo = head.querySelector(':scope > .ui-frame__logo');
+  if (!logo) return null;
+  const win = head.ownerDocument.defaultView;
+  const width = (el) => (el ? el.getBoundingClientRect().width : 0);
+  logo.style.zoom = '';
+  delete head.dataset.logo;
+  head.style.gridTemplateColumns = 'auto auto auto';
+  const c = win.getComputedStyle(head);
+  const least = parseFloat(c.paddingLeft) + parseFloat(c.paddingRight) + 2 * (parseFloat(c.columnGap) || 0)
+    + width(head.querySelector(':scope > .ui-frame__start')) + width(head.querySelector(':scope > .ui-frame__end'));
+  const natural = width(logo);
+  head.style.gridTemplateColumns = '';
+  const scale = logoScale(head.getBoundingClientRect().width - least, natural);
+  if (scale === 0) head.dataset.logo = 'hidden';
+  else if (scale < 1) logo.style.zoom = String(scale);
+  return least;
+}
+
+// ---------------------------------------------------------------- the root area
+
+const AREA_FEATURE = /\((min|max)-(width|height):\s*(\d+(?:\.\d+)?)px\)/g;
+
+/**
+ * matchMedia over the root area (css/components.css): `matchRootArea(doc)(query)` → { matches,
+ * addEventListener('change', listener), removeEventListener }, the query's `(min|max)-(width|height):
+ * <n>px` features joined by `and` matched against the root element's box — the browser window on
+ * the web, the work area at the desktop host — never the window's own size; a change of that box
+ * that flips the match calls each listener with { matches }. Any other query throws a RangeError.
+ */
+export function matchRootArea(doc, { ResizeObserver: Observer = doc.defaultView?.ResizeObserver } = {}) {
+  const root = doc.documentElement;
+  return (query) => {
+    const features = [...query.matchAll(AREA_FEATURE)];
+    if (!features.length || query.replace(AREA_FEATURE, '').replace(/\band\b/g, '').trim()) throw new RangeError(`not a root-area query: ${query}`);
+    const test = () => {
+      const box = root.getBoundingClientRect();
+      return features.every(([, bound, axis, px]) => (bound === 'min' ? box[axis] >= Number(px) : box[axis] <= Number(px)));
+    };
+    const listeners = new Set();
+    let last = test();
+    let observer = null;
+    const check = () => {
+      const now = test();
+      if (now === last) return;
+      last = now;
+      for (const listener of [...listeners]) listener({ matches: now });
+    };
+    return {
+      get matches() { return test(); },
+      addEventListener(type, listener) {
+        if (type !== 'change') return;
+        listeners.add(listener);
+        if (!observer && Observer) {
+          last = test();
+          observer = new Observer(check);
+          observer.observe(root);
+        }
+      },
+      removeEventListener(type, listener) {
+        listeners.delete(listener);
+        if (!listeners.size && observer) { observer.disconnect(); observer = null; }
+      },
+    };
+  };
+}
+
+// ---------------------------------------------------------------- the title bar's window buttons
+
+/** The title bar's window buttons, by their data-window name, in their order at the head's end. */
+export const WINDOW_BUTTONS = Object.freeze(['minimise', 'fullscreen', 'quit']);
+
+/**
+ * The title bar's window buttons (`[data-window]` under `root`): a press calls the desktop host's
+ * action of that name — actions.minimise, actions.fullscreen, actions.quit — when the platform
+ * layer's capability flags report the desktop host (capabilities.desktopHost), and with no host does
+ * nothing: no action, no message, no confirmation, no lock. One delegated listener on `root`.
+ * Returns the unbind.
+ */
+export function bindWindowButtons(root, { capabilities = {}, actions = {} } = {}) {
+  const onClick = (e) => {
+    const button = e.target?.closest?.('[data-window]');
+    if (!button || !capabilities.desktopHost) return;
+    const action = actions[button.getAttribute('data-window')];
+    if (typeof action === 'function') action(button);
+  };
+  root.addEventListener('click', onClick);
+  return () => root.removeEventListener('click', onClick);
 }
 
 // ---------------------------------------------------------------- the code chip

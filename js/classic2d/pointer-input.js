@@ -16,7 +16,9 @@
 //                   Either way, off the board (cell -1) nothing is pressed and a release does
 //                   nothing.
 // A left + right gesture — right pressed while left is held, or left while right is — acts on the
-// left release only: a chord when chordInputs has 'left+right', and never a reveal.
+// left release only: a chord when chordInputs has 'left+right', and never a reveal. The chord button
+// (BUTTON.CHORD, a mouse button bound to the flat modes' chord action) shows the reveal buttons'
+// pressed feedback and, released on a revealed number, chords; it never reveals.
 //
 // createPointerInput({ graph, game, onPress, onAction, rules?, active? }) → input
 //   graph     the cell graph (degree / neighbour), for a number's neighbours.
@@ -27,26 +29,43 @@
 //   active    () → false while the board takes no input; nothing is pressed or sent then, and a
 //             press begun then is ignored through its release.
 //
-//   down(button, c), up(button, c), move(c)  button 0 left, 1 middle, 2 right; c the cell under
-//                                            the pointer, or -1 off the board.
+//   down(button, c), up(button, c), move(c)  button 0 left, 1 middle, 2 right, 'chord'; c the cell
+//                                            under the pointer, or -1 off the board.
 //   reset()   forgets the held buttons without firing (focus loss, pause).
 //   holding   whether any button is held.
 //
-// mountPointerInput({ view, session, graph?, win?, rules?, swap? }) → { input, destroy() }: mouse
-// buttons on the view's canvas, moves and releases anywhere on the page (`win`), the context menu
-// suppressed over the board, held buttons dropped on blur. A shift + primary press on a board that
-// scrolls belongs to the view's pan (PAN_MODIFIER) and is ignored here. `swap`
-// (js/classic2d/button-swap.js) translates each physical button before the state machine sees it.
+// pointerButton(bindings?, b) → the logical button physical mouse button b stands for through the
+// flat modes' bindings (js/settings/resolver.js; the defaults when none is given): the first reveal
+// input LEFT and the second MIDDLE, a flag input RIGHT, a chord input CHORD, else null — so with no
+// override every button is itself.
+//
+// mountPointerInput({ view, session, graph?, win?, rules?, swap?, bindings? }) → { input, destroy() }:
+// mouse buttons on the view's canvas, moves and releases anywhere on the page (`win`), the context
+// menu suppressed over the board, held buttons dropped on blur and on a change of the bindings. A
+// shift + primary press on a board that scrolls belongs to the view's pan (PAN_MODIFIER, read from
+// the physical button) and is ignored here. Each physical button is translated at its press —
+// through `bindings` to its logical button, then through `swap` (js/classic2d/button-swap.js) —
+// and its release takes the same translation; a button bound to nothing is left to the page.
 // The cell under the pointer is the view's hit-test (view.cellAt, on the board's grid geometry);
 // the input does no column or row arithmetic.
 
 import { getRuleProfile, REFERENCE_PROFILE } from '../engine/profiles.js';
 import { CELL } from '../engine/rules.js';
 import { PAN_MODIFIER } from './board-view.js';
+import { defaultBindings } from '../settings/resolver.js';
 
-export const BUTTON = Object.freeze({ LEFT: 0, MIDDLE: 1, RIGHT: 2 });
+export const BUTTON = Object.freeze({ LEFT: 0, MIDDLE: 1, RIGHT: 2, CHORD: 'chord' });
 
-const NAMES = ['left', 'middle', 'right'];
+const NAMES = Object.freeze({ [BUTTON.LEFT]: 'left', [BUTTON.MIDDLE]: 'middle', [BUTTON.RIGHT]: 'right', [BUTTON.CHORD]: 'chord' });
+
+export function pointerButton(bindings = defaultBindings(), b) {
+  switch (bindings.actionFor('classic-2d', 'mouse', b)) {
+    case 'reveal': return bindings.inputsFor('classic-2d', 'mouse', 'reveal').indexOf(b) === 0 ? BUTTON.LEFT : BUTTON.MIDDLE;
+    case 'flag': return BUTTON.RIGHT;
+    case 'chord': return BUTTON.CHORD;
+    default: return null;
+  }
+}
 
 /** The pointer input rules of a rule profile, the reference profile's current version by default. */
 export function pointerRules(profile = getRuleProfile(REFERENCE_PROFILE)) {
@@ -55,7 +74,7 @@ export function pointerRules(profile = getRuleProfile(REFERENCE_PROFILE)) {
 }
 
 export function createPointerInput({ graph, game, onPress, onAction, rules = pointerRules(), active = () => true }) {
-  const held = [false, false, false];
+  const held = Object.fromEntries(Object.keys(NAMES).map((b) => [b, false]));
   let cell = -1;
   let downCell = -1; // the cell the press started on, for releaseOffCell 'cancel'
   let both = false; // left + right during this left hold
@@ -64,7 +83,8 @@ export function createPointerInput({ graph, game, onPress, onAction, rules = poi
   let pressEvent = 'press'; // the feedback's cell event: chordPress for a number's neighbours
 
   const reveals = (b) => rules.revealInputs.includes(NAMES[b]);
-  const revealHeld = () => held.some((h, b) => h && reveals(b));
+  const presses = (b) => b === BUTTON.CHORD || reveals(b); // the buttons whose hold shows pressed feedback
+  const revealHeld = () => Object.entries(held).some(([b, h]) => h && presses(b));
   const isNumber = (state, c) => state === CELL.REVEALED && game().cellNumber(c) > 0;
 
   function feedback() {
@@ -103,6 +123,8 @@ export function createPointerInput({ graph, game, onPress, onAction, rules = poi
     const state = game().cellState(c);
     if (both) {
       if (rules.chordInputs.includes('left+right') && isNumber(state, c)) send('chord', c);
+    } else if (button === BUTTON.CHORD) {
+      if (isNumber(state, c)) send('chord', c);
     } else if (state === CELL.CLOSED) {
       send('reveal', c);
     } else if (isNumber(state, c) && rules.chordInputs.includes(NAMES[button])) {
@@ -122,12 +144,12 @@ export function createPointerInput({ graph, game, onPress, onAction, rules = poi
   }
 
   return {
-    get holding() { return held.some(Boolean); },
+    get holding() { return Object.values(held).some(Boolean); },
 
     down(button, c) {
       if (!(button in held) || held[button] || !active()) return;
       cell = c;
-      if (reveals(button) && !revealHeld()) startPress(c);
+      if (presses(button) && !revealHeld()) startPress(c);
       held[button] = true;
       if (held[BUTTON.LEFT] && held[BUTTON.RIGHT]) both = true;
       if (button === BUTTON.RIGHT && rules.flagToggle === 'right-press') toggleFlag(c);
@@ -138,7 +160,7 @@ export function createPointerInput({ graph, game, onPress, onAction, rules = poi
       if (!(button in held) || !held[button]) return;
       held[button] = false;
       cell = c;
-      if (reveals(button) && !revealHeld()) {
+      if (presses(button) && !revealHeld()) {
         release(button, c);
         if (button === BUTTON.LEFT) both = false;
         cancelled = false;
@@ -157,7 +179,7 @@ export function createPointerInput({ graph, game, onPress, onAction, rules = poi
     },
 
     reset() {
-      held.fill(false);
+      for (const b of Object.keys(held)) held[b] = false;
       both = false;
       cancelled = false;
       cell = -1;
@@ -168,7 +190,9 @@ export function createPointerInput({ graph, game, onPress, onAction, rules = poi
 
 const PLAYABLE = new Set(['ready', 'playing']);
 
-export function mountPointerInput({ view, session, graph = session.setup.grid.graph, win = globalThis, rules, swap = null }) {
+export function mountPointerInput({
+  view, session, graph = session.setup.grid.graph, win = globalThis, rules, swap = null, bindings = defaultBindings(),
+}) {
   const canvas = view.canvas;
   const input = createPointerInput({
     graph,
@@ -178,6 +202,7 @@ export function mountPointerInput({ view, session, graph = session.setup.grid.gr
     onPress: (cells, event) => view.setPressed(cells, event),
     onAction: (kind, c) => session[kind](c),
   });
+  const pressedAs = new Map(); // physical button → the logical button its press was translated to
 
   const cellOf = (event) => {
     const box = canvas.getBoundingClientRect();
@@ -189,26 +214,32 @@ export function mountPointerInput({ view, session, graph = session.setup.grid.gr
   };
   const onDown = (event) => {
     if (event.button === BUTTON.LEFT && event[PAN_MODIFIER] && view.layout.scrolls) return;
-    if (!(event.button in NAMES)) return;
+    const logical = pointerButton(bindings, event.button);
+    if (logical === null) return;
     event.preventDefault();
     const c = cellOf(event);
-    input.down(swap ? swap.press(event.button, closedAt(c)) : event.button, c);
+    pressedAs.set(event.button, logical);
+    input.down(swap ? swap.press(logical, closedAt(c)) : logical, c);
   };
   const onMove = (event) => {
     if (input.holding) input.move(cellOf(event));
   };
   const onUp = (event) => {
-    const button = swap ? swap.release(event.button) : event.button;
+    if (!pressedAs.has(event.button)) return;
+    const logical = pressedAs.get(event.button);
+    pressedAs.delete(event.button);
+    const button = swap ? swap.release(logical) : logical;
     if (input.holding) input.up(button, cellOf(event));
   };
   const onMenu = (event) => event.preventDefault();
-  const onBlur = () => { input.reset(); swap?.reset(); };
+  const drop = () => { input.reset(); swap?.reset(); pressedAs.clear(); };
+  const offBindings = bindings.onChange(drop);
 
   canvas.addEventListener('mousedown', onDown);
   canvas.addEventListener('contextmenu', onMenu);
   win.addEventListener('mousemove', onMove);
   win.addEventListener('mouseup', onUp);
-  win.addEventListener('blur', onBlur);
+  win.addEventListener('blur', drop);
 
   return {
     input,
@@ -217,9 +248,9 @@ export function mountPointerInput({ view, session, graph = session.setup.grid.gr
       canvas.removeEventListener('contextmenu', onMenu);
       win.removeEventListener('mousemove', onMove);
       win.removeEventListener('mouseup', onUp);
-      win.removeEventListener('blur', onBlur);
-      input.reset();
-      swap?.reset();
+      win.removeEventListener('blur', drop);
+      offBindings();
+      drop();
     },
   };
 }

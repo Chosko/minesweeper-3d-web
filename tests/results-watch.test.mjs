@@ -212,7 +212,7 @@ test('Watch replay sits on the right of the action bar before Records and Play a
     ['r-watch', 'ui-button ui-button--secondary hidden', 'Watch replay'],
     ['r-watch-best', 'ui-button ui-button--secondary hidden', 'Watch best'],
     ['r-records', 'ui-button ui-button--secondary', 'Records'],
-    ['r-again', 'ui-button ui-button--primary ui-button--lg', 'Play again'],
+    ['r-again', 'ui-button ui-button--primary ui-button--go ui-button--lg', 'Play again'],
   ]);
 });
 

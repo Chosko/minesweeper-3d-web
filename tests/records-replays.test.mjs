@@ -397,6 +397,23 @@ test('Watch routes to the replay viewer with the replay id and the Records scree
     { screen: REPLAY_SCREEN, data: { replayId: 'a', returnTo: { screen: RECORDS_SCREEN, data: { boardKey: KEY } } } });
 });
 
+test('a Hexagon and a Triangle board\'s Replays tab lists that board\'s replays, and Watch plays one with Back to the board', () => {
+  const hex = boardKey(createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 9, height: 9, mines: 13, noGuess: false }));
+  const tri = boardKey(createBoardIdentity({ mode: 'triangle', grid: 'tri', width: 13, height: 7, mines: 8, noGuess: false }));
+  const library = fakeLibrary([listing('c'), listing('h', { boardKey: hex, mode: 'hexagon', pins: [PIN_BEST] }), listing('t', { boardKey: tri, mode: 'triangle' })]);
+  for (const [key, id] of [[hex, 'h'], [tri, 't']]) {
+    const view = fakeView();
+    const router = fakeRouter([RECORDS_SCREEN, REPLAY_SCREEN]);
+    const screen = createRecordsScreen({ records: fakeStore(), view, replays: library, router });
+    screen.show({ boardKey: key });
+    const { replays } = view.shown.at(-1);
+    assert.deepEqual(replays.rows.map((r) => [r.id, r.watch]), [[id, true]], `${key}: its own replay, offered to watch`);
+    assert.equal(replays.rows[0].file, replayFileName(key, '2026-10-09T12:00:00.000Z'));
+    screen.watch(id);
+    assert.deepEqual(router.went.at(-1), [REPLAY_SCREEN, { data: { replayId: id, returnTo: { screen: RECORDS_SCREEN, data: { boardKey: key } } } }]);
+  }
+});
+
 // ---------------------------------------------------------------- download and import
 
 test('each row offers Download, saving the stored blob under the replay\'s file name', async () => {

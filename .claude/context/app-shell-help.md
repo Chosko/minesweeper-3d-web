@@ -23,21 +23,24 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
 
 - **One bindings source.** The help panel's list and foot line, the pause
   card's list, the 3D ready card's list `#ready-keys`, the HUD strip
-  `#hud-tools`, the hint strip and the Settings page's bindings are
+  `#hud-tools`, the hint strip, the controls reminders and the Settings page's bindings are
   all drawn from `js/settings/bindings.js`
-  ([settings-bindings.md](settings-bindings.md)), every list in the kit's
+  ([settings-bindings-rows.md](settings-bindings-rows.md)), every list in the kit's
   controls list `ui-controls`: the help panel and the pause card the help
   rows (`helpListHtml`), the Settings page the full rows
   (`bindingsSectionHtml`), the ready card its short rows (`readyListHtml`,
   touch's under `#ready.ready--touch`); edit a binding's text in the
   source only.
   They show the mode the last screen method set (`showReady` /
-  `showPlaying` 3D, `showClassic2D` 2D, `showPause`'s `mode`) for the
+  `showPlaying` 3D, `showClassic2D` 2D, `showPause`'s `mode`, which is
+  `classic-2d` for every flat mode: Hexagon and Triangle show Classic 2D's
+  controls) for the
   device `setDevice` set (touch in either mode on a coarse-only device
   unless a controller is in use, `_bindDevice`, which every one of these
   surfaces follows — the lists, the help foot, the HUD strip, the hint strip,
   the scroll hint, the one-time hints, Learn 3D's prompts and every screen's
-  key hints, filled by `showKeyHints`) and the camera `setCamera` set, and every change of
+  key hints, filled by `showKeyHints`) and the camera `setCamera` set, with
+  the current bindings of the resolver `setBindings` set, and every change of
   any of them, or of the pad's glyphs, redraws them. A HUD strip with no
   entries (Classic 2D on touch) hides `#hud-tools`.
 - **Help panel.** `#help` is a card: its title `#help-title`, the help
@@ -54,7 +57,11 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   (`updatePadUi`); its change calls `ui.setDevice`.
 - **First-use hints.** `FIRST_USE` (`createFirstUse` over storage and
   `RECORDS`) loads once the records have, seeding a new `shell.firstUse`
-  from them. It counts a game at the host's `started` and a finished 3D game
+  from them, each record from the recorded games of every mode sharing it.
+  A Hexagon or Triangle game shares Classic 2D's record
+  (`FIRST_USE_RECORD`): its games count toward Classic 2D's, its strip and
+  dismissal are Classic 2D's, and `refreshHints` draws the active flat
+  mode's strip as Classic 2D's. It counts a game at the host's `started` and a finished 3D game
   at `finished`, a Learn 3D game toward no window and only its win as
   finished (`learnGame()`). Strip eligibility is judged as the game begins (`hint3D`
   in `startGame`; `hint2D` at the 2D `board` report, not again for the
@@ -69,7 +76,7 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   board area `#c2d-stage`, laid over the board's foot, so the board keeps its
   size and neither the Tap choice under the board nor the figures under it
   on a narrower window are covered; its wording and key boxes are
-  `hintStripHtml`'s ([settings-bindings.md](settings-bindings.md)). On a coarse pointer the
+  `hintStripHtml`'s ([settings-bindings-rows.md](settings-bindings-rows.md)). On a coarse pointer the
   Classic 2D window's Tap choice `#hud-tap` sets what a tap on a closed cell
   does ([classic2d-input.md](classic2d-input.md) § Touch input).
   The ready card shows "How 3D works" and the Learn 3D line while
@@ -98,13 +105,15 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
 ## CROSS-REFERENCES
 
 - [app-shell-ui.md](app-shell-ui.md) — the `UI` methods and the HUD.
-- [settings-bindings.md](settings-bindings.md) — bindings source, active
-  device, hint texts.
+- [settings-bindings-rows.md](settings-bindings-rows.md) — bindings source,
+  hint texts; [settings-bindings.md](settings-bindings.md) — active device.
 - [platform.md](platform.md) — the `shell.firstUse` document's storage.
 - [app-shell-3d-session.md](app-shell-3d-session.md) — Learn 3D's prompts in the hint strip.
 - [input.md](input.md) — Space's tap-toggle the hints name.
-- [testing.md](testing.md) — `tests/shell-help.test.mjs`,
-  `tests/shell-first-use.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/shell-help.test.mjs` (every flat
+  mode's pause card with Classic 2D's help among them),
+  `tests/shell-first-use.test.mjs` (the shared first-use record among
+  them).
 
 ## WHEN TO READ THE SOURCE
 

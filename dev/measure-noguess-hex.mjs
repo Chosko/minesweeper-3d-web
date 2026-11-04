@@ -1,6 +1,7 @@
-// Measures no-guess generation on the hexagon standard boards against the attempt budget, beside
-// the square Expert board the budget was set from. The measurement behind the hexagon-grid
-// feature's Expert no-guess timing; a budget change is board generation's.
+// Measures no-guess generation on the hexagon standard boards (js/hexagon/board-setup.js) against
+// the attempt budget, beside the square Expert board the budget was set from. The measurement
+// behind the hexagon-grid feature's Expert mine count: every seed it measures on Hexagon Expert
+// meets the budget. A budget change is board generation's.
 //
 // Usage: node dev/measure-noguess-hex.mjs [seeds]   (default 300 seeds per board)
 //
@@ -10,11 +11,13 @@
 
 import { generate, ATTEMPT_BUDGET } from '../js/generation/generate.js';
 import { startCell } from '../js/generation/start-cell.js';
+import { STANDARD_SIZES, GRID } from '../js/hexagon/board-setup.js';
 
+const hexagon = (name, { width, height, mines }) => ({ name: `hexagon ${name}`, graph: { kind: GRID, width, height }, mineCount: mines });
 export const BOARDS = Object.freeze([
-  { name: 'hexagon Beginner', graph: { kind: 'hex', width: 9, height: 9 }, mineCount: 13 },
-  { name: 'hexagon Intermediate', graph: { kind: 'hex', width: 16, height: 16 }, mineCount: 50 },
-  { name: 'hexagon Expert', graph: { kind: 'hex', width: 30, height: 16 }, mineCount: 123 },
+  hexagon('Beginner', STANDARD_SIZES.beginner),
+  hexagon('Intermediate', STANDARD_SIZES.intermediate),
+  hexagon('Expert', STANDARD_SIZES.expert),
   { name: 'square Expert', graph: { kind: 'square', width: 30, height: 16 }, mineCount: 99 },
 ]);
 

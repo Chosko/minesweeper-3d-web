@@ -1,7 +1,9 @@
 // Classic 2D game session: owns one game from closed board to result. DOM-free.
 //
-// createSession({ choice, client, clock?, randomSeed?, generatingDelayMs?, place?, pregenerated?, fixed? }) → session.
+// createSession({ choice, config?, client, clock?, randomSeed?, generatingDelayMs?, place?, pregenerated?, fixed? }) → session.
 //   choice      a board choice (js/classic2d/board-setup.js); an invalid one throws a RangeError.
+//   config      the flat mode configuration (js/flat-modes.js) whose board setup the choice is
+//               read in — its mode, grid and sizes; Classic 2D's square board setup without one.
 //   client      the generation client (js/generation/client.js): { request, cancel }; asked for
 //               no-guess boards only.
 //   clock       { now(), setTimeout(fn, ms), clearTimeout(h) }; defaults to performance.now and the
@@ -72,8 +74,8 @@
 // click counts the summary carries, 0 before the first click and unchanged once the game ended;
 // counts() is the engine's counts() (3BV, 3BV solved, the click counts by kind) the live figures read.
 //
-// Recording (js/replay/recorder.js): each closed board opens a recorder, and restart() and leave()
-// discard it. Every action the session hands to the engine while the game accepts actions is
+// Recording (js/replay/recorder.js): each closed board opens a recorder over its configuration's
+// graph — square, hex or tri, the board identity's grid — and restart() and leave() discard it. Every action the session hands to the engine while the game accepts actions is
 // recorded at that point, at the timer's elapsed time, paused spans included: the first reveal at
 // 0 (a flag or chord before it changes nothing and is not recorded), the rest while playing. The board's mines, seed
 // and generator version are added when it arrives, and a board played standard after a failure
@@ -177,6 +179,7 @@ export function createTimer({ now }) {
 
 export function createSession({
   choice,
+  config,
   client,
   clock = defaultClock,
   randomSeed = defaultSeed,
@@ -185,7 +188,7 @@ export function createSession({
   pregenerated = null,
   fixed = null,
 }) {
-  let setup = boardSetup(choice);
+  let setup = boardSetup(choice, config);
   let forced = fixed ? Object.freeze({ ...fixed }) : null; // the forced start cell and seed, or null
   // The board the summaries name: a daily's Daily board, else the board played.
   const identity = () => (forced?.daily ? createBoardIdentity({ ...setup.identity, daily: true }) : setup.identity);
@@ -214,7 +217,7 @@ export function createSession({
   function record() {
     recorder = startRecording({
       mode: setup.identity.mode,
-      graph: { kind: 'square', width: setup.width, height: setup.height },
+      graph: { kind: setup.identity.grid, width: setup.width, height: setup.height },
       board: setup.identity,
       profile: { id: profile.id, version: profile.version },
     });
@@ -484,7 +487,7 @@ export function createSession({
       if (forced) return null;
       if (state === SESSION_STATE.GENERATING) dropPending();
       else if (state !== SESSION_STATE.FAILED) return null;
-      setup = boardSetup({ ...setup.choice, noGuess: false });
+      setup = boardSetup({ ...setup.choice, noGuess: false }, config);
       record();
       return placeNow();
     },

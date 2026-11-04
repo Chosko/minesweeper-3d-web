@@ -7,7 +7,8 @@ mounts for a replay's graph kind: each draws simulator frames, places the
 recorded pointer or camera, shows press rings and Show 3BV's tints. Both are
 DOM-free at import.
 
-- `js/replay/viewer-2d.js` — read-only Classic 2D board view with the
+- `js/replay/viewer-2d.js` — read-only flat board view (Classic 2D,
+  Hexagon or Triangle, over the grid's geometry) with the
   recorded pointer and its trail, the recorded cursor, press rings and Show
   3BV's paint; `mountViewer2D`.
 - `js/replay/viewer-3d.js` — the 3D state view with the recorded camera and
@@ -94,6 +95,8 @@ DOM-free at import.
 
 - [../domain/features/replay-playback.md](../domain/features/replay-playback.md)
   — what the viewers show, Show 3BV, the free camera.
+- [../domain/features/flat-grid-geometry.md](../domain/features/flat-grid-geometry.md)
+  — the 2D viewer on the geometry rebuilt from the replay's board.
 
 ## CROSS-REFERENCES
 
@@ -106,7 +109,7 @@ DOM-free at import.
 - [rendering.md](rendering.md) — the renderer the 3D viewer draws on.
 - [app-shell-replay.md](app-shell-replay.md) — `REPLAY_SCENE` and the
   free replay camera in `js/main.js`.
-- [testing.md](testing.md) — `tests/replay-viewer.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/replay-viewer.test.mjs`,
   `tests/replay-viewer-3d.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

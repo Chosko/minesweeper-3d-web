@@ -25,8 +25,10 @@ In scope (m1-classic-2d):
   Expert (30 × 16, 99) and Custom (width and height each 1 to 100, at
   least one mine and at most the limit Board setup states), plus the
   no-guess switch, which says it keeps separate records. Each standard size
-  keeps its size line with its mine density and the Last played mark; the
-  board's three bests show beside the options (`shared-screen-layout`
+  keeps its size line with its mine density, with no Last played mark —
+  the last board played is selected when the board choice opens —; the
+  board's three bests show in the board choice's panel beside the options
+  (`shared-screen-layout`
   § Scope and non-goals, *Board choice screens*). Custom's size form has a
   *Random* fill, as the 3D custom form does: it fills width, height and
   mines with a valid random board. *Insert Board Code* is the last board
@@ -294,6 +296,6 @@ Settled: on the board, A or RT reveals, X or LT flags, and Y or both
 triggers chord; no single "smart" button is offered, so a reveal never
 chords a number and a chord never reveals. The
 triggers match the 3D mode's trigger-as-mouse-button feel, and the face
-buttons avoid B and Start, which keep their shell meanings (back and pause)
-and never act on the board. Holding a reveal or chord button shows the same
+buttons avoid B and Start, which never act on the board: Start pauses and B
+is Back off the board only (`game-shell` § Navigation contract). Holding a reveal or chord button shows the same
 pressed feedback as a held mouse button, and the action happens on release.

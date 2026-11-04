@@ -43,11 +43,11 @@ async function open(browser, base) {
     }), button);
     await frames(2);
   };
-  /** The focused control's name: its id, else its data-value / data-size / data-preset. */
+  /** The focused control's name: its id, else its data-value / data-size / data-preset / data-window. */
   const focused = () => ms(() => {
     const e = document.activeElement;
     if (!e || e === document.body) return null;
-    return e.id || e.dataset.value || e.dataset.size || e.dataset.preset || e.textContent.trim();
+    return e.id || e.dataset.value || e.dataset.size || e.dataset.preset || e.dataset.window || e.textContent.trim();
   });
   /** Press each direction in turn, returning where focus is after each press. */
   const walk = async (dirs) => {
@@ -58,26 +58,43 @@ async function open(browser, base) {
   return { page, errors, ms, frames, hold, tap, focused, walk };
 }
 
-test('[slow] in a browser, the D-pad walks every control of the 2D board choice and the 3D board choice alike', async (t) => {
+test('[slow] in a browser, the D-pad walks every control of the 2D board choice and the 3D board choice alike, the title bar\'s window buttons among them', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
     const { page, errors, ms, tap, focused, walk } = await open(browser, base);
 
-    // Classic 2D: Down walks the options, then the switch on the right, then the bar's Records and Play;
-    // Up from Play reaches the switch above it, retraces the options, and from the first option reaches Back.
+    // Classic 2D, the panel closed: Down walks the options, then the foot's Play; Up retraces the options,
+    // and from the first option reaches the panel toggle above it, then the title bar's Quit.
     await page.click('#menu-entry-classic-2d');
     await ms(() => document.querySelector('#c2d-choice [data-size="beginner"]').focus());
     assert.equal(await focused(), 'beginner');
-    assert.deepEqual(await walk(['down', 'down', 'down', 'down', 'down', 'down', 'down', 'down']),
-      ['intermediate', 'expert', 'custom', 'c2d-code-option', 'c2d-noguess', 'c2d-records', 'c2d-play', 'c2d-play'], 'no wrap past Play');
-    assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up', 'up', 'up']),
-      ['c2d-noguess', 'c2d-code-option', 'custom', 'expert', 'intermediate', 'beginner', 'c2d-choice-back', 'c2d-choice-back'], 'no wrap past Back');
+    assert.deepEqual(await walk(Array(6).fill('down')),
+      ['intermediate', 'expert', 'custom', 'c2d-code-option', 'c2d-play', 'c2d-play'], 'no wrap past Play; nothing of the closed panel');
+    assert.deepEqual(await walk(Array(7).fill('up')),
+      ['c2d-code-option', 'custom', 'expert', 'intermediate', 'beginner', 'c2d-panel-toggle', 'quit'], 'on to the title bar');
+    // The panel toggle, reached by the D-pad: A pins the panel, and its switch and All records join the walk.
+    await ms(() => document.querySelector('#c2d-choice [data-size="beginner"]').focus());
+    assert.deepEqual(await walk(['up']), ['c2d-panel-toggle'], 'the panel toggle above the Board list');
+    await tap(BTN.A);
+    assert.equal(await ms(() => document.getElementById('c2d-panel-toggle').getAttribute('aria-pressed')), 'true', 'A pins the panel');
+    await ms(() => document.querySelector('#c2d-choice [data-size="beginner"]').focus());
+    assert.deepEqual(await walk(Array(8).fill('down')),
+      ['intermediate', 'expert', 'custom', 'c2d-code-option', 'c2d-noguess', 'c2d-records', 'c2d-play', 'c2d-play'], 'pinned: the switch and All records on the right, then Play');
+    assert.deepEqual(await walk(Array(3).fill('up')),
+      ['c2d-records', 'c2d-noguess', 'c2d-code-option'], 'Up from Play climbs the panel, then reaches the options');
+    await ms(() => document.getElementById('c2d-panel-toggle').focus());
+    await tap(BTN.A);
+    assert.equal(await ms(() => document.getElementById('c2d-panel-toggle').getAttribute('aria-pressed')), 'false', 'and A unpins it');
+    await ms(() => document.getElementById('c2d-choice-back').focus());
+    // The title bar is a row: Right from Back walks Minimise, Fullscreen and Quit, and stops there; Left retraces it.
+    assert.deepEqual(await walk(['right', 'right', 'right', 'right', 'left', 'left', 'left', 'left']),
+      ['minimise', 'fullscreen', 'quit', 'quit', 'fullscreen', 'minimise', 'c2d-choice-back', 'c2d-choice-back'], 'the window buttons on the title bar\'s row');
     // A on Custom chooses it: its form joins the walk, Left / Right walk its row.
     await ms(() => document.querySelector('#c2d-choice [data-size="custom"]').focus());
     await tap(BTN.A);
-    assert.equal(await ms(() => document.querySelector('#c2d-choice [aria-pressed="true"]').dataset.size), 'custom');
+    assert.equal(await ms(() => document.querySelector('#c2d-choice [data-size][aria-pressed="true"]').dataset.size), 'custom');
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'classic-2d-choice', 'A chooses, and starts nothing');
     await ms(() => document.getElementById('c2d-noguess').focus());
     assert.deepEqual(await walk(['down', 'left', 'left', 'right', 'right']), ['c2d-mines', 'c2d-height', 'c2d-width', 'c2d-height', 'c2d-mines'],
@@ -85,7 +102,7 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
     assert.deepEqual(await walk(['down', 'down', 'down']), ['c2d-random', 'c2d-records', 'c2d-play']);
     // Every focusable control on the screen is reached by the D-pad alone.
     const all = await ms(() => [...document.querySelectorAll('#c2d-choice button:not(:disabled), #c2d-choice input')]
-      .filter((e) => e.getClientRects().length > 0).map((e) => e.id || e.dataset.size));
+      .filter((e) => e.getClientRects().length > 0).map((e) => e.id || e.dataset.size || e.dataset.window));
     const reached = new Set();
     const queue = ['beginner'];
     while (queue.length) {
@@ -93,7 +110,7 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
       if (reached.has(at)) continue;
       reached.add(at);
       for (const d of ['up', 'down', 'left', 'right']) {
-        await ms((i) => (document.getElementById(i) ?? document.querySelector(`#c2d-choice [data-size="${i}"]`)).focus(), at);
+        await ms((i) => (document.getElementById(i) ?? document.querySelector(`#c2d-choice :is([data-size="${i}"], [data-window="${i}"])`)).focus(), at);
         const [to] = await walk([d]);
         if (to && !reached.has(to)) queue.push(to);
       }
@@ -110,20 +127,20 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
     await tap(BTN.B);
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'menu');
 
-    // 3D, as Classic 2D: Down walks the options, then the switch on the right, then the bar's Records and
-    // Play; Up retraces the walk, and from Learn 3D reaches Back.
+    // 3D, as Classic 2D, the panel closed on a preset: Down walks the options, then Play; Up retraces the
+    // walk, and from Learn 3D reaches Back.
     await page.click('#menu-entry-3d');
     await ms(() => document.querySelector('#board-choice [data-learn]').focus());
     assert.equal(await focused(), 'bc-learn');
-    assert.deepEqual(await walk(Array(10).fill('down')),
-      ['6,6,6,10', '6,6,6,20', '8,8,8,40', '10,10,10,100', 'custom', 'bc-code-option', 'bc-noguess', 'bc-records', 'bc-play', 'bc-play'], 'no wrap past Play');
-    assert.deepEqual(await walk(Array(10).fill('up')),
-      ['bc-noguess', 'bc-code-option', 'custom', '10,10,10,100', '8,8,8,40', '6,6,6,20', '6,6,6,10', 'bc-learn', 'board-choice-back', 'board-choice-back'],
-      'Up from Play retraces the walk, no wrap past Back');
+    assert.deepEqual(await walk(Array(8).fill('down')),
+      ['6,6,6,10', '6,6,6,20', '8,8,8,40', '10,10,10,100', 'custom', 'bc-code-option', 'bc-play', 'bc-play'], 'no wrap past Play');
+    assert.deepEqual(await walk(Array(9).fill('up')),
+      ['bc-code-option', 'custom', '10,10,10,100', '8,8,8,40', '6,6,6,20', '6,6,6,10', 'bc-learn', 'bc-panel-toggle', 'quit'],
+      'Up from Play retraces the walk to the panel toggle, then the title bar');
     // A on Custom chooses it: its switch and form join the walk, Left / Right walk its row.
     await ms(() => document.querySelector('#board-choice [data-preset="custom"]').focus());
     await tap(BTN.A);
-    assert.equal(await ms(() => document.querySelector('#board-choice [aria-pressed="true"]').dataset.preset), 'custom');
+    assert.equal(await ms(() => document.querySelector('#board-choice [data-preset][aria-pressed="true"]').dataset.preset), 'custom');
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'board-choice', 'A chooses, and starts nothing');
     await ms(() => document.getElementById('c-noguess').focus());
     assert.deepEqual(await walk(['down', 'left', 'left', 'left', 'right', 'right', 'right']), ['c-m', 'c-z', 'c-y', 'c-x', 'c-y', 'c-z', 'c-m'],
@@ -131,7 +148,7 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
     assert.deepEqual(await walk(['down', 'down', 'down']), ['c-random', 'bc-records', 'bc-play']);
     // Every focusable control on the screen is reached by the D-pad alone.
     const all3d = await ms(() => [...document.querySelectorAll('#board-choice button:not(:disabled), #board-choice input:not(:disabled)')]
-      .filter((e) => e.getClientRects().length > 0).map((e) => e.id || e.dataset.preset));
+      .filter((e) => e.getClientRects().length > 0).map((e) => e.id || e.dataset.preset || e.dataset.window));
     const reached3d = new Set();
     const queue3d = ['bc-learn'];
     while (queue3d.length) {
@@ -139,7 +156,7 @@ test('[slow] in a browser, the D-pad walks every control of the 2D board choice 
       if (reached3d.has(at)) continue;
       reached3d.add(at);
       for (const d of ['up', 'down', 'left', 'right']) {
-        await ms((i) => (document.getElementById(i) ?? document.querySelector(`#board-choice [data-preset="${i}"]`)).focus(), at);
+        await ms((i) => (document.getElementById(i) ?? document.querySelector(`#board-choice :is([data-preset="${i}"], [data-window="${i}"])`)).focus(), at);
         const [to] = await walk([d]);
         if (to && !reached3d.has(to)) queue3d.push(to);
       }
@@ -239,7 +256,7 @@ test('[slow] in a browser, the Records walk stops on every Watch, Download, Pin 
   }
 });
 
-test('[slow] in a browser, LB / RB step the Records board and LT / RT switch 2D and 3D, with their glyphs shown only under pad navigation', async (t) => {
+test('[slow] in a browser, LB / RB step the Records board and LT / RT step the mode, with their glyphs shown only under pad navigation', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -280,13 +297,21 @@ test('[slow] in a browser, LB / RB step the Records board and LT / RT switch 2D 
     assert.equal(await board(), order[1]);
     assert.equal(await ms(() => document.activeElement.closest('#records-picker') && document.activeElement.getAttribute('aria-checked')), 'true');
 
+    await tap(BTN.LT);
+    assert.equal(await mode(), 'classic-2d', 'LT at Classic 2D: held');
     await tap(BTN.RT);
-    assert.equal(await mode(), '3d', 'RT: 3D');
+    assert.equal(await mode(), 'hexagon', 'RT: the next mode, Hexagon');
     assert.equal(await ms(() => !!document.activeElement.closest('#records-picker')), true);
     await tap(BTN.RT);
+    assert.equal(await mode(), 'triangle');
+    await tap(BTN.RT);
     assert.equal(await mode(), '3d');
+    await tap(BTN.RT);
+    assert.equal(await mode(), '3d', 'RT at 3D: held');
     await tap(BTN.LT);
-    assert.equal(await mode(), 'classic-2d', 'LT: 2D');
+    assert.equal(await mode(), 'triangle', 'LT: the previous mode');
+    for (let i = 0; i < 3; i++) await tap(BTN.LT);
+    assert.equal(await mode(), 'classic-2d');
 
     // The glyphs: the active pad's LB / RB at the picker's ends and LT / RT at the switch's, under pad navigation only.
     const glyphs = () => ms(() => [...document.querySelectorAll('#records [data-pad-glyph]')].map((e) => [e.dataset.padGlyph, e.textContent, e.getClientRects().length > 0 ? 'shown' : 'none']));

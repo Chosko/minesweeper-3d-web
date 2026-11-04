@@ -1,9 +1,9 @@
 // The replay format (js/replay/format.js): the versioned binary blob — header, delta-encoded
 // action and movement streams, check values — its encoder, and the decoder replay-playback
-// shares: exact round-trips for 2D and 3D replays, an empty and a capped movement stream, the
-// movement sampling interval the decoder gives each replay by mode and format version, the
-// per-version upgrade path, a newer version refused with its own error and a corrupt blob
-// reported as unreadable.
+// shares: exact round-trips for 2D square, hexagon, triangle and 3D replays, an empty and a capped
+// movement stream, the movement sampling interval the decoder gives each replay by mode and format
+// version, the per-version upgrade path, a newer version or an unknown graph kind refused with the
+// newer version's error and a corrupt blob reported as unreadable.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -17,6 +17,9 @@ import { createBoardIdentity, MODE_3D } from '../js/records/board.js';
 import { REFERENCE_PROFILE, PROFILE_3D } from '../js/engine/profiles.js';
 import { createGameWithMines } from '../js/engine/rules.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
+import { createHexGrid } from '../js/engine/hex-grid.js';
+import { createTriGrid } from '../js/engine/tri-grid.js';
+import { createGeometry } from '../js/geometry/index.js';
 import { readFileSync } from 'node:fs';
 
 const FIXTURES = new URL('./fixtures/replays/', import.meta.url);
@@ -90,6 +93,39 @@ const replay3D = (extra = {}) => ({
   ...extra,
 });
 
+// A Hexagon or Triangle replay: its graph kind is the board's grid, its samples and cursor 2D.
+const replayFlat = (mode, grid, width, height, mines, extra = {}) => replay2D({
+  header: {
+    ...replay2D().header,
+    id: `${grid}-1`,
+    mode,
+    graph: { kind: grid, width, height },
+    board: createBoardIdentity({ mode, grid, width, height, mines: mines.length, noGuess: false }),
+    mines,
+    pauses: [{ start: 900, end: 1400 }],
+  },
+  ...extra,
+});
+const replayHex = (extra) => replayFlat('hexagon', 'hex', 9, 9, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], extra);
+const replayTri = (extra) => replayFlat('triangle', 'tri', 13, 7, [0, 1, 2, 3, 4, 5, 6, 7], extra);
+
+// The blob with its graph kind byte (after the envelope, an empty pause list, the id and the mode)
+// set to `kind`, its checksum made good again.
+function withGraphKind(bytes, replay, kind) {
+  const out = bytes.slice(0, bytes.length - 4);
+  const at = 4 + 1 + 1 + 1 + replay.header.id.length + 1 + replay.header.mode.length;
+  out[at] = kind;
+  let c = 0xffffffff;
+  for (const b of out) {
+    c ^= b;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  }
+  const blob = new Uint8Array(out.length + 4);
+  blob.set(out);
+  new DataView(blob.buffer).setUint32(out.length, (c ^ 0xffffffff) >>> 0, true);
+  return blob;
+}
+
 // ---------- round-trips ----------
 
 test('a 2D replay round-trips exactly, mines given in any order come back ascending', () => {
@@ -147,8 +183,83 @@ test('large times and long streams are delta-encoded compactly and round-trip', 
 test('the vocabularies: action kinds, movement types and the sample arity per graph kind', () => {
   assert.deepEqual(ACTION_KINDS, ['reveal', 'flag', 'chord']);
   assert.deepEqual(MOVEMENT_TYPES, ['sample', 'cursor', 'view']);
-  assert.deepEqual(SAMPLE_ARITY, { square: 2, box: 5 });
-  assert.equal(REPLAY_FORMAT_VERSION, 2);
+  assert.deepEqual(SAMPLE_ARITY, { square: 2, box: 5, hex: 2, tri: 2 });
+  assert.equal(REPLAY_FORMAT_VERSION, 3);
+});
+
+// ---------- the hex and tri graph kinds ----------
+
+test('a Hexagon and a Triangle replay round-trip exactly, with 2D samples, cursor events and pauses', () => {
+  for (const r of [replayHex(), replayTri()]) {
+    const bytes = encodeReplay(r);
+    assert.equal(bytes[4], REPLAY_FORMAT_VERSION, 'written at the current version');
+    const back = decodeReplay(bytes);
+    assert.deepEqual(back, { ...r, sampleIntervalMs: 50 }, r.header.graph.kind);
+    assert.equal(back.sampleIntervalMs, sampleIntervalMs(REPLAY_FORMAT_VERSION, 'classic-2d'), 'Classic 2D\'s sampling interval');
+    assert.deepEqual(encodeReplay(back), bytes, 're-encodes to the same bytes');
+  }
+});
+
+test('the header\'s graph description rebuilds the graph and the geometry of the board it was played on', () => {
+  const builders = { hex: createHexGrid, tri: createTriGrid };
+  for (const r of [replayHex(), replayTri()]) {
+    const { graph, board } = decodeReplay(encodeReplay(r)).header;
+    assert.deepEqual(Object.keys(graph), ['kind', 'width', 'height']);
+    assert.equal(graph.kind, board.grid);
+    const grid = builders[graph.kind](graph.width, graph.height);
+    assert.equal(grid.graph.count, board.width * board.height);
+    const geometry = createGeometry(graph.kind, graph.width, graph.height);
+    assert.deepEqual([geometry.kind, geometry.width, geometry.height, geometry.count], [graph.kind, board.width, board.height, grid.graph.count]);
+  }
+});
+
+test('a hex or tri graph must be the board\'s grid and size; anything else is refused', () => {
+  const bad = [
+    (r) => { r.header.graph = { kind: 'hex', width: 9, height: 8 }; },
+    (r) => { r.header.graph = { kind: 'tri', width: 9, height: 9 }; },
+    (r) => { r.header.graph = { kind: 'square', width: 9, height: 9 }; },
+    (r) => { r.header.graph = { kind: 'box', x: 9, y: 9, z: 1 }; },
+    (r) => { r.movement = [{ time: 0, type: 'view', mode: 1 }]; },
+    (r) => { r.movement = [{ time: 0, type: 'sample', values: [1, 2, 3, 4, 5] }]; },
+  ];
+  for (const mutate of bad) {
+    const r = structuredClone(replayHex());
+    mutate(r);
+    assert.throws(() => encodeReplay(r), RangeError, mutate.toString());
+  }
+  const square = structuredClone(replay2D());
+  square.header.graph = { kind: 'hex', width: 9, height: 9 };
+  assert.throws(() => encodeReplay(square), RangeError, 'a hex graph on a square-grid board');
+});
+
+test('version 2 cannot hold a hex or tri graph: its writer refuses one', () => {
+  for (const r of [replayHex(), replayTri()]) {
+    assert.throws(() => encodeReplay(r, { version: 2 }), RangeError, r.header.graph.kind);
+    assert.throws(() => encodeReplay(r, { version: 1 }), RangeError, r.header.graph.kind);
+  }
+});
+
+test('a graph kind this build does not know is refused as from a newer version, not as unreadable', () => {
+  const r = replayHex({ header: { ...replayHex().header, pauses: [] } });
+  const bytes = encodeReplay(r);
+  assert.deepEqual(decodeReplay(withGraphKind(bytes, r, 2)).header.graph.kind, 'hex', 'the patch lands on the kind byte');
+  assert.throws(() => decodeReplay(withGraphKind(bytes, r, 9)), (e) => e instanceof ReplayNewerVersionError
+    && !(e instanceof ReplayUnreadableError) && e.currentVersion === REPLAY_FORMAT_VERSION);
+});
+
+test('a version 2 replay decodes by its own decoder and upgrades unchanged; its graph kinds are square and box', () => {
+  for (const r of [replay2D({ header: { ...replay2D().header, pauses: [{ start: 10, end: 20 }] } }), replay3D()]) {
+    const bytes = encodeReplay(r, { version: 2 });
+    assert.equal(bytes[4], 2, 'stamped version 2');
+    const back = decodeReplay(bytes);
+    assert.deepEqual(back.header.graph, r.header.graph);
+    assert.deepEqual(back.header.pauses, r.header.pauses);
+    assert.deepEqual(back.actions, r.actions);
+    assert.equal(back.sampleIntervalMs, sampleIntervalMs(2, r.header.mode));
+  }
+  const r = replay2D();
+  assert.throws(() => decodeReplay(withGraphKind(encodeReplay(r, { version: 2 }), r, 2)), ReplayUnreadableError,
+    'version 2 had no third graph kind');
 });
 
 // ---------- the pause spans ----------
@@ -203,13 +314,14 @@ test('every version 1 fixture decodes with no pauses; the fixtures stay version 
 
 // ---------- the movement sampling interval ----------
 
-test('the decoder gives each replay its movement sampling interval: 2D 50 ms, 3D 100 ms under versions 1 and 2', () => {
+test('the decoder gives each replay its movement sampling interval: 2D 50 ms, 3D 100 ms under versions 1 to 3', () => {
   assert.equal(decodeReplay(encodeReplay(replay2D())).sampleIntervalMs, 50);
   assert.equal(decodeReplay(encodeReplay(replay3D())).sampleIntervalMs, 100);
-  for (const v of [1, 2]) {
+  for (const v of [1, 2, 3]) {
     assert.equal(sampleIntervalMs(v, 'classic-2d'), 50);
     assert.equal(sampleIntervalMs(v, MODE_3D), 100);
   }
+  for (const mode of ['hexagon', 'triangle']) assert.equal(sampleIntervalMs(3, mode), 50, mode);
   assert.equal(sampleIntervalMs(REPLAY_FORMAT_VERSION + 1, MODE_3D), undefined, 'no interval for an unknown version');
 });
 
@@ -315,7 +427,7 @@ test('an upgrade step that throws makes the blob unreadable', () => {
 
 test('a known version with no decoder is unreadable', () => {
   const bytes = encodeReplay(replay2D());
-  const decode = createReplayDecoder({ current: 2, decoders: {}, upgrades: {} });
+  const decode = createReplayDecoder({ current: REPLAY_FORMAT_VERSION, decoders: {}, upgrades: {} });
   assert.throws(() => decode(bytes), ReplayUnreadableError);
 });
 

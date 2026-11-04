@@ -19,8 +19,8 @@ full contract.
 | `js/generation/solver.js` | the logic-only solver and its deduction stages |
 | `js/generation/generate.js` | the request entry point, graph descriptions, the no-guess loop and its attempt budget |
 | `js/generation/start-cell.js` | the marked start cell of a graph description |
-| `js/generation/worker.js` | the module worker and its message handler |
-| `js/generation/client.js` | the page-side client: one request in flight, cancellation, warm-up, progress, `pregenerate` |
+| `js/generation/worker.js` | the module worker and its message handler — [generation-worker.md](generation-worker.md) |
+| `js/generation/client.js` | the page-side client: one request in flight, cancellation, warm-up, progress, `pregenerate` — [generation-worker.md](generation-worker.md) |
 
 Two callers need a board at a game's first reveal: the Classic 2D session
 (`js/classic2d/session.js`), which hands the mine set back with the engine's
@@ -42,7 +42,7 @@ unchanged.
 - `createSeededSource(seed)` → `{ next(), int(n) }`; `seed` an integer
   `0 .. 2^32 - 1`; `int(n)` unbiased by rejection sampling. Never reads
   `Math.random`.
-- `GENERATOR_VERSION` (`1`, recorded with every board);
+- `GENERATOR_VERSION` (recorded with every board);
   `placeMines({ graph, mineCount, firstClick, source })` → ascending
   `Int32Array` over any cell graph. Only the first-click cell is excluded:
   safe first click, not always an opening — the reference rule.
@@ -54,32 +54,17 @@ unchanged.
   now? })` → `{ ok: true, mines, seed, generatorVersion, candidates? }` or,
   no-guess budget exhausted, `{ ok: false, reason, seed, generatorVersion,
   candidates }`; a malformed or impossible request throws `RangeError`.
-  `onProgress({ candidates })` at most every `PROGRESS_INTERVAL_MS` (250);
+  `onProgress({ candidates })` at most every `PROGRESS_INTERVAL_MS`;
   it never changes the result.
 - `graph` is a description, `{ kind: 'square', width, height }`,
-  `{ kind: 'hex', width, height }` or `{ kind: 'box', X, Y, Z }`, built by
-  `boardGraph(description)`.
-  `ATTEMPT_BUDGET` — 2000 candidates.
+  `{ kind: 'hex', width, height }`, `{ kind: 'tri', width, height }` or
+  `{ kind: 'box', X, Y, Z }`, built by `boardGraph(description)`.
+  `ATTEMPT_BUDGET` — the candidates tried before a no-guess request fails.
 - `startCell(description)` → the centre cell of each side (⌊side / 2⌋) as an
   index in the provider's order. A request input like any first click: no
   generator change.
-- Worker protocol (structured-clone, one reply per request): page → worker
-  `{ id, request }` or `{ id, warm: true }`; worker → page `{ id, progress }`
-  (no-guess, before the result), `{ id, result }` (a rejected request answers
-  `{ ok: false, rejected: true, reason, generatorVersion }`), `{ id, error }`
-  (a bug, not a request problem). `handleMessage(message, post?, { now? })`
-  is importable in Node; `onmessage` is installed only in a
-  `WorkerGlobalScope`.
-- `createGenerationClient({ createWorker? })` → `{ request, cancel, warm }`,
-  one per mode; tests pass a fake worker. `request(req, { onProgress? })`
-  resolves with the worker's result, success or failure alike, and rejects
-  only when the worker itself fails. `cancel()` resolves the request in
-  flight `{ ok: false, cancelled: true, reason: 'cancelled' }`. `warm()` →
-  true once the worker answered its warm-up.
-- `pregenerate(client, request)` → `{ cell, seed, request, promise,
-  settled, result, listen(fn), discard() }`: the board a session takes over
-  on its marked start cell; a worker failure resolves `{ ok: false, reason
-  }`.
+- The worker protocol, `createGenerationClient` and `pregenerate`:
+  [generation-worker.md](generation-worker.md).
 
 ## INTERNAL PATTERNS
 
@@ -94,22 +79,19 @@ unchanged.
   from it one after another with `placeMines`, and the first one `solve`
   clears is the board — so the candidate sequence is part of the output. A
   standard board is the placer's first draw.
-- **Attempt budget.** 2000 candidates, set from a measurement of Expert
+- **Attempt budget.** `ATTEMPT_BUDGET` candidates, set from a measurement of Expert
   no-guess generation recorded beside the constant and in the feature
-  document's § Attempt budget and timing.
+  document's § Attempt budget and timing. Hexagon Expert's mine count is the
+  one at which every seed `dev/measure-noguess-hex.mjs` measures meets the
+  budget, and `tests/generation-noguess.test.mjs` holds it to that; every
+  triangle standard board, Expert included, meets it on every seed
+  `dev/measure-noguess-tri.mjs` measures, and the same test file holds
+  triangle Expert to it.
 - **Solver soundness.** It never sees the mine set: it learns a number only
   by opening a deduced-safe cell, and runs single, subset and global stages
   in a fixed order, back to the first after every deduction (`solver.js`'s
   head comment). A frontier group over its node budget is treated as
   unconstrained: it can only lose deductions, never make a wrong one.
-- **Worker is stateless.** Each reply is a function of its message alone; a
-  rejected request is a result message, never a throw.
-- **Client imports no generation code.** Replies are matched by `id`; a late
-  reply or progress for a superseded or cancelled id is dropped. A new
-  request cancels the one in flight. Cancellation terminates the worker
-  rather than interrupting the synchronous `generate()`, and a worker
-  `error` or `messageerror` detaches it too, so the next request or warm-up
-  starts a fresh one.
 
 ## DOMAIN DEPENDENCIES
 
@@ -121,17 +103,21 @@ unchanged.
   — the cell graph, the square-grid provider and the first-click hand-off.
 - [../domain/features/hexagon-grid.md](../domain/features/hexagon-grid.md)
   — the `hex` description and its Expert no-guess timing.
+- [../domain/features/triangle-grid.md](../domain/features/triangle-grid.md)
+  — the `tri` description and its Expert no-guess timing.
 - `tests/fidelity/minesweeper-online.md` — "First-click guarantee", the
   reference rule the placer honours.
 
 ## CROSS-REFERENCES
 
-- [engine.md](engine.md) — the cell graph and the square and hexagon grids
-  generation runs over, and `supplyBoard`, which takes the mine set;
+- [engine.md](engine.md) — the cell graph and the square, hexagon and
+  triangle grids generation runs over, and `supplyBoard`, which takes the mine set;
   [engine-3d.md](engine-3d.md) — the box graph.
+- [generation-worker.md](generation-worker.md) — the worker, the page-side
+  client and `pregenerate`.
 - [classic2d-session.md](classic2d-session.md), [mode3d-session.md](mode3d-session.md) — the sessions'
   board requests, generating state and failure offer.
-- [testing.md](testing.md) — `tests/generation-*.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/generation-*.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -142,5 +128,4 @@ unchanged.
 - Adding a graph description kind to `boardGraph`.
 - Changing the attempt budget: re-measure as the comment beside
   `ATTEMPT_BUDGET` records.
-- Wiring the client into a game: `client.js` for the in-flight and cancel
-  semantics beyond the API above.
+- Wiring the client into a game: [generation-worker.md](generation-worker.md).

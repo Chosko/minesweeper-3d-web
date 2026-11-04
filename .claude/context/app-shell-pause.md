@@ -1,13 +1,14 @@
-# App shell — pause, confirmations, restart, hand-offs
+# App shell — pause, the pause card, confirmations
 
 ## OVERVIEW
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers the pause card and the pause controller (`js/shell/pause.js`: pause, resume, restart,
-back to menu, confirmations, game hand-offs, leave-page guard) and their
-wiring in `js/main.js`. The module is pure; its rules are documented in its
-head comment. Both modes' end delay and its skip are
-[app-shell-end-delay.md](app-shell-end-delay.md).
+back to menu, confirmations) and their wiring in `js/main.js`. The module
+is pure; its rules are documented in its head comment. The restart keys,
+the game hand-offs, the leave-page guard and the quit flush are
+[app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md). Both modes'
+end delay and its skip are [app-shell-end-delay.md](app-shell-end-delay.md).
 
 ## PUBLIC API
 
@@ -18,9 +19,7 @@ head comment. Both modes' end delay and its skip are
   confirmLabel}`, both asking the same),
   `RESTART_NOTICE`, `NO_GAME_LINE` (the card's status line before the first
   click), `ENDED_LINE` (its status line once the game is won or lost), `RESTART_SCREENS` (`playing`, `classic-2d`, `paused`).
-- `restartInput(input, {screen, blocked?})` → `'restart'` for `'F2'` or
-  `'pad'` (Start + Y) on a `RESTART_SCREENS` screen, `'playAgain'` for
-  `'KeyR'` on `results`, else null; null for anything while `blocked`.
+- `restartInput`: [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md).
 - `createPauseController({modes, showCard, isPaused?, onBoard?, confirm,
   goMenu, guard?, cancelGeneration?, askRestart?, restarted?, unrecorded?})` →
   `inProgress`, `pause(source, {note})` → whether the card opened,
@@ -35,8 +34,11 @@ head comment. Both modes' end delay and its skip are
 - **One owner.** `PAUSE` is the one owner of pause, resume, restart and back
   to menu. Every pause source goes through `pauseGame(source)` (nothing
   during an end delay, else `PAUSE.pause`): the overlay's pause button,
-  controller disconnect (with a note), `blur`, `visibilitychange` hidden,
-  `__ms.pause()`. Esc/Back on the board and pointer-lock loss go through
+  controller disconnect (with a note), `blur` — the window's, and the
+  overlay pause: the Steam overlay opening at the desktop host
+  (`onOverlayActivated`, [platform-host.md](platform-host.md)) pauses as a window
+  blur —, `visibilitychange` hidden, `__ms.pause()`. Esc on the board, the controller's back buttons over a
+  board status card and pointer-lock loss go through
   `backGame(source)` → `PAUSE.back`, which first cancels a board being
   generated (`cancelGeneration()`; a 3D game without lock or controller
   play goes to the click-to-play card) and pauses otherwise.
@@ -51,11 +53,11 @@ head comment. Both modes' end delay and its skip are
   ([input.md](input.md)). Browsers hand the page at most the releasing
   press's `keyup`, never its `keydown`, while the lock holds.
 - **The card** (`css/components.css` head comment, *Pause card*;
-  `#pause-card`, [app-shell-markup.md](app-shell-markup.md) § Screens), at
+  `#pause-card`, [app-shell-markup-game.md](app-shell-markup-game.md) § Screens), at
   each window step's width in the *J-Pause* artboards, two equal columns
   from the kit breakpoint: its title block `#pause-head` holds the title,
   the full board line `#pause-board` (mode, board, size, mines, no-guess:
-  the game window's or the 3D overlay's title joined to the board's size
+  the mode's board title, `boardTitle2D` or `boardTitle3D`, joined to the board's size
   line) and the status line `#pause-sub` in the mono face. Each action
   leads with its icon (Resume play, Back to start cube, Restart restart,
   Main menu arrow-left). `ui.showPause` takes `inProgress` from
@@ -63,11 +65,12 @@ head comment. Both modes' end delay and its skip are
   (`PAUSE.inProgress`), or a first click whose board is being generated or
   failed (Classic 2D's `status().pending`, the 3D session's state). During
   a game the status line is the
-  running time and mines left and Resume (with its back key hint) leads;
+  running time and mines left and Resume, the go button (with its back
+  key hint), leads, Restart and Main menu secondary;
   with no game in progress the status line is `NO_GAME_LINE` before the
   first click and `ENDED_LINE` after the end, which the running time never
   replaces,
-  Restart leads as the primary action and takes the focus, and Resume and
+  Restart leads as the go button and takes the focus, and Resume and
   "Back to start" are hidden. "Back to start" shows only for a 3D game in
   play; `#p-restart` reads Restart (with its restart key hint) or, once
   the game ended, Play again. Its Settings panel is muted and bound like
@@ -89,51 +92,26 @@ head comment. Both modes' end delay and its skip are
   `mode3d.learn`: the Learn 3D guided game), with no toast. The guided
   game's end goes to the Learn 3D end card (`learn-end`,
   [app-shell-3d-session.md](app-shell-3d-session.md)), not the results screen.
-- **Restart keys.** `restartKey(code, e)` in `onKey` (after the 3D `Home` /
-  `R` camera return), through `restartInput`, never with Ctrl/Alt/Meta:
-  `F2` (default always prevented) → `PAUSE.restart('key')`; `R` on `results`
-  → `RESULTS.playAgain('key')`. `Enter` on `results` is its own listener
-  (`resultsEnter`, [app-shell-results-view.md](app-shell-results-view.md)). `handlePad`
-  reads Start + Y after the end delay's skip: Y pressed while Start is held
-  (read unsuppressed) → `PAUSE.restart('pad')`, then `layerChanged()`.
-  `restartBlocked()` — an end delay or an open confirmation — stops all
-  three ([app-shell-end-delay.md](app-shell-end-delay.md)).
-- **Hand-offs.** `PAUSE.attach(name, listener)`: `finished` and `abandoned`
-  with the sealed replay beside the summary; `inProgress` at game started,
-  at every pause of a started, unfinished game and on `pagehide`. The
-  controller routes nowhere itself. `RECORDS.attach(PAUSE)` takes all three
-  ([records-store.md](records-store.md)); `RESULTS.attach(PAUSE)` takes `finished` and
-  `abandoned` and is the one listener that reads the replay.
-- **Leave-page guard.** `guardLeave` on `beforeunload` is armed at game
-  started and removed when the game finishes, is abandoned or its mode
-  fails (Ctrl is a game key and Ctrl+W cannot be intercepted). The
-  context-lost reload and Reset all data's reload set `reloading` to bypass
-  it. It does not guard a game in its end delay, which `pagehide` finishes
-  at once (`activeMode().finishNow()`) so it is recorded finished.
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/game-shell.md](../domain/features/game-shell.md) —
-  pause rules, confirmations, hand-offs, leave-page guard.
-- [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
-  — the replay beside the summary in the finished and abandoned reports.
+  pause rules, confirmations.
 - [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
   — the pause card's and the confirmations' layout.
+- [../domain/features/steam-desktop-host.md](../domain/features/steam-desktop-host.md)
+  — the overlay pause.
 
 ## CROSS-REFERENCES
 
+- [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — the
+  restart keys, the hand-offs, the leave-page guard and the quit flush.
 - [app-shell-end-delay.md](app-shell-end-delay.md) — the end delay, which
   stops pause, Back and restart while it runs.
-- [records-store.md](records-store.md) — the records store attached to the hand-offs.
-- [app-shell-results.md](app-shell-results.md) — the results flow on
-  `finished` / `abandoned`.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (pause controller),
-  `tests/replay-2d.test.mjs` (replay on the mode host and
-  the hand-offs).
+- [testing-files.md](testing-files.md) — `tests/shell-*.test.mjs` (pause
+  controller).
 
 ## WHEN TO READ THE SOURCE
 
-- Attaching a feature to a game's end, abandonment or progress: the
-  hand-offs in the head comment of `js/shell/pause.js`.
-- Changing pause rules, confirmations or the leave-page guard:
-  `js/shell/pause.js` and the `PAUSE` wiring in `js/main.js`.
+- Changing pause rules or confirmations: `js/shell/pause.js` and the
+  `PAUSE` wiring in `js/main.js`.

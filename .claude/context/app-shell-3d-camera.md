@@ -91,7 +91,7 @@ are [input-camera.md](input-camera.md).
   `isAnimating`; `js/readability.js`'s `aimReadout`.
 - [app-shell-replay.md](app-shell-replay.md) — the replay viewer's free
   camera on the same setting.
-- [testing.md](testing.md) — `tests/camera-orbit.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/camera-orbit.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

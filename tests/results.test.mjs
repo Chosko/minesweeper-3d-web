@@ -123,6 +123,10 @@ test('a won game shows its outcome, board, rank chip and four figure tiles, each
   assert.equal(c.outcome, 'won');
   assert.equal(c.title, 'You won!');
   assert.equal(c.board, 'Classic 2D · Beginner');
+  const hex = createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 9, height: 9, mines: 13, noGuess: true });
+  const tri = createBoardIdentity({ mode: 'triangle', grid: 'tri', width: 12, height: 7, mines: 20, noGuess: false });
+  assert.equal(resultsContent({ summary: summary({ board: hex }), mode: 'hexagon', comparison }).board, 'Hexagon · Beginner · no-guess', 'the board line leads with the mode\'s name');
+  assert.equal(resultsContent({ summary: summary({ board: tri }), mode: 'triangle', comparison }).board, 'Triangle · 12 × 7 · 20 mines');
   assert.equal(c.rank, '#3 of 12 wins on this board');
   assert.deepEqual(c.tiles.map(tileRow), [
     ['time', 'Time', '47.380 s', 'best 45.120 s · +2.260 s', 'worse', false],
@@ -636,6 +640,14 @@ test('the actions: Play again restarts the same choice, Records opens this board
   flow2.finished(summary(), 'classic-2d');
   flow2.openRecords();
   assert.deepEqual(withRecords.routes.at(-1), ['records', { boardKey: 'classic-2d:square:9x9:10:guess' }]);
+  const hex = createBoardIdentity({ mode: 'hexagon', grid: 'hex', width: 9, height: 9, mines: 13, noGuess: false });
+  flow2.finished(summary({ id: 'g3', board: hex }), 'hexagon');
+  flow2.openRecords();
+  assert.deepEqual(withRecords.routes.at(-1), ['records', { boardKey: 'hexagon:hex:9x9:13:guess' }], 'a Hexagon board: the records screen lists its mode');
+  const surface = createBoardIdentity({ mode: 'surface', grid: 'square', width: 9, height: 9, mines: 10, noGuess: false });
+  flow2.finished(summary({ id: 'g4', board: surface }), 'surface');
+  flow2.openRecords();
+  assert.deepEqual(withRecords.routes.at(-1), ['records', {}], 'a board of a mode the records screen does not list: the screen opens on its last board');
 });
 
 test('the flow is DOM-free', () => {
@@ -746,9 +758,9 @@ test('the results screen is the kit composition: one framed column — header ba
     ['r-watch', 'ui-button--secondary hidden', 'film', 'Watch replay'],
     ['r-watch-best', 'ui-button--secondary hidden', 'trophy', 'Watch best'],
     ['r-records', 'ui-button--secondary', 'chart', 'Records'],
-    ['r-again', 'ui-button--primary ui-button--lg', 'play', 'Play again'],
+    ['r-again', 'ui-button--primary ui-button--go ui-button--lg', 'play', 'Play again'],
   ]);
-  assert.match(RESULTS_HTML, /id="r-again" class="ui-button ui-button--primary ui-button--lg" data-icon="play">Play again <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/, 'Play again shows its Enter hint');
+  assert.match(RESULTS_HTML, /id="r-again" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-icon="play">Play again <span class="ui-key-hint" data-action="confirm" aria-hidden="true"><\/span><\/button>/, 'Play again shows its controller glyph, no Enter label');
   assert.match(RESULTS_HTML, /<p id="results-look-note" class="ui-text ui-text--warning hidden" role="status"><\/p>/);
 });
 
@@ -756,8 +768,8 @@ test('the results layout: one column sized to its content; on a phone the tiles 
   const style = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.match(style, /#results-frame\s*\{[^}]*width:\s*min\(/, 'the frame is sized to its content, never past the window');
   assert.match(style, /#results-tiles\s*\{[^}]*grid-template-columns:\s*repeat\(4,/, 'four tiles in a row');
-  const narrow = style.slice(style.indexOf('@media (max-width: 999px)', style.indexOf('#results-frame')));
-  assert.match(narrow, /^@media \(max-width: 999px\) \{\s*#results-tiles\s*\{[^}]*grid-template-columns:\s*repeat\(2,/, 'two by two below a 1000 px window, and so on a phone');
+  const narrow = style.slice(style.indexOf('@container root (max-width: 999px)', style.indexOf('#results-frame')));
+  assert.match(narrow, /^@container root \(max-width: 999px\) \{\s*#results-tiles\s*\{[^}]*grid-template-columns:\s*repeat\(2,/, 'two by two below a 1000 px window, and so on a phone');
   const phone = style.slice(style.indexOf('@media (max-width: 719px)', style.indexOf('#results-frame')));
   assert.match(phone, /#r-again\s*\{[^}]*grid-column:\s*1 \/ -1[^}]*order:\s*-1/, 'Play again full width, first');
   assert.match(phone, /#r-menu\s*\{[^}]*grid-column:\s*1 \/ -1/, 'Main menu full width, last');
@@ -770,7 +782,7 @@ test('the results card to the canvas: its width by window size, the head, the lo
   const rule = (css, sel) => css.match(new RegExp(`(?:^|[}\\s])${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`, 'm'))?.[1] ?? '';
   const J = ':root[data-theme="joyful-tiles"] ';
   // 1040 px wide on the largest windows, 1000 px below 1440 px, 960 px below 1200 px.
-  assert.match(style, /#results-frame \{ width: min\(1040px, 100%\); \}\s*@media \(max-width: 1439px\) \{ #results-frame \{ width: min\(1000px, 100%\); \} \}\s*@media \(max-width: 1199px\) \{ #results-frame \{ width: min\(960px, 100%\); \} \}/);
+  assert.match(style, /#results-frame \{ width: min\(1040px, 100%\); \}\s*@container root \(max-width: 1439px\) or \(max-height: 820px\) \{ #results-frame \{ width: min\(1000px, 100%\); \} \}\s*@container root \(max-width: 1199px\) \{ #results-frame \{ width: min\(960px, 100%\); \} \}/);
   assert.match(rule(theme, `${J}#results-frame`), /border-radius: 22px;[\s\S]*box-shadow: inset 0 -2px 0 var\(--color-line\), 0 8px 0 var\(--color-head-edge\), var\(--elevation-2\);/, 'radius 22 on an 8 px head-edge drop');
   // The head: 22 × 28 px padding, the title 40 px, the board line 16 px bold, the trophy in a 56 px white tile on the head's edge.
   assert.match(rule(style, '#results-head'), /gap: 16px; padding: 22px 28px;/);
@@ -940,7 +952,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     }, id);
 
     await page.click('#menu-entry-classic-2d');
-    if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
+    await page.evaluate((on) => { const s = document.getElementById('c2d-noguess'); if (s.checked !== on) s.click(); }, false); // the switch sits in the closed panel
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
@@ -1051,7 +1063,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     assert.equal(shown.board2d, true, 'the finished board stays visible behind the screen');
     assert.equal(shown.focus, 'r-again', 'Play again has default focus');
     assert.equal(shown.games, 1, 'the game was recorded');
-    assert.deepEqual(shown.hints, ['r-menu:Esc', 'r-again:Enter'], 'Main menu shows Esc and Play again Enter');
+    assert.deepEqual(shown.hints, ['r-menu:Esc'], 'Main menu shows Esc; Play again, a confirm button, no Enter label');
     assert.ok(Math.max(...shown.bar) - Math.min(...shown.bar) <= 2, `the action bar is one row (${shown.bar})`);
     assert.equal(shown.menuLeft, true, 'Main menu on the left');
     assert.equal(shown.hscroll, false, 'no horizontal scroll');
@@ -1172,8 +1184,8 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     await page.click('#r-records');
     assert.equal(await mode(), 'records', 'the records screen');
     assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), 'Beginner · Bests', 'on this board');
-    assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('records-back'); return [b.hasAttribute('data-to-menu'), b.getAttribute('aria-label'), b.innerText.split('\n')[0].trim()]; }),
-      [false, 'Back', 'Back'], 'Records\' Back returns to the results, so it reads Back');
+    assert.deepEqual(await page.evaluate(() => { const b = document.getElementById('records-back'); return [b.hasAttribute('data-to-menu'), b.getAttribute('aria-label')]; }),
+      [false, 'Back'], 'Records\' Back returns to the results, so it is named Back');
     assert.equal(await page.evaluate(() => document.querySelector('#rec-games .ui-stat__value').textContent), '1');
     // From the Records screen's library view: Watch on the kept replay, on the best and on the recent
     // game opens the viewer by id; Back returns to Records on the same board.

@@ -18,10 +18,14 @@ import {
 import { FIGURES, liveFigures, figuresLine } from '../js/shell/live-figures.js';
 import { encodeBoardCode, parseBoardCode } from '../js/records/board-code.js';
 import { replayFileName } from '../js/records/replay-list.js';
-import { boardKey } from '../js/records/board.js';
+import { boardKey, createBoardIdentity } from '../js/records/board.js';
 import { bbbvPartition } from '../js/engine/metrics.js';
 import { createSimulator, REFUSAL } from '../js/replay/simulator.js';
-import { decodeReplay, encodeReplay, REPLAY_FORMAT_VERSION } from '../js/replay/format.js';
+import { decodeReplay, encodeReplay, cellStateDigest, REPLAY_FORMAT_VERSION } from '../js/replay/format.js';
+import { createGameWithMines, PHASE } from '../js/engine/rules.js';
+import { createHexGrid } from '../js/engine/hex-grid.js';
+import { createTriGrid } from '../js/engine/tri-grid.js';
+import { REFERENCE_PROFILE } from '../js/engine/profiles.js';
 import { formatOverlayTime, formatMineCount } from '../js/ui/components.js';
 import { formatTime, DASH } from '../js/results/view.js';
 import { REPLAY_SCREEN } from '../js/records/replay-list.js';
@@ -430,7 +434,7 @@ function fakeViewers() {
       destroy: () => made.push('destroyed'),
     };
   };
-  return { drawn, made, pressed, how, calls, square: board('square'), box: board('box') };
+  return { drawn, made, pressed, how, calls, square: board('square'), hex: board('hex'), tri: board('tri'), box: board('box') };
 }
 function viewerOver({ library = fakeLibrary(), viewers = fakeViewers(), sound = null, files = null, bests } = {}) {
   const view = fakeScreen();
@@ -832,8 +836,9 @@ test('the viewer screen is kit markup: a screen frame holding the overlay, the b
     assert.match(html, new RegExp(`id="${id}"`), `#${id}`);
   }
   assert.match(html, /<section id="replay" class="ui-backdrop hidden" aria-label="Replay">\s*<section class="ui-frame" id="replay-frame" aria-labelledby="replay-title">/, 'a screen frame on the backdrop');
-  assert.match(html, /<header class="ui-frame__head">\s*<div class="ui-frame__start"><button type="button" id="rp-back" class="ui-button ui-button--secondary ui-button--sm" data-icon="arrow-left">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>\s*<h2 class="ui-frame__title" id="replay-title">Replay<\/h2>/,
-    'its head: Back with its arrow and its key hint, then the title');
+  assert.match(html, /<header class="ui-frame__head">\s*<div class="ui-frame__start"><button type="button" id="rp-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-icon="arrow-left" aria-label="Back" title="Back"><\/button><\/div>\s*<h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"><\/h1>/,
+    'its title bar: Back its arrow alone, named Back, then the logo');
+  assert.match(html, /<\/header>\s*<div class="ui-frame__heading">\s*<h2 class="ui-frame__title" id="replay-title">Replay<\/h2>/, 'the title its heading, over the body');
   assert.match(html, /<div class="ui-frame__body" id="replay-body">\s*<div class="ui-counter-strip replay-bar"[\s\S]*<div id="replay-main">\s*<div id="replay-stage">\s*<div id="replay-board"><\/div>\s*<section id="replay-message"[\s\S]*<section class="ui-figures" id="rp-figures"[\s\S]*<div id="replay-controls"/,
     'its body: the strip, the board area with the message over it and the figures panel beside it, then the controls');
   // The strip (J-Replay-xl): the clock, the mines left after a flag, 3BV and 3BV/s inline, no labels; the code chip after them.
@@ -870,7 +875,7 @@ test('the viewer screen is kit markup: a screen frame holding the overlay, the b
   for (const c of classes) assert.match(c, /^(ui-figures?(__[a-z]+)?(--[a-z]+)?|hidden)$/, `${c}: catalogued components only`);
   assert.match(html, /id="replay-message" class="ui-card hidden"[\s\S]*?<span id="replay-message-spinner" class="ui-spinner" aria-hidden="true"><\/span>/, 'opening shows the spinner');
   assert.match(html, /id="replay-message-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/, 'the failure card\'s Back with its key hint');
-  assert.match(html, /id="rp-play" class="ui-button ui-button--primary" data-icon="play"><span id="rp-play-label">Play<\/span> <span class="ui-key-hint replay-key-hint" aria-hidden="true"><kbd class="ui-key-hint__key">Space<\/kbd><\/span><\/button>/,
+  assert.match(html, /id="rp-play" class="ui-button ui-button--primary ui-button--go" data-icon="play"><span id="rp-play-label">Play<\/span> <span class="ui-key-hint replay-key-hint" aria-hidden="true"><kbd class="ui-key-hint__key">Space<\/kbd><\/span><\/button>/,
     'Play carries its icon and its key, out of its name');
   assert.match(html, /<span id="replay-end" class="replay-end hidden" role="status"><span id="replay-end-outcome" class="ui-chip"><\/span> <span id="replay-end-time" class="replay-end__time"><\/span><\/span>/, 'the end line: the outcome as a chip, then the time');
   assert.match(html, /<div id="rp-keys" class="ui-key-hints replay-keys"><\/div>/, 'the key line is a row of key hints');
@@ -897,7 +902,8 @@ test('the shell registers the viewer under the Records screen\'s replay route an
 });
 
 test('the shell offers the 3D viewer only with WebGL 2, and mounts the 2D one at the board scale setting', () => {
-  assert.match(MAIN, /viewers: WEBGL2 \? \{ square: mountReplay2D, box: mountReplay3D \} : \{ square: mountReplay2D \}/);
+  assert.match(MAIN, /const FLAT_REPLAY_VIEWERS = \{ square: mountReplay2D, hex: mountReplay2D, tri: mountReplay2D \};/, 'every flat graph kind on the 2D viewer');
+  assert.match(MAIN, /viewers: WEBGL2 \? \{ \.\.\.FLAT_REPLAY_VIEWERS, box: mountReplay3D \} : FLAT_REPLAY_VIEWERS/);
   assert.match(MAIN, /function mountReplay2D\(options\) \{ return mountViewer2D\(\{ \.\.\.options, scale: SETTINGS\.get\('boardScale'\) \}\); \}/);
 });
 
@@ -934,7 +940,7 @@ test('[slow] in a browser, a recorded 2D replay plays from its fixture through t
     assert.equal(await page.evaluate(() => document.querySelectorAll('#rp-pauses .replay-pause').length), 0, 'no pauses, no marks');
     assert.equal(await text('rp-pauses-text'), '');
     assert.equal(await text('replay-title'), 'Replay · Classic 2D · Beginner');
-    assert.equal(await page.evaluate(() => document.querySelector('#rp-back .ui-key-hint__key')?.textContent), 'Esc', 'the frame\'s Back carries its key hint');
+    assert.deepEqual(await page.evaluate(() => [document.getElementById('rp-back').innerText.trim(), document.getElementById('rp-back').getAttribute('aria-label')]), ['', 'Back'], 'the title bar\'s Back, its arrow alone, named Back');
     assert.ok(await page.evaluate(() => document.querySelectorAll('#rp-keys .ui-key-hint').length) > 0, 'a 2D replay shows the key line too');
     assert.equal(await page.evaluate(() => document.getElementById('rp-keys').checkVisibility()), true);
     const placed = await page.evaluate(() => {
@@ -948,6 +954,8 @@ test('[slow] in a browser, a recorded 2D replay plays from its fixture through t
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
     assert.equal(await page.evaluate(() => document.querySelector('#rp-play > .ui-icon').getAttribute('data-icon')), 'pause', 'Pause with its icon while playing');
+    assert.deepEqual(await page.evaluate(() => ['ui-button--secondary', 'ui-button--primary', 'ui-button--go'].map((c) => document.getElementById('rp-play').classList.contains(c))),
+      [true, false, false], 'Pause is the white secondary button');
     // Past 1 s of replay time, playing or already at its end: at 4× the playing window is about 2.5 s,
     // which one stalled frame on a loaded machine can step past. The recorded pointer stays when it stops.
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.time > 1000, null, { timeout: patience(3000) });
@@ -957,6 +965,8 @@ test('[slow] in a browser, a recorded 2D replay plays from its fixture through t
     assert.equal(await page.evaluate(() => document.getElementById('replay-end-outcome').className), 'ui-chip ui-chip--won', 'the outcome as its chip');
     assert.equal(await text('rp-play-label'), 'Play again', 'at the end Play plays it again');
     assert.equal(await page.evaluate(() => document.querySelector('#rp-play > .ui-icon').getAttribute('data-icon')), 'restart', 'with the restart icon');
+    assert.deepEqual(await page.evaluate(() => ['ui-button--secondary', 'ui-button--primary', 'ui-button--go'].map((c) => document.getElementById('rp-play').classList.contains(c))),
+      [false, true, true], 'Play again is the green go button');
     assert.ok(await page.evaluate(() => { const e = document.getElementById('replay-end').getBoundingClientRect(), s = document.getElementById('rp-sound').getBoundingClientRect(); return e.left >= s.right && Math.abs(e.top + e.height / 2 - (s.top + s.height / 2)) < 10; }),
       'the end line in the tools row after Sound');
     assert.equal(await text('rp-clock'), '09.971');
@@ -1062,10 +1072,10 @@ test('the viewer\'s composition is the canvas\'s: the strip, the body\'s padding
   const style = read('css/style.css');
   const theme = read('themes/joyful-tiles/theme.css');
   assert.match(style, /#replay-frame \{ width: 1640px; height: 940px; margin-top: -8px; \}/, 'xl: inset on the backdrop like Settings, 1640 × 940');
-  assert.match(style, /@media \(max-width: 1439px\) \{ #replay-frame \{ width: 1302px; height: 712px; \} \}/, 'l: 1302 × 712');
-  assert.match(style, /@media \(max-width: 1199px\) \{ #replay-frame \{ width: 984px; height: 728px; \} \}/, 'm: 984 × 728');
+  assert.match(style, /@container root \(max-width: 1439px\) or \(max-height: 820px\) \{ #replay-frame \{ width: 1302px; height: 712px; \} \}/, 'l: 1302 × 712');
+  assert.match(style, /@container root \(max-width: 1199px\) \{ #replay-frame \{ width: 984px; height: 728px; \} \}/, 'm: 984 × 728');
   assert.match(style, /#replay-body \{ display: flex; flex-direction: column; gap: 12px; padding: 16px 22px; \}/, 'the body: padding 16 × 22, its parts 12 apart');
-  assert.match(style, /@media \(max-width: 1439px\) \{\s*#replay-body \{ padding: 12px 16px; \}/, '12 × 16 at l and m');
+  assert.match(style, /@container root \(max-width: 1439px\) or \(max-height: 820px\) \{\s*#replay-body \{ padding: 12px 16px; \}/, '12 × 16 at l and m');
   assert.match(style, /#replay-main \{ display: flex; flex: 1 1 auto; gap: 18px;/, 'the board area 18 from the panel');
   assert.match(style, /#rp-figures \{ flex: none; width: 280px; align-self: stretch;/, 'the panel down to the board area\'s bottom');
   assert.match(style, /\.replay-bar \{[^}]*justify-content: flex-start;[^}]*gap: 28px;[^}]*padding: 8px 14px;/, 'the strip across the body, its items 28 apart');
@@ -1103,10 +1113,11 @@ test('in a browser, the viewer is the canvas\'s at every supported window size w
     });
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
     // [width, height, the frame's rectangle (J-Replay-xl, -l, -m; null full-bleed), the code chip shows, the key line shows,
-    // the figures panel shows, the Intermediate board's tile (J-Replay-xl, -l, -m, -p; null the board area's to set), the files' place]
+    // the figures panel shows, the Intermediate board's tile it fits at under the heading (null the board area's to set),
+    // the files' place]
     for (const [width, height, rect, code, keys, figures, tile, files] of [
-      [1920, 1080, [140, 66, 1640, 940], true, true, true, 34, 'end'], [1366, 768, [32, 24, 1302, 712], true, true, true, 24, 'end'],
-      [1024, 768, [20, 16, 984, 728], false, true, false, 24, 'row'], [390, 844, null, false, false, false, 19, 'phone'], [844, 390, null, false, false, false, null, 'sideways']]) {
+      [1920, 1080, [140, 66, 1640, 940], true, true, true, 33, 'end'], [1366, 768, [32, 24, 1302, 712], true, true, true, 21, 'end'],
+      [1024, 768, [20, 16, 984, 728], false, true, false, 19, 'row'], [390, 844, null, false, false, false, 19, 'phone'], [844, 390, null, false, false, false, null, 'sideways']]) {
       await page.setViewportSize({ width, height });
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const got = await page.evaluate(() => {
@@ -1638,6 +1649,118 @@ test('on another geometry the 2D viewer finds the pointer\'s cell, the press rin
     x: 5 + o.x, y: 7 + o.y, size: 40, width: o.width, height: o.height, shape: 'triangle',
     points: o.points.map(([px, py]) => [5 + px, 7 + py]), tint: 1,
   }], 'the tint fills the tile\'s outline where the geometry puts it');
+});
+
+// A Hexagon or Triangle Beginner game won by a player who knows the mines: a first reveal, a flag,
+// then every closed safe cell in index order, the recorded pointer on each acted cell (in board
+// units at a 40 px tile and 4 px gap) and the cursor shown for one of them.
+const FLAT_BOARDS = {
+  hex: { mode: 'hexagon', width: 9, height: 9, mines: 13, build: createHexGrid },
+  tri: { mode: 'triangle', width: 13, height: 7, mines: 8, build: createTriGrid },
+};
+function flatReplay(grid) {
+  const { mode, width, height, mines: count, build } = FLAT_BOARDS[grid];
+  const n = width * height;
+  const mines = Array.from({ length: count }, (_, k) => (3 + 7 * k) % n).sort((a, b) => a - b);
+  const geometry = createGeometry(grid, width, height);
+  const game = createGameWithMines({ graph: build(width, height).graph, profile: REFERENCE_PROFILE, version: 1, mines });
+  const actions = [], movement = [{ time: 0, type: 'cursor', cell: -1 }];
+  let time = 0;
+  const act = (kind, cell) => {
+    const { x, y } = geometry.centre(cell, 40, 4);
+    movement.push({ time, type: 'sample', values: [Math.round((x / 44) * 64), Math.round((y / 44) * 64)] });
+    actions.push({ time, kind, cell });
+    if (kind === 'reveal') game.reveal(cell); else game.toggleFlag(cell);
+    time += 300;
+  };
+  act('reveal', 0);
+  act('flag', mines[0]);
+  for (let c = 0; c < n && game.phase === PHASE.PLAYING; c++) {
+    if (!mines.includes(c) && game.cellState(c) === 'closed') {
+      if (actions.length === 4) movement.push({ time, type: 'cursor', cell: c });
+      act('reveal', c);
+    }
+  }
+  const { bbbv, bbbvSolved, clicks } = game.counts();
+  return decodeReplay(encodeReplay({
+    header: {
+      id: `${grid}-won`, mode, graph: { kind: grid, width, height },
+      board: createBoardIdentity({ mode, grid, width, height, mines: count, noGuess: false }),
+      mines, profile: { id: REFERENCE_PROFILE, version: 1 }, seed: 1, generatorVersion: 1,
+      endedAt: '2026-10-24T12:00:00.000Z', movementEndedAt: null, pauses: [],
+    },
+    actions,
+    movement,
+    check: { outcome: game.phase === PHASE.WON ? 'won' : 'abandoned', elapsedMs: time - 300, bbbv, bbbvSolved, clicks: structuredClone(clicks), digest: cellStateDigest(game.state) },
+  }));
+}
+
+test('a Hexagon and a Triangle replay draw through their grid\'s geometry: the pointer\'s cell, press rings, the cursor and tints in the tile\'s outline', () => {
+  for (const grid of ['hex', 'tri']) {
+    const replay = flatReplay(grid);
+    assert.equal(replay.check.outcome, 'won', `${grid}: the game is won`);
+    const { width, height } = FLAT_BOARDS[grid];
+    const geometry = createGeometry(grid, width, height);
+    const sim = createSimulator(replay);
+    const view = gapView();
+    view.layout = { ...view.layout, scrolls: true };
+    const rings = [];
+    const pointer = { ...fakePointer(), trail() {}, ring: (x, y, kind) => rings.push([x, y, kind]) };
+    let painted = null;
+    const v = createViewer2D({ view, sim, pointer, overlay: { paint: (rects) => { painted = rects; }, clear() {} } });
+    assert.deepEqual(view.calls.game, [sim.game], `${grid}: the board view draws the simulator's game`);
+
+    const act = replay.actions[4];
+    const sample = replay.movement.find((e) => e.type === 'sample' && e.time === act.time);
+    const frame = sim.seek(act.time);
+    v.draw(frame, { playing: true });
+    assert.deepEqual(view.calls.update.at(-1), [...frame.changed], `${grid}: the cells the frame changed are redrawn`);
+    const at = [5 + (sample.values[0] / 64) * 44, 7 + (sample.values[1] / 64) * 44];
+    assert.deepEqual(pointer.at.at(-1), at, `${grid}: the pointer in the geometry's board units`);
+    assert.equal(view.calls.cursor.at(-1), act.cell, `${grid}: the recorded cursor's ring`);
+    v.press([{ index: 4, ...act }]);
+    assert.deepEqual(rings.at(-1), [...at, act.kind], `${grid}: the pointer is on the acted cell as the geometry hit-tests it`);
+    const keyed = replay.actions[0];
+    const c = geometry.centre(keyed.cell, 40, 4);
+    v.press([{ index: 0, ...keyed, time: act.time }]);
+    assert.deepEqual(rings.at(-1), [5 + c.x, 7 + c.y, keyed.kind], `${grid}: off the pointer, the ring sits on the cell's centre`);
+
+    const tints = new Array(width * height).fill(-1);
+    tints[act.cell] = 0;
+    v.showBbbv(tints);
+    const o = geometry.outline(act.cell, 40, 4);
+    assert.notEqual(o.shape, 'square');
+    assert.deepEqual(painted, [{ x: 5 + o.x, y: 7 + o.y, size: 40, width: o.width, height: o.height, shape: o.shape,
+      points: o.points.map(([px, py]) => [5 + px, 7 + py]), tint: 0 }], `${grid}: the tint fills the tile's outline`);
+    v.draw(sim.seek(sim.duration), { playing: false });
+    assert.equal(sim.seek(sim.duration).phase, 'won');
+    v.destroy();
+  }
+});
+
+test('the viewer screen opens a Hexagon and a Triangle replay on their own viewer, titled and coded for the mode, and plays it to its end line', async () => {
+  for (const [grid, name, token] of [['hex', 'Hexagon', 'H'], ['tri', 'Triangle', 'T']]) {
+    const replay = flatReplay(grid);
+    const { viewer, view, viewers } = viewerOver();
+    await viewer.show({ replay: encodeReplay(replay) });
+    assert.equal(viewer.state.status, 'ready', `${grid}: verified and ready`);
+    const [, info] = view.log[2];
+    assert.equal(info.kind, grid);
+    assert.equal(viewers.made[0].kind, grid, `${grid}: the mode's own viewer mounts`);
+    assert.equal(info.title, `Replay · ${name} · Beginner`, `${grid}: the title names the mode`);
+    const parsed = parseBoardCode(info.code);
+    assert.equal(parsed.ok, true, `${grid}: the strip's code chip carries the board code`);
+    assert.equal(parsed.board.mode, FLAT_BOARDS[grid].mode, `${grid}: the code names the mode`);
+    assert.ok(info.code.includes(token), `${grid}: with its token`);
+    viewer.command('next');
+    viewer.command('next');
+    assert.equal(viewers.drawn.at(-1).index, 2, `${grid}: stepping applies its actions`);
+    viewer.command('end');
+    assert.deepEqual([view.last.ended, view.last.end], [true, endLine(replay.check)], `${grid}: the end line`);
+    assert.equal(viewers.drawn.at(-1).phase, 'won');
+    viewer.command('start');
+    assert.equal(viewers.drawn.at(-1).index, 0, `${grid}: a seek back to the start`);
+  }
 });
 
 test('Show 3BV fills an outline other than a square as its polygon, at the same alpha', () => {

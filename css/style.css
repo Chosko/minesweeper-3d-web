@@ -1,5 +1,22 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; }
+/* At the desktop host the root area is the display's work area, its size set on the root element
+   (js/platform/window-actions.js): the layout, fixed layers included, never reads the window's own size. */
+:root[data-host="desktop"] { contain: layout; }
+/* Windowed at the desktop host the opaque window is the shown screen's frame, its drop edge included: no
+   backdrop, and the page shifted by the frame's corner in the root area (--window-x, --window-y) so the
+   frame sits at the window's edges, its corners the window's own (WINDOW_EDGE_CSS, which the platform
+   layer adds); the 3D scene's canvas stays on the window. */
+:root[data-host="desktop"][data-window-state="windowed"] { position: relative; left: calc(-1 * var(--window-x, 0px)); top: calc(-1 * var(--window-y, 0px)); }
+:root[data-host="desktop"][data-window-state="windowed"] :is(body, .ui-backdrop) { background: none; }
+:root[data-host="desktop"][data-window-state="windowed"] #scene { left: var(--window-x, 0px); top: var(--window-y, 0px); }
+/* Windowed at the desktop host the toast sits on the window, not the root area: centred on it, 28 px above
+   its bottom edge, fitted to its width; viewport units are the window's own size. 3D play keeps its own rule. */
+:root[data-host="desktop"][data-window-state="windowed"] .toast {
+  left: calc(var(--window-x, 0px) + 50vw);
+  bottom: calc(100cqh - var(--window-y, 0px) - 100vh + 28px);
+  max-width: min(640px, calc(100vw - 32px));
+}
 body {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-regular);
@@ -7,10 +24,12 @@ body {
   user-select: none;
   -webkit-user-select: none;
 }
+/* The 3D scene's canvas is the window's drawing surface, the size of the renderer's buffer (js/render.js),
+   not a layout box: it alone keeps the window's size. */
 #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; outline: none; }
 /* Without WebGL 2 there is no 3D scene: the menu screens sit on the body's static, themed backdrop. */
 body.no-webgl2 #scene { display: none; }
-/* The main menu shows a preview other than its 3D one: the scene is not shown. */
+/* A screen that shows no 3D scene (the main menu, the board choices): the scene is not shown. */
 body.scene-off #scene { visibility: hidden; }
 /* A live scene panel inside a screen frame: the canvas, clipped to the panel, in front of the frame. */
 body.scene-front #scene { z-index: calc(var(--z-overlay) + 1); pointer-events: none; }
@@ -35,89 +54,87 @@ kbd {
   z-index: var(--z-overlay);
   overflow-y: auto;
 }
-/* The main menu, on the page's backdrop, in each window size's fixed place (the J-Menu artboards):
-   the wordmark in its band over the entries (left) and the preview (right), the key hints and the
-   build label at the foot; the columns centred in a window wider than the artboard, the preview
-   narrower in one narrower. The entries share the preview's height, the selected one taller (its
-   theme's flex-grow and min-height, a size's own below), a block's first entry after a spacer as
-   well as the gap; every entry at least a finger tall, the floor below which a short window scrolls
-   the menu. The
-   preview's board layer is inset to pin its tile. On a phone the preview goes and the entries fill
-   the screen. */
-#menu {
-  display: grid;
-  grid-template-columns: 590px minmax(0, 964px);
-  grid-template-rows: 132px minmax(auto, 804px) minmax(auto, 1fr);
-  grid-template-areas: "title title" "entries preview" "foot foot";
-  justify-content: space-between;
-  align-items: stretch;
-  column-gap: 56px;
-  padding: 44px max(96px, calc((100% - 1728px) / 2)) 36px;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-#menu-title { grid-area: title; align-self: start; }
-#menu-entries { grid-area: entries; }
-#menu-entries > .ui-mode-entry { flex-basis: 0; }
-#menu-entries > .ui-mode-entry:not(:focus, [data-force~="focus"]) { min-height: 44px; }
-#menu-entries > [data-block-start] { margin-top: 24px; }
-#menu-preview { grid-area: preview; min-height: 0; }
-#menu-preview .ui-scene-panel__badge { width: 200px; height: 200px; }
-#menu-preview-stage > [data-preview] { position: absolute; inset: 36px; display: grid; place-items: center; }
-#menu-preview-stage > [data-preview][hidden] { display: none; }
-#menu-foot { grid-area: foot; align-self: end; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-6); }
+/* The main menu, on the page's backdrop, in its window: the frame centred at each size step's natural
+   size (the J-Menu artboards), shrinking to fit a smaller area, the title bar its head; the body holds the
+   main menu buttons — the play tiles two by two, all of one height, then the small entries — and the
+   foot the build label. Each size sets the tiles' preview square, its art's scale, the labels, the
+   icon boxes and the list's gap; a tile is never shorter than its preview needs, below which a short
+   window scrolls the body. On a phone the window is full-bleed, the phone rows in one column sharing
+   the body above the small entries, the foot the touch note over the build label; held sideways, the
+   window fills the phone's height. */
+#menu { overflow: hidden; }
+#menu-frame { width: 980px; height: 952px; }
+#menu-body { display: flex; flex-direction: column; padding: 22px 26px; }
+#menu-entries { flex: 1 1 auto; }
+#menu-foot { gap: var(--space-2) var(--space-6); justify-content: flex-end; }
 #menu-foot > p { margin: 0; }
-#menu-foot > #menu-build { margin-inline-start: auto; font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); letter-spacing: 0.15em; text-transform: uppercase; }
+#menu-foot > #menu-build { font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); letter-spacing: 0.15em; text-transform: uppercase; }
 #touch-note { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: var(--font-weight-bold); }
 #touch-note[data-icon="hand"] { white-space: nowrap; }
 #touch-note > .ui-icon { width: 20px; height: 20px; }
-@media (max-width: 1439px) {
-  #menu { grid-template-columns: 450px minmax(0, 748px); grid-template-rows: 88px minmax(auto, 580px) minmax(auto, 1fr); padding: 30px max(56px, calc((100% - 1254px) / 2)) 21px; }
-  #menu-entries { gap: 10px; }
-  #menu-entries > [data-block-start] { margin-top: 20px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) { flex-grow: 1.4; min-height: 44px; }
-  #menu-entries .ui-mode-entry__icon { width: 36px; height: 36px; }
-  #menu-entries .ui-mode-entry__icon > svg { width: 20px; height: 20px; }
-  #menu-entries .ui-mode-entry__label { font-size: 22px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__icon { width: 48px; height: 48px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__icon > svg { width: 26px; height: 26px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__label { font-size: 27px; }
-  #menu-preview-stage > [data-preview] { inset: 48px; }
+/* the smaller windows: each tile's art at two thirds of the largest window's */
+@container root (max-width: 1439px) or (max-height: 820px) {
+  #menu-frame { width: 760px; height: 712px; }
+  #menu-body { padding: 16px 22px; }
+  #menu-entries { gap: 20px; }
+  #menu-entries > .ui-mode-list__tiles, #menu-entries > .ui-mode-list__places { gap: 10px; }
+  #menu-entries .ui-play-tile { gap: 14px; padding: 10px 10px 10px 16px; }
+  #menu-entries .ui-play-tile__side { padding: 2px 0; }
+  #menu-entries .ui-play-tile__icon { width: 42px; height: 42px; }
+  #menu-entries .ui-play-tile__label { font-size: 24px; }
+  #menu-entries .ui-play-tile__preview { width: 116px; }
+  #menu-entries .ui-small-entry { min-height: 52px; padding: 6px 14px; }
+  #menu-entries .ui-small-entry__icon { width: 34px; height: 34px; }
+  #menu-entries .ui-small-entry__label { font-size: 19px; }
+  #menu-entries [data-preview="board"] > .ui-play-tile__art { width: 298px; height: 298px; }
+  #menu-entries [data-entry="hexagon"] [data-preview="board"] > .ui-play-tile__art { width: 229px; height: 266px; }
+  #menu-entries [data-entry="triangle"] [data-preview="board"] > .ui-play-tile__art { width: 307px; height: 266px; }
+  #menu-entries .ui-play-tile__badge { width: 63px; height: 63px; }
+  #menu-entries .ui-play-tile__still[data-still="surface"] { width: 111px; height: 111px; translate: 0 -7px; }
+  #menu-entries .ui-play-tile__still[data-still="3d"] { width: 98px; height: 99px; }
+  #menu-entries .ui-play-tile__calendar { width: 100px; height: 88px; }
 }
-@media (max-width: 1199px) {
-  #menu { grid-template-columns: 390px minmax(0, 526px); grid-template-rows: 78px minmax(auto, 596px) minmax(auto, 1fr); padding: 28px max(36px, calc((100% - 952px) / 2)) 20px; column-gap: 36px; }
-  #menu-entries .ui-mode-entry__label { font-size: 20px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__icon > svg { width: 24px; height: 24px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__label { font-size: 25px; }
-  #menu-preview-stage > [data-preview] { inset: 56px; }
+@media (max-height: 500px) and (orientation: landscape) {
+  #menu { padding: 28px max(16px, calc((100% - 760px) / 2)); }
+  #menu-frame { width: 100%; height: 100%; }
 }
 @media (max-width: 719px) {
-  #menu { grid-template-columns: minmax(0, 1fr); grid-template-rows: 66px minmax(auto, 1fr) minmax(auto, 72px); grid-template-areas: "title" "entries" "foot"; padding: 34px 20px 24px; }
-  #menu-preview { display: none; }
-  #menu-entries > [data-block-start] { margin-top: 18px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) { flex-grow: 1.35; }
-  #menu-entries .ui-mode-entry__label { font-size: 19px; }
-  #menu-entries > .ui-mode-entry:is(:focus, [data-force~="focus"]) .ui-mode-entry__label { font-size: 24px; }
-  #menu-foot { flex-direction: column; align-items: flex-start; }
-  #menu-foot > #menu-build { margin-inline-start: 0; }
+  #menu { padding: 0; }
+  #menu-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+  #menu-body { padding: 16px 18px 18px; }
+  #menu-entries { gap: 16px; }
+  #menu-entries > .ui-mode-list__tiles, #menu-entries > .ui-mode-list__places { gap: 8px; }
+  #menu-entries .ui-play-tile { gap: 14px; padding: 8px 126px 8px 16px; }
+  #menu-entries .ui-play-tile__icon { width: 36px; height: 36px; }
+  #menu-entries .ui-play-tile__label { font-size: 20px; }
+  #menu-entries .ui-play-tile__preview { width: 106px; }
+  #menu-entries .ui-small-entry { min-height: 50px; padding: 6px 16px; }
+  /* each phone row's art at its strip's scale */
+  #menu-entries [data-preview="board"] > .ui-play-tile__art { width: 271px; height: 271px; }
+  #menu-entries [data-entry="hexagon"] [data-preview="board"] > .ui-play-tile__art { width: 208px; height: 242px; }
+  #menu-entries [data-entry="triangle"] [data-preview="board"] > .ui-play-tile__art { width: 280px; height: 242px; }
+  #menu-entries .ui-play-tile__badge { width: 58px; height: 58px; }
+  #menu-entries .ui-play-tile__still[data-still="surface"] { width: 92px; height: 92px; translate: 0 -6px; }
+  #menu-entries .ui-play-tile__still[data-still="3d"] { width: 59px; height: 60px; }
+  #menu-entries .ui-play-tile__calendar { width: 68px; height: 60px; }
+  #menu-foot { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
 }
-/* The Records screen (#records): its window inset on the backdrop at each window step's canvas size
-   (J-Records-xl, -l, -m), Back, the title and the switch in its head — Back reading "Main menu" when
-   it returns to the menu (data-to-menu, set by js/main.js), else "Back" —; the picker one line across
+/* The Records screen (#records): its window at each window step's natural size (J-Records-xl, -l,
+   -m), 4 px above the backdrop's centre and shrinking to fit a smaller area, the title and the switch in its heading; the picker one line across
    the body over the two columns — the board's sections at a fixed width, a rule, the history —, each
    column scrolling on its own from the kit breakpoint; one column below it, the body scrolling. The
    picker scrolls sideways under a fade at its end, its controller glyphs taking no room while hidden.
    The bests are three tiles across at every size, each figure 32 px on the largest window and
    shrinking with its tile below it to stay on one line; the counters a grid of tiles, four across, two on a phone. Each table keeps one line per row
    and scrolls sideways in its own box when narrower than its row, and shows its Board code column on
-   the largest window only. On a phone the window is full-bleed, the head holds Back ("Back") and the
-   title, the switch is a full-width bar under it, and each averages row is a card. */
-#records { align-items: flex-start; padding: 66px 24px 24px; }
-#records-frame { width: 1640px; height: 940px; }
+   the largest window only. On a phone the window is full-bleed, the heading holds the title alone,
+   the switch is a full-width bar under it, and each averages row is a card; held sideways, the window
+   sits at the phone's top. */
+#records { padding: 8px 16px; }
+#records-frame { width: 1640px; height: 940px; margin-top: -8px; }
 #records-body { display: flex; flex-direction: column; gap: 14px; padding: 18px 24px; }
 #records-body > p { margin: 0; }
-#records-mode-touch, #records-back [data-label="phone"], #records-back:not([data-to-menu]) [data-label="wide"] { display: none; }
-#records-back:not([data-to-menu]) [data-label="phone"] { display: inline; }
+#records-mode-touch { display: none; }
 #records [data-pad-hint] { display: none; }
 body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 #records-board-picker { flex: none; }
@@ -135,7 +152,7 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 :is(#records-figures, #records-averages, #records-overall, #records-history) :is(h3, h4, p) { margin: 0; }
 #records-bests { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 #records-bests > .ui-stat--tile { min-width: 0; gap: 3px; padding: 12px 10px; container-type: inline-size; }
-@media (max-width: 1439px) { #records-bests > .ui-stat--tile { padding: 10px 12px; } }
+@container root (max-width: 1439px) or (max-height: 820px) { #records-bests > .ui-stat--tile { padding: 10px 12px; } }
 #records-bests .ui-stat__value { font-size: min(32px, 18.5cqi); }
 #records-bests .ui-stat__detail { font-size: 13px; }
 #records-counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
@@ -173,30 +190,30 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 #records-replays-table [data-pinned] { display: inline-flex; }
 #records-replays-table [data-pinned] > .ui-icon { width: 18px; height: 18px; }
 #records-export-note { flex-basis: 100%; }
-@media (max-width: 1439px) {
-  #records { padding-top: 24px; }
+@container root (max-width: 1439px) or (max-height: 820px) {
   #records-frame { width: 1302px; height: 712px; }
   #records-body { padding: 14px 18px; }
   #records-columns { gap: 16px; grid-template-columns: 470px auto minmax(0, 1fr); }
   #records-averages-table :is(th, td) { padding-inline: 6px; }
   :is(#records-games, #records-top-table, #records-replays-table) [data-label="Board code"] { display: none; }
 }
-@media (max-width: 1199px) {
-  #records { padding: 16px 20px 20px; }
+@container root (max-width: 1199px) {
   #records-frame { width: 984px; height: 728px; }
   #records-columns { grid-template-columns: 400px auto minmax(0, 1fr); }
   #records-charts { grid-template-columns: minmax(0, 1fr); }
 }
-@media (max-width: 1023px) {
+@container root (max-width: 1023px) {
   #records-columns { grid-template-columns: minmax(0, 1fr); }
   #records-columns > .ui-divider--vertical { display: none; }
 }
+@media (max-height: 500px) and (orientation: landscape) {
+  #records { align-items: flex-start; padding: 16px 20px 20px; }
+  #records-frame { margin-top: 0; }
+}
 @media (max-width: 719px) {
   #records { padding: 0; }
-  #records-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
-  #records-frame .ui-frame__end > * { display: none; }
-  #records-back [data-label="wide"] { display: none; }
-  #records-back [data-label="phone"] { display: inline; }
+  #records-frame { width: 100%; height: 100%; margin-top: 0; border-radius: 0; box-shadow: none; }
+  #records-frame .ui-frame__action > * { display: none; }
   #records-body { gap: 16px; padding: 14px 16px 30px; }
   #records-mode-touch { display: flex; }
   #records-mode-touch > .ui-segmented__option { flex: 1 1 0; }
@@ -209,9 +226,9 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
   #records-averages-table th { grid-column: 1 / -1; font-weight: var(--font-weight-heavy); }
   #records-averages-table td[data-label]::before { content: attr(data-label); display: block; }
 }
-/* The Settings page (#settings): its window inset on the backdrop at each window step's canvas size
-   (J-Settings-xl, -l, -m), Back in its head ("Back" on a phone), the body scrolling on a window too
-   short for it. The sections stand in independent stacks, one ui-column each, which
+/* The Settings page (#settings): its window at each window step's natural size (J-Settings-xl, -l,
+   -m), 4 px above the backdrop's centre and shrinking to fit a smaller area (at a phone's top, held
+   sideways), the title in its heading, the body scrolling on a window too short for it. The sections stand in independent stacks, one ui-column each, which
    js/settings/page.js places for the window (SETTINGS_LAYOUTS): three on the widest windows, two from
    the kit breakpoint, one below it in the phone's order; the stack gap is the column gap. Each
    setting is a row ruled above (its theme draws the rule), its name (and note) at the start and its
@@ -219,13 +236,12 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
    the focus moves. Its choices' options take their text's height, as the canvas draws them (40 px
    on a phone, upright or sideways). On a phone the window is full-bleed, the bindings device choice spans the panel,
    each option wrapping its label, and the exports stack. */
-#settings { align-items: flex-start; padding: 66px 24px 24px; }
-#settings-frame { width: 1640px; height: 940px; }
+#settings { padding: 8px 16px; }
+#settings-frame { width: 1640px; height: 940px; margin-top: -8px; }
 #settings-body { padding: 24px; }
 #settings-columns { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 #settings-columns, #settings-columns > .ui-column { gap: 24px; }
 #settings-columns .ui-panel { gap: 0; padding: 16px 18px; }
-#settings-back [data-label="phone"] { display: none; }
 #settings-columns [data-setting-row] { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: 1fr auto; align-items: center; gap: 2px 16px; padding: 10px 0; }
 #settings-columns [data-setting-row] > :is(.ui-slider, .ui-toggle) { display: contents; }
 #settings-columns [data-setting-row] :is(.ui-slider__label, .ui-toggle__label, .ui-text) { grid-area: 1 / 1; font-size: 16px; font-weight: var(--font-weight-bold); }
@@ -241,14 +257,12 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 #set-data-body > .ui-text { font-size: 15px; }
 #set-data-body > .ui-button { align-self: flex-start; }
 #set-export-actions { gap: 10px; }
-@media (max-width: 1439px) {
-  #settings { padding-top: 24px; }
+@container root (max-width: 1439px) or (max-height: 820px) {
   #settings-frame { width: 1302px; height: 712px; }
   #settings-body { padding: 18px; }
   #settings-columns, #settings-columns > .ui-column { gap: 18px; }
 }
-@media (max-width: 1199px) {
-  #settings { padding: 16px 20px 20px; }
+@container root (max-width: 1199px) {
   #settings-frame { width: 984px; height: 728px; }
   #settings-body { padding: 14px; }
   #settings-columns, #settings-columns > .ui-column { gap: 14px; }
@@ -256,11 +270,13 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 @media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
   #settings-columns .ui-segmented__option { min-height: 40px; }
 }
+@media (max-height: 500px) and (orientation: landscape) {
+  #settings { align-items: flex-start; padding: 16px 20px 20px; }
+  #settings-frame { margin-top: 0; }
+}
 @media (max-width: 719px) {
   #settings { padding: 0; }
-  #settings-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
-  #settings-back [data-label="wide"] { display: none; }
-  #settings-back [data-label="phone"] { display: inline; }
+  #settings-frame { width: 100%; height: 100%; margin-top: 0; border-radius: 0; box-shadow: none; }
   #settings-body { padding: 14px 14px 30px; }
   #settings-columns, #settings-columns > .ui-column { gap: 16px; }
   #settings-columns [data-setting-row] .ui-slider__input { width: 170px; }
@@ -292,8 +308,8 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
    last, Play again and Main menu with no key hints on a touch screen. A first-use toast never draws
    over the card. */
 #results-frame { width: min(1040px, 100%); }
-@media (max-width: 1439px) { #results-frame { width: min(1000px, 100%); } }
-@media (max-width: 1199px) { #results-frame { width: min(960px, 100%); } }
+@container root (max-width: 1439px) or (max-height: 820px) { #results-frame { width: min(1000px, 100%); } }
+@container root (max-width: 1199px) { #results-frame { width: min(960px, 100%); } }
 #results-head { grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; padding: 22px 28px; }
 #results-frame[data-outcome="lost"] #results-head { grid-template-columns: minmax(0, 1fr) auto; }
 #results-frame[data-outcome="lost"] #results-head .ui-frame__start { display: none; }
@@ -320,7 +336,7 @@ body.pad-nav #records [data-pad-hint] { display: inline-flex; }
 #results-look-note { flex-basis: 100%; }
 #results.results--look #r-menu .ui-key-hint { display: none; }
 body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
-@media (max-width: 999px) {
+@container root (max-width: 999px) {
   #results-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #results-tiles > .ui-stat--tile > .ui-chip { position: static; order: -1; align-self: flex-start; }
 }
@@ -379,8 +395,8 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 .ready-pad b { font-weight: var(--font-weight-bold); }
 .ready--touch .ready-tip { display: none; }
 .ready-tip { font-size: var(--font-size-sm); }
-@media (max-width: 1439px) { .ready-body { width: min(580px, 100%); } }
-@media (max-width: 1199px) { .ready-body { width: min(560px, 100%); } }
+@container root (max-width: 1439px) or (max-height: 820px) { .ready-body { width: min(580px, 100%); } }
+@container root (max-width: 1199px) { .ready-body { width: min(560px, 100%); } }
 @media (max-width: 719px) { .ready-body { width: min(360px, 100%); padding: 16px 18px; } }
 @media (max-height: 500px) and (orientation: landscape) {
   .ready-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--space-4); width: min(760px, 100%); padding: 16px 18px; }
@@ -404,7 +420,7 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 #hint-strip {
   position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; pointer-events: auto;
   display: flex; align-items: center; gap: 14px; padding: 7px 8px 7px 18px; font-size: 15px; font-weight: var(--font-weight-bold);
-  width: max-content; max-width: calc(100vw - 24px); box-sizing: border-box;
+  width: max-content; max-width: calc(100cqw - 24px); box-sizing: border-box;
 }
 #hint-strip-text { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) 14px; min-width: 0; }
 #hint-strip .hint-close { flex: none; display: grid; place-items: center; width: 30px; height: 30px; }
@@ -422,16 +438,28 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 /* ---------- Classic 2D game window ---------- */
 /* The window covers the 3D scene on its backdrop and hugs its content, centred in the room above the
    HUD strip: its body is the board column — the counter strip, then the board area 12 px under it,
-   left-aligned and sized to the board's extent (UI.sizeBoard2D, measured with the window at its
-   largest under #c2d.c2d--measure, where the area takes the room the chrome leaves) — then a divider
-   and the flat figures column. Below the kit's 1024 px breakpoint the figures move under the board,
-   and on a phone they hide and the window is full-bleed, the board area still its board's extent.
-   The board sits in its board frame (UI.placePanel2D from the board view's layout); a board that
-   does not fit scrolls in the room it is given. The 3D game's overlay bar never shows over it. */
+   left-aligned and sized to the board's extent (UI.sizeBoard2D, measured with the window filling the
+   root area under #c2d.c2d--measure, where the board area takes the room the chrome leaves) — and, while the
+   live figures are open (data-figures="open", UI.setFigures2D), a divider and the flat figures
+   column; closed, the window shrinks to the board column. Below the kit's 1024 px breakpoint the
+   open figures move under the board, and on a phone they hide with their toggle and the window is
+   full-bleed, the board area still its board's extent. The foot line leads with the mode and board,
+   ellipsised in the room Swap clicks and the toggle leave it, never widening the window. The board
+   sits in its board frame (UI.placePanel2D from the board view's layout); a board that does not fit
+   scrolls in the room it is given. The 3D game's overlay bar never shows over it. */
 #c2d { position: fixed; inset: 0; padding: 33px var(--space-4) 83px; }
 #c2d-frame { flex: none; }
-#c2d-body { display: grid; grid-template-columns: auto auto 300px; padding: 0; overflow: hidden; }
+#c2d-body { display: grid; grid-template-columns: minmax(auto, 1fr) auto 300px; padding: 0; overflow: hidden; }
+/* Closed, no divider and no figures column: the board column alone. */
+#c2d:not([data-figures="open"]) :is(#c2d-divider, #c2d-figures) { display: none; }
+#c2d:not([data-figures="open"]) #c2d-body { grid-template-columns: minmax(auto, 1fr); }
+#c2d.c2d--measure:not([data-figures="open"]) #c2d-body { grid-template-columns: minmax(0, 1fr); }
 #c2d-main { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; min-height: 0; padding: 22px; }
+/* The title bar never sets the window's width: its logo fits the board column (UI.fitTitle2D). A board
+   column narrower than Pause and the window buttons alone widens the window to them (its min-width), the
+   column centred; below the kit's breakpoint the column fills the window over its figures. */
+#c2d-frame > .ui-frame__head { contain: inline-size; }
+#c2d:not(.c2d--measure) #c2d-main { justify-self: center; }
 #c2d-counters { flex: none; }
 #c2d-stage { position: relative; flex: none; align-self: flex-start; }
 #c2d-board { position: absolute; inset: 0; overflow: hidden; }
@@ -440,7 +468,9 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 #c2d-figures { min-height: 0; overflow-y: auto; contain: size; }
 #c2d-figures .ui-figures__body { padding: 22px 26px; }
 #c2d-figures .ui-figure__value { white-space: nowrap; }
-#c2d-size { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#c2d-frame > .ui-frame__foot { flex-wrap: nowrap; }
+#c2d-line { flex: 1 1 0; width: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#c2d-tools { flex: none; flex-wrap: nowrap; gap: var(--space-2); }
 #c2d.c2d--measure #c2d-frame { width: 100%; height: 100%; }
 #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr) auto 300px; }
 #c2d.c2d--measure #c2d-stage { flex: 1 1 auto; align-self: stretch; }
@@ -451,24 +481,25 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
    board area): the board keeps its size, and the Tap choice under it and the figures under the board on a
    narrower window stay clear. */
 #c2d-stage > #hint-strip { bottom: 10px; max-width: calc(100% - 2 * var(--space-3)); z-index: 1; }
-@media (max-width: 1439px), (max-height: 820px) {
-  #c2d-body { grid-template-columns: auto auto 260px; }
+@container root (max-width: 1439px) or (max-height: 820px) {
+  #c2d-body { grid-template-columns: minmax(auto, 1fr) auto 260px; }
   #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr) auto 260px; }
   #c2d-main { padding: var(--space-4); }
   #c2d-figures .ui-figures__body { padding: var(--space-4) var(--space-5); }
 }
-@media (max-width: 1199px) {
-  #c2d-body { grid-template-columns: auto auto 232px; }
+@container root (max-width: 1199px) {
+  #c2d-body { grid-template-columns: minmax(auto, 1fr) auto 232px; }
   #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr) auto 232px; }
   #c2d-main { padding: 14px; }
   #c2d-figures .ui-figures__body { padding: 14px 18px; }
 }
-@media (max-height: 820px) {
+@container root (max-height: 820px) {
   #c2d { padding-top: 13px; padding-bottom: 64px; }
   #hud.hud--2d .hud-tools { bottom: 8px; }
 }
-@media (max-width: 1023px) {
+@container root (max-width: 1023px) {
   #c2d-body, #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  #c2d:not(.c2d--measure) #c2d-main { justify-self: stretch; }
   #c2d-divider { display: none; }
   #c2d-figures { overflow: visible; contain: inline-size; }
   #c2d-figures .ui-figures__body { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 0 var(--space-5); padding: var(--space-2) var(--space-4); }
@@ -482,10 +513,9 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
 @media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
   #c2d { padding: 0; }
   #c2d-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
-  #c2d-figures, #c2d-divider, #hud.hud--2d .hud-tools { display: none; }
+  #c2d-figures, #c2d-divider, #c2d-figures-toggle, #hud.hud--2d .hud-tools { display: none; }
   #c2d-body, #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   #c2d-main { padding: var(--space-3) var(--space-4); }
-  #c2d-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr) auto; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   #c2d-main { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); gap: 10px var(--space-3); padding: 10px var(--space-3); }
@@ -493,24 +523,28 @@ body:has(> #results:not(.hidden)) #toast.toast--first-use { display: none; }
   #c2d-stage { grid-column: 1; grid-row: 1 / -1; }
   #c2d-counters { grid-column: 2; grid-row: 1; flex-direction: column; align-items: stretch; gap: 10px; padding: var(--space-3); }
   #c2d-counters > .ui-counter:last-child { order: 1; flex-direction: row-reverse; justify-content: flex-end; }
-  #c2d-restart { order: 2; }
+  #c2d-restart { order: 2; align-self: flex-start; }
   #hud-tap { grid-column: 2; grid-row: 2; }
 }
 /* A board status card (generating, or a failed board's offer) sits above the pause card at the canvas's
    width and never past a phone's, centred on the board: the 3D box in the window's centre, the Classic 2D
-   board column where UI places it (UI._centreStatus2D). The spinner 16 px from its title and progress line. */
-#c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); width: min(480px, calc(100vw - 2 * var(--space-4))); box-sizing: border-box; }
+   board column where UI places it — on the pause card while it shows over that (UI._centreStatus2D). The
+   spinner 16 px from its title and progress line. */
+#c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); width: min(480px, calc(100cqw - 2 * var(--space-4))); box-sizing: border-box; }
+/* Windowed at the desktop host the Classic 2D status card stays inside the window it shows in — the game
+   window, or the pause card while that is the window alone — and never sizes it (data-window-inside):
+   no wider than the window's room about its centre (UI._centreStatus2D). */
+:root[data-host="desktop"][data-window-state="windowed"] #c2d-status { max-width: calc(var(--status-room, 100cqw) - 2 * var(--space-4)); }
 :is(#c2d-status, #m3d-status) > .ui-row { gap: var(--space-4); flex-wrap: nowrap; }
 :is(#c2d-status, #m3d-status) .ui-card__title { margin: 0; font-size: var(--font-size-xl); }
 :is(#c2d-progress, #m3d-progress) { margin: 4px 0 0; font-size: 15px; }
 /* Behind the 3D ready card, the pause card and the results only the board or the scene shows, and the
-   Classic 2D window's title: the HUD with the 3D overlay, and the window's other parts, go; behind the 3D
+   Classic 2D window's title bar logo: the HUD with the 3D overlay, and the window's other parts, go; behind the 3D
    board status card the HUD goes too. */
 body:has(> :is(#ready:not(.hidden):not(.ready--pending), #pause:not(.hidden), #results:not(.hidden))) #hud { visibility: hidden; }
 body:has(> :is(#ready:not(.hidden):not(.ready--pending), #pause:not(.hidden), #results:not(.hidden))) #c2d-frame :is(.ui-frame__start, .ui-frame__end, #c2d-counters, #c2d-figures, #c2d-divider, .ui-frame__foot, #hud-tap) { visibility: hidden; }
 body:has(> #m3d-status:not(.hidden)) #hud { visibility: hidden; }
-/* The replay viewer (#replay): its window inset on the backdrop at the canvas's size, a step smaller on
-   the smaller desktop windows; the body stacks the strip across it, the board area with the figures
+/* The replay viewer (#replay): its window at its natural size, centred on the backdrop; the body stacks the strip across it, the board area with the figures
    panel beside it down to its bottom, and the controls — the seek bar alone on its row, the tools row
    (transport, speed, the toggles, the end line, the files at its right end), the key line. The 2D board
    view fits the board area; a 3D replay's scene draws into it (js/main.js syncScenePanel), the layer
@@ -521,10 +555,10 @@ body:has(> #m3d-status:not(.hidden)) #hud { visibility: hidden; }
    the right. */
 #replay { position: fixed; inset: 0; z-index: var(--z-overlay); padding: 8px 16px; }
 #replay-frame { width: 1640px; height: 940px; margin-top: -8px; }
-@media (max-width: 1439px) { #replay-frame { width: 1302px; height: 712px; } }
-@media (max-width: 1199px) { #replay-frame { width: 984px; height: 728px; } }
+@container root (max-width: 1439px) or (max-height: 820px) { #replay-frame { width: 1302px; height: 712px; } }
+@container root (max-width: 1199px) { #replay-frame { width: 984px; height: 728px; } }
 #replay-body { display: flex; flex-direction: column; gap: 12px; padding: 16px 22px; }
-@media (max-width: 1439px) {
+@container root (max-width: 1439px) or (max-height: 820px) {
   #replay-body { padding: 12px 16px; }
 }
 .replay-bar { flex: none; flex-wrap: wrap; justify-content: flex-start; gap: 28px; padding: 8px 14px; min-width: 0; }
@@ -571,21 +605,18 @@ body.pad-connected .replay-key__pad { display: inline-flex; }
 .replay-note > .ui-icon { width: 18px; height: 18px; flex: none; }
 /* The l step: a denser tools row, so the files keep its right end; a 3D replay's end line, which its
    camera toggle leaves no room for, takes the next row. */
-@media (min-width: 1200px) and (max-width: 1439px) {
+@container root (min-width: 1200px) and ((max-width: 1439px) or (max-height: 820px)) {
   .replay-tools { column-gap: 8px; }
   .replay-toggles, .replay-files { gap: 8px; }
   :is(.replay-toggles, .replay-files) > .ui-button--sm { padding-inline: 10px; }
   #rp-speed .ui-segmented__option { padding-inline: 8px; }
   #replay.replay--scene .replay-end { order: 1; flex-basis: 100%; }
 }
-@media (max-width: 1199px) { #rp-code, #rp-figures { display: none; } }
+@container root (max-width: 1199px) { #rp-code, #rp-figures { display: none; } }
 @media (max-width: 719px) {
   #replay { padding: 0; }
   #replay-frame { width: 100%; height: 100%; margin: 0; border-radius: 0; box-shadow: none; }
   #replay-body { padding: 12px 14px; }
-  #replay-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr); }
-  #replay-frame .ui-frame__end { display: none; }
-  #replay-title { text-align: start; }
   .replay-tools { flex-direction: column; align-items: flex-start; }
   .replay-files { margin-inline-start: 0; align-self: flex-end; }
   .replay-keys, .replay-key-hint, .replay-seek-pad { display: none; }
@@ -617,36 +648,40 @@ body.replaying #menu { display: none; }
 
 /* ---------- HUD ---------- */
 #hud { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-hud); }
-/* The 3D game's overlay over the full-window scene (J-Game3D-xl, -l, -m): the counter strip — mines left,
-   Restart, the timer — at the top centre; the figures panel on the right, centred vertically, headed by
-   the title and Pause, its width stepping down with the window. Each part carries its own surface. */
+/* The 3D game's overlay over the full-window scene (J-Game3D-l, -m, -states), with no title: Pause floating
+   at the top left, the counter strip — mines left, Restart, the timer — at the top centre and the
+   live-figures toggle at the top right; the figures panel, shown only while the stored preference is
+   open (#hud[data-figures="open"], UI.setFigures3D), on the right, centred vertically, its width
+   stepping down with the window. Each part carries its own surface. */
 .hud-overlay { display: contents; }
+.hud-pause { position: absolute; top: 24px; left: 24px; padding: 0; aspect-ratio: 1; pointer-events: auto; }
+.hud-figures-toggle { position: absolute; top: 24px; right: 24px; pointer-events: auto; }
 .hud-counters { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); gap: 18px; width: max-content; pointer-events: auto; }
-.hud-figures { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); width: 300px; max-height: calc(100vh - 2 * 104px); box-sizing: border-box; pointer-events: auto; }
+.hud-figures { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); width: 300px; max-height: calc(100cqh - 2 * 104px); box-sizing: border-box; pointer-events: auto; }
+#hud:not([data-figures="open"]) .hud-figures { display: none; }
 .hud-figures .ui-figures__body { min-height: 0; overflow-y: auto; padding-top: 14px; }
 .hud-figures .ui-figure__value { white-space: nowrap; }
 /* In touch play on a tablet it ends above the touch toolbar; the help panel stands beside it, centred vertically as it is. */
-body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
+body.touch-play .hud-figures { max-height: calc(100cqh - 2 * 208px); }
 @media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
   #hud:not(.hud--2d) ~ #help { right: 348px; top: 50%; transform: translateY(-50%); width: 320px; }
 }
-@media (max-width: 1439px) {
+@container root (max-width: 1439px) or (max-height: 820px) {
   .hud-figures { width: 290px; }
   #hud:not(.hud--2d) ~ #help { right: 338px; }
 }
-@media (max-width: 1199px) {
+@container root (max-width: 1199px) {
   .hud-figures { width: 280px; }
   #hud:not(.hud--2d) ~ #help { right: 328px; }
 }
-/* Learn 3D's own play layout (J-Ready-states, "Learn 3D · prompt 1–4"): no figures panel — the panel is its
-   head alone, the title and Pause —, and above a phone a column at the top left, the head over the strip of
-   mines and Restart (no timer), the help panel on the right edge the panel leaves. */
-#hud.hud--learn .hud-figures :is(.ui-figures__body, .ui-figures__live) { display: none; }
+/* Learn 3D's own play layout (J-Ready-states, "Learn 3D · prompt 1–4"): no figures panel and no toggle, and
+   above a phone a column at the top left, Pause over the strip of mines and Restart (no timer), the help
+   panel on the right edge the panel leaves. */
+#hud.hud--learn :is(.hud-figures, .hud-figures-toggle) { display: none; }
 @media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
   #hud.hud--learn .hud-overlay { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; position: absolute; top: 24px; left: 24px; }
-  #hud.hud--learn :is(.hud-counters, .hud-figures) { position: static; transform: none; width: auto; max-height: none; }
-  #hud.hud--learn .hud-figures { order: -1; }
-  #hud.hud--learn .hud-figures .ui-figures__head { gap: 16px; padding: 8px 8px 8px 20px; }
+  #hud.hud--learn .hud-counters { position: static; transform: none; width: auto; }
+  #hud.hud--learn .hud-pause { position: relative; top: auto; left: auto; }
   #hud.hud--learn ~ #help { right: 24px; }
 }
 #hud.hud--2d #crosshair, #hud.hud--2d #crosshair-arrow, #hud.hud--2d #aim-readout, #hud.hud--2d #mode-chips { display: none; }
@@ -684,7 +719,7 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 #aim-readout .aim-icon { display: block; flex: none; width: 14px; height: 14px; }
 
 /* The view chips above the HUD strip, centred. */
-#mode-chips { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: max-content; max-width: calc(100vw - 24px); }
+#mode-chips { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: max-content; max-width: calc(100cqw - 24px); }
 .chip {
   display: none; align-items: center; gap: var(--space-2);
   font-size: var(--font-size-sm); font-weight: var(--font-weight-heavy);
@@ -696,33 +731,49 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 /* The H help panel: a card of the help list under its title, the foot line under it. */
 #help {
   position: fixed; right: 16px; top: 64px; z-index: var(--z-help);
-  width: min(320px, calc(100vw - 32px));
+  width: min(320px, calc(100cqw - 32px));
   padding: 18px 20px;
   pointer-events: none;
 }
 #help-title { margin: 0 0 6px; }
-/* The board choices, Classic 2D (#c2d-choice) and 3D (#board-choice), on the page's backdrop: the
-   wordmark pinned at the top and the window sized to its content, centred on the page between two
-   spacers — the one above never shorter than the wordmark's band, so a page too short for both
-   pushes the window down. The window holds the options (left) beside what the chosen one needs
-   (right): the no-guess switch row, the custom form's fields filling a row over its info line and
-   Random, the bests; its option rows, Play and the tiles grow denser on the smaller desktop windows.
-   On a phone: one full-bleed column, no wordmark, no bests and no summary, a rule between the
-   options and the settings, Back reading "Back", the bar pinned over the column's foot. The Daily
+/* The board choices, Classic 2D (#c2d-choice), Hexagon (#hex-choice), Triangle (#tri-choice) and 3D
+   (#board-choice), on the page's backdrop: the window sized to its content, centred on the page
+   between two spacers, each never shorter than the canvas's margin. The window holds the options
+   and, while open, the board choice panel to their right (#c2d-choice-panel, #hex-choice-panel,
+   #tri-choice-panel, #bc-choice-panel), the window widening and staying centred: the no-guess switch
+   row, the custom form's fields filling a row over its info line and Random, the bests with All records
+   under them; its option rows, Play and the tiles grow denser on the smaller desktop windows. On a
+   phone: one full-bleed column with no panel toggle, the panel a full-width drawer under the
+   options — its bar, then its body while open —, the bests one row, the slimmer bar pinned over the
+   column's foot. The Daily
    screen (#daily) is the Classic 2D board choice's composition and placement: every mode on the
    left in a column of fixed width, the selected one's board on the right — the Classic 2D board
    framed on the body, the panel showing none of itself; the 3D scene and a coming-soon mode's card in
    a fixed-height panel —, its status row (the state at the left, the days in a row at the right) and
    the board code under its label; on a phone no preview either, and the code chip full width. */
+#hex-choice, #tri-choice,
 #c2d-choice, #board-choice, #daily { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
-#c2d-choice-top, #board-choice-top, #daily-top { position: absolute; top: 44px; left: 0; right: 0; display: flex; justify-content: center; }
-#c2d-choice::before, #board-choice::before, #daily::before { content: ""; flex: 1 1 0; min-height: 176px; }
-#c2d-choice::after, #board-choice::after, #daily::after { content: ""; flex: 1 1 0; min-height: 14px; }
-#c2d-choice-frame, #board-choice-frame, #daily-frame { flex: 0 1 auto; width: 1120px; }
-#c2d-choice-back [data-label="phone"], #board-choice-back [data-label="phone"], #daily-back [data-label="phone"] { display: none; }
-#c2d-choice-body, #board-choice-body { display: grid; grid-template-columns: minmax(0, 480fr) auto minmax(0, 640fr); padding: 0; }
-#c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 24px 26px; }
+#hex-choice::before, #tri-choice::before, #hex-choice::after, #tri-choice::after,
+#c2d-choice::before, #board-choice::before, #daily::before,
+#c2d-choice::after, #board-choice::after, #daily::after { content: ""; flex: 1 1 0; min-height: 40px; }
+#hex-choice-frame, #tri-choice-frame,
+#c2d-choice-frame, #board-choice-frame { flex: 0 1 auto; align-self: center; width: auto; }
+#daily-frame { flex: 0 1 auto; width: 1120px; }
+#hex-choice-body, #tri-choice-body,
+#c2d-choice-body, #board-choice-body { display: flex; padding: 0; }
+#hex-choice-options, #tri-choice-options, #hex-choice-detail, #tri-choice-detail,
+#c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; min-width: 0; padding: 16px 26px 24px; }
+#hex-choice-options, #tri-choice-options,
+#c2d-choice-options, #board-choice-options { flex: 1 0 480px; min-width: 480px; }
+#hex-choice-panel, #tri-choice-panel,
+#c2d-choice-panel, #bc-choice-panel { flex: 0 1 639px; width: 639px; min-width: 0; }
+#hex-choice-detail, #tri-choice-detail,
 #c2d-choice-detail, #board-choice-detail { gap: 18px; }
+@media (min-width: 720px) {
+  #c2d-choice-panel > .ui-drawer__bar, #c2d-choice-panel:not([data-open="true"]), #bc-choice-panel:not([data-open="true"]), #bc-choice-panel > .ui-drawer__bar,
+  #hex-choice-panel > .ui-drawer__bar, #hex-choice-panel:not([data-open="true"]), #tri-choice-panel > .ui-drawer__bar, #tri-choice-panel:not([data-open="true"]) { display: none; }
+}
+#hex-choice-options .ui-divider, #tri-choice-options .ui-divider,
 #c2d-choice-options .ui-divider, #board-choice-options .ui-divider { margin: var(--space-1) 0; }
 #daily-body { display: grid; grid-template-columns: 480px auto minmax(0, 1fr); padding: 0; }
 #daily-modes, #daily-detail { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 24px 26px; }
@@ -742,86 +793,123 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 #daily-status { flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); }
 #daily-outcome, #daily [data-outcome] { flex-wrap: nowrap; gap: var(--space-2); }
 #daily-code-group { display: flex; flex-direction: column; gap: var(--space-2); }
+#hex-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel]), #tri-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel]),
 #c2d-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel]),
 #board-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel]) { display: flex; flex-direction: column; gap: var(--space-3); }
 #board-choice :where([data-preset-settings], [data-custom-settings]) { display: flex; flex-direction: column; gap: var(--space-2); }
 #bc-learn-panel > .ui-text--muted { font-size: 15px; }
-#c2d-custom, #custom { gap: 10px; }
+#hex-custom, #tri-custom,
+#c2d-custom, #custom { display: flex; flex-direction: column; gap: 10px; }
+#hex-custom > .ui-row, #tri-custom > .ui-row,
 #c2d-custom > .ui-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
 #custom > .ui-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+:is(#hex-custom, #tri-custom) .ui-field,
 :is(#c2d-custom, #custom) .ui-field { gap: 6px; min-width: 0; }
+:is(#hex-custom, #tri-custom) .ui-field__input,
 :is(#c2d-custom, #custom) .ui-field__input { width: 100%; -moz-appearance: textfield; }
+:is(#hex-custom, #tri-custom) .ui-field__input::-webkit-inner-spin-button, :is(#hex-custom, #tri-custom) .ui-field__input::-webkit-outer-spin-button,
 :is(#c2d-custom, #custom) .ui-field__input::-webkit-inner-spin-button,
 :is(#c2d-custom, #custom) .ui-field__input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+:is(#hex-custom, #tri-custom) > .ui-actions,
 :is(#c2d-custom, #custom) > .ui-actions { flex-wrap: nowrap; justify-content: space-between; gap: 10px; margin: 0; }
+:is(#hex-custom, #tri-custom) [data-random],
 :is(#c2d-custom, #custom) [data-random] { flex: none; margin-inline-start: auto; }
+:is(#hex-info, #hex-code-info, #tri-info, #tri-code-info),
 :is(#c2d-info, #c-info, #c2d-code-info, #bc-code-info) { font-size: 14px; }
+#hex-choice [data-code-panel] > .ui-field, #tri-choice [data-code-panel] > .ui-field, #hex-code, #tri-code,
 #c2d-choice [data-code-panel] > .ui-field, #c2d-code, #board-choice [data-code-panel] > .ui-field, #bc-code { width: 100%; box-sizing: border-box; }
+:is(#hex-bests, #tri-bests) .ui-stat--tile,
 :is(#c2d-bests, #bc-bests) .ui-stat--tile { gap: 3px; padding: var(--space-3) var(--space-4); }
-@media (max-width: 1439px) {
-  #c2d-choice-top, #board-choice-top, #daily-top { top: 26px; }
-  #c2d-choice-wordmark, #board-choice-wordmark, #daily-wordmark { font-size: 58px; }
-  #c2d-choice::before, #board-choice::before, #daily::before { min-height: 106px; }
-  #c2d-choice-frame, #board-choice-frame, #daily-frame { width: 1080px; }
+:is(#hex-bests, #tri-bests) > [data-records],
+:is(#c2d-bests, #bc-bests) > [data-records] { align-self: flex-end; }
+#hex-choice-frame > .ui-frame__foot, #tri-choice-frame > .ui-frame__foot,
+#c2d-choice-frame > .ui-frame__foot, #board-choice-frame > .ui-frame__foot { justify-content: flex-end; }
+@container root (max-width: 1439px) or (max-height: 820px) {
+  #daily-frame { width: 1080px; }
+  #hex-choice::before, #tri-choice::before, #hex-choice::after, #tri-choice::after,
+  #c2d-choice::before, #board-choice::before, #daily::before,
+  #c2d-choice::after, #board-choice::after, #daily::after { min-height: 24px; }
+  #hex-play, #tri-play,
   #c2d-play, #bc-play { min-height: 54px; padding: 12px 22px; font-size: 21px; }
+  :is(#hex-bests, #tri-bests) .ui-stat--tile,
   :is(#c2d-bests, #bc-bests) .ui-stat--tile { padding: 10px 14px; }
+  :is(#hex-bests, #tri-bests) .ui-stat__value,
   :is(#c2d-bests, #bc-bests) .ui-stat__value { font-size: 26px; }
 }
-@media (max-width: 1199px) {
-  #c2d-choice-top, #board-choice-top, #daily-top { top: 24px; }
-  #c2d-choice-wordmark, #board-choice-wordmark, #daily-wordmark { font-size: 50px; }
-  #c2d-choice::before, #board-choice::before, #daily::before { min-height: 96px; }
-  #c2d-choice-frame, #board-choice-frame, #daily-frame { width: 984px; }
+@container root (max-width: 1199px) {
+  #daily-frame { width: 984px; }
   #daily-body { grid-template-columns: 420px auto minmax(0, 1fr); }
 }
 /* The denser rows of the smaller desktop windows, never a phone's. */
-@media (min-width: 720px) and (max-width: 1439px) {
-  #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { gap: 10px; padding: 18px 22px; }
+@container root (min-width: 720px) and ((max-width: 1439px) or (max-height: 820px)) {
+  #hex-choice-options, #tri-choice-options, #hex-choice-detail, #tri-choice-detail,
+  #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { gap: 10px; padding: 12px 22px 18px; }
+  #hex-choice-options, #tri-choice-options,
+  #c2d-choice-options, #board-choice-options { flex-basis: 460px; min-width: 460px; }
+  #hex-choice-panel, #tri-choice-panel,
+  #c2d-choice-panel, #bc-choice-panel { flex-basis: 619px; width: 619px; }
+  #hex-choice-detail, #tri-choice-detail,
   #c2d-choice-detail, #board-choice-detail { gap: 14px; }
+  #hex-choice-options > .ui-options, #tri-choice-options > .ui-options,
   #c2d-choice-options > .ui-options, #board-choice-options > .ui-options { gap: var(--space-2); }
+  #hex-choice .ui-option, #tri-choice .ui-option,
   #c2d-choice .ui-option, #board-choice .ui-option, #daily .ui-option { min-height: 46px; padding: 6px 14px; }
+  #hex-choice .ui-option__name, #tri-choice .ui-option__name,
   #c2d-choice .ui-option__name, #board-choice .ui-option__name, #daily .ui-option__name { font-size: 18px; }
+  #hex-choice .ui-option__meta, #tri-choice .ui-option__meta,
   #c2d-choice .ui-option__meta, #board-choice .ui-option__meta, #daily .ui-option__meta { font-size: 13px; }
+  #hex-choice .ui-option__check, #tri-choice .ui-option__check,
   #c2d-choice .ui-option__check, #board-choice .ui-option__check, #daily .ui-option__check { width: 24px; height: 24px; margin-inline-start: 10px; }
   #board-choice .ui-option__badge { width: 32px; height: 32px; margin-inline-end: 10px; }
   #daily-modes, #daily-detail { padding: 18px 22px; }
   #daily-modes { gap: 10px; }
   #daily-modes > .ui-options { gap: var(--space-2); }
 }
-@media (min-width: 1200px) and (max-width: 1439px) { #daily-body { grid-template-columns: 460px auto minmax(0, 1fr); } }
+@container root (min-width: 1200px) and ((max-width: 1439px) or (max-height: 820px)) { #daily-body { grid-template-columns: 460px auto minmax(0, 1fr); } }
 /* The placeholder (#coming-soon): its window at the canvas's size, 4 px above the backdrop's centre, the
-   body centring the lock badge, the line and Back; on a phone the window is full-bleed and the head's
-   Back reads Back. */
+   body centring the lock badge, the line and Back; on a phone the window is full-bleed. */
 #coming-soon-frame { width: 900px; height: 560px; margin-top: -8px; }
 #coming-soon-body { display: grid; place-items: center; }
 #coming-soon-panel { align-items: center; gap: 16px; max-width: 460px; text-align: center; }
 #coming-soon-badge { display: grid; place-items: center; flex: none; width: 120px; height: 120px; }
-#coming-soon-menu [data-label="phone"] { display: none; }
 #coming-soon-heading { margin: 0; font-size: 36px; line-height: 1.1; }
 #coming-soon-text { line-height: 1.4; }
-@media (max-width: 1439px) { #coming-soon-frame { width: 820px; height: 520px; } }
-@media (max-width: 1199px) { #coming-soon-frame { width: 760px; } }
+@container root (max-width: 1439px) or (max-height: 820px) { #coming-soon-frame { width: 820px; height: 520px; } }
+@container root (max-width: 1199px) { #coming-soon-frame { width: 760px; } }
 @media (max-width: 719px) {
+  #hex-choice, #tri-choice,
   #c2d-choice, #board-choice { padding: 0; }
-  #c2d-choice-top, #board-choice-top, #c2d-bests, #bc-bests, #c2d-summary, #bc-summary,
+  #hex-panel-toggle, #tri-panel-toggle, #hex-choice-body > .ui-divider--vertical, #tri-choice-body > .ui-divider--vertical, #hex-choice::before, #tri-choice::before, #hex-choice::after, #tri-choice::after,
+  #c2d-panel-toggle, #bc-panel-toggle, #c2d-choice-body > .ui-divider--vertical, #board-choice-body > .ui-divider--vertical,
   #c2d-choice::before, #board-choice::before, #c2d-choice::after, #board-choice::after { display: none; }
-  #c2d-choice-frame, #board-choice-frame { position: relative; flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }
-  #c2d-choice-back [data-label="wide"], #board-choice-back [data-label="wide"] { display: none; }
-  #c2d-choice-back [data-label="phone"], #board-choice-back [data-label="phone"] { display: inline; }
-  #c2d-choice-body, #board-choice-body { display: flex; flex-direction: column; gap: 18px; padding: 16px 18px 112px; }
-  #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { gap: var(--space-3); padding: 0; }
-  #c2d-choice-detail, #board-choice-detail { gap: 18px; }
-  #c2d-choice-body > .ui-divider--vertical, #board-choice-body > .ui-divider--vertical { width: 100%; height: 1px; }
+  #hex-choice-frame, #tri-choice-frame,
+  #c2d-choice-frame, #board-choice-frame { position: relative; flex: 1 1 auto; align-self: stretch; width: 100%; border-radius: 0; box-shadow: none; }
+  #hex-choice-body, #tri-choice-body,
+  #c2d-choice-body, #board-choice-body { flex-direction: column; gap: 18px; padding: 16px 18px 84px; }
+  #hex-choice-options, #tri-choice-options,
+  #c2d-choice-options, #board-choice-options { flex: none; min-width: 0; gap: var(--space-3); padding: 0; }
+  #hex-choice-panel, #tri-choice-panel,
+  #c2d-choice-panel, #bc-choice-panel { flex: none; width: auto; margin: 0 -18px; }
+  #hex-choice-detail, #tri-choice-detail,
+  #c2d-choice-detail, #board-choice-detail { gap: 14px; padding: 14px 18px 18px; }
+  #hex-choice-panel:not([data-open="true"]) > .ui-drawer__body, #tri-choice-panel:not([data-open="true"]) > .ui-drawer__body, #hex-settings > .ui-section-label, #tri-settings > .ui-section-label, #hex-code-panel > .ui-section-label, #tri-code-panel > .ui-section-label,
+  #c2d-choice-panel:not([data-open="true"]) > .ui-drawer__body, #bc-choice-panel:not([data-open="true"]) > .ui-drawer__body,
+  #c2d-settings > .ui-section-label, #bc-settings > .ui-section-label, #c2d-code-panel > .ui-section-label, #bc-code-panel > .ui-section-label { display: none; }
+  #hex-choice-options > .ui-options, #tri-choice-options > .ui-options,
   #c2d-choice-options > .ui-options, #board-choice-options > .ui-options { gap: 10px; }
+  #hex-choice .ui-option, #tri-choice .ui-option,
   #c2d-choice .ui-option, #board-choice .ui-option { min-height: 56px; padding: 9px 14px; }
+  #hex-choice .ui-option__name, #tri-choice .ui-option__name,
   #c2d-choice .ui-option__name, #board-choice .ui-option__name { font-size: 19px; }
+  #hex-choice .ui-option__meta, #tri-choice .ui-option__meta,
   #c2d-choice .ui-option__meta, #board-choice .ui-option__meta { font-size: 14px; }
-  #c2d-choice-frame > .ui-frame__foot, #board-choice-frame > .ui-frame__foot { position: absolute; left: 0; right: 0; bottom: 0; }
+  #hex-choice-frame > .ui-frame__foot, #tri-choice-frame > .ui-frame__foot,
+  #c2d-choice-frame > .ui-frame__foot, #board-choice-frame > .ui-frame__foot { position: absolute; left: 0; right: 0; bottom: 0; min-height: 64px; }
+  #hex-play, #tri-play,
+  #c2d-play, #bc-play { min-height: 44px; padding: 8px 22px; font-size: 19px; }
   #daily { padding: 0; }
-  #daily-top, #daily-preview, #daily-summary, #daily::before, #daily::after { display: none; }
+  #daily-preview, #daily-summary, #daily::before, #daily::after { display: none; }
   #daily-frame { position: relative; flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }
-  #daily-back [data-label="wide"] { display: none; }
-  #daily-back [data-label="phone"] { display: inline; }
   #daily-body { display: flex; flex-direction: column; gap: 18px; padding: 16px 18px 112px; }
   #daily-modes, #daily-detail { gap: var(--space-3); padding: 0; }
   #daily-detail { gap: 14px; }
@@ -834,8 +922,6 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
   #daily-frame > .ui-frame__foot { position: absolute; left: 0; right: 0; bottom: 0; }
   #coming-soon { padding: 0; }
   #coming-soon-frame { width: 100%; height: 100%; margin-top: 0; border-radius: 0; box-shadow: none; }
-  #coming-soon-menu [data-label="wide"] { display: none; }
-  #coming-soon-menu [data-label="phone"] { display: inline; }
 }
 .help-foot { margin: 6px 0 0; }
 .help-foot .pad-note { display: block; margin: 8px 0 0; }
@@ -845,8 +931,15 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 /* The fatal card, the no-JavaScript notice and the 404 page: a message card on a backdrop filling the page. */
 .fatal, .noscript, .not-found { position: fixed; inset: 0; z-index: var(--z-fatal); padding: 12px; }
 :is(.fatal, .noscript, .not-found) > .ui-card { width: min(560px, 100%); }
+/* Windowed at the desktop host the fatal card fills the window, not the root area: its corner at the
+   window's corner in the root area, its size the window's own (viewport units). */
+:root[data-host="desktop"][data-window-state="windowed"] .fatal {
+  inset: var(--window-y, 0px) auto auto var(--window-x, 0px);
+  width: 100vw;
+  height: 100vh;
+}
 
-@media (max-width: 760px) {
+@container root (max-width: 760px) {
   .hud-tools { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -869,7 +962,7 @@ kbd[data-pad-glyph] { min-width: 1.9em; }
 [data-pad-hinted] > .ui-segmented { min-width: 0; }
 .ready-pad { font-size: var(--font-size-sm); line-height: 1.5; }
 .ready-pad .pad-note { display: inline-block; margin: 4px 0 0; }
-#help { max-height: calc(100vh - 80px); overflow: hidden; }
+#help { max-height: calc(100cqh - 80px); overflow: hidden; }
 /* lockless controller play: the system cursor would sit over the crosshair */
 body.lockless #scene { cursor: none; }
 /* 3D touch play (js/touch-3d.js, a coarse-only device): the scene takes every touch as a gesture —
@@ -892,36 +985,30 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
 
 .toast {
   position: fixed; left: 50%; bottom: 28px; z-index: var(--z-toast);
-  width: max-content; max-width: min(640px, calc(100vw - 32px));
+  width: max-content; max-width: min(640px, calc(100cqw - 32px));
   transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
 }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 /* Over the 3D scene, below the crosshair. */
 #hud:not(.hidden):not(.hud--2d) ~ #toast { top: 58%; bottom: auto; }
 
-/* The 3D overlay on a phone (J-Game3D-p, -ls): no figures and no key strip. Upright, the title and Pause
-   bar on top and the counters under it; held sideways, the title a pill at the top left, the counters
-   and Restart at the top centre and Pause an icon button at the top right. The touch hint strip sits
-   under them, the view chips above the toolbar. */
+/* The 3D overlay on a phone (J-Game3D-p, -ls), in Learn 3D too: of the floating controls only Pause, and
+   no figures and no key strip. Upright, Pause on top and the counters under it; held sideways, Pause at
+   the top left and the counters and Restart at the top centre. The touch hint strip sits under them,
+   the view chips above the toolbar. */
 @media (max-height: 500px) and (orientation: landscape), (max-width: 719px) {
-  .hud-figures .ui-figures__body, #hud .hud-tools { display: none; }
-  .hud-figures, body.touch-play .hud-figures { max-height: none; }
+  #hud :is(.hud-figures, .hud-figures-toggle, .hud-tools) { display: none; }
 }
 @media (min-height: 501px) and (max-width: 719px), (orientation: portrait) and (max-width: 719px) {
-  .hud-overlay { display: flex; flex-direction: column; gap: 10px; position: absolute; top: 12px; left: 12px; right: 12px; }
-  .hud-counters, .hud-figures { position: static; transform: none; width: auto; }
-  .hud-figures { order: -1; }
-  .hud-figures .ui-figures__head { padding: 8px 8px 8px 20px; }
+  .hud-overlay { display: flex; flex-direction: column; align-items: stretch; gap: 10px; position: absolute; top: 12px; left: 12px; right: 12px; }
+  .hud-counters { position: static; transform: none; width: auto; }
+  .hud-pause { position: relative; top: auto; left: auto; align-self: flex-start; }
   #hud:not(.hud--2d) #hint-strip { top: 150px; bottom: auto; }
   #hud:not(.hud--2d) #mode-chips { bottom: 190px; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   .hud-counters { top: 10px; gap: var(--space-3); }
-  .hud-figures { top: 10px; left: 12px; right: 12px; width: auto; transform: none; overflow: visible; pointer-events: none; }
-  .hud-figures .ui-figures__head { padding: 0; }
-  .hud-figures .ui-figures__title { flex: none; display: flex; align-items: center; height: 48px; padding: 0 16px; overflow: visible; }
-  #hud-pause { width: 48px; height: 48px; min-height: 48px; padding: 0; gap: 0; font-size: 0; pointer-events: auto; }
-  #hud-pause .ui-key-hint { display: none; }
+  .hud-pause { top: 10px; left: 12px; }
   #hud:not(.hud--2d) .touch-modes { bottom: 20px; }
   #touch-stick { width: 110px; height: 110px; bottom: 18px; }
   #hud:not(.hud--2d) #hint-strip { top: 76px; bottom: auto; }
@@ -933,9 +1020,9 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
   #hud-tap { display: inline-flex; flex-wrap: nowrap; flex: none; align-self: center; height: 48px; box-sizing: border-box; }
   /* Swap clicks trades mouse buttons: a coarse primary pointer is never fine, so this is js/main.js COARSE_ONLY */
   #hud-swap { display: none; }
-  /* Pause (the 3D bar's and the Classic 2D window's) and the window's Restart take a touch anywhere in a 44 px band around their centre, their layout unchanged */
-  #hud-pause, #hud-restart, #c2d-pause, #c2d-restart { position: relative; }
-  #hud-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
+  /* Pause (the 3D overlay's, always positioned, in a 44 px square; the Classic 2D window's) and each strip's Restart take a touch anywhere in a 44 px band around their centre, their layout unchanged */
+  #hud-restart, #c2d-pause, #c2d-restart { position: relative; }
+  #hud-pause::after { content: ""; position: absolute; left: calc(50% - 22px); top: calc(50% - 22px); width: 44px; height: 44px; }
   #hud-restart::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #c2d-restart::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #c2d-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }

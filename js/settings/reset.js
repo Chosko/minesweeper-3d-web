@@ -1,24 +1,27 @@
-// Reset all data: deletes everything the game keeps in this browser, then reloads into a new
-// player's profile. Every owner loads its document at start-up and holds its own copy, so the
-// fresh profile is reached through a reload rather than a reset on each store. DOM-free apart from
-// the default legacy remover.
+// Reset all data: deletes everything the game keeps — in this browser, or on this computer for the
+// Steam build —, then reloads into a new player's profile. Every owner loads its document at
+// start-up and holds its own copy, so the fresh profile is reached through a reload rather than a
+// reset on each store. DOM-free apart from the default legacy remover.
 //
-// createReset({ storage, blobStore, legacy?, waitFor?, reload }) → { run }
-//   storage    the platform storage interface: its clear() removes every document and kept-aside
-//              copy.
-//   blobStore  the platform blob store: every blob its list() names is deleted.
-//   legacy     { remove(key) } over the loose ms3d.* keys; defaults to the global localStorage,
-//              where blocked or missing storage has nothing to remove. A remove that throws is a
-//              failure.
-//   waitFor    () → Promise awaited before anything is cleared (the replay library's start-up load
-//              and queued work), so no owner saves a cleared document back; a rejection is ignored.
-//   reload     () → called once, after everything was cleared.
+// createReset({ storage, blobStore, legacy?, desktopHost?, waitFor?, reload }) → { run }
+//   storage      the platform storage interface: its clear() removes every document and
+//                kept-aside copy.
+//   blobStore    the platform blob store: every blob its list() names is deleted.
+//   legacy       { remove(key) } over the browser build's loose ms3d.* keys; defaults to the global
+//                localStorage, where blocked or missing storage has nothing to remove; null removes
+//                none (the Steam build). A remove that throws is a failure.
+//   desktopHost  true on the Steam build (capabilities.desktopHost): the failure line is
+//                RESET_FAILURE_DESKTOP instead of RESET_FAILURE.
+//   waitFor      () → Promise awaited before anything is cleared (the replay library's start-up
+//                load and queued work), so no owner saves a cleared document back; a rejection is
+//                ignored.
+//   reload       () → called once, after everything was cleared.
 //
 //   run() → Promise of { ok: true } once reload() was called, or { ok: false, failed, message }
 //           where failed lists what could not be deleted ('documents', 'replays', 'keys') and
-//           message is RESET_FAILURE, the one line the player is told whatever failed. Every part is
-//           attempted whatever fails before it, and nothing reloads after a failure, so the player
-//           can try again. Never rejects.
+//           message is the build's failure line, the one line the player is told whatever failed.
+//           Every part is attempted whatever fails before it, and nothing reloads after a failure,
+//           so the player can try again. Never rejects.
 
 import { LEGACY_KEYS } from './store.js';
 
@@ -32,8 +35,9 @@ export const FIRST_USE_LEGACY_KEY = 'ms3d.hintH.done';
  */
 export const RESET_KEYS = Object.freeze([...Object.values(LEGACY_KEYS), FIRST_USE_LEGACY_KEY]);
 
-/** What the player is told when any part of a reset fails. */
+/** What the player is told when any part of a reset fails: on the web build, and on the Steam build. */
 export const RESET_FAILURE = 'The data could not be deleted. Close other tabs of the game and try again.';
+export const RESET_FAILURE_DESKTOP = 'The data could not be deleted. Try again.';
 
 const browserLegacy = {
   remove(key) {
@@ -47,7 +51,9 @@ const browserLegacy = {
   },
 };
 
-export function createReset({ storage, blobStore, legacy = browserLegacy, waitFor = () => {}, reload }) {
+export function createReset({ storage, blobStore, legacy = browserLegacy, desktopHost = false, waitFor = () => {}, reload }) {
+  const failure = desktopHost ? RESET_FAILURE_DESKTOP : RESET_FAILURE;
+
   async function clearDocuments() {
     try {
       return (await storage.clear()).ok === true;
@@ -75,6 +81,7 @@ export function createReset({ storage, blobStore, legacy = browserLegacy, waitFo
   }
 
   function clearKeys() {
+    if (!legacy) return true;
     let ok = true;
     for (const key of RESET_KEYS) {
       try {
@@ -96,7 +103,7 @@ export function createReset({ storage, blobStore, legacy = browserLegacy, waitFo
     if (!(await clearDocuments())) failed.push('documents');
     if (!(await clearReplays())) failed.push('replays');
     if (!clearKeys()) failed.push('keys');
-    if (failed.length > 0) return { ok: false, failed, message: RESET_FAILURE };
+    if (failed.length > 0) return { ok: false, failed, message: failure };
     reload();
     return { ok: true };
   }

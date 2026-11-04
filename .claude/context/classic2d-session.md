@@ -14,24 +14,26 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
 
 - `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
   `lost`, `left`), `FAILURE_OFFERS` (`retry`, `standard`),
-  `GENERATING_DELAY_MS` (200), `SESSION_EVENTS` (`generating`, `started`,
+  `GENERATING_DELAY_MS`, `SESSION_EVENTS` (`generating`, `started`,
   `changed`, `failed`, `finished`, `abandoned`, `mark`, `refused`),
   `START_HINT` ('Start on the marked cell').
 - `createTimer({now})` → `{start, pause, resume, stop, elapsedMs(),
   seconds(), pauses(until?, count?), started, running, stopped, paused}` —
   `pauses` the pause spans `[{start, end}]` begun by `until`, at most
   `count`, the open one clipped to `until`.
-- `createSession({choice, client, clock?, randomSeed?, generatingDelayMs?,
-  place?, pregenerated?, fixed?})` → `{state, choice, fixed, identity, setup, game, seed,
+- `createSession({choice, config?, client, clock?, randomSeed?,
+  generatingDelayMs?, place?, pregenerated?, fixed?})` → `{state, choice, fixed, identity, setup, game, seed,
   generatorVersion, generatingShown, paused, failure, minesLeft,
   markedCell, progress, elapsedMs(), seconds(), pauses(), clicks(),
   on(type, fn) → off, reveal(c), toggleFlag(c), chord(c), retry(),
   playStandard(), cancel(), pause(), resume(), restart(), leave(),
   summary(), recording, recordSample(values), recordCursor(cell),
-  replay(summary?)}` — `client` the generation client `{request, cancel}`,
+  replay(summary?)}` — `config` the flat mode configuration the choice is
+  read in (its mode, grid, sizes and limits; Classic 2D's square board
+  setup without one, [classic2d-board-setup.md](classic2d-board-setup.md)); `client` the generation client `{request, cancel}`,
   asked for no-guess boards only; `place` the standard placement
   (`generate` by default); `pregenerated` a `pregenerate()` board
-  ([generation.md](generation.md)); `clock` `{now, setTimeout,
+  ([generation-worker.md](generation-worker.md)); `clock` `{now, setTimeout,
   clearTimeout}`; `progress` `{candidates, seconds}` while generating, else
   null; `clicks()` the engine's counted clicks, wasted included. `finished`
   and `abandoned` carry `{summary, replay}`; `replay(summary = summary())`
@@ -69,7 +71,7 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
   then `changed` (`playing`). Win or loss stops the timer and emits
   `finished`; `restart` and `leave` after the first click and before the
   end emit `abandoned` first. Every summary is `buildSummary`
-  ([records.md](records.md)) over the engine's counts, the elapsed time and
+  ([records-summary.md](records-summary.md)) over the engine's counts, the elapsed time and
   pause spans, the board identity, seed, generator version and the game's
   id — one `crypto.randomUUID()` drawn when the board arrives, so the
   in-progress and final summaries name the same game.
@@ -81,7 +83,9 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
   generator version are added when the board arrives; a board played
   standard after a failure starts a new recording. `recording` is true
   while the game is started, unpaused and unfinished, and only then do
-  `recordSample` and `recordCursor` record.
+  `recordSample` and `recordCursor` record. The recorder's graph is the
+  board identity's grid — square, hex or tri ([replay.md](replay.md)) — so
+  every flat mode's game ends with its replay.
 - **Timer.** The game clock starts when the board is ready, runs through
   pauses and keeps its time once stopped; `seconds()` is whole seconds for
   the overlay, `elapsedMs()` whole milliseconds for the result. A pause is
@@ -92,21 +96,24 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
-  — the game session, timer and failure offer.
+  — the game session, timer and failure offer;
+  [../domain/features/flat-grid-modes.md](../domain/features/flat-grid-modes.md)
+  — Hexagon and Triangle played on this session.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — what the 2D session records.
 
 ## CROSS-REFERENCES
 
-- [classic2d.md](classic2d.md) — `boardSetup`, the choice the session plays.
+- [classic2d-board-setup.md](classic2d-board-setup.md) — `boardSetup`, the choice the session plays.
 - [classic2d-mode.md](classic2d-mode.md) — the mode that holds the session.
 - [engine-rules.md](engine-rules.md) — the game the session holds and its `changed`
   lists.
-- [generation.md](generation.md) — the client, request and `pregenerate`.
-- [records.md](records.md) — `buildSummary` and the board identity.
+- [generation.md](generation.md), [generation-worker.md](generation-worker.md) — the request, the client and `pregenerate`.
+- [records-summary.md](records-summary.md) — `buildSummary`; [records.md](records.md) — the board identity.
 - [replay.md](replay.md) — the recorder the session feeds and seals.
-- [testing.md](testing.md) — `tests/classic2d-session.test.mjs` the timer
-  and session; `tests/replay-2d.test.mjs` the session's recording.
+- [testing-files.md](testing-files.md) — `tests/classic2d-session.test.mjs` the timer
+  and session; `tests/replay-2d.test.mjs` the session's recording;
+  `tests/flat-modes.test.mjs` a configured session on its grid.
 
 ## WHEN TO READ THE SOURCE
 

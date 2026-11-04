@@ -49,8 +49,8 @@
 //   a chord that opens cells reveal(n) / chord(n); one that changes nothing in play noop(); then a
 //   win's win().
 // replayTitle(replay) → the viewer frame's title: "Replay · <mode> · <board>", the board as the records
-//   name it (js/records/board.js boardLabel) — "Replay · Classic 2D · Intermediate", "Replay · 3D · Cube
-//   Beginner".
+//   name it (js/records/board.js boardLabel), the mode as js/shell/challenge.js MODE_NAMES names it —
+//   "Replay · Classic 2D · Intermediate", "Replay · Hexagon · Beginner", "Replay · 3D · Cube Beginner".
 // replayCode(replay) → the game's board code in its game form (js/records/board-code.js), built from
 //   the header's board, seed and generator version and the first reveal in the action stream — no
 //   format change; an imported replay shows its code too. Null without a reveal.
@@ -72,8 +72,8 @@
 //            runs on the frames that draw nothing, to follow a board view that refitted; press
 //            shows a press ring for each action [{ index, time, kind, cell }]; still() says
 //            playback paused; showBbbv hands Show 3BV's tints (regionTints, null to clear);
-//            setFree switches a 3D camera between Free and Follow. A 2D board's is
-//            js/replay/viewer-2d.js, on the grid geometry of the replay's board; the 3D box is js/replay/viewer-3d.js, which js/main.js mounts on
+//            setFree switches a 3D camera between Free and Follow. Each flat graph kind's (square,
+//            hex, tri) is js/replay/viewer-2d.js, on the grid geometry of the replay's board; the 3D box is js/replay/viewer-3d.js, which js/main.js mounts on
 //            its renderer, and offers only with WebGL 2. A 3D (box) replay with no viewer says
 //            FAILURES.webgl2; any other replay with no viewer for its graph says FAILURES.unsupported.
 //            A mount that leaves the screen (a lost graphics context) is destroyed and nothing plays.
@@ -132,9 +132,9 @@
 // the controls #replay-controls — the seek bar #rp-seek over the timeline, its played part following
 // its value (bindSliderFill), with its pause marks #rp-pauses and its action ticks #rp-ticks; #rp-prev,
 // #rp-play (its label #rp-play-label and its leading icon: Play, Pause, or Play again at the end, with
-// the play, pause or restart icon), #rp-next, the speed choice #rp-speed, the toggles #rp-show-bbbv,
-// #rp-sound and #rp-camera (3D only), the end line #replay-end (the outcome as a chip,
-// #replay-end-outcome, and the time, #replay-end-time), #rp-download, #rp-open; the key line #rp-keys
+// the play, pause or restart icon; the green go button, the white secondary one while it shows
+// Pause), #rp-next, the speed choice #rp-speed, the toggles #rp-show-bbbv, #rp-sound and #rp-camera
+// (3D only), the end line #replay-end (the outcome as a chip, #replay-end-outcome, and the time, #replay-end-time), #rp-download, #rp-open; the key line #rp-keys
 // (REPLAY_KEY_LINE as key hints, each controller button a .replay-key__pad the page shows only while a
 // pad is connected) and the pauses' text alternative #rp-pauses-text. While a replay loads or has
 // failed the controls stay in place, every one that needs a replay disabled (Sound and Open replay file
@@ -157,7 +157,8 @@ import { codeOf } from '../records/board-code.js';
 import { formatTime, formatRate, DASH } from '../results/view.js';
 import { BTN } from '../gamepad.js';
 import { REPLAY_SCREEN, replayFileName } from '../records/replay-list.js';
-import { boardKey, boardLabel, MODE_3D } from '../records/board.js';
+import { boardKey, boardLabel } from '../records/board.js';
+import { MODE_NAMES } from '../shell/challenge.js';
 import { bbbvPartition } from '../engine/metrics.js';
 
 export { LEAD_IN_MS, BBBV_TINT_TOKENS, TINT_ALPHA };
@@ -346,7 +347,7 @@ const CLOSED = Object.freeze({
   figures: null, live: null, end: null, bbbv: false, camera: null,
 });
 
-export function createReplayViewer({ library, router, view, viewers = { square: mountViewer2D }, sound = null, files = null, bests = null }) {
+export function createReplayViewer({ library, router, view, viewers = { square: mountViewer2D, hex: mountViewer2D, tri: mountViewer2D }, sound = null, files = null, bests = null }) {
   let opening = 0; // which show() is current; a stale load is dropped
   let status = 'closed';
   let message = null;
@@ -611,7 +612,7 @@ function knownTimeline(sim) {
 
 export function replayTitle(replay) {
   const { board } = replay.header;
-  return `Replay · ${board.mode === MODE_3D ? '3D' : 'Classic 2D'} · ${boardLabel(board)}`;
+  return `Replay · ${MODE_NAMES[board.mode] ?? MODE_NAMES['classic-2d']} · ${boardLabel(board)}`;
 }
 
 export function replayCode(replay) {
@@ -843,6 +844,10 @@ export function createReplayView({
       }
       set('play', el.playLabel, state.playing ? 'Pause' : state.ended ? 'Play again' : 'Play');
       playIcon(state.playing ? 'pause' : state.ended ? 'restart' : 'play');
+      // Play and Play again are the green go button, Pause the white secondary one.
+      el.play.classList.toggle('ui-button--primary', !state.playing);
+      el.play.classList.toggle('ui-button--go', !state.playing);
+      el.play.classList.toggle('ui-button--secondary', state.playing);
       if (!seeking && Number(el.seek.value) !== Math.round(state.time)) el.seek.value = String(Math.round(state.time));
       const at = Math.max(0, state.time);
       el.seek.setAttribute('aria-valuetext', `${formatTime(at)} of ${formatTime(state.duration)}`);

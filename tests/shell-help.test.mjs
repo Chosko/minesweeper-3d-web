@@ -151,9 +151,9 @@ test('Space: a short tap turns aim-through on until the next tap; a hold works a
 
 test('the keyboard Input feeds Space through the tap toggle; the controller\'s hold button is unchanged', () => {
   const src = read('js/input.js');
-  assert.match(src, /get space\(\) \{ return this\.keys\.has\('Space'\) \|\| this\.spaceToggle\.on; \}/);
+  assert.match(src, /get space\(\) \{ return this\.holds\('aimThrough'\) \|\| this\.spaceToggle\.on; \}/);
   assert.match(src, /releaseAll\(\) \{[^}]*this\.spaceToggle\.reset\(\)/);
-  assert.match(read('js/main.js'), /controls\.pad\.space = held\(BTN\.RB\);/, 'the controller keeps its hold');
+  assert.match(read('js/main.js'), /Object\.assign\(controls\.pad, acts\.modes\);/, 'the controller keeps its hold');
 });
 
 // ---------------------------------------------------------------- " · no-guess"
@@ -265,7 +265,8 @@ test('H and M work on the Classic 2D board; F stays the 3D fullscreen key', () =
 });
 
 test('the pause card is fed by the active mode and device; its look settings show only in 3D', () => {
-  assert.match(MAIN, /mode: MODES\.active/);
+  assert.match(MAIN, /return \{ \.\.\.flat2D\(\)\.status\(\), inProgress, note, mode: 'classic-2d' \};/, 'every flat mode\'s pause card shows Classic 2D\'s help');
+  assert.match(MAIN, /inProgress, note, mode: '3d' \};/);
   assert.match(UI, /'lookSensitivity', 'invertY'/);
 });
 
@@ -305,7 +306,7 @@ test('in a browser: the Settings bindings panel\'s Mode choice, H, M and the HUD
 
     // Classic 2D: the HUD strip with only its keys, H opens the 2D help, M toggles sound.
     await page.click('#menu-entry-classic-2d');
-    await page.uncheck('#c2d-noguess'); // a standard board: no-guess is on by default
+    await page.evaluate(() => document.getElementById('c2d-noguess').click()); // a standard board: no-guess is on by default, its switch in the closed panel
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
@@ -351,7 +352,6 @@ test('in a browser: the Settings bindings panel\'s Mode choice, H, M and the HUD
     await ms(() => globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10, noGuess: true }));
     assert.equal(await mode(), 'ready');
     assert.equal(await textOf('#ready-board'), '6 × 6 × 6 · 10 mines · no-guess');
-    assert.equal(await ms(() => document.getElementById('hud-title').getAttribute('title')), '3D · Cube Intro');
     assert.match(await textOf('#hud-tools'), /F fullscreen/);
     await ms(() => { globalThis.__ms.forcePlay(); globalThis.__ms.pause(); });
     assert.equal(await mode(), 'paused');

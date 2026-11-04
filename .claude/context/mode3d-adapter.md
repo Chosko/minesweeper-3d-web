@@ -31,8 +31,8 @@ Board choice and the file table are in [mode3d.md](mode3d.md).
 - `endDelayMs({X, Y, Z})` — how long the end effect plays before the game
   is reported finished, win and loss alike: grows with the board's diagonal
   so the loss wave from any cube reaches the farthest cell and its reveal
-  (`WAVE_CELL_S`) completes, between `END_DELAY_MS` (1000) and
-  `END_DELAY_MAX_MS` (2500); `waveStepS({X, Y, Z})` — the wave's seconds
+  (`WAVE_CELL_S`) completes, between `END_DELAY_MS` and
+  `END_DELAY_MAX_MS`; `waveStepS({X, Y, Z})` — the wave's seconds
   per cell of distance the renderer paces it with, derived from it.
   `WAVE_STEP_MAX_S`, `END_MARGIN_S`.
 
@@ -83,8 +83,8 @@ Board choice and the file table are in [mode3d.md](mode3d.md).
   `endDelayMs` and `waveStepS`.
 - [replay-samplers.md](replay-samplers.md) — the camera sampler
   `flow.sampler` builds.
-- [records.md](records.md) — `buildSummary`, `MODE_3D` and the 3D identity.
-- [testing.md](testing.md) — `tests/shell-mode-3d.test.mjs`,
+- [records-summary.md](records-summary.md) — `buildSummary`; [records.md](records.md) — `MODE_3D` and the 3D identity.
+- [testing-files.md](testing-files.md) — `tests/shell-mode-3d.test.mjs`,
   `tests/mode3d-end.test.mjs`, `tests/records-summary-3d.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

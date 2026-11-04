@@ -36,7 +36,8 @@ In scope (m2c-flat-grids):
   outline's edges, each shaded by the way it faces. The glyphs (numbers,
   flag, mine, wrong-flag cross, start-cell ring) are drawn in the
   geometry's glyph box: a hexagon's box is its size across the flats, a
-  triangle's is 0.55 of its side, centred on its centroid.
+  triangle's is the square around its inscribed circle (side / √3),
+  centred on its centroid.
 - **Board checks** extended to the new grids: every entry present; each
   number at least 4.5:1 against the revealed face and its shade; the cursor
   ring at least 3:1 against the closed and revealed faces; the closed face's
@@ -46,8 +47,10 @@ In scope (m2c-flat-grids):
   sheets and the kept variant "B · Sharp": hexagon gap 6 % and radius 5 %
   of the tile across the flats; triangle gap 6 % and radius 6 % of the tile
   height; numbers 9–12 in the 3D hues of the same numbers, so a number has
-  one colour in every mode. The cell motion is the Classic 2D motion,
-  unchanged, played around the tile's centre.
+  one colour in every mode. They ship in the same change as the board
+  checks, which fail the catalogue's only theme without them, rather than
+  through a `/theme-implement` run. The cell motion is the Classic 2D
+  motion, unchanged, played around the tile's centre.
 - **The theme skill** reads a theme's Hexagon and Triangle board sheets
   beside its 2D board sheet, so a later theme can supply these values from
   its canvas.

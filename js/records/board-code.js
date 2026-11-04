@@ -8,8 +8,12 @@
 //
 //   board token  B, I, E          the three 2D standard boards (recognised as standardBoard does)
 //                <w>X<h>M<mines>   any other 2D square board, e.g. 20X12M50
+//                H + one of those two  a hexagon board, its own standard boards as HB, HI, HE,
+//                                  any other as e.g. H20X12M50
+//                T + one of those two  a triangle board, its own standard boards as TB, TI, TE,
+//                                  any other as e.g. T20X12M50
 //                <x>X<y>X<z>M<mines>  every 3D board, cube presets included, e.g. 8X8X8M40
-//                + a trailing N when the board is no-guess: EN, 8X8X8M40N
+//                + a trailing N when the board is no-guess: EN, HEN, TEN, 8X8X8M40N
 //   daily code   <board>-<YYYYMMDD>-<check>        e.g. EN-20261011-1F3A
 //                seed dailySeed(date, board token), start cell the board's marked start cell
 //                (js/generation/start-cell.js)
@@ -29,14 +33,18 @@
 // no-guess board the 3D board choice refuses, and a start cell outside the board. A code always
 // spells its board canonically: a standard 2D board spelled out is malformed.
 //
-// The daily boards (DAILY_BOARDS): 2D Expert no-guess and the cube 8 × 8 × 8 · 40 no-guess, named
-// by their dimensions so a preset re-tune changes neither. dailyGame(id, date) is one day's board:
-// its seed, marked start cell, code and generation request.
+// The daily boards (DAILY_BOARDS), one per mode in the menu's order: Classic 2D's, Hexagon's and
+// Triangle's Expert no-guess on their grids and the cube 8 × 8 × 8 · 40 no-guess, named by their
+// dimensions so a preset re-tune changes none. A daily code is the daily form over the board's own
+// token (EN, HEN, TEN, 8X8X8M40N). dailyGame(id, date) is one day's board: its seed, marked start
+// cell, code and generation request.
 
 import { createBoardIdentity, standardBoard, STANDARD_BOARDS, MODE_3D } from './board.js';
 import { startCell as markedCell } from '../generation/start-cell.js';
 import { GENERATOR_VERSION } from '../generation/placer.js';
 import { validateCustom as validate2D, MODE as MODE_2D, GRID } from '../classic2d/board-setup.js';
+import * as hexagon from '../hexagon/board-setup.js';
+import * as triangle from '../triangle/board-setup.js';
 import { validateCustom as validate3D, noGuessAvailable, noGuessReason } from '../mode3d/board-choice.js';
 
 export const CODE_REASONS = Object.freeze({
@@ -49,6 +57,16 @@ export const CODE_REASONS = Object.freeze({
 });
 
 const LETTERS = Object.freeze({ Beginner: 'B', Intermediate: 'I', Expert: 'E' });
+
+// The 2D modes: each one's token prefix, grid, custom-limit validation and standard board by name.
+const flatMode = (prefix, mode, grid, validate, standardOf) => Object.freeze({ prefix, mode, grid, validate, standardOf });
+const SQUARE = flatMode('', MODE_2D, GRID, validate2D, (name) => STANDARD_BOARDS.find((b) => b.name === name));
+const sizesOf = (setup) => (name) => setup.STANDARD_SIZES[name.toLowerCase()];
+const PREFIXED = Object.freeze([
+  flatMode('H', hexagon.MODE, hexagon.GRID, hexagon.validateCustom, sizesOf(hexagon)),
+  flatMode('T', triangle.MODE, triangle.GRID, triangle.validateCustom, sizesOf(triangle)),
+]);
+const flatOf = (mode) => PREFIXED.find((f) => f.mode === mode) ?? SQUARE;
 
 // The 32-bit FNV-1a hash of a string of ASCII characters.
 export function fnv1a(text) {
@@ -87,14 +105,16 @@ const plain = (board) => {
   return createBoardIdentity(rest);
 };
 
-// The board token of a board identity: B / I / E, <w>X<h>M<mines> or <x>X<y>X<z>M<mines>, + N.
+// The board token of a board identity: B / I / E, <w>X<h>M<mines> or <x>X<y>X<z>M<mines>, a hexagon
+// board's with a leading H and a triangle board's with a leading T, + N.
 export function boardToken(identity) {
   const id = plain(identity);
   let base;
   if (id.mode === MODE_3D) base = `${id.width}X${id.height}X${id.depth}M${id.mines}`;
   else {
-    const standard = id.grid === GRID ? standardBoard(id) : null;
-    base = standard ? LETTERS[standard.name] : `${id.width}X${id.height}M${id.mines}`;
+    const flat = flatOf(id.mode);
+    const standard = id.grid === flat.grid ? standardBoard(id) : null;
+    base = `${flat.prefix}${standard ? LETTERS[standard.name] : `${id.width}X${id.height}M${id.mines}`}`;
   }
   return id.noGuess ? `${base}N` : base;
 }
@@ -102,7 +122,8 @@ export function boardToken(identity) {
 // The generation graph description of a board identity.
 export function graphOf(identity) {
   const id = plain(identity);
-  return id.mode === MODE_3D ? { kind: 'box', X: id.width, Y: id.height, Z: id.depth } : { kind: GRID, width: id.width, height: id.height };
+  if (id.mode === MODE_3D) return { kind: 'box', X: id.width, Y: id.height, Z: id.depth };
+  return { kind: flatOf(id.mode).grid, width: id.width, height: id.height };
 }
 
 const cellsOf = (id) => id.width * id.height * (id.depth ?? 1);
@@ -149,19 +170,26 @@ const SEED = /^[0-9A-F]{8}$/;
 const START = new RegExp(`^${NUM}$`);
 const CHECK = /^(0|[1-9][0-9]*)([0-9A-F]{3})$/;
 
-// The identity a board token names, or null.
-function boardOfToken(token) {
+// The fields a 2D token (without its mode's prefix) names in the 2D mode `flat`, or null.
+function flatOfToken(token, { mode, grid, standardOf }) {
   let m = TOKEN_STD.exec(token);
   if (m) {
-    const name = Object.keys(LETTERS).find((k) => LETTERS[k] === m[1]);
-    const s = STANDARD_BOARDS.find((b) => b.name === name);
-    return { mode: MODE_2D, grid: GRID, width: s.width, height: s.height, mines: s.mines, noGuess: m[2] === 'N' };
+    const s = standardOf(Object.keys(LETTERS).find((k) => LETTERS[k] === m[1]));
+    return { mode, grid, width: s.width, height: s.height, mines: s.mines, noGuess: m[2] === 'N' };
   }
-  m = TOKEN_3D.exec(token);
-  if (m) return { mode: MODE_3D, width: +m[1], height: +m[2], depth: +m[3], mines: +m[4], noGuess: m[5] === 'N' };
   m = TOKEN_2D.exec(token);
-  if (m) return { mode: MODE_2D, grid: GRID, width: +m[1], height: +m[2], mines: +m[3], noGuess: m[4] === 'N' };
+  if (m) return { mode, grid, width: +m[1], height: +m[2], mines: +m[3], noGuess: m[4] === 'N' };
   return null;
+}
+
+// The identity a board token names, or null.
+function boardOfToken(token) {
+  if (typeof token !== 'string') return null;
+  const prefixed = PREFIXED.find((f) => token.startsWith(f.prefix));
+  if (prefixed) return flatOfToken(token.slice(prefixed.prefix.length), prefixed);
+  const m = TOKEN_3D.exec(token);
+  if (m) return { mode: MODE_3D, width: +m[1], height: +m[2], depth: +m[3], mines: +m[4], noGuess: m[5] === 'N' };
+  return flatOfToken(token, SQUARE);
 }
 
 // Why a board is outside its mode's custom limits, or null when it is inside them.
@@ -174,7 +202,7 @@ function limitsReason(b) {
     if (b.noGuess && !noGuessAvailable(choice)) return `${noGuessReason(choice)}.`;
     return null;
   }
-  const v = validate2D({ width: b.width, height: b.height, mines: b.mines });
+  const v = flatOf(b.mode).validate({ width: b.width, height: b.height, mines: b.mines });
   return v.ok ? null : `${v.reason.charAt(0).toUpperCase()}${v.reason.slice(1)}.`;
 }
 
@@ -226,13 +254,15 @@ export function parseBoardCode(text, { generatorVersion: build = GENERATOR_VERSI
   return { ok: true, board, seed: parseInt(parts[1], 16), startCell, generatorVersion: version };
 }
 
-// The two daily boards, in the Daily screen's order.
+// The daily boards, one per mode, in the menu's order.
 const dailyBoard = (id, label, fields) => {
   const board = createBoardIdentity(fields);
   return Object.freeze({ id, label, board, token: boardToken(board) });
 };
 export const DAILY_BOARDS = Object.freeze([
   dailyBoard('expert', 'Expert', { mode: MODE_2D, grid: GRID, width: 30, height: 16, mines: 99, noGuess: true }),
+  dailyBoard('hex-expert', 'Expert', { mode: hexagon.MODE, grid: hexagon.GRID, width: 30, height: 16, mines: 100, noGuess: true }),
+  dailyBoard('tri-expert', 'Expert', { mode: triangle.MODE, grid: triangle.GRID, width: 41, height: 17, mines: 103, noGuess: true }),
   dailyBoard('cube', 'Cube', { mode: MODE_3D, width: 8, height: 8, depth: 8, mines: 40, noGuess: true }),
 ]);
 

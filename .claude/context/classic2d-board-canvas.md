@@ -32,10 +32,11 @@ overview [classic2d.md](classic2d.md).
   pixels.
 - Touch zoom: `zoomRange` → `{min, max}` (the geometry's floor and the
   fit-to-view tile, the whole board inside the frame, whichever is larger),
-  `boardPoint(x, y)` → `{u, v}` in board units (pitches) from the board's
-  corner, `zoom(tile, x, y, point?)` → changed.
+  `boardPoint(x, y)` → `{u, v}` in the geometry's board units (pitches on
+  the square geometry) from the board's top-left corner,
+  `zoom(tile, x, y, point?)` → changed.
 - `clipMarks(layout, scroll)` → `{left, right, top, bottom, barX, barY}`;
-  `SHADOW_DEPTH` (12), `SCROLLBAR` (`{thickness: 4, inset: 2}`).
+  `SHADOW_DEPTH`, `SCROLLBAR` (`{thickness, inset}`).
 - Tokens: `BOARD_SHADOW`, `BOARD_SCROLLBAR`; `BOARD_BACKGROUND`
   (`--color-board-frame`) only while the skin has no board module, whose
   `palette.boardGround` takes its place. `PAN_MODIFIER` (`shiftKey`).
@@ -92,10 +93,10 @@ overview [classic2d.md](classic2d.md).
   feedback, ring, motion and effect members.
 - [classic2d-tile-skin.md](classic2d-tile-skin.md) — the skin the view
   draws through.
-- [classic2d-input.md](classic2d-input.md) — the inputs that drive the
+- [classic2d-input.md](classic2d-input.md), [classic2d-input-cursor.md](classic2d-input-cursor.md) — the inputs that drive the
   pressed set, the cursor and the pan.
 - [engine-rules.md](engine-rules.md) — `changed` lists.
-- [testing.md](testing.md) — `tests/classic2d-view.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/classic2d-view.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

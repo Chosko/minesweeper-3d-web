@@ -1,0 +1,6 @@
+{
+  "appId": "<app id from the Steamworks partner site>",
+  "depotId": "<Windows depot id>",
+  "branch": "<private branch name, or empty to upload without setting the build live>",
+  "description": "Minesweeper 3D private build"
+}

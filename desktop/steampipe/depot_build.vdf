@@ -1,0 +1,14 @@
+// The SteamPipe Windows depot build script, a template filled by `npm run steampipe`: the whole build
+// directory, less the development app id file and debug symbols.
+"DepotBuild"
+{
+	"DepotID" "{{depotId}}"
+	"FileMapping"
+	{
+		"LocalPath" "*"
+		"DepotPath" "."
+		"Recursive" "1"
+	}
+	"FileExclusion" "steam_appid.txt"
+	"FileExclusion" "*.pdb"
+}

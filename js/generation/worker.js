@@ -2,7 +2,7 @@
 //
 // Protocol — plain structured-clone messages, one reply per request:
 //   page → worker  { id, request }   request as generate() takes it (js/generation/generate.js), over
-//                                    any of its graph descriptions — square, hex or box
+//                                    any of its graph descriptions — square, hex, tri or box
 //                  { id, warm: true } a no-op warm-up: the module is loaded and answers
 //   worker → page  { id, progress: { candidates } }  during a no-guess request, before its result,
 //                                    at most every PROGRESS_INTERVAL_MS of worker time

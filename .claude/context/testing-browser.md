@@ -1,14 +1,17 @@
-# Testing — the browser layer: helper, server, environment, inputs, `__ms`
+# Testing — the browser layer: what earns a browser test, helper, server, inputs
 
 ## OVERVIEW
 
 How the Playwright tests (those named "in a browser") are written: what
 earns a test a place in the browser tier, the shared helper every browser
-test file goes through, the local server, the browser environment they run in, the 3D backdrop kept out
-of their way, inputs a round trip cannot stretch, a board measured after
-the board art hand-off, fixed boards for a game state, and `window.__ms`. Conventions every test follows, and the
-tripwires, are [testing-conventions.md](testing-conventions.md); where
-tests go and how the suite runs is [testing.md](testing.md).
+test file goes through, the local server, inputs a round trip cannot
+stretch, a board measured after the board art hand-off, and fixed boards
+for a game state. The browser environment they run in, the 3D backdrop kept
+out of their way and `window.__ms` are
+[testing-browser-env.md](testing-browser-env.md). Conventions every test
+follows, and the tripwires, are [testing-conventions.md](testing-conventions.md);
+how the suite runs is [testing.md](testing.md) and where tests go
+[testing-files.md](testing-files.md).
 
 ## PUBLIC API
 
@@ -83,11 +86,11 @@ How a browser test is built:
   auto-repeat never fires (`shell-pad-walk`, `shell-menu`, `settings-page`); a touch tap or
   one-finger drag is a gesture the browser synthesizes
   (`Input.synthesizeTapGesture`, `Input.synthesizeScrollGesture`), so the
-  400 ms long-press never sees it (`classic2d-touch`, the 3D look in
+  long-press (`LONG_PRESS_MS`) never sees it (`classic2d-touch`, the 3D look in
   `shell-mode-3d`).
 - **A Classic 2D board is measured once the board art hand-off has
   happened** (`BOARD_ART.current()`,
-  [classic2d-tile-skin.md](classic2d-tile-skin.md)): until the theme's
+  [classic2d-tile-skin-cache.md](classic2d-tile-skin-cache.md)): until the theme's
   number font loads the skin has no board module, and the board is laid out,
   steadily, with no gap (`classic2d-mode`, `classic2d-view`, the menu
   previews in `shell-menu`).
@@ -102,50 +105,24 @@ How a browser test is built:
   the test's own board, so the start-up's daily pre-generation never takes
   its place.
 
-Browser environment:
-- Playwright is installed globally (`/opt/node22/lib/node_modules/playwright`,
-  browsers in `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`); resolve it via
-  `NODE_PATH` or an absolute import. Do not run `playwright install`.
-- 3D needs WebGL 2 without a GPU: the run's one Chromium, which the runner
-  launches and every browser test file shares, runs SwiftShader (the
-  helper's `SWIFTSHADER_ARGS`, part of its launch flags in
-  [testing.md](testing.md) § OVERVIEW); a test file passes no launch flags
-  of its own. No-WebGL checks add an init script making
-  `getContext('webgl2')` return null to their own page, so they share that
-  browser.
-- The menu screens' orbiting 3D backdrop redraws every frame and drops
-  SwiftShader to about 10 fps, slowing every `requestAnimationFrame` wait,
-  screenshot and `browser.close()`. A browser test that loads `index.html`
-  for a 2D, screen or menu subject keeps it out of the way: where 3D is
-  irrelevant it adds the WebGL-2-refusing init script (`removeWebGL2`,
-  defined in each such file); where it needs WebGL 2 present (it opens the
-  3D board choice, starts a 3D game or asserts on the 3D entry) it loads
-  `index.html?still-backdrop` (the hook in [app-shell.md](app-shell.md)),
-  which draws the backdrop once per change. The 3D gameplay test files, the
-  no-WebGL path's own tests and the backdrop's own test (`shell-menu`) load
-  the page as a player does.
-- 3D tests and ad-hoc scripts drive `window.__ms`. Headless has no pointer
-  lock: `__ms.start(...)`, `__ms.forcePlay()`, then `aimAt` and `click`.
-  Mutators refresh synchronously, so `selected()` / `info()` are valid at
-  once; pixels need the next animation frame. `pickWith` compares DDA
-  against brute-force picking.
-
 ## DOMAIN DEPENDENCIES
 
 - [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md): "Rules" (the
-  timer rule in browser tests); "Controls" (picking exclusions in the
-  browser).
+  timer rule in browser tests).
 
 ## CROSS-REFERENCES
 
+- [testing-browser-env.md](testing-browser-env.md) — the browser
+  environment: Playwright, SwiftShader, the 3D backdrop kept out of the way,
+  driving `window.__ms`.
 - [testing-conventions.md](testing-conventions.md) — the conventions every
   test follows, timing slack and the tripwires.
-- [testing.md](testing.md) — running the suite, the tiers, the shared
-  browser helper, where each test goes.
+- [testing.md](testing.md) — running the suite, the tiers, the runner;
+  [testing-files.md](testing-files.md) — where each test goes.
 - [app-shell.md](app-shell.md) — `window.__ms`, the surface Playwright
-  drives, and the `still-backdrop` hook.
+  drives.
 
 ## WHEN TO READ THE SOURCE
 
-- An `__ms` member not in [app-shell.md](app-shell.md): read the end of
-  `js/main.js`.
+- A browser test that needs a helper option `browserSuite` lacks:
+  `tests/helpers/browser.mjs`.

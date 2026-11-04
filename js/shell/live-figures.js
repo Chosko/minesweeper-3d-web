@@ -25,6 +25,14 @@
 //
 // figuresLine(figures) → the line a figures panel's live part announces, "3BV 12 / 59, 39 mines
 // left": the 3BV figure and the flags figure's detail.
+//
+// createFiguresPanel({ storage }) → { open, load(), setOpen(on) }: whether the live figures panel is
+// open, one view preference shared by every mode and kept across sessions, in its own platform-storage
+// document beside the board choice panel's pin (js/shell/returning.js). Registers FIGURES_PANEL_DOC
+// with storage. load() → Promise of the stored state, awaited before the first screen: a missing,
+// malformed or newer document gives closed. setOpen(on) keeps the state in memory, then saves it →
+// the save's Promise of { ok }; a failed save keeps the state for the session. Reset all data clears
+// the document.
 
 import { countedClicks, bbbvPerSecond, efficiency } from '../records/summary.js';
 import { DASH, MINUS, formatTime, formatRate, formatEfficiency } from '../results/view.js';
@@ -71,3 +79,27 @@ export function changedFigures(previous, next) {
 }
 
 export const figuresLine = (f) => `3BV ${f.bbbv.text}, ${f.flags.detail}`;
+
+export const FIGURES_PANEL_DOC = 'shell.liveFigures';
+export const FIGURES_PANEL_VERSION = 1;
+
+export function createFiguresPanel({ storage }) {
+  storage.register(FIGURES_PANEL_DOC, FIGURES_PANEL_VERSION);
+  let open = false;
+  return {
+    get open() { return open; },
+    async load() {
+      const data = await storage.load(FIGURES_PANEL_DOC);
+      open = data !== null && typeof data === 'object' && typeof data.open === 'boolean' && data.open;
+      return open;
+    },
+    async setOpen(on) {
+      open = !!on;
+      try {
+        return await storage.save(FIGURES_PANEL_DOC, { open });
+      } catch (error) {
+        return { ok: false, reason: 'write-failed', error };
+      }
+    },
+  };
+}

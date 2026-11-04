@@ -19,8 +19,9 @@ are listed in [app-shell.md](app-shell.md) § PUBLIC API.
 
 - **Replay viewer route.** `REPLAY_VIEWER` (`createReplayViewer` over
   `REPLAYS` and `SHELL`, `sound: sfx`, `files: REPLAY_FILES`, view bound to
-  `#replay`, viewers `{square: mountReplay2D, box: mountReplay3D}` — box
-  only with WebGL 2, else a 3D replay says why it cannot play) is the
+  `#replay`, viewers `FLAT_REPLAY_VIEWERS` (`mountReplay2D` for `square`, `hex` and
+  `tri`) plus `box: mountReplay3D` — box only with WebGL 2, else a 3D
+  replay says why it cannot play) is the
   router's `replay` screen. It is opened by Watch replay (with the replay),
   the results screen's Watch best (`RESULTS.watchBest()`, a replay id), the
   Records screen's Watch best and library Watch (`RECORDS_PAGE.watch`,
@@ -93,7 +94,7 @@ are listed in [app-shell.md](app-shell.md) § PUBLIC API.
 - [input-camera.md](input-camera.md) — `FlyCamera`, `OrbitCamera`,
   `spawnPose`; [app-shell-3d-camera.md](app-shell-3d-camera.md) — the Camera
   setting's mode the free camera follows.
-- [testing.md](testing.md) — `tests/replay-viewer.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/replay-viewer.test.mjs`,
   `tests/replay-viewer-3d.test.mjs`, `tests/results-watch.test.mjs` (fast
   only; Watch replay's browser test is in `tests/results.test.mjs`),
   `tests/records-replays.test.mjs`.

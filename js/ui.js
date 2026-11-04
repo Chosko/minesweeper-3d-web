@@ -1,10 +1,10 @@
 // DOM menus, HUD and overlays. No game rules here.
 // Every help surface — the pause card, the Settings page's bindings panel, the H panel, the HUD strip,
-// the hint strip and the main menu's key hints — is drawn from the bindings source
+// the hint strip and the screens' key hints — is drawn from the bindings source
 // (js/settings/bindings.js) for the active mode and the active device (the controller in the
 // connected controller's glyphs).
 import {
-  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote, setButtonIcon,
+  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote, setButtonIcon, fitTitleBar, matchRootArea,
 } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
 import { helpListHtml, readyListHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys, reminderKeys } from './settings/bindings.js';
@@ -16,6 +16,7 @@ import { liveFigures, figuresLine } from './shell/live-figures.js';
 import { standardBoard, preset3D, createBoardIdentity, MODE_3D } from './records/board.js';
 import { readoutText } from './readability.js';
 import { NO_GAME_LINE, ENDED_LINE } from './shell/pause.js';
+import { MODE_NAMES } from './shell/challenge.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -30,6 +31,23 @@ export function clampSettings(s) {
 }
 
 export const fmtDims = (s) => `${s.X} × ${s.Y} × ${s.Z}`;
+
+/**
+ * Where the Classic 2D status card sits, in the coordinates of the root's rect `root`: centred on the
+ * card `over` the window while one shows (the pause card, which is then the window alone), else on the
+ * board column `column`; its room (`--status-room`, null for none) the width of the window about that
+ * centre — `over`, or the game window `frame`. Rects as getBoundingClientRect gives them.
+ */
+export function statusPlace({ column, frame = null, over = null, root }) {
+  const centre = over ?? column;
+  const bounds = over ?? frame;
+  const x = centre.left + centre.width / 2;
+  return {
+    left: x - root.left,
+    top: centre.top + centre.height / 2 - root.top,
+    room: bounds ? 2 * Math.min(x - bounds.left, bounds.right - x) : null,
+  };
+}
 /** The generating card's progress line: the worker's candidates tried so far and the whole seconds since the click. */
 export const progressLine = ({ candidates, seconds }) => `candidate ${candidates} · ${seconds} s`;
 
@@ -49,11 +67,11 @@ export function boardLine3D(s, { mines = false } = {}) {
 export const boardLine2D = (b) => `${b.width} × ${b.height} · ${b.mines} mine${b.mines === 1 ? '' : 's'}${b.noGuess ? NO_GUESS : ''}`;
 /** The Classic 2D window's foot line: the board's line with No-guess capitalised, never a cell ("16 × 16 · 40 mines · No-guess"). */
 export const boardFoot2D = (b) => `${boardLine2D({ ...b, noGuess: false })}${b.noGuess ? ' · No-guess' : ''}`;
-/** The Classic 2D window's title: the mode and the board — a standard board's name, a daily, or Custom. */
+/** The Classic 2D window's title: the open mode (Classic 2D, Hexagon or Triangle) and the board — a standard board's name, a daily, or Custom. */
 export function boardTitle2D(b) {
   const id = b.identity;
   const name = id?.daily ? 'Daily' : (id && standardBoard(id)?.name) || 'Custom';
-  return `Classic 2D · ${name}`;
+  return `${MODE_NAMES[id?.mode] ?? MODE_NAMES['classic-2d']} · ${name}`;
 }
 /**
  * The 3D overlay's title: the mode and the board — a cube preset's family and name, a daily, or
@@ -65,8 +83,6 @@ export function boardTitle3D(s) {
   try { preset = !s.daily && preset3D(createBoardIdentity({ mode: MODE_3D, width: s.X, height: s.Y, depth: s.Z, mines: s.mines, noGuess: false })); } catch { /* a board no record can name: Custom */ }
   return `3D · ${s.daily ? 'Daily' : preset ? `${preset.family} ${preset.name}` : 'Custom'}`;
 }
-/** The title with the board dropped, the mode alone ("3D"), for a bar too narrow for the full name; a title with no board part is its own. */
-export const shortTitle3D = (title) => title.split(' · ')[0];
 /** What a figures panel's live part says when the game's counts change (js/shell/live-figures.js). */
 export { figuresLine };
 
@@ -74,12 +90,16 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 /** The menu's note on a coarse-only device, where both modes play by touch. */
 export const TOUCH_MSG = 'Both modes play by touch: 3D and Classic 2D.';
 
+/** The keys that press a focused button. */
+const PRESS_KEYS = new Set(['Enter', 'NumpadEnter', 'Space']);
+
 export class UI {
-  constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onTapMode, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onTouchMode }
+  // desktopHost: the Steam build (capabilities.desktopHost), whose Reset all data speaks of this computer.
+  constructor(cb, { desktopHost = false } = {}) {
+    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleFigures, onTapMode, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onTouchMode }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
-      hudCounters: $('hud-counters'), hudFigures: $('hud-figures'), hudHead: $('hud-figures').querySelector('.ui-figures__head'), hudTitle: $('hud-title'),
+      hudCounters: $('hud-counters'), hudFigures: $('hud-figures'), hudPause: $('hud-pause'), hudFiguresToggle: $('hud-figures-toggle'),
       hudReminder: $('hud-reminder'),
       help: $('help'), helpList: $('help').querySelector('.ui-controls'), helpFoot: $('help-foot'), readyKeys: $('ready-keys'),
       hintStrip: $('hint-strip'), hintStripText: $('hint-strip-text'), hintStep: $('hint-strip-step'),
@@ -95,9 +115,9 @@ export class UI {
       resume: $('p-resume'), home: $('p-home'), restart: $('p-restart'), restartLabel: $('p-restart').querySelector('[data-label]'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
       confirm: $('pause-confirm'), confirmTitle: $('pause-confirm-title'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
-      c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStage: $('c2d-stage'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
+      c2dChoice: $('c2d-choice'), hexChoice: $('hex-choice'), triChoice: $('tri-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStage: $('c2d-stage'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
       c2dTitle: $('c2d-title'), c2dSize: $('c2d-size'), c2dMines: $('c2d-mines-left'), c2dTime: $('c2d-time'), c2dFigures: $('c2d-figures'),
-      c2dReminder: $('c2d-reminder'),
+      c2dReminder: $('c2d-reminder'), c2dFiguresToggle: $('c2d-figures-toggle'),
       c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
       c2dSpinner: $('c2d-spinner'), c2dWait: $('c2d-wait'), c2dProgress: $('c2d-progress'),
       m3dStatus: $('m3d-status'), m3dStatusTitle: $('m3d-status-title'), m3dStatusText: $('m3d-status-text'), m3dOffer: $('m3d-offer'),
@@ -113,6 +133,8 @@ export class UI {
     this._device = 'keyboard'; // the active device: 'keyboard' (and mouse) | 'controller'
     this._glyphs = GLYPHS.generic; // the active controller's, for the bindings shown
     this._camera = 'fly'; // the Camera setting, whose 3D rows the bindings show: 'fly' | 'orbit'
+    this._bindings = null; // the bindings resolver every help surface reads (setBindings); the defaults until set
+    this._unbindBindings = () => {};
     this._mapping = 'standard';
     this._muted = false;
     this._hint = false; // the hint strip shows
@@ -130,9 +152,9 @@ export class UI {
     });
     for (const id of ['coming-soon-back', 'coming-soon-menu', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
     // The Settings page's controls are generated from the settings schema and bound by the shell.
-    $('settings-body').innerHTML = settingsPageHtml();
-    // Its sections in the window size's columns, each an independent stack.
-    bindSettingsLayout($('settings-columns'));
+    $('settings-body').innerHTML = settingsPageHtml({ desktopHost });
+    // Its sections in the root area's columns, each an independent stack.
+    bindSettingsLayout($('settings-columns'), { matchMedia: matchRootArea(document) });
     this.el.settingsBindings = $('settings-bindings');
     // Its bindings panel: one mode's list for one device, each picked by its choice; the device opens on the active one.
     this._settingsBind = { mode: 'classic-2d', device: 'keyboard' };
@@ -141,7 +163,7 @@ export class UI {
     // The Data panel's Reset all data, behind its confirmation; the shell runs the reset.
     this._reset = bindResetPanel({
       open: $('set-reset'), panel: $('set-reset-confirm'), yes: $('set-reset-yes'), no: $('set-reset-no'), note: $('set-reset-note'),
-    }, { reset: () => cb.onResetAll?.() });
+    }, { reset: () => cb.onResetAll?.(), desktopHost });
     this._renderBindings();
     $('ready-back').addEventListener('click', () => cb.onReadyBack?.());
     $('hint-strip-close').addEventListener('click', () => this.dismissHint());
@@ -169,18 +191,23 @@ export class UI {
     this._figuresLive2D = bindFiguresLive(this.el.c2dFigures);
     this._figures3D = bindFigures(this.el.hudFigures);
     this._figuresLive3D = bindFiguresLive(this.el.hudFigures);
-    // The 3D title is refitted whenever its line changes width (the window, the panel, the fonts arriving).
-    this._title3D = '';
-    if (typeof ResizeObserver === 'function') new ResizeObserver(() => this._fitTitle3D()).observe(this.el.hudTitle);
-    document.fonts?.ready.then(() => this._fitTitle3D());
     // The 3D touch toolbar: each button latches or clears its view mode; it never takes focus.
     for (const b of document.querySelectorAll('#touch-modes [data-mode]')) {
       b.addEventListener('mousedown', (e) => e.preventDefault());
       b.addEventListener('click', () => cb.onTouchMode?.(b.dataset.mode));
     }
-    // The swap toggle never takes focus, so the board's cursor keys (Space, Enter) keep playing.
+    // The game window's foot controls, Swap clicks and the live-figures toggle, never take the focus
+    // from the mouse, so the board's cursor keys (Space, Enter) keep playing; the keyboard reaches them
+    // in the Tab order, and Enter or Space on one presses it and never reaches the board.
     this.el.hudSwap.addEventListener('mousedown', (e) => e.preventDefault());
     this.el.hudSwap.addEventListener('click', () => cb.onToggleSwap?.());
+    this.el.c2dFiguresToggle.addEventListener('mousedown', (e) => e.preventDefault());
+    this.el.c2dFiguresToggle.addEventListener('click', () => cb.onToggleFigures?.());
+    $('c2d-tools').addEventListener('keydown', (e) => { if (PRESS_KEYS.has(e.code)) e.stopPropagation(); });
+    // The 3D overlay's live-figures toggle the same way: the scene keeps the keys, Space its view mode.
+    this.el.hudFiguresToggle.addEventListener('mousedown', (e) => e.preventDefault());
+    this.el.hudFiguresToggle.addEventListener('click', () => cb.onToggleFigures?.());
+    this.el.hudFiguresToggle.addEventListener('keydown', (e) => { if (PRESS_KEYS.has(e.code)) e.stopPropagation(); });
     // The Tap choice neither: a chosen option hands its value to the shell.
     this.el.hudTap.addEventListener('mousedown', (e) => e.preventDefault());
     bindSegmented(this.el.hudTap, { horizontal: true, onChange: (value) => cb.onTapMode?.(value) });
@@ -245,34 +272,33 @@ export class UI {
   }
 
   /**
-   * Disable main menu entry `id`, which cannot open here: aria-disabled, so it stays selectable and
-   * its preview shows, its lock shown and, when `reason` is given, that line under its label; a click
-   * opens nothing.
+   * Disable main menu play tile `id`, which cannot open here: aria-disabled, so it stays selectable,
+   * its lock shown, `reason` under its label (`short` the phone row's) and its preview locked — the
+   * locked ground and the lock in place of its art; a click opens nothing.
    */
-  setEntryUnavailable(id, reason = null) {
+  setEntryUnavailable(id, reason, short = reason) {
     const b = document.querySelector(`#menu [data-entry="${id}"]`);
     if (!b) return;
     b.setAttribute('aria-disabled', 'true');
-    let line = b.querySelector('.ui-mode-entry__reason');
-    if (!reason) {
-      line?.remove();
-      return;
-    }
+    let line = b.querySelector('.ui-play-tile__reason');
     if (!line) {
       line = document.createElement('span');
-      line.className = 'ui-mode-entry__reason';
-      b.querySelector('.ui-mode-entry__label').after(line);
+      line.className = 'ui-play-tile__reason';
+      b.querySelector('.ui-play-tile__label').after(line);
     }
-    line.textContent = reason;
-  }
-
-  /** Mark the main menu entry of the last mode played with the Last played chip (null: none). */
-  setLastMode(mode) {
-    document.querySelectorAll('#menu [data-entry]').forEach((b) => {
-      const isLast = !!mode && b.dataset.entry === mode;
-      b.toggleAttribute('data-last', isLast);
-      b.querySelector('.ui-chip[data-last]')?.classList.toggle('hidden', !isLast);
-    });
+    const part = (which, text) => {
+      const s = document.createElement('span');
+      s.dataset.reason = which;
+      s.textContent = text;
+      return s;
+    };
+    line.replaceChildren(part('long', reason), part('short', short));
+    const preview = b.querySelector('.ui-play-tile__preview');
+    if (!preview) return;
+    preview.classList.remove('ui-play-tile__preview--light');
+    preview.classList.add('ui-play-tile__preview--locked');
+    preview.dataset.preview = 'locked';
+    preview.querySelector('.ui-play-tile__art').innerHTML = b.querySelector('.ui-play-tile__lock').innerHTML;
   }
 
   /** The main menu's build label. */
@@ -283,7 +309,7 @@ export class UI {
   // ---------- screens ----------
   /** Hide the menu screens (main menu, board choices, placeholder, records, settings) before another screen shows. */
   _hideMenus() {
-    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.records, this.el.c2dChoice, this.el.settings, this.el.daily]) el?.classList.add('hidden');
+    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.records, this.el.c2dChoice, this.el.hexChoice, this.el.triChoice, this.el.settings, this.el.daily]) el?.classList.add('hidden');
   }
   /** Hide the Classic 2D window and give the counters back to the 3D game's overlay. */
   _hide2D() {
@@ -384,23 +410,23 @@ export class UI {
         options[i].tabIndex = st.tabIndex;
       });
     }
-    this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera, { mode, device });
+    this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera, { mode, device, bindings: this._bindings });
   }
   /** Close the Settings page's Reset all data confirmation (Back); false when none is open. */
   closeResetConfirm() {
     if (this.el.settings.classList.contains('hidden')) return false;
     return this._reset.close();
   }
-  /** The Classic 2D board choice, over the menu backdrop. */
-  showBoardChoice2D() {
+  /** A flat mode's board choice — Classic 2D's (#c2d-choice), Hexagon's (#hex-choice) or Triangle's (#tri-choice) — over the menu backdrop. */
+  showBoardChoice2D(id = 'c2d-choice') {
     this.showMenu();
     this._hideMenus();
-    this.el.c2dChoice.classList.remove('hidden');
+    $(id).classList.remove('hidden');
   }
   /**
-   * The Classic 2D game window: the head (Swap clicks, the title, Pause), the counter strip over the
-   * board in its framed panel (placePanel2D), the live figures panel and the foot line; the 3D
-   * overlay bar does not show over it.
+   * The Classic 2D game window: the title bar (Pause, the logo), the counter strip over the board in
+   * its framed panel (placePanel2D), the live figures panel while open (setFigures2D) and the foot
+   * line with Swap clicks and the live-figures toggle; the 3D overlay bar does not show over it.
    */
   showClassic2D() {
     this._hideMenus();
@@ -418,6 +444,15 @@ export class UI {
   }
   /** The Classic 2D mouse button swap's toggle: pressed while the swap is on. */
   setSwap(on) { this.el.hudSwap.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  /**
+   * The Classic 2D window's live figures panel open or closed (the stored preference,
+   * js/shell/live-figures.js), its toggle pressed while open; the shell refits the board after.
+   */
+  setFigures2D(open) {
+    if (open) this.el.c2d.dataset.figures = 'open';
+    else delete this.el.c2d.dataset.figures;
+    this.el.c2dFiguresToggle.setAttribute('aria-pressed', open ? 'true' : 'false');
+  }
   /** The Tap choice (coarse pointers only, by the stylesheet): its option for `mode`, 'reveal' or 'flag', chosen. */
   setTapMode(mode) {
     const options = [...this.el.hudTap.querySelectorAll('.ui-segmented__option')];
@@ -441,12 +476,13 @@ export class UI {
   }
   /**
    * The Classic 2D window hugs its board: the board area (#c2d-stage) takes the board's extent in
-   * the room the window's chrome leaves it, `extent(width, height)` the board view's
-   * (board-view.js). The room is measured with the window at its largest (#c2d.c2d--measure, the
-   * area taking what the chrome leaves) and the area sized at once, in one task, so nothing paints
-   * in between. Measured at its largest, the window's chrome can be shorter than at the
-   * board's width (the figures row under the board wraps more): the area gives back what the body
-   * then overflows. Returns whether the area's size changed; a hidden window is left as it is.
+   * the room the window's chrome leaves it in the available area — the root area (css/components.css),
+   * the work area at the desktop host, never the desktop window's own size —, `extent(width, height)`
+   * the board view's (board-view.js). The room is measured with the game window filling the available
+   * area (#c2d.c2d--measure, the board area taking what the chrome leaves) and the area sized at once,
+   * in one task, so nothing paints in between. Measured at its largest, the window's chrome can be shorter than at the
+   * board's width (the figures row under the board wraps more): the area gives back what the body,
+   * or the board column, then overflows. Returns whether the area's size changed; a hidden window is left as it is.
    */
   sizeBoard2D(extent) {
     const { c2d, c2dStage: stage } = this.el;
@@ -468,11 +504,35 @@ export class UI {
     };
     place(b.height);
     const body = stage.closest('.ui-frame__body');
-    const over = body ? body.scrollHeight - body.clientHeight : 0;
-    if (over > 0) place(b.height - over);
+    const column = stage.parentElement;
+    // A narrower board narrows the window, which can wrap the figures row under it once more: give back again,
+    // what the body overflows or what the board column, squeezed by that row, does.
+    for (let i = 0, room = b.height; body && i < 3; i++) {
+      const over = Math.max(body.scrollHeight - body.clientHeight, column.scrollHeight - column.clientHeight);
+      if (over <= 0) break;
+      room -= over;
+      place(room);
+    }
+    this.fitTitle2D();
     return stage.style.width !== before[0] || stage.style.height !== before[1];
   }
-  /** The Classic 2D board the window's title and foot line and the pause card's board line (the title and boardLine2D joined) name; { width, height, mines, noGuess, identity }. */
+  /**
+   * The Classic 2D window's title bar fitted to the board column the window hugs: the logo scaled
+   * down, or hidden under its floor (fitTitleBar); a column narrower than Pause and the window
+   * buttons alone widens the window to them.
+   */
+  fitTitle2D() {
+    const frame = this.el.c2dStage.closest('.ui-frame');
+    const head = frame?.querySelector(':scope > .ui-frame__head');
+    if (!head) return;
+    const least = fitTitleBar(head);
+    const min = least === null ? '' : `${Math.ceil(least)}px`;
+    if (frame.style.minWidth !== min) {
+      frame.style.minWidth = min;
+      fitTitleBar(head);
+    }
+  }
+  /** The Classic 2D board the window's foot line (the title, then the board) and the pause card's board line (the title and boardLine2D joined) name; { width, height, mines, noGuess, identity }. */
   setBoard2D(board) { this._board2D(board); this._sizeMines(board.mines, this.el.c2dMines); }
   _board2D(board) {
     this._boardText = `${boardTitle2D(board)} · ${boardLine2D(board)}`;
@@ -536,14 +596,26 @@ export class UI {
     el('Offer').classList.toggle('hidden', !failure);
     if (prefix === 'c2d') this._centreStatus2D();
   }
-  /** The Classic 2D status card centred on the board column (#c2d-main) while it shows; the stylesheet's window centre otherwise. */
+  /**
+   * The Classic 2D status card placed by statusPlace while it shows, in the root's own coordinates (the
+   * root is shifted while windowed at the desktop host): over the pause card (#pause-card), which is
+   * then the window, centred on it with its width as the room; else centred on the board column
+   * (#c2d-main), its room (`--status-room`) the game window's width about that centre. The windowed
+   * stylesheet caps the card to its room; with neither shown, the stylesheet's window centre.
+   */
   _centreStatus2D() {
     const card = this.el.c2dStatus;
     if (card.classList.contains('hidden')) return;
-    const r = this.el.c2d.classList.contains('hidden') ? null : $('c2d-main')?.getBoundingClientRect();
-    const placed = !!r && r.width > 0 && r.height > 0;
-    card.style.left = placed ? `${r.left + r.width / 2}px` : '';
-    card.style.top = placed ? `${r.top + r.height / 2}px` : '';
+    const sized = (r) => (r && r.width > 0 && r.height > 0 ? r : null);
+    const over = this.isPauseVisible() ? sized($('pause-card')?.getBoundingClientRect()) : null;
+    const column = over || this.el.c2d.classList.contains('hidden') ? null : sized($('c2d-main')?.getBoundingClientRect());
+    const placed = over || column;
+    const frame = column ? $('c2d-frame')?.getBoundingClientRect() : null;
+    const place = placed ? statusPlace({ column, frame, over, root: document.documentElement.getBoundingClientRect() }) : null;
+    card.style.left = place ? `${place.left}px` : '';
+    card.style.top = place ? `${place.top}px` : '';
+    if (place?.room != null) card.style.setProperty('--status-room', `${place.room}px`);
+    else card.style.removeProperty('--status-room');
   }
   /**
    * The 3D ready card: its board, a message, the "How 3D works" block while `rules` is set, the
@@ -564,7 +636,6 @@ export class UI {
     this.el.readyLearn.classList.toggle('hidden', !learn);
     this.el.readyBlocked.classList.toggle('hidden', !blocked);
     this._syncHelp();
-    this._fitTitle3D();
   }
   /**
    * The ready card waits unseen (`ready--pending`) while a pointer-lock request the player's own
@@ -581,7 +652,6 @@ export class UI {
     this.el.pause.classList.add('hidden');
     this.el.hud.classList.remove('hidden');
     this._syncHelp();
-    this._fitTitle3D();
   }
   _syncHelp() { if (!this._helpByUser) this.toggleHelp(false); }
   /**
@@ -601,8 +671,8 @@ export class UI {
     if (on) {
       if (learn) this.el.hintStripText.textContent = this.hint(learn);
       else {
-        this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._bindDevice(this._mode), this._glyphs)
-          : hintStripHtml(this._mode, this._bindDevice(this._mode), this._glyphs);
+        this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._bindDevice(this._mode), this._glyphs, this._bindings)
+          : hintStripHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._bindings);
       }
     }
     this.el.hintClose.classList.toggle('hidden', this._hintKind === 'learn');
@@ -673,10 +743,12 @@ export class UI {
     const ended = state !== 'playing';
     const noGame = !inProgress;
     this._noGame = noGame;
-    // The primary action leads: Resume during a game, Restart (Play again once ended) with no game to resume.
+    // The green primary action leads: Resume during a game, Restart (Play again once ended) with no game to resume.
     const [first, second] = noGame ? [this.el.restart, this.el.resume] : [this.el.resume, this.el.restart];
-    first.classList.replace('ui-button--secondary', 'ui-button--primary');
-    second.classList.replace('ui-button--primary', 'ui-button--secondary');
+    first.classList.remove('ui-button--secondary');
+    first.classList.add('ui-button--primary', 'ui-button--go');
+    second.classList.remove('ui-button--primary', 'ui-button--go');
+    second.classList.add('ui-button--secondary');
     this.el.pauseActions.insertBefore(first, this.el.pauseMenu);
     this.el.pauseActions.insertBefore(this.el.home, this.el.pauseMenu);
     this.el.pauseActions.insertBefore(second, this.el.pauseMenu);
@@ -743,44 +815,34 @@ export class UI {
 
   // ---------- HUD ----------
   /**
-   * The 3D board the overlay's title ("3D · Cube Intermediate", boardTitle3D) and the pause card
-   * ("3D · Cube Intermediate · 8 × 8 × 8 · 40 mines · no-guess") name; `daily` marks a daily's board.
+   * The 3D board the pause card names ("3D · Cube Intermediate · 8 × 8 × 8 · 40 mines · no-guess",
+   * boardTitle3D and boardLine3D); the overlay names none. `daily` marks a daily's board.
    */
   setBoard(settings) {
     this._boardText = settings.learn ? LEARN_TITLE : `${boardTitle3D(settings)} · ${boardLine3D(settings, { mines: true })}`;
-    this._setTitle3D(boardTitle3D(settings));
     this._sizeMines(settings.mines);
   }
-  /** The overlay's title: the full name as its tooltip and accessible name, the text fitted to its line. */
-  _setTitle3D(title) {
-    this._title3D = title;
-    this.el.hudTitle.setAttribute('title', title);
-    this.el.hudTitle.setAttribute('aria-label', title);
-    this._fitTitle3D();
-  }
   /**
-   * The title drops the board (shortTitle3D) when the full name does not fit on its one line in the
-   * panel's bar — measured, so it follows the window; a title not laid out (hidden) keeps the full name.
+   * The 3D overlay's live figures panel open or closed (the stored preference Classic 2D's window
+   * shares, js/shell/live-figures.js), its toggle pressed while open.
    */
-  _fitTitle3D() {
-    const el = this.el.hudTitle;
-    const full = this._title3D;
-    if (!full) return;
-    if (el.textContent !== full) el.textContent = full;
-    if (el.clientWidth > 0 && el.scrollWidth > el.clientWidth) el.textContent = shortTitle3D(full);
+  setFigures3D(open) {
+    if (open) this.el.hud.dataset.figures = 'open';
+    else delete this.el.hud.dataset.figures;
+    this.el.hudFiguresToggle.setAttribute('aria-pressed', open ? 'true' : 'false');
   }
   /**
-   * The bottom of the 3D overlay's top row: the counter strip, with the title bar when it sits at the
-   * top too (a phone); a touch below it is the scene's.
+   * The bottom of the 3D overlay's top row: the counter strip, and the floating Pause and live-figures
+   * toggle where they show; a touch below it is the scene's.
    */
   overlayBottom3D() {
-    const strip = this.el.hudCounters.getBoundingClientRect();
-    const head = this.el.hudHead.getBoundingClientRect();
-    return head.height > 0 && head.top <= strip.bottom ? Math.max(strip.bottom, head.bottom) : strip.bottom;
+    const bottoms = [this.el.hudCounters, this.el.hudPause, this.el.hudFiguresToggle]
+      .map((el) => el.getBoundingClientRect()).filter((r) => r.height > 0).map((r) => r.bottom);
+    return Math.max(0, ...bottoms);
   }
   /**
    * Learn 3D's own overlay (`hud--learn`) while `on`: no timer — the pause card shows mines left alone —
-   * and no figures panel, its head (the title and Pause) over the strip of mines and Restart at the top left.
+   * and no figures panel or toggle, Pause over the strip of mines and Restart at the top left.
    */
   setLearn(on) {
     this._timed = !on;
@@ -841,6 +903,16 @@ export class UI {
     this._device = device;
     this._renderBindings();
   }
+  /**
+   * The bindings resolver (js/settings/resolver.js) every help surface reads: each redraws with the
+   * current bindings now and after every change of them.
+   */
+  setBindings(bindings) {
+    this._unbindBindings();
+    this._bindings = bindings;
+    this._unbindBindings = bindings ? bindings.onChange(() => this._renderBindings()) : () => {};
+    this._renderBindings();
+  }
   /** The Camera setting ('fly' | 'orbit'): the 3D rows, the ready card's among them, follow it. */
   setCamera(camera) {
     if (camera === this._camera) return;
@@ -858,21 +930,21 @@ export class UI {
   }
   /** A one-time hint's or Learn 3D prompt's text (js/settings/bindings.js HINT_TEXT) for the device the help surfaces speak for. */
   hint(name) {
-    return hintText(name, this._bindDevice(this._mode), this._glyphs);
+    return hintText(name, this._bindDevice(this._mode), this._glyphs, this._bindings);
   }
   /** The device a help surface of `mode` speaks for: on a touch device, touch unless a controller is in use. */
   _bindDevice(mode) {
     return this._touch && this._device === 'keyboard' ? 'touch' : this._device;
   }
   _renderHelp() {
-    this.el.helpList.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
+    this.el.helpList.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera, this._bindings);
     this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._bindDevice(this._mode), this._glyphs)}${this._note()}`;
   }
   /** Each figures panel's controls reminder: its mode's main bindings for the active device. */
   _renderReminder() {
     const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
     for (const [el, mode] of [[this.el.c2dReminder, 'classic-2d'], [this.el.hudReminder, '3d']]) {
-      el.innerHTML = reminderKeys(mode, this._bindDevice(mode), this._glyphs).map(({ keys, label }) => {
+      el.innerHTML = reminderKeys(mode, this._bindDevice(mode), this._glyphs, this._bindings).map(({ keys, label }) => {
         const caps = keys.map((k) => `<kbd class="ui-key-hint__key">${esc(k.text)}</kbd>`).join('+');
         return `<span class="ui-key-hint${keys.every((k) => k.pad) ? ' ui-key-hint--pad' : ''}">${caps}<span class="ui-key-hint__label">${esc(label)}</span></span>`;
       }).join('');
@@ -886,12 +958,12 @@ export class UI {
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
-    for (const id of ['menu-hints', 'c2d-choice', 'c2d', 'hud', 'board-choice', 'daily', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
+    for (const id of ['c2d-choice', 'hex-choice', 'tri-choice', 'c2d', 'hud', 'board-choice', 'daily', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs, { mode: this._mode, bindings: this._bindings }));
     this._renderReminder();
     this._renderHelp();
     this._renderHudStrip();
-    this.el.pauseControls.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
-    this.el.readyKeys.innerHTML = readyListHtml(this._touch ? 'touch' : 'keyboard', this._glyphs, this._camera);
+    this.el.pauseControls.innerHTML = helpListHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera, this._bindings);
+    this.el.readyKeys.innerHTML = readyListHtml(this._touch ? 'touch' : 'keyboard', this._glyphs, this._camera, this._bindings);
     if (this._hint) this.setHintStrip(true, { scroll: this._hintKind === 'scroll', learn: this._learnHint });
     if (!this.el.settings.classList.contains('hidden')) this._renderSettingsBindings();
   }

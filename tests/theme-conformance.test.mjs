@@ -309,6 +309,33 @@ function checkContrast(theme) {
   return [...new Map(out.map((p) => [p.subject, p])).values()];
 }
 
+// The go and stop buttons' ink on their rest and selected colours, as the theme's own rules for the
+// two states draw them (the last rule naming the selector and the property wins), at least 4.5:1.
+const FILL_STATES = Object.freeze({
+  'ui-button--go': Object.freeze({ rest: '.ui-button--go', selected: '.ui-button--go:focus' }),
+  'ui-button--stop': Object.freeze({ rest: '.ui-button--stop', selected: '.ui-button--stop:focus' }),
+});
+function checkFillContrast(theme) {
+  const tokens = declaredTokens(theme);
+  const resolve = (v, seen = new Set()) => {
+    const ref = v?.match(/^var\(\s*(--[\w-]+)\s*\)$/);
+    if (!ref) return v === undefined ? null : parseColor(v);
+    return seen.has(ref[1]) ? null : resolve(tokens.get(ref[1]), seen.add(ref[1]));
+  };
+  const drawn = (sel, prop) => theme.scoped.filter((r) => r.inner.includes(sel)).flatMap((r) => r.decls.filter((d) => d.prop === prop)).at(-1)?.value;
+  const out = [];
+  for (const [name, states] of Object.entries(FILL_STATES)) {
+    for (const [state, sel] of Object.entries(states)) {
+      const bg = resolve(drawn(sel, 'background') ?? drawn(sel, 'background-color'));
+      const fg = resolve(drawn(sel, 'color'));
+      if (!bg || !fg) { out.push(problem('contrast', `${name} ${state} has no declared ink and fill`)); continue; }
+      const ground = over(bg, [255, 255, 255]);
+      if (contrast(over(fg, ground), ground) < 4.5) out.push(problem('contrast', `${name} ${state}`));
+    }
+  }
+  return out;
+}
+
 const CHECKS = [
   ['every file the registry names exists', checkFiles],
   ['every @font-face source is one of the theme\'s own font files', checkFonts],
@@ -319,6 +346,7 @@ const CHECKS = [
   ['every part and state of every catalogued component has a rule, and every interactive part shows focus', checkParts],
   ['every decoration slot the theme fills is a catalogued slot', checkSlots],
   ['body text meets 4.5:1 and large text and glyphs 3:1 on every surface token', checkContrast],
+  ['the go and stop buttons\' ink meets 4.5:1 on their rest and selected colours', checkFillContrast],
 ];
 
 const conformance = (entry) => {
@@ -346,6 +374,25 @@ for (const entry of THEMES) {
   });
 }
 
+test('a board module missing a flat grid\'s shape or its numbers fails the board conformance checks', async () => {
+  const entry = THEMES.find((t) => t.id === DEFAULT_THEME_ID);
+  const { BOARD } = await import(pathToFileURL(join(ROOT, entry.boardModule)).href);
+  for (const [grid, subject] of [['hex', 'style2d.grids.hex.gap'], ['tri', 'style2d.grids.tri.radius']]) {
+    const board = structuredClone(BOARD);
+    delete board.style2d.grids[grid];
+    assert.ok(checkBoardModule(board, { fonts: entry.fonts }).some((p) => p.check === 'style' && p.subject === subject), `without its ${grid} shape`);
+  }
+  const short = structuredClone(BOARD);
+  short.numbers2d.length = 9;
+  assert.ok(checkBoardModule(short, { fonts: entry.fonts }).some((p) => p.check === 'numbers' && p.subject === 'numbers2d[12]'), 'with the 2D numbers to 8 only');
+});
+
+test('the test-only fixture board module carries every flat grid\'s shape and the 2D numbers to 12', async () => {
+  const { BOARD } = await import(pathToFileURL(join(ROOT, 'tests/fixtures/themes/fixture-dusk/board.js')).href);
+  const problems = checkBoardModule(BOARD).filter((p) => p.check === 'style' || p.check === 'numbers');
+  assert.deepEqual(problems, []);
+});
+
 // ---------- the shared layout's components in the catalogue ----------
 
 const byName = (name) => KIT_CATALOGUE.find((c) => c.name === name);
@@ -353,32 +400,66 @@ const partNames = (name) => byName(name).parts.map((p) => p.name);
 const opt = (name, part) => byName(name).parts.find((p) => p.name === part);
 
 test('the catalogue declares the shared layout\'s components, their parts, states and slots, so every theme is held to them', () => {
-  for (const name of ['ui-backdrop', 'ui-frame', 'ui-mode-entry', 'ui-option', 'ui-section-label', 'ui-key-hint', 'ui-chip', 'ui-list-row',
-    'ui-scene-panel', 'ui-button--danger', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-toast']) {
+  for (const name of ['ui-backdrop', 'ui-frame', 'ui-play-tile', 'ui-small-entry', 'ui-option', 'ui-section-label', 'ui-key-hint', 'ui-chip', 'ui-list-row',
+    'ui-scene-panel', 'ui-button--danger', 'ui-button--go', 'ui-button--stop', 'ui-drawer', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-toast']) {
     assert.equal(byName(name)?.kind, 'component', `${name} is catalogued`);
   }
   for (const name of ['ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list']) assert.equal(byName(name)?.kind, 'composition', `${name} is catalogued`);
   assert.deepEqual(byName('ui-frame').slots.map((s) => [s.name, s.selector]), [['window-chrome', '.ui-frame__chrome[data-slot="window-chrome"]']]);
   for (const p of ['head', 'back', 'title', 'action', 'body', 'foot', 'status', 'summary']) assert.ok(partNames('ui-frame').includes(p), `the frame's ${p}`);
   for (const name of ['ui-button--primary', 'ui-button--secondary']) assert.deepEqual(byName(name).variants, ['ui-button--sm', 'ui-button--lg'], `${name} sizes`);
-  assert.equal(opt('ui-mode-entry', 'entry').states.disabled, '.ui-mode-entry[aria-disabled="true"]', 'a disabled mode entry stays selectable');
-  for (const p of ['entry', 'icon', 'label', 'reason', 'last', 'lock']) assert.ok(partNames('ui-mode-entry').includes(p), `the mode entry's ${p}`);
-  for (const p of ['option', 'name', 'last', 'meta', 'size', 'density', 'check', 'badge']) assert.ok(partNames('ui-option').includes(p), `the board option's ${p}`);
+  assert.equal(opt('ui-play-tile', 'tile').states.disabled, '.ui-play-tile[aria-disabled="true"]', 'a disabled play tile stays selectable');
+  for (const p of ['tile', 'icon', 'label', 'reason', 'preview', 'lock']) assert.ok(partNames('ui-play-tile').includes(p), `the play tile's ${p}`);
+  for (const p of ['entry', 'icon', 'label']) assert.ok(partNames('ui-small-entry').includes(p), `the small entry's ${p}`);
+  assert.deepEqual(byName('ui-play-tile').variants, ['ui-play-tile--row', 'ui-play-tile__preview--light', 'ui-play-tile__preview--locked'], 'the phone row and the preview\'s grounds');
+  assert.ok(!partNames('ui-play-tile').includes('last') && !partNames('ui-small-entry').includes('last'), 'no main menu button carries a Last played chip');
+  for (const p of ['option', 'name', 'chip', 'meta', 'size', 'density', 'check', 'badge']) assert.ok(partNames('ui-option').includes(p), `the board option's ${p}`);
+  assert.ok(!partNames('ui-option').includes('last'), 'no board option carries a Last played chip');
+  assert.deepEqual(partNames('ui-drawer'), ['bar', 'label', 'chevron', 'body'], 'the drawer\'s bar over its body');
+  assert.deepEqual(Object.keys(opt('ui-drawer', 'bar').states), ['default', 'selected', 'pressed', 'disabled', 'chosen']);
+  assert.equal(opt('ui-drawer', 'bar').states.chosen, '.ui-drawer__bar[aria-expanded="true"]', 'chosen while open');
   assert.ok(partNames('ui-stat--tile').includes('badge'), 'the stat tile\'s badge');
   assert.deepEqual(partNames('ui-toast'), ['icon', 'text'], 'the toast\'s icon and text');
   assert.ok(partNames('ui-card').includes('icon'), 'a message card\'s badge');
-  for (const [name, part] of [['ui-frame', 'status'], ['ui-frame', 'summary'], ['ui-mode-entry', 'reason'], ['ui-mode-entry', 'last'],
+  for (const [name, part] of [['ui-frame', 'status'], ['ui-frame', 'summary'], ['ui-play-tile', 'reason'], ['ui-play-tile', 'lock'],
     ['ui-option', 'size'], ['ui-option', 'density'], ['ui-option', 'badge'], ['ui-stat--tile', 'badge'], ['ui-section-label', 'aside'], ['ui-card', 'icon']]) {
     assert.equal(opt(name, part).optional, true, `${name} ${part} is optional`);
   }
-  // Mode entries and board options follow the button rule: one selected state, no hover or focus of their own.
-  assert.deepEqual(Object.keys(opt('ui-mode-entry', 'entry').states), ['default', 'selected', 'pressed', 'disabled']);
+  // Main menu buttons and board options follow the button rule: one selected state, no hover or focus of their own.
+  assert.deepEqual(Object.keys(opt('ui-play-tile', 'tile').states), ['default', 'selected', 'pressed', 'disabled']);
+  assert.deepEqual(Object.keys(opt('ui-small-entry', 'entry').states), ['default', 'selected', 'pressed', 'disabled']);
   assert.deepEqual(Object.keys(opt('ui-option', 'option').states), ['default', 'selected', 'pressed', 'disabled', 'chosen']);
   assert.equal(opt('ui-option', 'option').states.chosen, '.ui-option[aria-pressed="true"]');
-  assert.ok(!Object.hasOwn(opt('ui-mode-entry', 'entry').states, 'locked'), 'no locked state for a mode entry');
-  for (const [name, part] of [['ui-mode-entry', 'last'], ['ui-option', 'last'], ['ui-stat--tile', 'badge'], ['ui-list-row', 'outcome']]) {
+  assert.ok(!Object.hasOwn(opt('ui-play-tile', 'tile').states, 'locked'), 'no locked state for a play tile: a locked one is disabled');
+  for (const [name, part] of [['ui-option', 'chip'], ['ui-stat--tile', 'badge'], ['ui-list-row', 'outcome']]) {
     assert.equal(opt(name, part).as, 'ui-chip', `${name}'s ${part} is a chip`);
   }
+});
+
+test('Joyful tiles\' main menu buttons are readable: the navy ink on every pastel and on the stronger neutral at least 4.5:1, each full colour\'s ink too, the locked label at least 3:1 as large text, at rest and selected', () => {
+  const theme = loadTheme(THEMES.find((t) => t.id === 'joyful-tiles'));
+  const tokens = declaredTokens(theme);
+  const colour = (name) => {
+    const c = parseColor(tokens.get(name) ?? '');
+    assert.ok(c, `${name} is a declared colour`);
+    return c;
+  };
+  const ratio = (ink, fill) => {
+    const ground = over(colour(fill), [255, 255, 255]);
+    return contrast(over(colour(ink), ground), ground);
+  };
+  const ACCENTS = [['classic-2d', 'blue', '--color-blue', '--color-blue-on'], ['hexagon', 'teal', '--color-teal', '--color-teal-on'],
+    ['triangle', 'green', '--color-green', '--color-green-on'], ['surface', 'orange', '--color-orange', '--color-orange-on'],
+    ['3d', 'accent', '--color-accent-fill', '--color-accent-on'], ['daily', 'violet', '--color-violet', '--color-violet-on']];
+  const rule = (sel) => theme.scoped.filter((r) => r.inner.includes(sel)).flatMap((r) => r.decls);
+  for (const [entry, soft, full, on] of ACCENTS) {
+    const decls = Object.fromEntries(rule(`.ui-play-tile[data-entry="${entry}"]`).map((d) => [d.prop, d.value]));
+    assert.deepEqual([decls['--fs'], decls['--f'], decls['--o']], [`var(--color-${soft}-soft)`, `var(${full})`, `var(${on})`], `${entry}: its pastel at rest, its full colour and ink selected`);
+    assert.ok(ratio('--color-ink', `--color-${soft}-soft`) >= 4.5, `the ink on ${soft}'s pastel: ${ratio('--color-ink', `--color-${soft}-soft`).toFixed(2)}:1`);
+    assert.ok(ratio(on, full) >= 4.5, `${on} on ${full}: ${ratio(on, full).toFixed(2)}:1`);
+  }
+  for (const fill of ['--color-neutral-strong', '--color-surface-raised']) assert.ok(ratio('--color-ink', fill) >= 4.5, `the ink on ${fill}: ${ratio('--color-ink', fill).toFixed(2)}:1`);
+  for (const fill of ['--color-locked', '--color-locked-edge']) assert.ok(ratio('--color-locked-ink', fill) >= 3, `the locked label on ${fill}: ${ratio('--color-locked-ink', fill).toFixed(2)}:1`);
 });
 
 test('the slot check passes the frame\'s window chrome and flags any other name', () => {
@@ -387,22 +468,40 @@ test('the slot check passes the frame\'s window chrome and flags any other name'
   assert.deepEqual(checkSlots(sheet(':root[data-theme="x"] [data-slot="title-bar"]')), [{ check: 'slot', subject: 'title-bar' }]);
 });
 
+test('the fill contrast check passes readable go and stop buttons and flags a faint ink', () => {
+  const scope = ':root[data-theme="x"]';
+  const themeOf = (goInk) => {
+    const sheet = parseCss(`${scope} { --ink: #16204a; --pale: #8fdca4; --faint: #7fbf90; }
+      ${scope} .ui-button--go, ${scope} .ui-button--stop { background: var(--pale); color: var(--ink); }
+      ${scope} .ui-button--go:focus { background: #5fd07e; color: ${goInk}; }
+      ${scope} .ui-button--stop:focus { background: #ff6b6b; color: #16204a; }`);
+    return { scope, sheet, scoped: sheet.rules.map((r) => ({ ...r, inner: r.selectors.filter((s) => s.startsWith(scope)).map((s) => s.slice(scope.length).trim()) })) };
+  };
+  assert.deepEqual(checkFillContrast(themeOf('var(--ink)')), []);
+  assert.deepEqual(checkFillContrast(themeOf('var(--faint)')), [{ check: 'contrast', subject: 'ui-button--go selected' }]);
+});
+
 // ---------- the required token set ----------
 
 const walk = (dir) => readdirSync(join(ROOT, dir), { withFileTypes: true })
   .flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.js') ? [`${dir}/${e.name}`] : []));
+
+// Custom properties no theme declares: the menu entries' own accent slots, the desktop window's
+// corner in the root area the page sets (js/platform/window-actions.js) and the Classic 2D status
+// card's room in the game window the shell sets (js/ui.js).
+const PAGE_SET = ['--f', '--e', '--o', '--window-x', '--window-y', '--status-room'];
 
 test('the required token set is what the base stylesheets and the screens read, plus the contrast roles', () => {
   const structural = new Set([...read('css/tokens.css').matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));
   const reads = new Set();
   for (const f of ['css/components.css', 'css/style.css']) {
     for (const [, name] of stripComments(read(f)).matchAll(/var\((--[\w-]+)/g)) {
-      if (!structural.has(name) && !['--f', '--e', '--o'].includes(name)) reads.add(name); // the menu entries' own accent slots
+      if (!structural.has(name) && !PAGE_SET.includes(name)) reads.add(name);
     }
   }
   for (const f of walk('js')) {
     const src = read(f);
-    for (const [, name] of src.matchAll(/'(--[a-z][\w-]*)'/g)) reads.add(name);
+    for (const [, name] of src.matchAll(/'(--[a-z][\w-]*)'/g)) if (!PAGE_SET.includes(name)) reads.add(name);
     for (const [, name] of src.matchAll(/\b(?:color|raised|revealed)\(token, '([\w-]+)'\)/g)) reads.add(`--color-${name}`);
   }
   for (const list of Object.values(CONTRAST_ROLES)) for (const name of list) reads.add(name);
@@ -454,7 +553,7 @@ const SHOWS = {
   selected: (t) => forced(t, 'focus'),
   disabled: off,
   checked: (t) => 'checked' in t.attrs || t.attrs['aria-checked'] === 'true' || t.attrs['aria-selected'] === 'true',
-  chosen: (t) => t.attrs['aria-pressed'] === 'true',
+  chosen: (t) => t.attrs['aria-pressed'] === 'true' || t.attrs['aria-expanded'] === 'true',
   invalid: (t) => classes(t).includes('is-invalid'),
 };
 

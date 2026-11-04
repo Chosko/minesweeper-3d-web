@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Every Classic 2D and 3D game that ends in play — won, lost, or abandoned
+Every Classic 2D, Hexagon, Triangle and 3D game that ends in play — won, lost, or abandoned
 after its first click — becomes one compact, versioned binary replay: the
 board's mines, the rules version, every action with its time and the
 player's movement, sealed at the end of the game and handed on beside its
@@ -16,7 +16,7 @@ browser wiring, the viewer's binder and the 2D viewer's mount.
 | ---- | -------------- | --------- |
 | `js/replay/format.js` | Replay object, blob layout, encoder, per-version decoders and upgrade steps, sampling intervals, final-state digest. Head comment is the authority for every field. | here |
 | `js/replay/recorder.js` | Recorder and sealer: one per game session, game-clock feed, listing fields, movement cap. | here |
-| `js/replay/sampler-2d.js` | Classic 2D pointer and cursor sampler; `mountSampler2D` browser wiring. | [replay-samplers.md](replay-samplers.md) |
+| `js/replay/sampler-2d.js` | 2D pointer and cursor sampler of every flat mode; `mountSampler2D` browser wiring. | [replay-samplers.md](replay-samplers.md) |
 | `js/replay/sampler-3d.js` | 3D camera and view-mode sampler. | [replay-samplers.md](replay-samplers.md) |
 | `js/replay/library.js` | Replay library: only writer of the blob store and `replays.library`. | [replay-library.md](replay-library.md) |
 | `js/replay/simulator.js` | Replay played on the engine, seeking with snapshots; `openReplay`. | [replay-playback.md](replay-playback.md) |
@@ -42,11 +42,17 @@ which adds it to the library once its summary is recorded ([app-shell-results.md
   `minesweeper-3d` version 1 or 2; `header.pauses` the game's pause spans;
   `movementEndedAt` the time a capped movement stream stopped, or null.
   `sampleIntervalMs` exists on a decoded replay only.
-- `REPLAY_FORMAT_VERSION` (2), `ACTION_KINDS` (the engine's `CLICK_KINDS`),
-  `MOVEMENT_TYPES` (`sample`, `cursor`, `view`), `SAMPLE_ARITY` (`square`
-  2, `box` 5).
-- `sampleIntervalMs(version, mode)` → ms (2D 50, 3D 100), `undefined` for an
-  unknown version.
+- `REPLAY_FORMAT_VERSION`, `ACTION_KINDS` (the engine's `CLICK_KINDS`),
+  `MOVEMENT_TYPES` (`sample`, `cursor`, `view`), `SAMPLE_ARITY` per graph
+  kind (the flat kinds the 2D arity, `box` the 3D one), `FLAT_KINDS`
+  (`square`, `hex`, `tri`: a 2D board's grid, the graph kinds a cursor
+  event belongs to).
+- The header's `graph` is a flat kind with width and height, or a box; it
+  rebuilds the cell graph and, for a flat kind, the geometry. A
+  current-version blob whose graph kind this build does not know is refused
+  as `ReplayNewerVersionError`, as a newer version is.
+- `sampleIntervalMs(version, mode)` → ms (that version's entry in
+  `SAMPLE_INTERVALS_MS`), `undefined` for an unknown version.
 - `encodeReplay(replay, {version?})` → `Uint8Array`; `version` 1 writes an
   old body for tests.
 - `decodeReplay(blob)` → the replay at the current version; throws
@@ -55,7 +61,7 @@ which adds it to the library once its summary is recorded ([app-shell-results.md
 - `cellStateDigest({revealed, flagged, hidden})` → 32-bit FNV-1a.
 
 `js/replay/recorder.js`
-- `MOVEMENT_CAP_BYTES` — 2 MB.
+- `MOVEMENT_CAP_BYTES` — the movement streams' byte cap.
 - `startRecording({mode, graph, board, profile}, {onFailure?,
   movementCap?})` → recorder: `boardArrived`, `action(kind, cell, time)`,
   `sample`, `cursor`, `view`, `seal(summary, final, pauses?)` → `{blob,
@@ -114,12 +120,12 @@ which adds it to the library once its summary is recorded ([app-shell-results.md
 - [engine.md](engine.md) — rule profiles and versions.
 - [engine-rules.md](engine-rules.md) — `CLICK_KINDS`, the state arrays the
   digest reads.
-- [records.md](records.md) — board identity, `boardKey`, the summary record.
+- [records.md](records.md) — board identity, `boardKey`; [records-summary.md](records-summary.md) — the summary record.
 - [classic2d-session.md](classic2d-session.md), [classic2d-mode.md](classic2d-mode.md),
   [mode3d-session.md](mode3d-session.md), [mode3d-adapter.md](mode3d-adapter.md) — the sessions' recorders and the modes' samplers.
-- [app-shell.md](app-shell.md), [app-shell-pause.md](app-shell-pause.md) — the replay on the mode
+- [app-shell.md](app-shell.md), [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — the replay on the mode
   contract and hand-offs; [app-shell-3d.md](app-shell-3d.md) — the frame loop that ticks the 3D sampler.
-- [testing.md](testing.md) — `tests/replay-format`, `-recorder`, `-2d`,
+- [testing-files.md](testing-files.md) — `tests/replay-format`, `-recorder`, `-2d`,
   `-3d`, `-determinism` and `-handoff.test.mjs`, `tests/fixtures/replays/`,
   `dev/measure-replays.mjs`.
 

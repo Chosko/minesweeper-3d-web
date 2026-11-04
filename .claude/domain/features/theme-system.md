@@ -257,7 +257,11 @@ reader, and the kit stylesheet: [app-shell-themes.md](../../context/app-shell-th
   and parts per the catalogue; fonts only from the theme's own files;
   component animation in CSS only, never overriding the base stylesheet's
   `prefers-reduced-motion` rule — no `prefers-reduced-motion` rule and no
-  `!important` animation or transition in a theme stylesheet.
+  `!important` animation or transition in a theme stylesheet. A value that
+  depends on the size step is written against the root area
+  (`shared-screen-layout` § Architecture, **Size steps**): the desktop and
+  compact steps as `@container root` queries, container units for a size
+  taken from the area, and the touch step as `@media` queries.
 - **Failure contract** — a theme whose files fail to load at start-up falls
   back to the default theme and tells the player once; a failed switch
   keeps the current theme and tells the player once; the default theme

@@ -5,8 +5,8 @@
 The replay viewer screen (`js/replay/viewer.js`) opens a replay, verifies
 it through the simulator ([replay-playback.md](replay-playback.md)) and
 plays it back. `js/main.js` builds the one viewer (`REPLAY_VIEWER`) on the
-router's `replay` screen, with the 2D viewer for square graphs and the 3D
-viewer over its own scene and camera for box graphs
+router's `replay` screen, with the 2D viewer for every flat graph (square,
+hex, tri) and the 3D viewer over its own scene and camera for box graphs
 ([replay-viewers.md](replay-viewers.md)); the results screen's *Watch
 replay*, the Records screen's Watch best and library Watch, and Open
 replay file open it ([app-shell-replay.md](app-shell-replay.md),
@@ -36,7 +36,9 @@ The `#replay` binder (`createReplayView`) is
 - `replayCode(replay)` → the game's board code in its game form, from the
   header's board, seed and generator version and the first reveal action
   (no format change), or null; `replayTitle(replay)` → the frame's title,
-  "Replay · Classic 2D · Intermediate" (the board as the records name it);
+  "Replay · Hexagon · Beginner" (the mode as `MODE_NAMES` names it,
+  [app-shell-daily.md](app-shell-daily.md), Classic 2D for an unknown one; the board as
+  the records name it);
   both handed to `view.ready({ …, code, title })`.
 - `clockText(ms)` (`"13.342"`, seconds to the thousandth, truncated),
   `overlayFigures(frame, ms)` (the strip's clock, mines, 3BV and 3BV/s),
@@ -53,8 +55,8 @@ The `#replay` binder (`createReplayView`) is
   `command`, `seek`, `setSpeed`, `download()`, `openFile(file)`, `key`,
   `pad`, `back()`, `defaultFocus()` (Play once ready, the failure card's
   Back once failed, the frame's Back while opening), `setScale`, `state`.
-  `viewers` maps a graph kind to a mount; default `{square:
-  mountViewer2D}`; `sound` is the sfx sink, `files.save(bytes, name)` the
+  `viewers` maps a graph kind to a mount; default `mountViewer2D`
+  for `square`, `hex` and `tri`; `sound` is the sfx sink, `files.save(bytes, name)` the
   download, `bests(board)` the board's bests (`RECORDS.bests`);
   `state.live` is `replayFigures` at the playback position.
 - `createReplayView` — the `#replay` binder the viewer drives
@@ -68,7 +70,7 @@ The `#replay` binder (`createReplayView`) is
   or unreadable too); a box replay with no 3D viewer (no WebGL 2); any other
   graph kind with no viewer. Back works in every case.
 - **The timeline.** A replay opens paused on the start position (the
-  closed board, `LEAD_IN_MS` before game time 0, clock 00.000) at 1×, Show 3BV off, the
+  closed board, `LEAD_IN_MS` before game time 0, clock 00.000) at `DEFAULT_SPEED`, Show 3BV off, the
   camera on Follow; at game time 0 the time-0 actions (the first click, a
   3D game's flags before it) play as the first action.
 - **The viewer's frame.** `tick(ms)` runs once per frame: while playing it
@@ -90,7 +92,8 @@ The `#replay` binder (`createReplayView`) is
 - **Press rings and cues.** Each action playback reaches going forward shows
   its press ring; a seek or step shows the rings of the actions where it
   lands, none for those it crosses. With sound on (kept for the session),
-  each action reached going forward at 2× or slower plays `actionCue`, as
+  each action reached going forward at the slower speeds (up to a speed
+  fixed in the viewer's cue step) plays `actionCue`, as
   does a step or a forward seek onto an action.
 - **Live figures.** The panel shows the live figures model of the playback
   position (the frame's counts, flags and mines, the game time), so it
@@ -126,7 +129,7 @@ The `#replay` binder (`createReplayView`) is
 - [app-shell-kit-helpers.md](app-shell-kit-helpers.md) — `bindFigures`,
   `bindFiguresLive`, the code chip.
 - [audio.md](audio.md) — the sfx calls a cue makes.
-- [testing.md](testing.md) — `tests/replay-viewer.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/replay-viewer.test.mjs`,
   `tests/replay-viewer-3d.test.mjs`, `tests/results-watch.test.mjs` (fast
   only; Watch replay's browser test is in `tests/results.test.mjs`).
 

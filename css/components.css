@@ -8,7 +8,7 @@
    Behaviour helpers live in js/ui/components.js (initComponents(root) binds
    every slider, segmented choice and tablist under root; bindSliderFill(input)
    keeps a slider's fill in step with its value; bindSelectOnHover(root)
-   moves focus to the button, menu entry, mode entry or board option the mouse
+   moves focus to the button, menu entry, main menu button or board option the mouse
    moves over; showKeyHints(root, keysFor) fills the key hints;
    bindFiguresLive(panel) writes a figures panel's live part;
    applyIcons(root) draws each button's and note's leading icon;
@@ -18,15 +18,15 @@
    Changing a class name or a markup pattern below is a breaking change for
    every screen using it.
 
-   States. On buttons, menu entries, mode entries and board options
-   (ui-button, ui-menu__item, ui-mode-entry, ui-option)
+   States. On buttons, menu entries, main menu buttons and board options
+   (ui-button, ui-menu__item, ui-play-tile, ui-small-entry, ui-option)
    hover and focus are one selected state: the mouse moving over one focuses
    it, so the selected control is the focused one (:focus, body.pad-nav :focus
    for the controller), and none draws a focus ring or a hover look of its
    own. A control that never takes focus (data-no-focus: the in-game toggles
    that leave the keys to the board) is not focused by the mouse. They have:
    at rest, selected, pressed (:active) and disabled (the native `disabled`
-   attribute; aria-disabled="true" on a mode entry); a board option and a
+   attribute; aria-disabled="true" on a play tile); a board option and a
    latched toggle also have chosen (aria-pressed="true"), drawn apart from
    selected, and a board option is selected by the pointer only while the
    pointer is over it (body.pointer-nav: the last input was the mouse), so
@@ -51,12 +51,38 @@
    move focus as the D-pad does, except an arrow the focused control owns. The
    selected segmented option is the only option in the Tab order (arrow keys
    move the selection); controller navigation reaches every option.
-   Each Back that Esc triggers carries its back ui-key-hint inside it.
+   Each Back that Esc triggers carries its back ui-key-hint inside it,
+   but the title bar's, which shows its icon alone.
 
-   ui-button--primary — the screen's main action
-     Element: <button type="button" class="ui-button ui-button--primary">
+   The root area. The page's root element is the size container `root`,
+   sized to the available area: the browser window on the web, the work
+   area of the display the window is on at the desktop host (css/style.css,
+   js/platform/window-actions.js). The desktop and compact size steps and
+   every rule sized from the window resolve against it — `@container root`
+   queries and container units (cqw, cqh), never window queries or
+   viewport units. The touch step (a phone upright or sideways) keeps its
+   `@media` queries on the window, and the desktop host never takes it:
+   there they are settled against the work area, never phone-sized.
+
+   ui-button--primary — the screen's main action, always in one of its two
+   colours (the button colour rule):
+   ui-button--go — the green button that confirms or goes forward: Play
+   (every board choice and Daily), Play again, Resume, Restart when it
+   leads the pause card, Retry, Try again, Reload and Click to reload,
+   Click / Tap to play, Play Cube Intro, Play with drag-to-look, the
+   replay viewer's Play and the 404 page's link. A large one is slimmer
+   than the large primary button.
+     Element: <button type="button" class="ui-button ui-button--primary
+                ui-button--go">
+   ui-button--stop — the red button, only for the title bar's Quit; the
+   destructive confirmations take ui-button--danger.
+     Element: <button type="button" class="ui-button ui-button--primary
+                ui-button--stop" aria-label="Quit">
      Role:    button (native)
-     Name:    its text
+     Name:    its text, or aria-label when it shows only its icon
+   Both rest in a stronger pastel of their colour and take their full
+   colour when selected or pressed. Pause is always a ui-button--secondary,
+   the replay viewer's #rp-play included while it shows Pause.
 
    ui-button--secondary — every other action
      Element: <button type="button" class="ui-button ui-button--secondary">
@@ -75,26 +101,34 @@
      Role:    button (native)
      Name:    its text
 
-   A latched toggle (Swap clicks, the 3D touch view modes, Show 3BV, Free
-   camera) is a ui-button--quiet ui-button--sm carrying aria-pressed: quiet
-   while "false", drawn as the primary button while "true" (its chosen
-   state).
+   A latched toggle (Swap clicks, the live-figures toggle, the 3D touch
+   view modes, Show 3BV, Free camera, the board choice panel toggle) is a
+   ui-button--quiet ui-button--sm carrying aria-pressed: quiet while
+   "false", the pressed look while "true" (its chosen state), never a
+   colour; the replay's Sound, a ui-button--secondary carrying
+   aria-pressed, shows the pressed look the same way.
      Element: <button type="button" class="ui-button ui-button--quiet
                 ui-button--sm" aria-pressed="false">
+   A panel toggle — the board choice's, the live-figures toggle — is
+   icon-only (data-icon="panel", data-panel-toggle), named by aria-label,
+   square at its frame head's button size.
 
    Sizes: ui-button--sm (a dense bar's or a frame head's actions) and
    ui-button--lg (a screen's one large action) beside the button's own
    class; without either a button takes the kit's middle size, md.
 
    A button's key hint sits inside it after its text, out of its name:
-     <span class="ui-key-hint" data-action="select" aria-hidden="true">
-       <kbd class="ui-key-hint__key">Enter</kbd></span>
+     <span class="ui-key-hint" data-action="back" aria-hidden="true">
+       <kbd class="ui-key-hint__key">Esc</kbd></span>
+   A confirm button carries no Enter label: its hint is
+   data-action="confirm", the controller's A alone, hidden on the keyboard.
 
    ui-icon — the icon set: the canvas's stroke icons, one source
    (ICONS in js/ui/components.js): arrow-left, play, pause, restart,
    refresh, skip-back, skip-forward, copy, link, chart, shuffle, grid,
    cube, film, trophy, eye, swap, speaker, camera, download, upload,
-   trash, pin, mouse, hand, check, close, info, warning. Each draws in
+   trash, pin, mouse, hand, check, close, minimise, fullscreen, windowed,
+   info, warning. Each draws in
    currentColor, so it takes the ink of the control around it.
      Element: <svg class="ui-icon" data-icon="<name>" aria-hidden="true"
                 focusable="false" viewBox="0 0 24 24" …>…</svg>
@@ -103,10 +137,11 @@
    A button's leading icon sits before its label, set off by the
    button's gap: 18px on sm and md buttons, 24px on ui-button--lg, 14px on
    a code chip's buttons. The label stays the button's name; an
-   icon-only button (the Records replays' delete) carries aria-label.
+   icon-only button (the Records replays' delete, the title bar's) carries
+   aria-label.
    In markup a button names its icon, applyIcons(root) draws it:
-     <button type="button" class="ui-button ui-button--primary"
-       data-icon="play">Play</button>
+     <button type="button" class="ui-button ui-button--primary
+       ui-button--go" data-icon="play">Play</button>
    A script builds one with createButton(doc, {label, icon, variant,
    size, iconOnly}) or sets one with setButtonIcon(button, name).
 
@@ -139,10 +174,10 @@
      Element: <div class="ui-panel">…</div>
      Role:    none (presentational grouping)
      Name:    none
-     Muted:   ui-panel--muted is a sunk surface with no border and no drop,
-              its content stacked with a small gap (the Custom form, the
-              Learn 3D explanation, the Records overall block, the pause
-              card's settings); it greys its figures (values and detail
+     Muted:   ui-panel--muted is the panel on the sunk surface, its border
+              and drop kept, its content stacked with a small gap (the
+              Custom form, the Learn 3D explanation, the Records overall
+              block, the pause card's settings); it greys its figures (values and detail
               lines in muted ink, no delta colour) for content shown for
               reference only.
 
@@ -408,7 +443,7 @@
               as plain figures, LED digits on black or anything between.
      Values:  as the overlay bar's (formatMineCount, formatOverlayTime);
               data-negative on the counter marks a count below zero.
-     Steps:   the digits follow the window-size steps the theme holds
+     Steps:   the digits follow the size steps the theme holds
               (ui-frame), in the Classic 2D window and the 3D overlay alike.
 
    ui-counter-strip — mines left, Restart and the timer
@@ -419,8 +454,12 @@
                   <span class="ui-key-hint" data-action="restart" aria-hidden="true">…</span></button>
                 <div class="ui-counter" …>…</div>
               </div>
+              or Restart icon-only, as the Classic 2D window's is:
+                <button type="button" class="ui-button ui-button--secondary ui-button--sm"
+                  data-icon="restart" aria-label="Restart" title="Restart"></button>
      Role:    group; Restart a button (native)
-     Name:    group: aria-label; Restart: its text
+     Name:    group: aria-label; Restart: its text, or its aria-label with the
+              Restart tooltip when icon-only (no text and no key label)
      Layout:  the counters at the ends, Restart between them.
 
    ui-figure — a live figure: 3BV, pace vs PB, 3BV/s, clicks, flags
@@ -443,7 +482,7 @@
      Element: <section class="ui-figures" aria-label="Live figures">
                 [<header class="ui-figures__head">
                   <h2 class="ui-figures__title" id="T" title="3D · Cube Intermediate">3D</h2>
-                  <button type="button" class="ui-button ui-button--primary ui-button--sm
+                  <button type="button" class="ui-button ui-button--secondary ui-button--sm
                           ui-figures__action">Pause</button>
                 </header>]
                 <div class="ui-figures__body">
@@ -459,7 +498,7 @@
      Foot:    optional: the board's main bindings for the active device as
               ui-key-hint, each with its label.
      Steps:   the title, the figures and their spacing follow the
-              window-size steps the theme holds (ui-frame).
+              size steps the theme holds (ui-frame).
      Live:    the figures themselves are never announced; the live part,
               hidden by the base, is what a screen reader hears, written by
               bindFiguresLive(panel).announce(text) at most once a second
@@ -493,17 +532,24 @@
      touch-stick      the 3D touch stick (<div class="touch-stick">, its
                       .touch-stick__knob), aria-hidden.
 
-   ui-wordmark — the game's title in one line (the main menu, the board choices)
-     Element: <h1 class="ui-wordmark" aria-label="Minesweeper 3D">
-                <span class="ui-wordmark__word" aria-hidden="true">Mine</span>
-                <span class="ui-wordmark__word" aria-hidden="true">sweeper</span>
-                <span class="ui-wordmark__word" aria-hidden="true">3D</span>
+   ui-logo — the game logo, the straight one at rest: the title bar's
+   centre on every window
+     Element: <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D">
+                <span class="ui-logo__word" aria-hidden="true">
+                  <span class="ui-logo__letter">M</span> …
+                </span>
+                <span class="ui-logo__word" aria-hidden="true">…3D</span>
               </h1>
      Role:    heading (native)
      Name:    aria-label
-     Look:    the three words on one line, centred, in capitals, each in its
-              own accent; sized with the window — 84 px on the largest
-              desktop window, 50 px at 1024 × 768, 31 px on a phone.
+     Markup:  the heading alone; drawLogo(logo) and applyLogos(root)
+              (js/ui/components.js) draw its two words, MINESWEEPER and 3D,
+              letter by letter.
+     Look:    one line, centred: each letter of MINESWEEPER in a game colour
+              (blue, coral, teal, violet, green, orange, repeating), 3D in
+              yellow; a white outline and a short darker extrusion, sized
+              with the size steps the theme holds (ui-frame). Its bouncy version
+              (a game-start animation) is not built.
 
    ui-backdrop — the page behind a screen (Joyful tiles' dotted paper)
      Element: <div class="ui-backdrop"> holding the screen's ui-frame </div>
@@ -511,73 +557,141 @@
      Name:    none
      Layout:  fills its layer and centres the frame on it.
 
-   ui-frame — a screen's window: head, scrolling body, foot
+   ui-frame — a screen's window: the title bar, the heading, a scrolling
+   body and a foot
      Element: <section class="ui-frame" aria-labelledby="T">
                 <div class="ui-frame__chrome" data-slot="window-chrome"
                      aria-hidden="true"></div>
                 <header class="ui-frame__head">
-                  <div class="ui-frame__start">[Back: a ui-button--secondary with its back key hint]</div>
-                  <h2 class="ui-frame__title" id="T">…</h2>
-                  <div class="ui-frame__end">[the screen's action, or nothing]</div>
+                  <div class="ui-frame__start">[Back, or nothing]</div>
+                  <h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"></h1>
+                  <div class="ui-frame__end">[an in-game action, or nothing]
+                    <div class="ui-frame__window" role="group" aria-label="Window">
+                      <button type="button" class="ui-button ui-button--secondary
+                        ui-button--sm" data-window="minimise" data-icon="minimise"
+                        aria-label="Minimise" title="Minimise"></button>
+                      <button type="button" class="ui-button ui-button--secondary
+                        ui-button--sm" data-window="fullscreen" data-icon="fullscreen"
+                        aria-label="Fullscreen" title="Fullscreen"></button>
+                      <button type="button" class="ui-button ui-button--primary
+                        ui-button--stop ui-button--sm" data-window="quit"
+                        data-icon="close" aria-label="Quit" title="Quit"></button>
+                    </div>
+                  </div>
                 </header>
+                <div class="ui-frame__heading">
+                  <h2 class="ui-frame__title" id="T">…</h2>
+                  <div class="ui-frame__action">[the screen's control, or nothing]</div>
+                </div>
                 <div class="ui-frame__body">…</div>
                 <footer class="ui-frame__foot">…</footer>
               </section>
      Role:    region (section named by its title)
-     Name:    aria-labelledby → the title
+     Name:    aria-labelledby → the title (the Classic 2D game window's: the
+              mode and board leading its foot line)
+     Head:    the game's own title bar on every desktop window: Back at the
+              start as the arrow-left icon alone (a ui-button--secondary
+              ui-button--sm ui-frame__back, data-icon="arrow-left", named by
+              its aria-label with the "Back" tooltip; none on the main
+              menu), the game logo (ui-logo) in the centre, and at the end
+              the window buttons Minimise, Fullscreen / Windowed (the
+              windowed icon and name while the desktop window is full
+              screen) and Quit, the stop button — every one icon-only, with
+              its tooltip and its accessible name. On the web they press
+              like any button and do nothing (bindWindowButtons, js/ui/
+              components.js: a desktop host the platform layer's capability
+              flags report attaches their actions). The Classic 2D game
+              window puts Pause in Back's place, the pause icon alone. On a
+              phone the head holds only Back (or Pause) and the logo.
+     Heading: the screen's name, the title, at the top of the window's body,
+              a control the screen puts beside its name at its right
+              (ui-frame__action); the main menu has none, the logo naming
+              it, nor the Classic 2D game window, its foot naming it.
      Foot:    a status line, <p class="ui-frame__status">…</p>, or a bottom
               bar: <p class="ui-frame__summary">…</p> (the selection
               summarised) beside a ui-actions ui-actions--row; a frame
-              without a foot leaves it out. A screen's action bar (the
-              board choices, Daily, results) is the white action foot,
+              without a foot leaves it out; a bar may hold its actions
+              alone at its right (the board choices' Play). A screen's
+              action bar (the board choices, Daily, results) is the white
+              action foot,
               <footer class="ui-frame__foot ui-frame__foot--action">: the
               surface under a ruled line, roomier, its summary larger; on a
               phone a bottom bar with its actions on the right. The game
-              window keeps the head-coloured foot.
-     Steps:   the head and foot, their titles and the small buttons follow
-              the window-size steps the theme holds — desktop, compact (the
-              smaller desktop windows) and touch (a phone upright or
-              sideways); the title stays on one line at every step.
-     Slot:    window-chrome, the frame's title-bar decoration (a title bar's
-              decorative buttons), hidden unless a theme draws it.
-     Layout:  sized to its content, never wider or taller than its
-              backdrop; head and foot stay in view while the body scrolls
-              vertically. The title sits centred between Back and the action.
+              window keeps the head-coloured foot. The results card keeps a
+              head of its own: the outcome title between the trophy and the
+              rank (ui-frame__start, ui-frame__title, ui-frame__end).
+     Steps:   the head, the logo, the heading and foot, their titles and the
+              small buttons follow the size steps the theme holds —
+              desktop, compact (the smaller desktop areas) and touch (a
+              phone upright or sideways), read from the root area; the
+              title stays on one line at every step.
+     Slot:    window-chrome, the frame's title-bar decoration, hidden unless
+              a theme draws it.
+     Layout:  at its screen's natural size (the size the screen's
+              artboard draws at the size step, or its content's), never
+              wider or taller than its backdrop: it shrinks to fit a
+              smaller area and never grows past that size on a larger one;
+              head, heading and foot stay in view while the body scrolls
+              vertically. The logo sits between Back and the window
+              buttons, centred while both sides fit equal; a head fitted to
+              its width (fitTitleBar, js/ui/components.js: the Classic 2D
+              game window, which its board column sizes) scales the logo
+              down in steps to a floor, then hides it (data-logo="hidden"),
+              Back's side the first to give way.
 
-   ui-mode-entry — a main-menu entry: a mode, or a place (Records, Settings)
-     Element: <div class="ui-mode-list" role="group" aria-label="…">
-                <button type="button" class="ui-mode-entry" data-entry="classic-2d">
-                  <span class="ui-mode-entry__icon" aria-hidden="true"><svg>…</svg></span>
-                  <span class="ui-mode-entry__label">Classic 2D</span>
-                  <span class="ui-chip">Last played</span>
-                  <span class="ui-mode-entry__lock" aria-hidden="true"><svg>…</svg></span>
-                </button> …
-              </div>
-     Role:    group; each entry a button (native)
-     Name:    group: aria-label; entry: its text (label, chip, reason)
-     Accent:  data-entry names the entry (classic-2d, hexagon, triangle,
-              surface, 3d, daily, records, settings, quit); the theme gives
-              each its accent, and the places a neutral one.
-     Last:    the Last played ui-chip on the last mode played.
-     Disabled: aria-disabled="true" (not the native attribute, so the
-              entry stays selectable and its preview shows; its screen
-              opens nothing on it) and a
-              <span class="ui-mode-entry__reason">…</span> after the label
-              saying why it cannot open here where there is one to give
-              (3D without WebGL 2; Quit on the web has the lock alone); the
-              lock shows only while disabled. There is no
-              locked state: a mode not built yet is an ordinary entry.
-     Selected: the selected entry is taller than the others, with a bigger
-              icon and label. In a ui-mode-list the entries share the
-              list's height.
+   ui-play-tile — a main menu button for a mode (or Daily) with its own preview
+     Element: <button type="button" class="ui-play-tile" data-entry="classic-2d">
+                <span class="ui-play-tile__side">
+                  <span class="ui-play-tile__top">
+                    <span class="ui-play-tile__icon" aria-hidden="true"><svg>…</svg></span>
+                    <span class="ui-play-tile__lock" aria-hidden="true"><svg>…</svg></span>
+                  </span>
+                  <span class="ui-play-tile__text"><span class="ui-play-tile__label">Classic 2D</span></span>
+                </span>
+                <span class="ui-play-tile__preview" data-preview="board" aria-hidden="true">
+                  <span class="ui-play-tile__art">[the drawn preview]</span>
+                </span>
+              </button>
+     Role:    button (native)
+     Name:    its text (label, reason)
+     Accent:  data-entry names the mode (classic-2d, hexagon, triangle,
+              surface, 3d, daily); the theme gives each its colour: a pastel
+              of it with a pastel edge at rest, the full colour selected.
+     Preview: a square on its ground, its art centred and cropped from the
+              middle so no board edge shows; data-preview names what it
+              shows (board, badge, still, icon, locked). The dark scene
+              ground by default; ui-play-tile__preview--light translucent
+              white over the button's colour; ui-play-tile__preview--locked
+              the locked ground with the lock. The art: a board view (the
+              screen mounts it), a ui-play-tile__badge of the mode's icon, a
+              still image, <img class="ui-play-tile__still" alt=""> (its
+              data-still naming it), or the ui-play-tile__calendar icon.
+     Disabled: aria-disabled="true" (not the native attribute, so the tile
+              stays selectable; its screen opens nothing on it), a
+              <span class="ui-play-tile__reason"> under the label holding
+              its reason twice, <span data-reason="long"> and the phone
+              row's <span data-reason="short">, the lock shown and the
+              preview locked. A mode not built yet is an ordinary tile.
+     Selected: no tile grows: every main menu button keeps its height.
+     Row:     ui-play-tile--row is the phone row — the icon, the text and
+              the lock in a row, the preview a strip pinned inside its right
+              end that never sets its height; every play tile takes it at
+              the phone sizes.
+
+   ui-small-entry — a main menu button for a place (Records, Settings)
+     Element: <button type="button" class="ui-small-entry" data-entry="records">
+                <span class="ui-small-entry__icon" aria-hidden="true"><svg>…</svg></span>
+                <span class="ui-small-entry__label">Records</span>
+              </button>
+     Role:    button (native)
+     Name:    its label
+     Look:    smaller than a play tile, the neutral raised surface at rest,
+              the stronger neutral selected.
 
    ui-option — a board option: a preset, Custom, Insert Board Code, Learn 3D
      Element: <div class="ui-options" role="group" aria-label="…">
                 <button type="button" class="ui-option" aria-pressed="false" data-value="…">
-                  <span class="ui-option__line">
-                    <span class="ui-option__name">Intermediate</span>
-                    <span class="ui-chip">Last played</span>
-                  </span>
+                  <span class="ui-option__name">Intermediate</span>
                   <span class="ui-option__meta"><span class="ui-option__size">16 × 16 · 40 mines</span>
                     · <span class="ui-option__density">15.6 % mines</span></span>
                   <span class="ui-option__check" aria-hidden="true"><svg>…</svg></span>
@@ -587,15 +701,30 @@
      Name:    group: aria-label; option: its text
      Chosen:  aria-pressed="true" on the board the screen holds: a fill and
               the check, apart from the selected (focused) option.
-     Parts:   the Last played ui-chip beside the name, the two in a name
-              line (ui-option__line) where the chip wraps under the name
-              before it would reach the check; an option with no chip
-              may hold the bare name, and a chip that is no Last played
-              chip may follow the name directly; the meta line holds
+     Parts:   the name, alone or in a name line (ui-option__line) with
+              a state ui-chip (the Daily screen's) that wraps under the
+              name before it would reach the check; no Last played chip;
+              the meta line holds
               the size line and the mine density, or a one-line
               description instead (Insert Board Code); no 3BV and no best.
               ui-option--learn (Learn 3D) leads with
               <span class="ui-option__badge" aria-hidden="true"><svg>…</svg></span>.
+
+   ui-drawer — the board choice panel: on a desktop window the panel
+   itself beside the options, its bar hidden; on a phone a full-width
+   raised bar under the options that, open, lies flat on a cream band
+   ending with a line, its label naming what the panel holds
+     Element: <div class="ui-drawer" data-panel data-open="false">
+                <button type="button" class="ui-drawer__bar" aria-expanded="false"
+                    aria-controls="…">
+                  <span class="ui-section-label__text ui-drawer__label">Board settings</span>
+                  <span class="ui-drawer__chevron" aria-hidden="true"><svg>…</svg></span>
+                </button>
+                <div class="ui-column ui-drawer__body" id="…">…</div>
+              </div>
+     Role:    the bar a button (native), aria-expanded while open
+     Name:    its label
+     Chosen:  aria-expanded="true": flat on the band, the chevron turned.
 
    ui-section-label — a section's label, with an optional aside
      Element: <div class="ui-section-label">
@@ -624,7 +753,7 @@
      Row:     ui-key-hints lays hints in a row.
 
    ui-chip — a short state, rank or "Coming soon" beside a name or figure
-     Element: <span class="ui-chip">Last played</span>
+     Element: <span class="ui-chip">Not played</span>
               ui-chip--won (a won game, its time), ui-chip--lost,
               ui-chip--muted (abandoned, not played, Coming soon),
               ui-chip--best (New best).
@@ -677,8 +806,8 @@
                   <span class="ui-scene-panel__name">Hexagon</span>
                   <span class="ui-scene-panel__note">Coming soon</span>
                 </div>
-              the badge in the accent its data-entry names, as the mode
-              entry's (the places neutral), locked grey with data-unavailable
+              the badge in the accent its data-entry names, as the play
+              tile's (the places neutral), locked grey with data-unavailable
               for an entry that cannot open here; the note optional. A
               screen may draw it as a large card, a bigger badge.
 
@@ -774,34 +903,38 @@
                        ui-screen--columns widens the screen beyond
                        ui-screen--wide at that width. Gaps come from the
                        spacing tokens.
-     ui-mode-list      a column of ui-mode-entry sharing its height.
+     ui-mode-list      the main menu buttons: its ui-mode-list__tiles, the
+                       ui-play-tile in two columns (one on a phone), every
+                       tile one height, a mode joining it with one tile;
+                       then its ui-mode-list__places, the ui-small-entry
+                       side by side (stacked on a phone).
      ui-options        a column of ui-option.
      ui-key-hints      a row of ui-key-hint.
      ui-list           the list of ui-list-row, its columns shared.
 
-   Main menu (index.html #menu): on the page's own backdrop, the
-     ui-wordmark at the top; under it, on the left, one ui-mode-list of the
-     nine entries (Classic 2D, Hexagon, Triangle, Surface, 3D; Daily,
-     Records, Settings; Quit — three blocks, data-block-start on the first
-     entry of the second and third, no group labels; each a ui-mode-entry
-     route, data-entry naming it, the last mode played marked with the Last
-     played ui-chip, an entry that cannot open here aria-disabled with its
-     lock and any reason line), the entries together as tall as the
-     preview; on the right the
-     preview of the selected entry, a ui-scene-panel (a board drawn by its
-     board view, the 3D scene live, or a card); under them the
-     ui-key-hints (move, select) and the build label, a ui-text--muted line,
-     with the touch note on a coarse-only device, a ui-text line after its
-     hand ui-icon. On a phone: no preview, the entries filling the screen. Default focus: the entry last opened
-     from the menu when Back returns to it, else the last mode played's,
-     else the first available entry.
+   Main menu (index.html #menu): on the page's own backdrop, a ui-frame
+     at its natural size, centred, whose head is the title bar with no Back
+     and whose body has no heading, the logo naming it, Quit its window
+     button and no entry; its body holds one ui-mode-list filling it: the
+     ui-play-tile of Classic 2D and Hexagon, Triangle and Surface, 3D and
+     Daily, each a route, data-entry naming it, showing its own preview at
+     once (the Classic 2D, Hexagon and Triangle board views each drawing
+     a game in progress, the Surface and 3D stills, the Daily calendar), a tile that cannot open here aria-disabled with its reason
+     and its preview locked; then Records and Settings, each a
+     ui-small-entry route; no Last played chip and no preview panel. The
+     foot holds the build label alone, a ui-text--muted line, with the
+     touch note on a coarse-only device, a ui-text line after its hand
+     ui-icon; no key hints. On a phone: the frame full-bleed, the phone
+     rows in one column filling the body. Default focus: the entry last
+     opened from the menu when Back returns to it, else the last mode
+     played's, else the first available entry.
    3D board choice (index.html #board-choice): the Classic 2D board choice's composition
      (below), with the title "3D", its window placed as Classic 2D's. Its left ui-options: Learn
-     3D first (ui-option--learn, its cube badge, no Last played ui-chip),
-     the four presets (data-preset, each named with its family — Cube
-     Beginner — its size and density meta) and Custom (its meta its board
+     3D first (ui-option--learn, its cube badge), the four presets
+     (data-preset, each named with its family — Cube Beginner — its size
+     and density meta, no chip) and Custom (its meta its board
      once chosen), one group with no group label; then the ui-divider and
-     Insert Board Code. On the right, for Learn 3D only a ui-section-label
+     Insert Board Code. In the panel, for Learn 3D only a ui-section-label
      with its "keeps no records" aside, a ui-panel--muted "How 3D works" of its
      three lines and a ui-text--muted line on the lesson; a preset shows the
      presets' no-guess ui-switchrow; Custom its own no-guess ui-switchrow, under a
@@ -809,12 +942,12 @@
      cells, or the cell-count limit) and over its density hint, a
      ui-note--warn (warning icon), and the form's four fields (width,
      height, depth, mines) in one row over its info line and Random, and
-     its refusal, a ui-note--warn (warning icon). Play on Learn 3D starts it without saving a
-     choice.
+     its refusal, a ui-note--warn (warning icon); the drawer's label on a phone is "Learn 3D" for
+     Learn 3D. Play on Learn 3D starts it without saving a choice.
      Default focus: the last board choice, the chosen option.
    Daily (index.html #daily, filled by js/shell/daily.js): the Classic 2D
-     board choice's composition and placement (below), titled "Daily", Back
-     the same "Main menu" with its arrow-left icon and back key hint. On the
+     board choice's composition and placement (below), its heading
+     "Daily", its title bar's Back the same, named "Back to Main menu". On the
      left, a column of fixed width: a ui-section-label "Today" with the date
      as its aside, a ui-text--muted intro line and a ui-options of one
      ui-option per mode in menu order (data-mode: Classic 2D, Hexagon,
@@ -833,29 +966,27 @@
      mono face — and the "Board code" ui-section-label over the ui-code
      chip of today's code (quiet Copy and Copy link with their icons). The
      foot: the summary, Watch replay (secondary, its film icon, shown for a
-     kept replay) and Play (primary, large, its play icon and select key
+     kept replay) and Play (go, large, its play icon and confirm key
      hint; disabled once the day's attempt is used and on a mode that
      cannot be played). On the smaller desktop windows the columns and the
-     option rows are denser. On a phone: one full-bleed column, no
-     wordmark, no preview and no summary, a ui-divider between the mode
-     list and the detail, Back reading "Back" after its arrow, the code
-     chip full width, the bar pinned at the bottom. Default focus: the
+     option rows are denser. On a phone: one full-bleed column, no preview
+     and no summary, a ui-divider between the mode list and the detail,
+     the code chip full width, the bar pinned at the bottom. Default focus: the
      selected mode, the first playable one when the screen first shows.
    Coming soon (index.html #coming-soon): the one placeholder every menu
      entry whose screen has not landed routes to; ui-backdrop holding a
-     ui-frame (Main menu, a secondary button led by the arrow-left icon
-     with its back key hint, named "Back to Main menu"; the entry's name
-     as title) whose body centres the message card's column: the lock
+     ui-frame (the title bar's Back named "Back to Main menu"; the entry's
+     name as its heading) whose body centres the message card's column: the lock
      badge (#coming-soon-badge), a larger ui-card__title "Coming soon", a
      ui-text line and Back (secondary, led by the arrow-left icon, with
-     its back key hint). On a phone the frame is full-bleed and the head's
-     button reads "Back". Default focus: Back.
-   Records (index.html #records): ui-backdrop holding a ui-frame inset on
-     it, not full height (Back, a secondary "Main menu" led by the
-     arrow-left icon with its back key hint, named "Back to Main menu" and
-     reading "Back" on a phone, returning one step; the title; at the end
-     the 2D | 3D switch as a ui-segmented choice (#records-mode, its two
-     options in the markup, data-value the mode)) whose body holds the
+     its back key hint). On a phone the frame is full-bleed. Default focus:
+     Back.
+   Records (index.html #records): ui-backdrop holding a ui-frame at its
+     natural size, centred (the title bar's Back, named "Back to Main menu"
+     when it returns to the menu and "Back" otherwise, returning one step;
+     the heading, with the mode switch at its right as a ui-segmented
+     choice (#records-mode, its four options in the markup — Classic 2D,
+     Hexagon, Triangle, 3D —, data-value the mode)) whose body holds the
      phone's full-width copy of the switch (#records-mode-touch, shown on a
      phone only, in place of the head's), the board picker as a
      ui-segmented choice on one line, scrolling sideways under a fade at
@@ -920,11 +1051,11 @@
      dashes, its counters 0 or a dash, both charts their empty line, the
      recent games the board's empty line; only the win rate line goes.
      Below 1024 px the columns stack in that order and the body scrolls;
-     on a phone the frame is full-bleed, its head Back and the title.
+     on a phone the frame is full-bleed, its heading the title alone.
      Default focus: the chosen board in the picker.
    Settings page (index.html #settings): ui-backdrop holding a ui-frame
-     (Back, a secondary "Main menu" with its arrow icon and back key hint,
-     "Back" on a phone, and the title "Settings"; no foot) whose body,
+     (the title bar's Back, named "Back to Main menu", and the heading
+     "Settings"; no foot) whose body,
      generated by js/settings/page.js, is one ui-columns of ui-column, each
      an independent stack of ui-panel sections under their
      ui-section-label: Controls and Audio, Graphics and Theme, Bindings
@@ -952,24 +1083,30 @@
      stack.
      Default focus: the look sensitivity slider.
    Classic 2D board choice (index.html #c2d-choice): ui-backdrop holding
-     the ui-wordmark over a ui-frame (Back, a secondary "Main menu" led by
-     the arrow-left icon with its back key hint, named "Back to Main menu",
-     and the title "Classic 2D") sized to its content and centred on the
-     page, pushed below the wordmark only when the page is too short for
-     both. Its body: on the left a ui-section-label
+     a ui-frame (the title bar's Back, named "Back to Main menu", and the
+     heading "Classic 2D", its action the panel toggle — a latched
+     ui-button--quiet, icon-only, named "Settings & bests", aria-pressed
+     while the panel is pinned) sized to its content and centred on the
+     page. Its body: on the left a ui-section-label
      (Board), a ui-options of the standard sizes and Custom (data-size;
-     each a ui-option with its Last played ui-chip in its name line, the presets' size and
-     density meta, Custom's meta its board once chosen), a ui-divider and a
-     ui-options of Insert Board Code; a ui-divider--vertical; on the right
-     what the chosen option needs — for a preset the Board settings
+     each a ui-option with no chip, the presets' size and density meta,
+     Custom's meta its board once chosen), a ui-divider and a ui-options
+     of Insert Board Code; then, while open, a ui-divider--vertical and
+     the board choice panel, a ui-drawer, the window widening and staying
+     centred. The panel opens while pinned (the toggle, a stored
+     preference every board choice shares) or while Custom, Insert Board
+     Code or Learn 3D is chosen, and holds what the chosen option needs —
+     for a preset the Board settings
      ui-section-label, the no-guess ui-switchrow with its help line, then a
      ui-divider and the board's bests: a ui-section-label
      naming the board and the switch, a ui-stat-row--tiles of Time, 3BV/s
      and Efficiency as ui-stat--tile, each with its date or a dash and "no
-     best yet"; for Custom the same with, between the switch (and its
-     density hint, a ui-note--warn with the warning icon, above 25 % mines
-     with no-guess on) and the bests, a ui-panel--muted of ui-field entries
-     (width, height, mines) filling one row, under them a ui-text--muted
+     best yet", then All records (secondary, small, its chart icon) under
+     them at the right; for Custom the same with, between the switch (and
+     its density hint, a ui-note--warn with the warning icon, above 25 %
+     mines with no-guess on) and the bests, the form on the panel, in no
+     box of its own: ui-field entries (width, height, mines) filling one
+     row, under them a ui-text--muted
      info line beside a Random secondary small button with its shuffle
      icon, and the refusal, a ui-note--warn with the warning icon, its
      field marked is-invalid; for Insert Board Code only a ui-section-label, a text ui-field
@@ -977,50 +1114,63 @@
      ui-text--success for an accepted code, a ui-note--warn (info icon)
      for a code of the other mode, a ui-note--err (warning icon) for a
      refused code, its field marked is-invalid. The
-     foot is a bottom bar: a ui-frame__summary of the chosen board, and
-     ui-actions--row of Records (secondary, its chart icon) and Play
-     (primary, large, its play icon and select key hint), disabled on a
-     refused custom board and on an empty or refused code. On the smaller
-     desktop windows the option rows, Play and the tiles are denser. On a
-     phone: one full-bleed column, no wordmark, no bests and no summary, a
-     ui-divider between the options and the settings, Back reading "Back"
-     after its arrow, Records and Play pinned at the bottom.
+     foot holds Play alone, at the right (go, large, its play icon and
+     confirm key hint), disabled on a refused custom board and on an
+     empty or refused code. On the smaller desktop windows the option
+     rows, Play and the tiles are denser. On a phone: one full-bleed
+     column with no panel toggle, the panel the drawer under the options
+     (labelled "Board settings", or "Board code" for Insert Board Code),
+     its body without the section labels the bar's label names, the bests
+     one row of three cells, Play pinned at the bottom in a slimmer bar.
      Default focus: the last board choice, the chosen option.
+   Hexagon and Triangle board choices (index.html #hex-choice,
+     #tri-choice): the Classic 2D board choice's composition, the heading
+     the mode's name and the presets its standard boards.
    Classic 2D game window (index.html #c2d): ui-backdrop holding a
-     ui-frame that hugs its content, centred above the HUD strip; its head
-     Swap clicks (a latched toggle, a fine pointer only), the title (the
-     mode and the board) and Pause (small primary, with its back key hint).
-     Its body: the board column — a ui-counter-strip (mines left, Restart
-     with its restart key hint, the timer) over the board area, sized to
-     the board and left-aligned under the strip, where the board sits in
-     its ui-board-frame with the first-use hint strip laid over it, and
-     under it the Tap choice (a ui-segmented Tap: Reveal | Tap: Flag) on a
-     coarse pointer — a ui-divider--vertical and the ui-figures panel of the live
-     figures (3BV with its bar, pace vs PB, 3BV/s, clicks, flags) with the
-     controls reminder at its foot, a flat column with no surface of its
-     own. The foot is a ui-frame__status line naming the board's size,
-     mines and no-guess. Below 1024 px the panel moves under the board, its
-     figures in a row; on a phone the window is full-bleed and the panel
+     ui-frame that hugs its content, centred above the HUD strip, named by
+     the mode and board that lead its foot line; its head the title bar —
+     Pause in Back's place (the pause icon alone, a ui-frame__back named
+     "Pause game"), the logo, the window buttons —, with no mode or
+     difficulty in it and no heading in the body. Its body: the board
+     column — a ui-counter-strip (mines left, the icon-only Restart, the
+     timer) over the board area, sized to the board and left-aligned under
+     the strip, where the board sits in its ui-board-frame with the
+     first-use hint strip laid over it, and under it the Tap choice (a
+     ui-segmented Tap: Reveal | Tap: Flag) on a coarse pointer — and, while
+     the live figures are open, a ui-divider--vertical and the ui-figures
+     panel of the live figures (3BV with its bar, pace vs PB, 3BV/s,
+     clicks, flags) with the controls reminder at its foot, a flat column
+     with no surface of its own; closed, the window shrinks to the board
+     column. The foot is a ui-frame__status line — the mode and difficulty,
+     then the board's size, mines and no-guess, ellipsised rather than
+     widening the window — and at its right a ui-actions--row of Swap
+     clicks (a latched toggle, a fine pointer only) and the live-figures
+     toggle (a latched quiet icon-only button, data-panel-toggle with the
+     panel icon, named "Live figures", aria-pressed while open, sunk then).
+     Neither foot control takes the focus from the mouse; the keyboard
+     reaches both in the Tab order and presses them with Enter or Space.
+     Below 1024 px the open panel moves under the board, its figures in a
+     row; on a phone the window is full-bleed and the panel and its toggle
      hidden, and held sideways the board takes the left edge and a column
      beside it holds the mines, the time, Restart and the Tap choice.
      Default focus: none (the board takes the keys).
-   3D game overlay (index.html #hud-overlay over the full-window scene): a
-     ui-counter-strip (mines left, Restart with its restart key hint, the
-     timer) at the top centre, and on the right, centred vertically, the
-     ui-figures panel headed by the title and Pause (small primary, with its
-     back key hint) — the live figures and the controls reminder under it,
-     the H help panel beside it. Each part carries its own surface over the
-     sky. The title is the mode and the board, the full name its tooltip and
-     accessible name; it drops the board when the full name does not fit on
-     its line, as measured. The HUD key strip sits at the bottom centre,
-     the hint strip and the view chips above it. On a phone no figures and
-     no key strip: upright, the title and Pause bar on top and the counters
-     under it; held sideways, the title a pill at the top left, the counters
-     at the top centre and Pause an icon button at the top right; the touch
-     hint strip wraps under them. Learn 3D's overlay has no timer and no
-     figures: above a phone, the panel's head alone (the title and Pause)
-     over the counter strip, a column at the top left; its prompt in the
-     hint strip's own Learn 3D form, the step before it.
+   3D game overlay (index.html #hud-overlay over the full-window scene), with
+     no title anywhere: Pause floating at the top left (small secondary,
+     the pause icon alone, named "Pause game"), a ui-counter-strip (mines
+     left, the icon-only Restart, the timer) at the top centre, and the
+     live-figures toggle at the top right (the Classic 2D window's latched
+     quiet icon-only button, aria-pressed and sunk while open). The ui-figures
+     panel, with no head bar — the live figures and the controls reminder —
+     shows on the right, centred vertically, only while the stored
+     preference is open, the H help panel beside it. Each part carries its
+     own surface over the sky. The HUD key strip sits at the bottom centre,
+     the hint strip and the view chips above it. On a phone no toggle, no
+     figures and no key strip: upright, Pause on top and the counters under
+     it; held sideways, Pause at the top left and the counters at the top
+     centre; the touch hint strip wraps under them. Learn 3D's overlay has
+     no timer, no figures and no toggle: above a phone, Pause over the
+     counter strip, a column at the top left; its prompt in the hint strip's
+     own Learn 3D form, the step before it.
      Default focus: none (the scene takes the keys).
    Board status (index.html #c2d-status centred on the Classic 2D board
      column, and #m3d-status over the 3D box): ui-card ui-screen while a
@@ -1028,7 +1178,7 @@
      ui-spinner beside the title and its ui-text--muted progress line
      ("candidate 14 · 6 s", in the mono face), then ui-actions--row
      (Cancel, Play a standard board); after a failed no-guess board the
-     title, a ui-text line and ui-actions--row (Retry primary with the
+     title, a ui-text line and ui-actions--row (Retry go with the
      refresh icon, Play a standard board, Main menu — or Back alone, with
      the arrow icon, for a board that is never replaced). It sits above
      the pause card. Over the 3D box it lays a scrim over the scene, the
@@ -1039,7 +1189,7 @@
      of, in order, a ui-column (the title block #pause-head — the title, the
      full board line in bold (mode, board, size, mines, no-guess), the
      status line in the mono face —, the warning note and ui-actions, each
-     button with its leading icon: Resume (play) primary during a game, with
+     button with its leading icon: Resume (play) go during a game, with
      its back key hint, Back to start (cube) on a 3D game in play, Restart
      (restart) with its restart key hint, Main menu (arrow-left)), a
      ui-column of the Settings ui-panel--muted under its ui-section-label
@@ -1049,7 +1199,7 @@
      ui-panel (#pause-list: a ui-card__title over the ui-controls help list
      of the active mode for the active device). With no game in progress
      (before the first click, or after the end) the status line says so,
-     Restart (Play again once ended) is primary and first, and there is no
+     Restart (Play again once ended) is go and first, and there is no
      Resume. At 1024 px and wider the two columns are equal, the Controls
      panel alone in the second and the Settings panel in the first, under
      the actions, so the card fits a 1024 × 768 window unscrolled; below
@@ -1063,8 +1213,8 @@
      its back key hint) and the board line; the refusal's ui-note--warn
      (info icon), hidden while there is none; Click to play (mouse icon;
      Tap to play with the hand icon on a coarse-only device) as the
-     ui-button--lg primary; once the browser blocks the lock, the
-     drag-to-look primary (hand icon) and its plain controller line; a
+     ui-button--lg go; once the browser blocks the lock, the
+     drag-to-look go (hand icon) and its plain controller line; a
      ui-panel--muted "How 3D works" under its ui-section-label and the
      Learn 3D line on the success fill with its ui-button--sm (cube
      icon), both until 3D is learned; the ui-controls list of the ready
@@ -1075,29 +1225,31 @@
      other. Default focus: Click to play.
    Context lost (index.html #ctx-lost): a message ui-card at the canvas's width,
      ui-screen on the scrim, its title, a ui-text line and ui-actions--row
-     (Click to reload primary, with the refresh icon; Main menu). Default
+     (Click to reload go, with the refresh icon; Main menu). Default
      focus: Click to reload.
    Learn 3D end card (index.html #learn-end): ui-card ui-screen over the
      guided board's stopped scene, holding the "Learn 3D"
      ui-section-label, the outcome title, a ui-text line (the win's offer
      of Cube Intro; on a loss, that the box is always the same) and
      ui-actions--row (Play Cube Intro with the play icon on a win or Try
-     again with the restart icon on a loss, ui-button--lg primary with its
-     select key hint; Back to board choice with the arrow-left icon). No
+     again with the restart icon on a loss, ui-button--lg go with its
+     confirm key hint; Back to board choice with the arrow-left icon). No
      time and no records. Default focus: the primary action.
    Toast (index.html #toast): one ui-toast, its text in #toast-text, shown
-     at the bottom centre of the page for its time (js/ui.js toast); over
-     the 3D scene, below the crosshair.
+     at the bottom centre of the page for its time (js/ui.js toast) — of
+     the window, windowed at the desktop host; over the 3D scene, below
+     the crosshair.
    Fatal card (index.html #fatal-card, the template the page shows when the
-     game cannot start): a ui-backdrop filling the page, holding a message
+     game cannot start): a ui-backdrop filling the page — the window,
+     windowed at the desktop host —, holding a message
      ui-card: its badge, the title, a ui-text line and ui-actions--row of
-     Reload (primary). Default focus: Reload, focused as the card is
+     Reload (go). Default focus: Reload, focused as the card is
      appended.
    No-JavaScript notice (index.html <noscript>): the fatal card's
      composition with its title only, in the default theme, whose
      stylesheet the <noscript> links.
    404 page (404.html): the fatal card's composition, its title then
-     ui-actions--row of Go to Minesweeper 3D (a ui-button--primary link to
+     ui-actions--row of Go to Minesweeper 3D (a ui-button--go link to
      the game); the base and default theme stylesheets, no script.
    Results screen (index.html #results, filled by js/results/view.js; the
      gallery's #g-results shows it with placeholder content): one ui-frame
@@ -1120,8 +1272,8 @@
      ui-code chip on the right; a ui-text--warning note. Its foot, the
      action bar, each action with its icon: Main menu (secondary, its back
      key hint) on the left; Watch replay, Watch best, Records (secondary,
-     ui-button--sm while Watch best shows) and Play again (primary, large,
-     its select key hint) on the right; a ui-text--warning note under them.
+     ui-button--sm while Watch best shows) and Play again (go, large,
+     its confirm key hint) on the right; a ui-text--warning note under them.
      Over a 3D game the Main menu shows no key hint (results--look,
      css/style.css). On a phone the card sits at the window's top and the
      page scrolls: the tiles go two by two, each detail's label over its
@@ -1134,10 +1286,10 @@
      other parts hidden, as behind the 3D ready card and the pause card
      (css/style.css); no first-use toast draws over it.
    Replay viewer (index.html #replay, filled by js/replay/viewer.js): ui-backdrop
-     holding a ui-frame (#replay-frame) inset on it at the canvas's size (a
-     step smaller on the smaller desktop windows): Back (a small secondary
-     button, its arrow-left icon and its back key hint) and the title,
-     "Replay · <mode> · <board>" once a replay is ready. Its body, top to
+     holding a ui-frame (#replay-frame) at its natural size, centred: the
+     title bar's Back,
+     named "Back", and the heading, "Replay · <mode> · <board>" once a
+     replay is ready. Its body, top to
      bottom: a ui-counter-strip across it of the replay's figures inline and
      unlabelled (the clock in seconds to the thousandth, the mines left after
      its flag icon, "3BV solved / 3BV", "3BV/s") with a ui-code chip of the
@@ -1155,7 +1307,8 @@
      hatched in --color-replay-pause on it and a .replay-tick per action
      (--color-replay-reveal, -flag, -chord) above it; a ui-row of Previous
      and Next (skip icons, named by aria-label) around Play / Pause / Play
-     again (primary, its play, pause or restart icon and its Space key hint),
+     again (go while it shows Play or Play again, secondary while it shows
+     Pause; its play, pause or restart icon and its Space key hint),
      the speed as a ui-segmented choice (0.25×, 0.5×, 1×, 2×, 4×), the
      latched toggles Show 3BV (grid) and Free camera (camera, in 3D) and
      Sound (speaker, a small secondary toggle), the end line once the replay
@@ -1201,6 +1354,8 @@
 .ui-button:disabled { cursor: not-allowed; }
 .ui-button--sm { min-height: 38px; padding: 7px 13px; font-size: 15px; }
 .ui-button--lg { min-height: 62px; padding: 15px 28px; font-size: var(--font-size-xl); }
+/* the large confirm button (go) is slimmer than the large primary */
+.ui-button--lg.ui-button--go { min-height: 52px; padding: 10px 28px; }
 
 /* ---------- icon set: the leading-icon slot ---------- */
 .ui-icon { display: block; flex: none; width: 18px; height: 18px; }
@@ -1568,6 +1723,8 @@
   gap: var(--space-3);
   padding: var(--space-2) 14px;
 }
+/* an icon-only Restart: square, the icon alone */
+.ui-counter-strip > .ui-button[data-icon] { padding: 0; aspect-ratio: 1; }
 .ui-counter {
   display: inline-flex;
   align-items: center;
@@ -1674,7 +1831,10 @@
 /* ---------- decoration slots: hidden unless a theme styles one into view ---------- */
 [data-slot] { display: none; }
 
-/* ---------- page backdrop and screen frame ---------- */
+/* ---------- the root area, page backdrop and screen frame ---------- */
+/* The root area every size step and window-sized rule reads: the page's root element, as tall as the
+   browser window unless the desktop host sizes it to its work area. */
+html { container: root / size; height: 100%; }
 .ui-backdrop {
   display: flex;
   align-items: center;
@@ -1708,13 +1868,26 @@
 }
 .ui-frame__start, .ui-frame__end { display: flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
 .ui-frame__end { justify-content: flex-end; }
+.ui-frame__window { display: flex; align-items: center; }
+/* the title bar's icon-only buttons: square, the icon alone */
+:is(.ui-frame__back, .ui-frame__window > .ui-button) { padding: 0; aspect-ratio: 1; }
+/* the screen's name over the body, its control at the right */
+.ui-frame__heading {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.ui-frame__action { display: flex; align-items: center; gap: var(--space-2); flex: none; }
 .ui-frame__title {
   min-width: 0;
   margin: 0;
   overflow: hidden;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-heavy);
-  text-align: center;
+  text-align: start;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1736,41 +1909,115 @@
 }
 .ui-frame__status, .ui-frame__summary { margin: 0; font-size: var(--font-size-sm); }
 
-/* ---------- mode entry: icon, label (and reason), chip, lock ---------- */
+/* ---------- main menu buttons: the play tiles two by two, then the small entries ----------
+   The sizes below are the largest window's; a screen sets its own per window size. Every tile of a
+   list is one height, none growing when selected, never shorter than its content (its preview square
+   and padding). The phone row (ui-play-tile--row, and every play tile at the phone sizes) lays the
+   icon, the text and the lock in a row, its preview a strip pinned inside the row's right end that
+   never sets its height. */
 .ui-mode-list {
   display: flex;
   flex-direction: column;
+  gap: var(--space-6);
+}
+.ui-mode-list__tiles {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(min-content, 1fr);
   gap: var(--space-3);
 }
-.ui-mode-list > .ui-mode-entry { flex: 1 1 auto; }
-.ui-mode-entry {
+.ui-mode-list__places {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.ui-play-tile, .ui-small-entry {
   appearance: none;
   position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  grid-template-rows: 1fr auto auto 1fr;
-  grid-template-areas: "icon . chip lock" "icon label chip lock" "icon reason chip lock" "icon . chip lock";
+  display: flex;
   align-items: center;
-  column-gap: var(--space-4);
   box-sizing: border-box;
   width: 100%;
-  min-height: 70px;
+  min-width: 0;
   margin: 0;
-  padding: 6px 20px;
   border: 0;
   text-align: left;
   cursor: pointer;
 }
-.ui-mode-entry[aria-disabled="true"] { cursor: not-allowed; }
-.ui-mode-entry__icon { grid-area: icon; display: grid; place-items: center; width: 42px; height: 42px; }
-.ui-mode-entry__icon > svg { width: 24px; height: 24px; }
+.ui-play-tile { align-items: stretch; gap: 18px; min-height: 0; padding: 14px 14px 14px 22px; }
+.ui-play-tile[aria-disabled="true"] { cursor: not-allowed; }
+.ui-play-tile__side { display: flex; flex-direction: column; justify-content: space-between; flex: 1 1 auto; min-width: 0; padding: 6px 0; }
+.ui-play-tile__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ui-play-tile__icon { flex: none; display: grid; place-items: center; width: 52px; height: 52px; }
+.ui-play-tile__icon > svg { width: 28px; height: 28px; }
+.ui-play-tile__text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ui-play-tile__label { font-size: 30px; font-weight: var(--font-weight-heavy); line-height: 1; }
+.ui-play-tile__reason { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
+.ui-play-tile__reason > [data-reason="short"] { display: none; }
+.ui-play-tile__lock { flex: none; display: grid; }
+.ui-play-tile__lock > svg { width: 20px; height: 20px; }
+.ui-play-tile:not([aria-disabled="true"]) .ui-play-tile__lock { display: none; }
+/* the preview: a square of its ground taking no input, its art centred and cropped from the middle */
+.ui-play-tile__preview {
+  position: relative;
+  overflow: hidden;
+  flex: none;
+  align-self: center;
+  width: 175px;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.ui-play-tile__art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+}
+/* the board view at near playing size, the mode's Intermediate board larger than its square: Classic 2D's
+   square, Hexagon's taller than wide, Triangle's wider than tall */
+.ui-play-tile__preview[data-preview="board"] > .ui-play-tile__art { width: 452px; height: 452px; }
+.ui-play-tile[data-entry="hexagon"] .ui-play-tile__preview[data-preview="board"] > .ui-play-tile__art { width: 347px; height: 404px; }
+.ui-play-tile[data-entry="triangle"] .ui-play-tile__preview[data-preview="board"] > .ui-play-tile__art { width: 466px; height: 404px; }
+.ui-play-tile__badge { display: grid; place-items: center; width: 96px; height: 96px; }
+.ui-play-tile__badge > svg { width: 50%; height: 50%; }
+.ui-play-tile__still { display: block; object-fit: contain; }
+.ui-play-tile__still[data-still="surface"] { width: 168px; height: 168px; translate: 0 -10px; }
+.ui-play-tile__still[data-still="3d"] { width: 148px; height: 150px; }
+.ui-play-tile__calendar { display: block; width: 152px; height: 133px; }
+.ui-play-tile__preview--locked > .ui-play-tile__art > svg { width: 34px; height: 34px; }
+.ui-small-entry { gap: 14px; min-height: 64px; padding: 10px 18px; }
+.ui-small-entry__icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; }
+.ui-small-entry__icon > svg { width: 22px; height: 22px; }
+.ui-small-entry__label { font-size: 21px; font-weight: var(--font-weight-heavy); line-height: 1; }
+/* the phone row */
+.ui-play-tile--row { align-items: center; gap: 14px; padding: 8px 126px 8px 16px; }
+.ui-play-tile--row .ui-play-tile__side, .ui-play-tile--row .ui-play-tile__top { display: contents; }
+.ui-play-tile--row .ui-play-tile__icon { width: 36px; height: 36px; }
+.ui-play-tile--row .ui-play-tile__text { flex: 1 1 auto; gap: 2px; }
+.ui-play-tile--row .ui-play-tile__label { font-size: 20px; }
+.ui-play-tile--row .ui-play-tile__lock { order: 1; }
+.ui-play-tile--row .ui-play-tile__preview { position: absolute; top: 8px; bottom: 8px; right: 8px; width: 106px; aspect-ratio: auto; align-self: stretch; }
+.ui-play-tile--row .ui-play-tile__reason > [data-reason="long"] { display: none; }
+.ui-play-tile--row .ui-play-tile__reason > [data-reason="short"] { display: inline; }
+@media (max-width: 719px) {
+  .ui-mode-list__tiles, .ui-mode-list__places { grid-template-columns: minmax(0, 1fr); }
+  .ui-play-tile { align-items: center; gap: 14px; padding: 8px 126px 8px 16px; }
+  .ui-play-tile__side, .ui-play-tile__top { display: contents; }
+  .ui-play-tile__icon { width: 36px; height: 36px; }
+  .ui-play-tile__text { flex: 1 1 auto; gap: 2px; }
+  .ui-play-tile__label { font-size: 20px; }
+  .ui-play-tile__lock { order: 1; }
+  .ui-play-tile__preview { position: absolute; top: 8px; bottom: 8px; right: 8px; width: 106px; aspect-ratio: auto; align-self: stretch; }
+  .ui-play-tile__reason > [data-reason="long"] { display: none; }
+  .ui-play-tile__reason > [data-reason="short"] { display: inline; }
+}
 .ui-option__badge > svg { width: 60%; height: 60%; }
-.ui-mode-entry__label { grid-area: label; font-size: 24px; font-weight: var(--font-weight-heavy); line-height: 1.05; }
-.ui-mode-entry__reason { grid-area: reason; margin-top: var(--space-1); font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
-.ui-mode-entry > .ui-chip { grid-area: chip; }
-.ui-mode-entry__lock { grid-area: lock; display: grid; margin-inline-start: var(--space-3); }
-.ui-mode-entry__lock > svg { width: 20px; height: 20px; }
-.ui-mode-entry:not([aria-disabled="true"]) .ui-mode-entry__lock { display: none; }
 
 /* ---------- board option: name and chip over the meta line, the check at the end ---------- */
 .ui-options {
@@ -1806,6 +2053,23 @@
 .ui-option__check { grid-area: check; display: grid; place-items: center; width: 28px; height: 28px; margin-inline-start: 14px; }
 .ui-option__check > svg { width: 16px; height: 16px; }
 .ui-option:not([aria-pressed="true"]) .ui-option__check > * { visibility: hidden; }
+
+/* ---------- drawer: the board choice panel, a bar over its body on a phone ---------- */
+.ui-drawer { display: flex; flex-direction: column; min-width: 0; }
+.ui-drawer__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  text-align: start;
+  cursor: pointer;
+}
+.ui-drawer__chevron { display: grid; place-items: center; flex: none; }
+.ui-drawer__chevron > svg { width: 22px; height: 22px; }
+.ui-drawer__bar[aria-expanded="true"] .ui-drawer__chevron > svg { transform: rotate(180deg); }
 
 /* ---------- section label, key hints, chip ---------- */
 .ui-section-label {
@@ -1889,20 +2153,19 @@
 .ui-controls__key { padding-inline-end: var(--space-3); }
 .ui-controls__action { text-align: end; }
 
-/* ---------- wordmark: one centred line, sized with the window ---------- */
-.ui-wordmark {
+/* ---------- game logo: its two words on one centred line, each letter a box of its own ---------- */
+.ui-logo {
   display: flex;
   justify-content: center;
-  gap: 0.28em;
+  align-items: center;
   margin: 0;
-  font-size: clamp(31px, min(3.8vw + 11px, 7.8vh), 84px);
-  font-weight: var(--font-weight-heavy);
   line-height: 1;
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
-@media (max-width: 719px) { .ui-wordmark { font-size: 31px; } }
+.ui-logo__word { display: flex; }
+.ui-logo__letter { display: inline-block; }
+/* a title bar's logo fitted to the room between its start and end (fitTitleBar: its zoom), or hidden, taking no room */
+.ui-frame__head[data-logo="hidden"] > .ui-frame__logo { width: 0; overflow: hidden; }
 
 /* ---------- scene panel: the stage fills it, the tag over its corner ---------- */
 .ui-scene-panel {
@@ -2078,8 +2341,8 @@
 /* The pause card at each window step's width (J-Pause-xl, -l, -m; full width on a phone), its title
    block (the title, then the board line and the status line under it), its actions and settings rows. */
 #pause-card { width: min(920px, 100%); padding: 26px 28px; }
-@media (max-width: 1439px) { #pause-card { width: min(880px, 100%); } }
-@media (max-width: 1199px) { #pause-card { width: min(860px, 100%); } }
+@container root (max-width: 1439px) or (max-height: 820px) { #pause-card { width: min(880px, 100%); } }
+@container root (max-width: 1199px) { #pause-card { width: min(860px, 100%); } }
 #pause-card > .ui-columns--two { gap: 26px; }
 #pause-card .ui-column { gap: 14px; }
 #pause-title { margin: 0; font-size: 34px; line-height: 1.1; }
@@ -2091,7 +2354,7 @@
 #pause-card .ui-slider__label { font-weight: var(--font-weight-bold); }
 #pause-list { padding: 18px 20px; }
 /* The kit's one breakpoint: the column layout of Records, Settings and the pause card. */
-@media (min-width: 1024px) {
+@container root (min-width: 1024px) {
   .ui-screen--columns { width: min(1280px, 100%); }
   .ui-columns { grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-8) * 9)), 1fr)); }
   .ui-columns--two { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
@@ -2119,12 +2382,14 @@
   .ui-table:not(:has(thead)) th[scope="row"] ~ td { text-align: left; }
   #pause { padding: 12px; }
   #pause-card { padding: 18px; }
+  /* a phone shows only Back and the logo in the title bar */
+  .ui-frame__window { display: none; }
 }
 
 /* ---------- focused state ----------
-   Every focusable part shows a focused state, drawn by the theme: on buttons, menu entries, mode
-   entries and board options it is their selected state, so none draws a separate focus ring here. */
-:is(.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-tabs__tab, .ui-checkbox__input, .ui-field__input, .ui-link):focus { outline: none; }
+   Every focusable part shows a focused state, drawn by the theme: on buttons, menu entries, main
+   menu buttons and board options it is their selected state, so none draws a separate focus ring here. */
+:is(.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-tabs__tab, .ui-checkbox__input, .ui-field__input, .ui-link):focus { outline: none; }
 
 /* ---------- coarse pointers ---------- */
 /* A finger's targets, on a coarse pointer only: every size above stays the fine pointer's.

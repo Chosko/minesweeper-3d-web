@@ -1,6 +1,6 @@
 // The replay library: the one owner and only writer of the replay store (the platform blob store)
 // and of the library index, a versioned document in platform storage listing every kept replay.
-// It keeps every pinned replay and the newest RETAINED_UNPINNED unpinned ones across both modes, until
+// It keeps every pinned replay and the newest RETAINED_UNPINNED unpinned ones across every mode, until
 // the player deletes one. DOM-free.
 //
 // createReplayLibrary({ storage, blobStore, onNotSaved? }) → library

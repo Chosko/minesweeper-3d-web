@@ -15,8 +15,9 @@ import {
 } from '../js/settings/bindings.js';
 import {
   SETTINGS_SECTIONS, SETTINGS_COLUMNS, SETTINGS_LAYOUTS, settingsColumnsFor, SETTING_LABELS, SETTING_NOTES, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
-  bindSettingControls, bindResetPanel, RESET_MESSAGE, SWATCH_TOKENS, themeSwatchColors, swatchBackground,
+  bindSettingControls, bindResetPanel, RESET_MESSAGE, RESET_MESSAGE_DESKTOP, SWATCH_TOKENS, themeSwatchColors, swatchBackground,
 } from '../js/settings/page.js';
+import { RESET_FAILURE_DESKTOP } from '../js/settings/reset.js';
 import { EXPORT_LINE } from '../js/records/export.js';
 import { THEMES, DEFAULT_THEME_ID, registerTheme, themeById } from '../js/themes/registry.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
@@ -28,6 +29,8 @@ import { patience } from './helpers/timing.mjs';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
+// The settings the page gives a control: all but the bindings overrides, which its Bindings panel shows.
+const CONTROL_KEYS = SETTING_KEYS.filter((key) => SCHEMA[key].type !== 'overrides');
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 // The test-only second theme: a registered id the theme setting accepts.
@@ -188,7 +191,7 @@ test('the 3D ready card lists the canvas\'s six short rows on the keyboard and m
   const ready = index.slice(index.indexOf('<section id="ready"'), index.indexOf('<section id="ctx-lost"'));
   assert.match(ready, /<dl id="ready-keys" class="ui-controls ready-keys"><\/dl>/, 'the list is filled from the bindings source, not written in the markup');
   assert.doesNotMatch(ready, /data-camera=|class="ready-touch"/, 'no hard-coded key lines');
-  assert.match(read('js/ui.js'), /this\.el\.readyKeys\.innerHTML = readyListHtml\(this\._touch \? 'touch' : 'keyboard', this\._glyphs, this\._camera\);/);
+  assert.match(read('js/ui.js'), /this\.el\.readyKeys\.innerHTML = readyListHtml\(this\._touch \? 'touch' : 'keyboard', this\._glyphs, this\._camera, this\._bindings\);/);
 });
 
 test('both modes list F2 as Restart on the keyboard and Start + Y on the controller', () => {
@@ -201,6 +204,14 @@ test('both modes list F2 as Restart on the keyboard and Start + Y on the control
     assert.match(pad[1], /^Restart/);
   }
   assert.match(bindingsHtml('classic-2d', 'controller', GLYPHS.xbox), /<dt class="ui-controls__key">Menu \+ Y<\/dt><dd class="ui-controls__action">Restart<\/dd>/);
+  for (const mode of BINDING_MODES) {
+    const rows = bindingRows(mode.id, 'controller');
+    assert.deepEqual(rows.find(([input]) => input === '{back}'), ['{back}', 'Show / hide live figures'], `View toggles the ${mode.id} live figures`);
+    assert.ok(helpRows(mode.id, 'controller').some(([input]) => input === '{back}'), `${mode.id}: the in-game help lists it too`);
+    assert.deepEqual(rows.find(([, action]) => action === 'Pause'), ['{start}', 'Pause'], `${mode.id}: Start alone pauses`);
+    assert.ok(!rows.some(([input]) => input === '{rb}'), `${mode.id}: RB toggles nothing`);
+  }
+  assert.match(bindingsHtml('classic-2d', 'controller', GLYPHS.xbox), /<dt class="ui-controls__key">View<\/dt><dd class="ui-controls__action">Show \/ hide live figures<\/dd>/);
   for (const mode of BINDING_MODES) {
     assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: mode.id }).match(/>Esc · F2</g).length, 1, `the Settings bindings show F2 for ${mode.id}`);
   }
@@ -298,7 +309,7 @@ test('the 3D bindings follow the Camera setting: Orbit rotates and dollies, from
   assert.ok(!section.includes('>Fly<'));
   const ui = read('js/ui.js');
   assert.match(ui, /setCamera\(camera\)/, 'the help surfaces follow the setting');
-  assert.match(ui, /bindingsSectionHtml\(this\._glyphs, this\._camera, \{ mode, device \}\)/);
+  assert.match(ui, /bindingsSectionHtml\(this\._glyphs, this\._camera, \{ mode, device, bindings: this\._bindings \}\)/);
 });
 
 test('bindingsListHtml renders keys in plain words, controller buttons as the pad\'s glyphs, no key caps, and escapes text', () => {
@@ -318,7 +329,7 @@ test('the in-game help reads the same bindings source', () => {
   assert.match(help, /<dl class="ui-controls"><\/dl>/, 'the help list is filled from the bindings source, not written in the markup');
   const ui = read('js/ui.js');
   assert.match(ui, /from '\.\/settings\/bindings\.js'/);
-  assert.match(ui, /helpListHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs, this\._camera\)/, 'the help panel shows the active mode\'s help rows for the active device (touch on a touch device) and camera');
+  assert.match(ui, /helpListHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs, this\._camera, this\._bindings\)/, 'the help panel shows the active mode\'s help rows for the active device (touch on a touch device) and camera');
   assert.match(ui, /helpFootHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs\)/, 'its foot line follows the same device');
   assert.equal(bindingsHtml('3d', 'controller', GLYPHS.xbox), bindingsListHtml(bindingRows('3d', 'controller'), GLYPHS.xbox), 'the component is the source\'s rows');
 });
@@ -330,8 +341,8 @@ test('the page has the controls, graphics, theme and audio sections, holding eve
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.settings), [
     ['lookSensitivity', 'invertY', 'camera', 'confirmRestart'], ['fullscreen', 'renderResolution', 'boardScale', 'aimReadout', 'fieldOfView'], ['theme'], ['muted', 'volume'],
   ]);
-  assert.deepEqual(SETTINGS_SECTIONS.flatMap((s) => s.settings).sort(), [...SETTING_KEYS].sort(), 'every schema entry has its control');
-  for (const key of SETTING_KEYS) assert.ok(SETTING_LABELS[key], `${key} has a label`);
+  assert.deepEqual(SETTINGS_SECTIONS.flatMap((s) => s.settings).sort(), [...CONTROL_KEYS].sort(), 'every schema entry but the bindings has its control');
+  for (const key of CONTROL_KEYS) assert.ok(SETTING_LABELS[key], `${key} has a label`);
 });
 
 test('the audio on/off control reads Sound and comes before Volume; no Mute label remains', () => {
@@ -400,7 +411,7 @@ test('each control\'s kind and range come from its schema entry', () => {
 
 test('the page markup is kit components only, one bound control per setting', () => {
   const html = settingsPageHtml();
-  for (const key of SETTING_KEYS) {
+  for (const key of CONTROL_KEYS) {
     assert.equal([...html.matchAll(new RegExp(`data-setting="${key}"`, 'g'))].length, 1, `${key} appears once`);
     if (key !== 'theme') assert.ok(html.includes(settingControlHtml(key)), `${key} uses its generated control`);
   }
@@ -425,7 +436,7 @@ test('the page markup is kit components only, one bound control per setting', ()
 test('each setting is a row of its name and its control, the 3D-only ones noted as the canvas draws them', () => {
   const html = settingsPageHtml();
   assert.deepEqual(SETTING_NOTES, { lookSensitivity: '3D', camera: '3D', fieldOfView: '3D' });
-  for (const key of SETTING_KEYS.filter((k) => k !== 'theme')) {
+  for (const key of CONTROL_KEYS.filter((k) => k !== 'theme')) {
     const note = SETTING_NOTES[key] ? `<span class="ui-text ui-text--muted" id="set-${key}-note">${SETTING_NOTES[key]}</span>` : '';
     assert.ok(html.includes(`<div class="ui-row" data-setting-row="${key}">${settingControlHtml(key)}${note}</div>`), `${key}: one row`);
   }
@@ -466,15 +477,17 @@ test('the page is one column composition generated from the sections, in the wid
   assert.doesNotMatch(html, /ui-columns__span|ui-grid/, 'one composition, nothing across it');
 });
 
-test('each window size stacks the sections in its own independent columns: three on the widest windows, two from the kit breakpoint, one below it', () => {
+test('each window size stacks the sections in its own independent columns: three on the widest windows, two from the kit breakpoint and on a short area, one below it', () => {
   const ids = (columns) => columns.flat().sort();
-  assert.deepEqual(SETTINGS_LAYOUTS.map((l) => l.media), ['(min-width: 1600px)', '(min-width: 1024px)', null], 'widest first, the last for any window');
+  assert.deepEqual(SETTINGS_LAYOUTS.map((l) => l.media), ['(min-width: 1600px) and (min-height: 821px)', '(min-width: 1024px)', null], 'widest first, the last for any window');
   assert.equal(SETTINGS_LAYOUTS[0].columns, SETTINGS_COLUMNS, 'the widest window\'s are the markup\'s');
   assert.deepEqual(SETTINGS_LAYOUTS[1].columns, [['controls', 'graphics', 'audio'], ['theme', 'data', 'bindings']], 'the canvas\'s two stacks at l and m');
   assert.deepEqual(SETTINGS_LAYOUTS[2].columns, [['controls', 'graphics', 'theme', 'audio', 'bindings', 'data']], 'one stack in the phone\'s order');
   for (const l of SETTINGS_LAYOUTS) assert.deepEqual(ids(l.columns), ids(SETTINGS_COLUMNS), `${l.media}: every section once`);
-  const at = (width) => settingsColumnsFor((media) => Number(media.match(/\d+/)[0]) <= width);
+  const at = (width, height = 1080) => settingsColumnsFor((media) => [...media.matchAll(/min-(width|height): (\d+)px/g)].every(([, axis, px]) => Number(px) <= (axis === 'width' ? width : height)));
   assert.equal(at(1920), SETTINGS_LAYOUTS[0].columns);
+  assert.equal(at(1920, 821), SETTINGS_LAYOUTS[0].columns);
+  assert.equal(at(1920, 820), SETTINGS_LAYOUTS[1].columns, 'a short area\'s compact frame takes the two stacks');
   assert.equal(at(1600), SETTINGS_LAYOUTS[0].columns);
   assert.equal(at(1599), SETTINGS_LAYOUTS[1].columns);
   assert.equal(at(1024), SETTINGS_LAYOUTS[1].columns);
@@ -489,7 +502,7 @@ test('each window size stacks the sections in its own independent columns: three
     assert.doesNotMatch(sheet, /#settings-columns > \.ui-column \{[^}]*display: contents/, 'each stack is a box of its own');
   }
   const ui = read('js/ui.js');
-  assert.match(ui, /\$\('settings-body'\)\.innerHTML = settingsPageHtml\(\);\n[^\n]*\n\s*bindSettingsLayout\(\$\('settings-columns'\)\);/, 'the shell places the sections for the window');
+  assert.match(ui, /\$\('settings-body'\)\.innerHTML = settingsPageHtml\(\{ desktopHost \}\);\n[^\n]*\n\s*bindSettingsLayout\(\$\('settings-columns'\), \{ matchMedia: matchRootArea\(document\) \}\);/, 'the shell places the sections for the root area, never the window');
 });
 
 // ---------------------------------------------------------------- the Data panel and Reset all data
@@ -542,6 +555,34 @@ test('the confirmation names every kind of data that goes, says it cannot be und
   assert.ok(confirm.includes(`<p class="ui-confirm__text" id="set-reset-text">${RESET_MESSAGE}</p>`));
   assert.match(confirm, /<div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger" id="set-reset-yes" data-icon="trash">Reset all data<\/button><button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel<\/button><\/div><\/div>/,
     'the danger md action with its trash icon beside Cancel');
+});
+
+test('on the Steam build the confirmation says the data is deleted from this computer; the web build keeps "from this browser"', () => {
+  for (const kind of ['records', 'game history', 'replays', 'settings', 'last board choices', 'first-use hints']) {
+    assert.ok(RESET_MESSAGE_DESKTOP.includes(kind), `the message names ${kind}`);
+  }
+  assert.match(RESET_MESSAGE_DESKTOP, /from this computer/);
+  assert.doesNotMatch(RESET_MESSAGE_DESKTOP, /browser/);
+  assert.match(RESET_MESSAGE_DESKTOP, /cannot be undone/);
+  assert.equal(RESET_MESSAGE_DESKTOP, RESET_MESSAGE.replace('from this browser', 'from this computer'), 'the same message otherwise');
+  const text = (html) => html.match(/<p class="ui-confirm__text" id="set-reset-text">([^<]*)<\/p>/)[1];
+  assert.equal(text(settingsPageHtml({ desktopHost: true })), RESET_MESSAGE_DESKTOP);
+  assert.equal(text(settingsPageHtml({ desktopHost: false })), RESET_MESSAGE);
+  assert.equal(text(settingsPageHtml()), RESET_MESSAGE, 'the web build by default');
+});
+
+test('on the Steam build the Data panel\'s reset line says the data is kept on this computer; the web build keeps "in this browser"', () => {
+  const line = (html) => html.match(/<hr class="ui-divider"><p class="ui-text">([^<]*)<\/p><button type="button" class="ui-button ui-button--secondary" id="set-reset"/)[1];
+  assert.equal(line(settingsPageHtml({ desktopHost: true })), 'Delete everything the game keeps on this computer and start over as a new player.');
+  assert.equal(line(settingsPageHtml({ desktopHost: false })), 'Delete everything the game keeps in this browser and start over as a new player.');
+  assert.equal(line(settingsPageHtml()), 'Delete everything the game keeps in this browser and start over as a new player.', 'the web build by default');
+});
+
+test('the shell builds the Settings page and its Reset panel for the build it runs on', () => {
+  const ui = read('js/ui.js');
+  assert.match(ui, /constructor\(cb, \{ desktopHost = false \} = \{\}\)/);
+  assert.match(ui, /bindResetPanel\(\{[^}]*\}, \{ reset: \(\) => cb\.onResetAll\?\.\(\), desktopHost \}\)/);
+  assert.match(read('js/main.js'), /\n\}, \{ desktopHost: capabilities\.desktopHost \}\);\nui\.setNoMouse/, 'main.js hands the UI the capability flag');
 });
 
 // A fake element with a class list and focus, for the Data panel's binder.
@@ -643,6 +684,12 @@ test('a reset that throws is said as a failure, never left hanging', async () =>
   assert.equal(panel.isOpen(), false);
   assert.equal(els.note.hidden, false);
   assert.equal(els.note.text.textContent, 'The data could not be deleted. Close other tabs of the game and try again.');
+  const steam = panelFake();
+  bindResetPanel(steam.els, { reset: async () => { throw new Error('boom'); }, desktopHost: true });
+  steam.els.open.click();
+  steam.els.yes.click();
+  await tick();
+  assert.equal(steam.els.note.text.textContent, RESET_FAILURE_DESKTOP, 'the Steam build\'s line, with no advice about tabs');
 });
 
 test('the shell wires the reset: the replay library\'s load awaited, the reload flagged, Back closes the confirmation first', () => {
@@ -957,32 +1004,29 @@ test('index.html holds the Settings page in a screen frame on the backdrop, its 
   assert.match(page, /<h2 class="ui-frame__title" id="settings-title">Settings<\/h2>/);
   assert.match(page, /<div class="ui-frame__body" id="settings-body"><\/div>/, 'the controls are generated, not written in the markup');
   assert.doesNotMatch(page, /ui-card|ui-frame__foot|data-esc-hint/, 'no card, no foot, no text hint');
-  assert.match(read('js/ui.js'), /settingsPageHtml\(\)/);
+  assert.match(read('js/ui.js'), /settingsPageHtml\(\{ desktopHost \}\)/);
 });
 
-test('Settings\' Back is the frame head\'s Main menu with its arrow and key hint, "Back" on a phone, in view while the body scrolls', () => {
+test('Settings\' Back is the title bar\'s arrow, named for where it goes, and its heading names the page, both in view while the body scrolls', () => {
   const page = between(INDEX, '<!-- Settings -->', '<!-- Records -->');
-  assert.match(page, /<div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
-    'one Back, at the start of the head, named for where it goes');
-  assert.ok(page.indexOf('id="settings-back"') < page.indexOf('id="settings-body"'), 'the head comes before the body');
+  assert.match(page, /<div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"><\/button><\/div>/,
+    'one Back, at the start of the title bar, its arrow alone, named for where it goes');
+  assert.match(page, /<div class="ui-frame__heading">\s*<h2 class="ui-frame__title" id="settings-title">Settings<\/h2>/, 'the page\'s name its heading');
+  assert.ok(page.indexOf('id="settings-back"') < page.indexOf('id="settings-title"') && page.indexOf('id="settings-title"') < page.indexOf('id="settings-body"'), 'the title bar, the heading, then the body');
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.doesNotMatch(css, /#settings-actions|#settings \{[^}]*scroll-padding/, 'no sticky row of its own: the frame keeps its head in view');
   for (const t of THEMES) assert.doesNotMatch(read(t.stylesheet), /#settings-actions/, `${t.id} adds no row either`);
-  assert.match(css, /#settings-back \[data-label="phone"\] \{ display: none; \}/, '"Main menu" on the wider windows');
-  const phone = css.slice(css.indexOf('@media (max-width: 719px) {', css.indexOf('#settings-frame')));
-  const block = phone.slice(0, phone.indexOf('\n}'));
-  assert.match(block, /#settings-back \[data-label="wide"\] \{ display: none; \}\s*#settings-back \[data-label="phone"\] \{ display: inline; \}/, '"Back" on a phone');
-  assert.match(read('js/ui.js'), /for \(const id of \[[^\]]*'settings'[^\]]*\]\) showKeyHints\(/, 'its key hint follows the active device');
+  assert.doesNotMatch(css, /#settings-back \[data-label/, 'one Back at every size');
 });
 
-test('the Settings frame takes each window step\'s canvas size and inset, its body\'s padding and gaps the step\'s', () => {
+test('the Settings frame takes each window step\'s natural size, 4 px above the backdrop\'s centre, its body\'s padding and gaps the step\'s', () => {
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   const rules = css.slice(css.indexOf('#settings {'), css.indexOf('@media (max-width: 719px)', css.indexOf('#settings {')));
-  assert.match(rules, /^#settings \{ align-items: flex-start; padding: 66px 24px 24px; \}\n#settings-frame \{ width: 1640px; height: 940px; \}\n#settings-body \{ padding: 24px; \}/, 'xl: 1640 × 940 at 66 from the top, centred');
+  assert.match(rules, /^#settings \{ padding: 8px 16px; \}\n#settings-frame \{ width: 1640px; height: 940px; margin-top: -8px; \}\n#settings-body \{ padding: 24px; \}/, 'xl: 1640 × 940, 4 px above the centre');
   assert.match(rules, /#settings-columns, #settings-columns > \.ui-column \{ gap: 24px; \}/, 'xl: the stack gap equal to the column gap');
-  const step = (max) => { const at = rules.indexOf(`@media (max-width: ${max}px) {`); assert.ok(at > 0, `a ${max} px step`); return rules.slice(at, rules.indexOf('\n}', at)); };
-  assert.match(step(1439), /#settings \{ padding-top: 24px; \}\s*#settings-frame \{ width: 1302px; height: 712px; \}\s*#settings-body \{ padding: 18px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 18px; \}/, 'l: 1302 × 712 at 32 / 24, 18 apart');
-  assert.match(step(1199), /#settings \{ padding: 16px 20px 20px; \}\s*#settings-frame \{ width: 984px; height: 728px; \}\s*#settings-body \{ padding: 14px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 14px; \}/, 'm: 984 × 728 at 20 / 16, 14 apart');
+  const step = (max) => { const at = rules.indexOf(`@container root (max-width: ${max}px)${max === 1439 ? ' or (max-height: 820px)' : ''} {`); assert.ok(at > 0, `a ${max} px step`); return rules.slice(at, rules.indexOf('\n}', at)); };
+  assert.match(step(1439), /\{\s*#settings-frame \{ width: 1302px; height: 712px; \}\s*#settings-body \{ padding: 18px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 18px; \}/, 'l: 1302 × 712, 18 apart');
+  assert.match(step(1199), /\{\s*#settings-frame \{ width: 984px; height: 728px; \}\s*#settings-body \{ padding: 14px; \}\s*#settings-columns, #settings-columns > \.ui-column \{ gap: 14px; \}/, 'm: 984 × 728, 14 apart');
 });
 
 test('each setting row is ruled above, 10 px over and under, its name 16 px bold and the "3D" note 13 px muted', () => {
@@ -1020,7 +1064,7 @@ test('on a phone the frame is full-bleed, the bindings device choice spans the w
   const phone = css.slice(css.indexOf('@media (max-width: 719px) {', css.indexOf('#settings-frame')));
   const block = phone.slice(0, phone.indexOf('\n}'));
   assert.match(block, /#settings \{ padding: 0; \}/);
-  assert.match(block, /#settings-frame \{ width: 100%; height: 100%; border-radius: 0; box-shadow: none; \}/);
+  assert.match(block, /#settings-frame \{ width: 100%; height: 100%; margin-top: 0; border-radius: 0; box-shadow: none; \}/);
   assert.match(block, /#settings-body \{ padding: 14px 14px 30px; \}/);
   assert.match(block, /#settings-columns, #settings-columns > \.ui-column \{ gap: 16px; \}/);
   assert.match(block, /#set-bind-device \{ display: flex; width: 100%; \}/);
@@ -1268,7 +1312,7 @@ test('in a browser, Reset all data turns a played profile back into a new player
     // A played profile: a lost Classic 2D game (records, history, a replay, the last mode and board
     // choice), Dark, a changed setting and the old carried-over keys.
     await page.click('#menu-entry-classic-2d');
-    if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
+    await page.evaluate((on) => { const s = document.getElementById('c2d-noguess'); if (s.checked !== on) s.click(); }, false); // the switch sits in the closed panel
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
     const centres = await ms(() => {
@@ -1296,7 +1340,7 @@ test('in a browser, Reset all data turns a played profile back into a new player
       await globalThis.__ms.records.settled();
       for (const k of ['ms3d.lookSens', 'ms3d.volume', 'ms3d.muted', 'ms3d.invertY', 'ms3d.hintH.done', 'ms3d.custom']) localStorage.setItem(k, '1');
     });
-    await page.waitForFunction(() => document.querySelector('[data-entry][data-last]') !== null);
+    await page.waitForFunction(() => localStorage.getItem('ms3d:doc:shell.lastMode') !== null);
     assert.ok((await doc('records.history')).data.length >= 1, 'the game is in the history');
     assert.ok(await doc('classic2d.lastChoice'), 'the board choice is kept');
     for (let i = 0; i < 50 && (await blobCount()) !== 1; i++) await page.waitForTimeout(20);
@@ -1333,7 +1377,6 @@ test('in a browser, Reset all data turns a played profile back into a new player
     assert.equal(await ms(() => globalThis.__ms.settings.get('theme')), DEFAULT_THEME_ID);
     assert.equal(await ms(() => globalThis.__ms.settings.get('camera')), 'fly');
     assert.equal(await ms(() => globalThis.__ms.settings.get('lookSensitivity')), 1, 'every setting at its default: nothing carried over');
-    assert.equal(await ms(() => document.querySelector('[data-entry][data-last]')), null, 'no Last played mark');
     const history = await doc('records.history');
     assert.ok(history === null || history.data.length === 0, 'an empty history');
     assert.equal(await doc('classic2d.lastChoice'), null);
@@ -1403,16 +1446,19 @@ test('in a browser, the Settings page takes the canvas\'s frame and independent 
       assert.deepEqual(l.wide, [], `${width} × ${height}: nothing scrolls sideways`);
       assert.equal(l.scrolls, 'auto', `${width} × ${height}: the frame's body scrolls vertically`);
     }
-    // The largest window: everything fits without the body scrolling, the 3D bindings shown on each device.
+    // The largest window: the page never scrolls; under the heading the body fits every bindings list but the
+    // longest, 3D on the keyboard, which it scrolls to.
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.click('#set-bind-mode [data-value="3d"]');
-    for (const device of ['keyboard', 'controller', 'touch']) {
-      await page.click(`#set-bind-device [data-value="${device}"]`);
-      const fit = await page.evaluate(() => {
-        const body = document.getElementById('settings-body');
-        return { body: body.scrollHeight - body.clientHeight, page: document.documentElement.scrollHeight - document.documentElement.clientHeight };
-      });
-      assert.deepEqual(fit, { body: 0, page: 0 }, `1920 × 1080, 3D on ${device}: nothing scrolls`);
+    for (const mode of ['classic-2d', '3d']) {
+      await page.click(`#set-bind-mode [data-value="${mode}"]`);
+      for (const device of ['keyboard', 'controller', 'touch']) {
+        await page.click(`#set-bind-device [data-value="${device}"]`);
+        const fit = await page.evaluate(() => {
+          const body = document.getElementById('settings-body');
+          return { body: body.scrollHeight - body.clientHeight > 0, page: document.documentElement.scrollHeight - document.documentElement.clientHeight };
+        });
+        assert.deepEqual(fit, { body: mode === '3d' && device === 'keyboard', page: 0 }, `1920 × 1080, ${mode} on ${device}: ${mode === '3d' && device === 'keyboard' ? 'only the body scrolls' : 'nothing scrolls'}`);
+      }
     }
     // The rows, the theme cards and the Data panel as the canvas draws them.
     const parts = await page.evaluate(() => {
@@ -1471,10 +1517,9 @@ test('in a browser, the Settings page takes the canvas\'s frame and independent 
       const back = document.getElementById('settings-back');
       const csv = document.getElementById('set-export-csv').getBoundingClientRect();
       const json = document.getElementById('set-export-json').getBoundingClientRect();
-      const shown = [...back.querySelectorAll('[data-label]')].filter((e) => e.getClientRects().length > 0).map((e) => e.textContent);
-      return { back: shown.join(''), label: back.getAttribute('aria-label'), stacked: Math.abs(csv.left - json.left) <= 1 && json.top >= csv.bottom };
+      return { back: back.innerText.trim(), label: back.getAttribute('aria-label'), stacked: Math.abs(csv.left - json.left) <= 1 && json.top >= csv.bottom };
     });
-    assert.deepEqual(phone, { back: 'Back', label: 'Back to Main menu', stacked: true }, 'the phone\'s Back, and the exports one under the other');
+    assert.deepEqual(phone, { back: '', label: 'Back to Main menu', stacked: true }, 'the phone\'s Back its arrow alone, and the exports one under the other');
     assert.deepEqual((await layout()).wide, [], 'nothing overflows the screen');
     assert.deepEqual(errors, []);
   } finally {

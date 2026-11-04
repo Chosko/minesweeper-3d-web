@@ -8,7 +8,7 @@ storage) and persisted by the store (`js/records/store.js`), the one owner
 and only writer of the `records`, `records.history` and
 `records.inProgress` documents through platform storage
 ([platform.md](platform.md)). The board identity and the summary record they
-are built from are in [records.md](records.md).
+are built from are in [records.md](records.md) and [records-summary.md](records-summary.md).
 
 The store records abandoned games and settles the marker itself; a
 finished game is recorded only by a caller of `record()` — the results flow
@@ -25,9 +25,9 @@ Model (`js/records/model.js`; its head comment documents the documents)
     recordable; an id already in the history returns its original
     comparison.
   - `boardsPlayed(mode = 'classic-2d')` → `[{ key, board }]`: named boards
-    first (standard / preset order, each without no-guess before with it),
-    then the mode's Daily board, then custom boards, most recently played
-    first.
+    first (a 2D mode's standard boards in its grid's list order, 3D's
+    presets in theirs, each without no-guess before with it), then the
+    mode's Daily board, then custom boards, most recently played first.
   - `bests(board)` → `{ time, bbbvPerSecond, efficiency }`, each null or
     `{ id, value, endedAt }`.
   - `counters(board)` → `{ games, wins, currentStreak, longestStreak,
@@ -46,19 +46,20 @@ Model (`js/records/model.js`; its head comment documents the documents)
   `generatorVersion`, `startCell`, `daily` and `challenge` when present;
   entries without the pause fields read as 0 and 0 (`pauseFields`).
 - The records document: `{ boards: { [boardKey]: { board, bests, counters }
-  }, overall: { [mode]: counters } }`. `MODES` — `['classic-2d', '3d']`;
-  `MODE_CLASSIC_2D`.
+  }, overall: { [mode]: counters } }`. `MODES` — `['classic-2d',
+  'hexagon', 'triangle', '3d']`, menu order; `MODE_CLASSIC_2D`.
 - `rebuildRecords(history)`, `emptyRecords()`, `upgradeRecords(records)`
-  (the format step from version 1: zeroed counters for a mode with none),
+  (the format step that adds modes: zeroed counters for a mode with none),
   `hasCompletedCounters(records)`.
 
 Store (`js/records/store.js`)
 - `createRecordsStore({ storage, onNotSaved? })` → store. Registers
-  `RECORDS_DOC` `records` (`RECORDS_VERSION` 4: `upgradeRecords` from 1,
-  unchanging steps from 2 and 3), `HISTORY_DOC` `records.history`
-  (`HISTORY_VERSION` 2, an unchanging step from 1 — the Daily boards and
+  `RECORDS_DOC` `records` (`RECORDS_VERSION`: `upgradeRecords` from 1
+  and from 4 — the Hexagon and Triangle step — unchanging steps from 2 and
+  3), `HISTORY_DOC` `records.history`
+  (`HISTORY_VERSION`, an unchanging step from 1 — the Daily boards and
   challenges step, so an older build refuses the documents),
-  `IN_PROGRESS_DOC` `records.inProgress` (1). `onNotSaved({ reason })` at
+  `IN_PROGRESS_DOC` `records.inProgress` (`IN_PROGRESS_VERSION`). `onNotSaved({ reason })` at
   most once, at the first failed save.
 - `load()` → Promise, shared by repeated calls; `record`, `begin` and
   `checkpoint` before it throw.
@@ -70,7 +71,9 @@ Store (`js/records/store.js`)
 - `attach(pauser)` → detach: `abandoned` records, `inProgress` calls `begin`
   or `checkpoint`, `finished` clears the marker; a null summary (a fixed 3D
   board's) is ignored.
-- The model's queries, delegated.
+- The model's queries, delegated; `games()` → the whole history, every
+  board and mode in play order, in compact form — what the Steam
+  achievements' catch-up reads.
 
 ## INTERNAL PATTERNS
 
@@ -79,7 +82,8 @@ Store (`js/records/store.js`)
   maintained game by game. A best is replaced only by a strictly better
   value, so a tie keeps the earlier holder.
 - **Counters per mode.** A game counts in its board's counters and its own
-  mode's overall only — no figure combines Classic 2D and 3D; a daily game
+  mode's overall only — no figure combines two of Classic 2D, Hexagon,
+  Triangle and 3D; a daily game
   counts on its Daily board (`daily:` key) and its mode's overall. A win
   extends the streak; a loss or an abandoned game ends it. A challenge
   counts in `games` and `challenges` only: no best, win, completed game or
@@ -94,8 +98,8 @@ Store (`js/records/store.js`)
 - **Memory first, saves in order.** The store updates the model, notifies,
   then queues the saves, run in request order; `settled()` is the queue's
   tail. A failed save leaves the session's records correct and reports once.
-- **Start-up load.** The three documents are read once. A version 1 records
-  document is stepped up by `upgradeRecords` and saved back. A missing or
+- **Start-up load.** The three documents are read once. A version 1 or 4
+  records document is stepped up by `upgradeRecords` and saved back. A missing or
   corrupt records document beside an intact history, or one lacking the
   completed counters (`hasCompletedCounters` false), is rebuilt from the
   history and saved. A document newer than this build (`newer-version`) or
@@ -115,20 +119,22 @@ Store (`js/records/store.js`)
   availability and the newer-version refusal.
 - [../domain/features/3d-game-records.md](../domain/features/3d-game-records.md)
   — per-mode counters, boards played by mode, the records format step.
+- [../domain/features/flat-grid-records-replays.md](../domain/features/flat-grid-records-replays.md)
+  — the Hexagon and Triangle modes and their records format step.
 
 ## CROSS-REFERENCES
 
-- [records.md](records.md) — board identity, key, the summary record.
+- [records.md](records.md) — board identity, key; [records-summary.md](records-summary.md) — the summary record.
 - [records-screen.md](records-screen.md) — the screen reading the queries.
 - [platform.md](platform.md) — `register`, `load`, `save`, `available` and
   the `newer-version` issue.
 - [app-shell.md](app-shell.md) — `RECORDS` and `__ms.records`;
-  [app-shell-pause.md](app-shell-pause.md) — the pause controller's
+  [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — the pause controller's
   hand-offs; [app-shell-results.md](app-shell-results.md) — the results flow
   that calls `record()`.
 - [replay-library.md](replay-library.md) — the results flow's best pinning
   from the comparison.
-- [testing.md](testing.md) — `tests/records-model*.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/records-model*.test.mjs`,
   `tests/records-store.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

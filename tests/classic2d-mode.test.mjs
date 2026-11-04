@@ -15,7 +15,7 @@ import { createSession } from '../js/classic2d/session.js';
 import { WIN, LOSS } from '../js/classic2d/end-effect.js';
 import {
   CHOICE_SIZES, CUSTOM_HINT, CODE_PROMPT, customStatus, customInfo, readChoice, sizeLabel, boardLine, mineDensity, densityHintShown,
-  randomCustom, choiceSummary, bestsTitle,
+  randomCustom, bestsTitle, PANEL_OPTIONS, panelOpen, panelLabel,
 } from '../js/classic2d/board-choice.js';
 import {
   createLastChoice, DEFAULT_CHOICE, LAST_CHOICE_DOC, maxMines, NOGUESS_DENSITY_HINT, DENSITY_HINT_TEXT, NOGUESS_HELP_TEXT,
@@ -1117,7 +1117,7 @@ test('the board choice opens with no-guess on for a player who never played; its
     { size: 'custom', custom: { width: 10, height: 10, mines: 38 }, noGuess: true }, 'a dense no-guess board is still offered');
 });
 
-test('the board choice\'s lines: each option\'s board line and density, the custom info line, the summary and the bests title follow the switch', () => {
+test('the board choice\'s lines: each option\'s board line and density, the custom info line and the bests title follow the switch', () => {
   assert.equal(boardLine({ width: 16, height: 16, mines: 40 }), '16 × 16 · 40 mines');
   assert.equal(boardLine({ width: 1, height: 2, mines: 1 }), '1 × 2 · 1 mine');
   assert.deepEqual(CHOICE_SIZES.map((s) => mineDensity(STANDARD_SIZES[s])), ['12.3 % mines', '15.6 % mines', '20.6 % mines']);
@@ -1132,18 +1132,24 @@ test('the board choice\'s lines: each option\'s board line and density, the cust
   assert.equal(customInfo({ width: NaN, height: 2, mines: 1 }), '');
 
   const custom = { width: 30, height: 16, mines: 140 };
-  assert.equal(choiceSummary({ selected: 'intermediate', custom, noGuess: true }), 'Intermediate · 16 × 16 · 40 mines · no-guess');
-  assert.equal(choiceSummary({ selected: 'intermediate', custom, noGuess: false }), 'Intermediate · 16 × 16 · 40 mines');
-  assert.equal(choiceSummary({ selected: 'custom', custom, noGuess: true }), 'Custom · 30 × 16 · 140 mines · no-guess', 'a refused board is still summarised');
-  assert.equal(choiceSummary({ selected: 'custom', custom: { width: NaN, height: 16, mines: 1 }, noGuess: false }), 'Custom');
-  assert.equal(choiceSummary({ selected: 'code', custom, noGuess: true, code: null }), 'Board code · paste a code to play');
-  assert.equal(choiceSummary({ selected: 'code', custom, noGuess: true, code: { ok: false, reason: 'x' } }), 'Board code · paste a code to play');
-  assert.equal(choiceSummary({ selected: 'code', custom, noGuess: true, code: { ok: true, text: 't', label: 'Intermediate · no-guess' } }), 'Board code · Intermediate · no-guess');
-
   assert.equal(bestsTitle({ selected: 'intermediate', custom, noGuess: true }), 'Intermediate · no-guess · your bests');
   assert.equal(bestsTitle({ selected: 'intermediate', custom, noGuess: false }), 'Intermediate · your bests');
   assert.equal(bestsTitle({ selected: 'custom', custom: { width: 30, height: 16, mines: 99 }, noGuess: true }), '30 × 16 · 99 mines · no-guess · your bests');
   assert.equal(bestsTitle({ selected: 'custom', custom: { width: 'x', height: 16, mines: 99 }, noGuess: false }), 'Custom · your bests');
+});
+
+test('the board choice panel opens while pinned, or while Custom, Insert Board Code or Learn 3D is chosen; a preset closes it unless pinned', () => {
+  assert.deepEqual(PANEL_OPTIONS, ['custom', 'code', 'learn']);
+  for (const size of CHOICE_SIZES) {
+    assert.equal(panelOpen(size, false), false, `${size}: closed unless pinned`);
+    assert.equal(panelOpen(size, true), true, `${size}: open while pinned`);
+  }
+  for (const option of PANEL_OPTIONS) {
+    assert.equal(panelOpen(option, false), true, `${option} opens it on its own`);
+    assert.equal(panelOpen(option, true), true);
+  }
+  assert.equal(panelOpen(null, false), false, 'nothing chosen: closed');
+  assert.deepEqual(['beginner', 'custom', 'code', 'learn'].map(panelLabel), ['Board settings', 'Board settings', 'Board code', 'Learn 3D'], 'the drawer names what it holds');
 });
 
 test('Random fills a valid custom board every time, at most about one mine in five cells, as the 3D form\'s Random does', () => {
@@ -1175,24 +1181,23 @@ const between = (src, start, end) => src.slice(src.indexOf(start), src.indexOf(e
 const CHOICE = between(INDEX, '<section id="c2d-choice"', '<!-- Classic 2D board -->');
 const LAYER = between(INDEX, '<section id="c2d"', '<!-- In-game HUD -->');
 
-test('index.html builds the Classic 2D board choice from kit components: the title over a window, the options beside what the chosen one needs, a bottom bar', () => {
+test('index.html builds the Classic 2D board choice from kit components: a window under its title bar, the mode its heading, the options beside what the chosen one needs, a bottom bar', () => {
   assert.ok(CHOICE.length > 500, 'index.html has the Classic 2D board choice');
-  assert.match(CHOICE, /^<section id="c2d-choice" class="overlay ui-backdrop hidden" aria-label="Classic 2D board choice">/);
-  assert.match(CHOICE, /<h1 class="ui-wordmark" id="c2d-choice-wordmark" aria-label="Minesweeper 3D">/, 'the game\'s title, as on the menu');
-  assert.match(CHOICE, /<section class="ui-frame" id="c2d-choice-frame" aria-labelledby="c2d-choice-title">/);
-  assert.match(CHOICE, /<div class="ui-frame__start"><button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span data-label="wide">Main menu<\/span><span data-label="phone">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
-    'Back led by its arrow, named Back to Main menu, reading Main menu on a desktop and Back on a phone');
-  assert.match(CHOICE, /<h2 class="ui-frame__title" id="c2d-choice-title">Classic 2D<\/h2>/);
+  assert.match(CHOICE, /^<section id="c2d-choice" class="overlay ui-backdrop hidden" aria-label="Classic 2D board choice">\s*<section class="ui-frame" id="c2d-choice-frame" aria-labelledby="c2d-choice-title">/, 'the window alone on the backdrop: no game title above it');
+  assert.match(CHOICE, /<div class="ui-frame__start"><button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary ui-button--sm ui-frame__back" data-back data-icon="arrow-left" aria-label="Back to Main menu" title="Back"><\/button><\/div>\s*<h1 class="ui-logo ui-frame__logo" aria-label="Minesweeper 3D"><\/h1>/,
+    'the title bar: Back its arrow alone, named Back to Main menu, then the logo');
+  assert.match(CHOICE, /<div class="ui-frame__heading">\s*<h2 class="ui-frame__title" id="c2d-choice-title">Classic 2D<\/h2>\s*<div class="ui-frame__action"><button type="button" id="c2d-panel-toggle" class="ui-button ui-button--quiet ui-button--sm" data-panel-toggle data-icon="panel" aria-pressed="false" aria-controls="c2d-choice-panel" aria-label="Settings &amp; bests" title="Settings &amp; bests"><\/button><\/div>\s*<\/div>/,
+    'the mode its heading, the panel toggle at its right: a latched quiet icon button named Settings & bests');
 
   // Left: Board, the presets and Custom, a divider, Insert Board Code with no icon.
-  const left = between(CHOICE, '<div class="ui-column" id="c2d-choice-options">', '<div class="ui-divider ui-divider--vertical"');
+  const left = between(CHOICE, '<div class="ui-column" id="c2d-choice-options">', '<div class="ui-divider ui-divider--vertical hidden" role="separator"');
   assert.match(left, /<h3 class="ui-section-label__text" id="c2d-board-label">Board<\/h3>/);
   const options = [...left.matchAll(/<button type="button" class="ui-option" aria-pressed="false" data-size="(\w+)"/g)].map((m) => m[1]);
   assert.deepEqual(options, ['beginner', 'intermediate', 'expert', 'custom', 'code']);
   const unescape = (t) => t.replace(/&times;/g, '×').replace(/&middot;/g, '·').replace(/&ndash;/g, '–');
   for (const size of CHOICE_SIZES) {
     const b = unescape(left.slice(left.indexOf(`data-size="${size}"`), left.indexOf('</button>', left.indexOf(`data-size="${size}"`))));
-    assert.match(b, /<span class="ui-option__line"><span class="ui-option__name">[A-Z]\w+<\/span><span class="ui-chip hidden" data-last>Last played<\/span><\/span><span class="ui-option__meta">/, `${size}: its name, then its Last played chip, in its name line`);
+    assert.match(b, /<span class="ui-option__name">[A-Z]\w+<\/span><span class="ui-option__meta">/, `${size}: its name, with no Last played chip`);
     assert.ok(b.includes(`<span class="ui-option__size">${sizeLabel(size)}</span> · <span class="ui-option__density">${mineDensity(STANDARD_SIZES[size])}</span>`), `${size}: its size line and density`);
   }
   assert.ok(unescape(left).includes(`<span class="ui-option__meta" data-custom-meta>${CUSTOM_HINT}</span>`));
@@ -1201,19 +1206,23 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   const code = left.slice(left.indexOf('data-size="code"'), left.indexOf('</button>', left.indexOf('data-size="code"')));
   assert.match(code, /<span class="ui-option__name">Insert Board Code<\/span><span class="ui-option__meta">Play the exact board a code describes<\/span>/);
   assert.doesNotMatch(code, /ui-option__badge|ui-chip/, 'no icon');
+  assert.doesNotMatch(left, /ui-chip|data-last|Last played/, 'no Last played chip on any option');
   assert.doesNotMatch(left, /ui-menu|data-detail|3BV|Best /, 'no detail lines: no 3BV and no best on an option');
 
-  // Right: the settings, the custom form, the bests, the code panel.
-  const right = between(CHOICE, '<div class="ui-column" id="c2d-choice-detail">', '<footer class="ui-frame__foot ui-frame__foot--action">');
-  assert.ok(right.includes('<div id="c2d-settings" data-settings>\n            <div class="ui-section-label"><h3 class="ui-section-label__text">Board settings</h3></div>\n'
-    + `            <div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="c2d-noguess">No-guess</label><span class="ui-switchrow__help" id="c2d-noguess-help">${NOGUESS_HELP_TEXT}</span></span>`
+  // The panel, closed until pinned or needed: the rule before it, the drawer's bar (a phone's), its body.
+  assert.match(CHOICE, /<div class="ui-divider ui-divider--vertical hidden" role="separator" aria-orientation="vertical" data-panel-rule><\/div>\s*<div class="ui-drawer" id="c2d-choice-panel" data-panel data-open="false">\s*<button type="button" class="ui-drawer__bar" id="c2d-drawer-bar" data-drawer-bar aria-expanded="false" aria-controls="c2d-choice-detail"><span class="ui-section-label__text ui-drawer__label" data-drawer-label>Board settings<\/span><span class="ui-drawer__chevron" aria-hidden="true"><svg [^>]*><path d="M6 9l6 6 6-6"\/><\/svg><\/span><\/button>\s*<div class="ui-column ui-drawer__body" id="c2d-choice-detail">/,
+    'the options, then the panel: its rule, the drawer bar with its label and chevron, its body');
+  // In the panel: the settings, the custom form, the bests, the code panel.
+  const right = between(CHOICE, '<div class="ui-column ui-drawer__body" id="c2d-choice-detail">', '<footer class="ui-frame__foot ui-frame__foot--action">');
+  assert.ok(right.includes('<div id="c2d-settings" data-settings>\n              <div class="ui-section-label"><h3 class="ui-section-label__text">Board settings</h3></div>\n'
+    + `              <div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="c2d-noguess">No-guess</label><span class="ui-switchrow__help" id="c2d-noguess-help">${NOGUESS_HELP_TEXT}</span></span>`
     + '<input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess aria-describedby="c2d-noguess-help"></div>'),
   'the no-guess switch row: its label and help line on the left, the switch at the right');
   assert.ok(right.indexOf('data-density-hint') > right.indexOf('c2d-noguess-help') && right.indexOf('data-density-hint') < right.indexOf('<form id="c2d-custom"'), 'the density hint under the switch');
   assert.match(right, /<p id="c2d-density-hint" class="ui-note ui-note--warn hidden" data-icon="warning" data-density-hint><span class="ui-note__text"><\/span><\/p>\s*<\/div>/,
     'the density hint, a warn note with its warning icon, inside the board settings');
   const form = right.slice(right.indexOf('<form id="c2d-custom"'), right.indexOf('</form>'));
-  assert.match(form, /^<form id="c2d-custom" class="ui-panel ui-panel--muted hidden"/, 'the form, a muted panel, shows for Custom only');
+  assert.match(form, /^<form id="c2d-custom" class="hidden"/, 'the form, on the panel in no box of its own, shows for Custom only');
   for (const f of ['width', 'height', 'mines']) {
     assert.match(form, new RegExp(`<label class="ui-field"><span class="ui-field__label">[^<]+</span><input id="c2d-${f}" data-field="${f}" class="ui-field__input" type="number"`), f);
   }
@@ -1230,6 +1239,7 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   assert.match(bests, /<hr class="ui-divider">\s*<div class="ui-section-label"><h3 class="ui-section-label__text" id="c2d-bests-title" data-bests-title>/);
   const tiles = [...bests.matchAll(/<div id="c2d-best-(\w+)" class="ui-stat ui-stat--tile" role="group" aria-labelledby="c2d-best-\1-label" data-best="\1"><span class="ui-stat__label" id="c2d-best-\1-label">([^<]+)<\/span>/g)];
   assert.deepEqual(tiles.map((m) => [m[1], m[2]]), [['time', 'Time'], ['bbbvPerSecond', '3BV/s'], ['efficiency', 'Efficiency']], 'three tiles only');
+  assert.match(bests, /<\/div>\s*<button type="button" id="c2d-records" class="ui-button ui-button--secondary ui-button--sm" data-records data-icon="chart">All records<\/button>\s*<\/div>\s*$/, 'All records under the bests, its chart icon');
   assert.doesNotMatch(right, /[Ww]in rate|[Ss]treak|[Rr]ecent|Top 5|<canvas/, 'no wins, rates, streak, charts, recent games or Top 5');
   const panel = right.slice(right.indexOf('<div id="c2d-code-panel"'));
   assert.match(panel, /^<div id="c2d-code-panel" class="hidden" role="group" aria-labelledby="c2d-code-title" data-code-panel>/);
@@ -1238,34 +1248,41 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   assert.ok(panel.includes(`<p id="c2d-code-info" class="ui-text ui-text--muted" data-code-info>${CODE_PROMPT}</p>`));
   assert.doesNotMatch(CHOICE, /c2d-code-play|Play this board/, 'the code is played with Play');
 
-  // The bottom bar: the summary, Records and Play with its Enter hint.
+  // The foot: Play alone, with its confirm hint; no summary and no Records.
   const foot = between(CHOICE, '<footer class="ui-frame__foot ui-frame__foot--action">', '</footer>');
-  assert.match(foot, /<p class="ui-frame__summary" id="c2d-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="c2d-records" class="ui-button ui-button--secondary" data-records data-icon="chart">Records<\/button>\s*<button type="button" id="c2d-play" class="ui-button ui-button--primary ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/,
-    'Records with its chart icon, Play with its play icon');
+  assert.match(foot, /^<footer class="ui-frame__foot ui-frame__foot--action">\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="c2d-play" class="ui-button ui-button--primary ui-button--go ui-button--lg" data-play data-icon="play">Play <span class="ui-key-hint" data-action="confirm" aria-hidden="true"><\/span><\/button>\s*<\/div>\s*$/,
+    'Play alone, with its play icon');
+  assert.doesNotMatch(CHOICE, /ui-frame__summary|data-summary/, 'no summary');
   for (const [, cls] of CHOICE.matchAll(/class="([^"]+)"/g)) {
     for (const c of cls.split(/\s+/)) assert.ok(c.startsWith('ui-') || ['overlay', 'hidden'].includes(c), `kit class: ${c}`);
   }
 });
 
-test('the shell stylesheet lays the board choice out: the wordmark pinned at the top, the window centred under it unless the page is too short, denser rows on the smaller desktops only, one column on a phone', () => {
-  // The rules are the 3D board choice's too (tests/mode3d-board-choice.test.mjs).
+test('the shell stylesheet lays the board choice out: the window sized to its content and centred on the page, never nearer its edges than the canvas\'s margin, the panel widening it, denser rows on the smaller desktops only, one column with the drawer on a phone', () => {
+  // The rules are the 3D board choice's too (tests/mode3d-board-choice.test.mjs), and Hexagon's and
+  // Triangle's (tests/shell-router.test.mjs).
   const css = read('css/style.css');
-  assert.match(css, /\n#c2d-choice-top, #board-choice-top, #daily-top \{ position: absolute; top: 44px;/, 'the wordmark pinned at the top');
-  assert.match(css, /\n#c2d-choice::before, #board-choice::before, #daily::before \{ content: ""; flex: 1 1 0; min-height: 176px; \}/, 'the space above the window grows with the page, never shorter than the wordmark\'s band');
-  assert.match(css, /\n#c2d-choice::after, #board-choice::after, #daily::after \{ content: ""; flex: 1 1 0; min-height: 14px; \}/, 'as much as the space below it');
-  assert.match(css, /\n#c2d-choice-frame, #board-choice-frame, #daily-frame \{ flex: 0 1 auto; width: 1120px; \}/);
-  assert.match(css, /@media \(max-width: 1439px\) \{\n  #c2d-choice-top, #board-choice-top, #daily-top \{ top: 26px; \}\n  #c2d-choice-wordmark, #board-choice-wordmark, #daily-wordmark \{ font-size: 58px; \}\n  #c2d-choice::before, #board-choice::before, #daily::before \{ min-height: 106px; \}\n  #c2d-choice-frame, #board-choice-frame, #daily-frame \{ width: 1080px; \}\n  #c2d-play, #bc-play \{ min-height: 54px; padding: 12px 22px; font-size: 21px; \}/,
-    'compact: the wordmark, the band above the window, the window and Play');
-  assert.match(css, /@media \(max-width: 1199px\) \{\n  #c2d-choice-top, #board-choice-top, #daily-top \{ top: 24px; \}\n  #c2d-choice-wordmark, #board-choice-wordmark, #daily-wordmark \{ font-size: 50px; \}\n  #c2d-choice::before, #board-choice::before, #daily::before \{ min-height: 96px; \}\n  #c2d-choice-frame, #board-choice-frame, #daily-frame \{ width: 984px; \}/);
-  const dense = css.match(/@media \(min-width: 720px\) and \(max-width: 1439px\) \{\n([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.doesNotMatch(css, /#(c2d-choice|board-choice|daily)-top|wordmark/, 'no game title above the window');
+  assert.match(css, /\n#c2d-choice::before, #board-choice::before, #daily::before,\n#c2d-choice::after, #board-choice::after, #daily::after \{ content: ""; flex: 1 1 0; min-height: 40px; \}/, 'the space above the window as much as below it, 40 px at the least');
+  assert.match(css, /\n#c2d-choice-frame, #board-choice-frame \{ flex: 0 1 auto; align-self: center; width: auto; \}/, 'the window as narrow as its content, centred');
+  assert.match(css, /\n#c2d-choice-options, #board-choice-options \{ flex: 1 0 480px; min-width: 480px; \}\n#hex-choice-panel, #tri-choice-panel,\n#c2d-choice-panel, #bc-choice-panel \{ flex: 0 1 639px; width: 639px; min-width: 0; \}/, 'the Board list, then the panel beside it');
+  assert.match(css, /@media \(min-width: 720px\) \{\n  #c2d-choice-panel > \.ui-drawer__bar, #c2d-choice-panel:not\(\[data-open="true"\]\), #bc-choice-panel:not\(\[data-open="true"\]\), #bc-choice-panel > \.ui-drawer__bar,\n  #hex-choice-panel > \.ui-drawer__bar, #hex-choice-panel:not\(\[data-open="true"\]\), #tri-choice-panel > \.ui-drawer__bar, #tri-choice-panel:not\(\[data-open="true"\]\) \{ display: none; \}\n\}/,
+    'on a desktop window the panel shows only while open, and never its drawer bar');
+  assert.match(css, /@container root \(max-width: 1439px\) or \(max-height: 820px\) \{\n  #daily-frame \{ width: 1080px; \}\n  #hex-choice::before, #tri-choice::before, #hex-choice::after, #tri-choice::after,\n  #c2d-choice::before, #board-choice::before, #daily::before,\n  #c2d-choice::after, #board-choice::after, #daily::after \{ min-height: 24px; \}\n  #hex-play, #tri-play,\n  #c2d-play, #bc-play \{ min-height: 54px; padding: 12px 22px; font-size: 21px; \}/,
+    'compact: the 24 px margin and Play');
+  const dense = css.match(/@container root \(min-width: 720px\) and \(\(max-width: 1439px\) or \(max-height: 820px\)\) \{\n([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.match(dense, /#c2d-choice-options, #board-choice-options \{ flex-basis: 460px; min-width: 460px; \}\n  #hex-choice-panel, #tri-choice-panel,\n  #c2d-choice-panel, #bc-choice-panel \{ flex-basis: 619px; width: 619px; \}/, 'the compact list and panel');
   assert.match(dense, /#c2d-choice \.ui-option, #board-choice \.ui-option, #daily \.ui-option \{ min-height: 46px; padding: 6px 14px; \}/, 'the denser rows, never on a phone');
-  assert.doesNotMatch(css, /@media \(max-width: 1439px\) \{[^}]*\.ui-option[^}]*min-height: 46px/, 'no dense rule reaching a phone');
-  const phone = css.match(/@media \(max-width: 719px\) \{\n  #c2d-choice, #board-choice \{ padding: 0; \}\n([\s\S]*?)\n\}/)?.[1] ?? '';
-  assert.match(phone, /#c2d-choice-top, #board-choice-top, #c2d-bests, #bc-bests, #c2d-summary, #bc-summary,\n  #c2d-choice::before, #board-choice::before, #c2d-choice::after, #board-choice::after \{ display: none; \}/);
-  assert.match(phone, /#c2d-choice-body, #board-choice-body \{ display: flex; flex-direction: column; gap: 18px; padding: 16px 18px 112px; \}/, 'one column, its foot clear of the bar');
-  assert.match(phone, /#c2d-choice-body > \.ui-divider--vertical, #board-choice-body > \.ui-divider--vertical \{ width: 100%; height: 1px; \}/, 'a rule between the options and the settings');
+  assert.doesNotMatch(css, /@container root \(max-width: 1439px\) or \(max-height: 820px\) \{[^}]*\.ui-option[^}]*min-height: 46px/, 'no dense rule reaching a phone');
+  const phone = css.match(/@media \(max-width: 719px\) \{\n  #hex-choice, #tri-choice,\n  #c2d-choice, #board-choice \{ padding: 0; \}\n([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.match(phone, /#c2d-panel-toggle, #bc-panel-toggle, #c2d-choice-body > \.ui-divider--vertical, #board-choice-body > \.ui-divider--vertical,\n  #c2d-choice::before, #board-choice::before, #c2d-choice::after, #board-choice::after \{ display: none; \}/,
+    'no panel toggle and no rule beside the panel');
+  assert.match(phone, /#c2d-choice-body, #board-choice-body \{ flex-direction: column; gap: 18px; padding: 16px 18px 84px; \}/, 'one column, its foot clear of the bar');
+  assert.match(phone, /#c2d-choice-panel, #bc-choice-panel \{ flex: none; width: auto; margin: 0 -18px; \}/, 'the drawer full width under the Board list');
+  assert.match(phone, /#c2d-choice-panel:not\(\[data-open="true"\]\) > \.ui-drawer__body, #bc-choice-panel:not\(\[data-open="true"\]\) > \.ui-drawer__body,/, 'its body only while open');
   assert.match(phone, /#c2d-choice \.ui-option, #board-choice \.ui-option \{ min-height: 56px; padding: 9px 14px; \}/);
-  assert.match(phone, /#c2d-choice-frame > \.ui-frame__foot, #board-choice-frame > \.ui-frame__foot \{ position: absolute; left: 0; right: 0; bottom: 0; \}/, 'the bar pinned over the column\'s foot');
+  assert.match(phone, /#c2d-choice-frame > \.ui-frame__foot, #board-choice-frame > \.ui-frame__foot \{ position: absolute; left: 0; right: 0; bottom: 0; min-height: 64px; \}\n  #hex-play, #tri-play,\n  #c2d-play, #bc-play \{ min-height: 44px; padding: 8px 22px; font-size: 19px; \}/, 'the slimmer bar pinned over the column\'s foot, and its slimmer Play');
+  assert.doesNotMatch(phone, /#c2d-bests|#bc-bests/, 'the bests show on a phone too');
   assert.match(css, /#c2d-custom > \.ui-row \{ display: grid; grid-template-columns: repeat\(3, minmax\(0, 1fr\)\); gap: var\(--space-3\); \}/, 'the three fields fill one row');
   assert.match(css, /:is\(#c2d-custom, #custom\) \.ui-field__input::-webkit-inner-spin-button,\n:is\(#c2d-custom, #custom\) \.ui-field__input::-webkit-outer-spin-button \{ -webkit-appearance: none; margin: 0; \}/, 'no number spinners');
 });
@@ -1273,7 +1290,7 @@ test('the shell stylesheet lays the board choice out: the wordmark pinned at the
 test('index.html holds the Classic 2D board layer with its generating and failure card', () => {
   assert.match(LAYER, /^<section id="c2d" class="ui-backdrop hidden"/);
   assert.match(LAYER, /<div id="c2d-board"><div id="c2d-panel" class="ui-board-frame hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the board\'s frame, behind the canvas');
-  assert.match(LAYER, /id="c2d-retry" class="ui-button ui-button--primary"/);
+  assert.match(LAYER, /id="c2d-retry" class="ui-button ui-button--primary ui-button--go"/);
   assert.match(LAYER, /id="c2d-standard" class="ui-button ui-button--secondary">Play a standard board/);
   assert.match(LAYER, /id="c2d-offer-menu" class="ui-button ui-button--secondary">Main menu/, 'the offer has a way out');
   assert.match(LAYER, /<span id="c2d-spinner" class="ui-spinner" aria-hidden="true"><\/span>/, 'the generating card has a spinner');
@@ -1281,9 +1298,9 @@ test('index.html holds the Classic 2D board layer with its generating and failur
 });
 
 test('the shell cancels a 2D generation from its Cancel and Back, and shows the offer above the pause card', () => {
-  assert.match(MAIN, /onCancel2D: \(\) => mode2d\.cancelGeneration\(\)/, 'Cancel cancels through the mode');
+  assert.match(MAIN, /onCancel2D: \(\) => flat2D\(\)\?\.cancelGeneration\(\)/, 'Cancel cancels through the active flat mode');
   assert.match(MAIN, /onOfferMenu2D: \(\) => /, 'Main menu on the offer');
-  assert.match(MAIN, /if \(MODES\.active === 'classic-2d'\) return mode2d\.cancelGeneration\(\);/, 'Back cancels through the active mode');
+  assert.match(MAIN, /if \(flat2D\(\)\) return flat2D\(\)\.cancelGeneration\(\);/, 'Back cancels through the active mode');
 });
 
 test('the shell registers the mode, routes its screens and reaches the board with the controller', () => {
@@ -1293,8 +1310,9 @@ test('the shell registers the mode, routes its screens and reaches the board wit
   assert.match(MAIN, /MODES\.register\('classic-2d', \(report\) => createClassic2DMode\(report, /);
   assert.match(MAIN, /c2d: 'classic-2d'/, 'the board layer is a controller layer');
   assert.match(MAIN, /'c2d-choice': 'classic-2d-choice'/, 'the controller reaches the board choice');
-  assert.match(MAIN, /mode2d\.pad\(/, 'the shell\'s controller poll reaches the cursor input');
-  assert.match(MAIN, /mode2d\.tick\(\)/, 'the overlay feed runs every frame');
+  assert.match(MAIN, /flat2D\(\)\?\.pad\(/, 'the shell\'s controller poll reaches the active flat mode\'s cursor input');
+  assert.match(MAIN, /flat2D\(\)\?\.tick\(\)/, 'the overlay feed runs every frame');
+  assert.match(MAIN, /FLAT_2D\.set\(config\.id, \{ mode, lastChoice \}\)/, 'Hexagon and Triangle join the flat modes the window hosts');
   assert.match(MAIN, /mode2d\.loadChoice\(\)/, 'the last board choice is loaded at start-up');
 });
 
@@ -1309,7 +1327,7 @@ test('the shell hands the board its scale, frame and panel, keeps the scale live
   assert.match(flow, /figures: \(input, \{ tick \}\) => ui\.updateFigures2D\(input, \{ tick, bests: bests2D \}\)/, 'the live figures, with the bests read at the game\'s start');
   assert.match(MAIN, /bests2D = RECORDS\.bests\(b\.identity\)/, 'the board\'s bests read once per game from the records store');
   assert.match(flow, /scrolled: \(\) => scrolled2D\(\)/);
-  assert.match(MAIN, /SETTINGS\.onChange\('boardScale', \(scale\) => \{ mode2d\.setScale\(scale\); REPLAY_VIEWER\.setScale\(scale\); \}\)/, 'a change applies at once, in play and in the viewer');
+  assert.match(MAIN, /SETTINGS\.onChange\('boardScale', \(scale\) => \{ flat2D\(\)\?\.setScale\(scale\); REPLAY_VIEWER\.setScale\(scale\); \}\)/, 'a change applies at once, in play and in the viewer');
   assert.match(MAIN, /function scrolled2D\(\) \{\n  if \(FIRST_USE\.once\('scrollHint'\)\) refreshHints\(\);/, 'a scroll ends the hint for good');
   assert.match(MAIN, /hint2D\.clipped && !FIRST_USE\.shown\('scrollHint'\)/, 'shown on a clipped board until seen');
   assert.match(MAIN, /if \(kind === 'scroll'\) FIRST_USE\.once\('scrollHint'\)/, 'dismissed for good');
@@ -1367,7 +1385,7 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
 
     // Expert, then the first click in the middle of the board.
     await page.click('#menu-entry-classic-2d');
-    await page.uncheck('#c2d-noguess'); // a standard Expert board: no-guess is on by default
+    await page.evaluate(() => document.getElementById('c2d-noguess').click()); // a standard Expert board: no-guess is on by default, its switch in the closed panel
     await page.click('#c2d-choice [data-size="expert"]');
     assert.equal(await mode(), 'classic-2d-choice', 'a click chooses the board');
     await page.click('#c2d-play');
@@ -1421,15 +1439,15 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.equal(abandoned[0].summary.pauses, 2, 'two pauses: the one resumed, and the one left from');
     assert.ok(abandoned[0].summary.pausedMs >= 1000, `the paused time counts the second-long pause (${abandoned[0].summary.pausedMs})`);
 
-    // The menu opens on the last mode played, with its Last played chip; Enter opens its board choice
+    // The menu opens on the last mode played, with no Last played chip; Enter opens its board choice
     // on the last choice, and the abandoned game set no best; Enter again starts that board.
     assert.equal(await active(), 'menu-entry-classic-2d', 'the menu opens on the last mode played');
-    assert.equal(await ms(() => { const e = document.querySelector('#menu-entry-classic-2d .ui-chip[data-last]'); return !!e && !e.classList.contains('hidden') && e.getBoundingClientRect().width > 0; }), true, 'with its Last played chip');
+    assert.equal(await ms(() => document.querySelectorAll('#menu .ui-chip').length), 0, 'with no Last played chip');
     const savedChoice = await ms(() => localStorage.getItem('ms3d:doc:classic2d.lastChoice'));
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'classic-2d-choice');
     assert.equal(await active(), 'expert', 'the last board is selected');
-    assert.equal(await ms(() => document.querySelector('#c2d-choice [aria-pressed="true"]').dataset.size), 'expert');
+    assert.equal(await ms(() => document.querySelector('#c2d-choice [data-size][aria-pressed="true"]').dataset.size), 'expert');
     assert.equal(await ms(() => document.getElementById('c2d-noguess').checked), false, 'the switch as last played');
     assert.equal(await ms(() => document.getElementById('c2d-bests-title').textContent), 'Expert · your bests');
     assert.equal(await ms(() => document.querySelector('#c2d-best-time .ui-stat__detail').textContent), 'no best yet');
@@ -1443,7 +1461,7 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
   }
 });
 
-test('in a browser, the board choice: a click chooses, Play or Enter plays; the bests follow the switch and the records; Custom with Random; Insert Board Code; Records and back', async (t) => {
+test('in a browser, the board choice: a click chooses, Play or Enter plays; the panel opens for Custom and the code or while pinned, the pin stored; the bests follow the switch and the records; Custom with Random; Insert Board Code; All records and back', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1458,15 +1476,29 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     const mode = () => ms(() => globalThis.__ms.state.mode);
     const text = (id) => ms((i) => document.getElementById(i).textContent, id);
     const shown = (id) => ms((i) => { const e = document.getElementById(i); return !e.closest('.hidden') && e.getBoundingClientRect().height > 0; }, id);
-    const chosen = () => ms(() => [...document.querySelectorAll('#c2d-choice [aria-pressed="true"]')].map((b) => b.dataset.size));
+    const chosen = () => ms(() => [...document.querySelectorAll('#c2d-choice [data-size][aria-pressed="true"]')].map((b) => b.dataset.size));
     const tiles = () => ms(() => [...document.querySelectorAll('#c2d-bests [data-best]')].map((t) => [t.querySelector('.ui-stat__label').textContent, t.querySelector('.ui-stat__value').textContent, t.querySelector('.ui-stat__detail').textContent]));
+    const panel = () => ms(() => ({ open: document.getElementById('c2d-choice-panel').dataset.open, pinned: document.getElementById('c2d-panel-toggle').getAttribute('aria-pressed') }));
+    const width = () => ms(() => Math.round(document.getElementById('c2d-choice-frame').getBoundingClientRect().width));
+    const stored = () => ms(() => JSON.parse(localStorage.getItem('ms3d:doc:shell.boardPanel') ?? 'null')?.data ?? null);
 
-    // A new player: Beginner chosen and focused, no-guess on, no bests yet.
+    // A new player: Beginner chosen and focused, no-guess on, the panel closed and unpinned: the Board list and the foot alone.
     await page.click('#menu-entry-classic-2d');
     assert.deepEqual(await chosen(), ['beginner']);
     assert.equal(await ms(() => document.activeElement?.dataset.size), 'beginner');
-    assert.equal(await ms(() => document.querySelector('#c2d-choice [data-size="beginner"] [data-last]').classList.contains('hidden')), true, 'not "Last played" before a game');
-    assert.equal(await text('c2d-summary'), 'Beginner · 9 × 9 · 10 mines · no-guess');
+    assert.equal(await ms(() => document.querySelector('#c2d-choice [data-size="beginner"]').hasAttribute('data-last')), true, 'the last board marked, with no chip');
+    assert.equal(await ms(() => document.querySelectorAll('#c2d-choice .ui-chip').length), 0, 'no Last played chip');
+    assert.deepEqual(await panel(), { open: 'false', pinned: 'false' });
+    assert.deepEqual([await shown('c2d-settings'), await shown('c2d-custom'), await shown('c2d-bests'), await shown('c2d-code-panel')], [false, false, false, false], 'the panel closed');
+    assert.deepEqual(await ms(() => [...document.querySelectorAll('#c2d-choice-frame > .ui-frame__foot button')].map((b) => b.id)), ['c2d-play'], 'the foot holds Play alone');
+    const narrow = await width();
+
+    // The toggle pins the panel open, the window widening and staying centred; the pin is stored.
+    await page.click('#c2d-panel-toggle');
+    assert.deepEqual(await panel(), { open: 'true', pinned: 'true' });
+    assert.ok(await width() > narrow, 'the window widens for the panel');
+    assert.ok(await ms(() => { const r = document.getElementById('c2d-choice-frame').getBoundingClientRect(); return Math.abs(r.left + r.right - innerWidth) <= 1; }), 'and stays centred');
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:shell.boardPanel') ?? 'null')?.data?.pinned === true);
     assert.equal(await text('c2d-bests-title'), 'Beginner · no-guess · your bests');
     assert.deepEqual(await tiles(), [['Time', '—', 'no best yet'], ['3BV/s', '—', 'no best yet'], ['Efficiency', '—', 'no best yet']]);
     assert.deepEqual([await shown('c2d-settings'), await shown('c2d-custom'), await shown('c2d-bests'), await shown('c2d-code-panel')], [true, false, true, false]);
@@ -1475,8 +1507,8 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     await page.click('#c2d-choice [data-size="intermediate"]');
     assert.deepEqual(await chosen(), ['intermediate']);
     assert.equal(await mode(), 'classic-2d-choice');
+    assert.deepEqual(await panel(), { open: 'true', pinned: 'true' }, 'pinned, a preset keeps the panel open');
     await page.click('#c2d-noguess');
-    assert.equal(await text('c2d-summary'), 'Intermediate · 16 × 16 · 40 mines');
     assert.equal(await text('c2d-bests-title'), 'Intermediate · your bests');
     await ms(async () => {
       const { buildSummary } = await import('/js/records/summary.js');
@@ -1488,7 +1520,8 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     assert.deepEqual((await tiles()).map((x) => x[1]), ['—', '—', '—'], 'the no-guess twin is another board');
     await page.click('#c2d-noguess');
 
-    // Records opens on the chosen board and switch; Back returns here, as it was.
+    // All records, under the bests, opens Records on the chosen board and switch; Back returns here, as it was.
+    assert.equal(await text('c2d-records'), 'All records');
     await page.click('#c2d-records');
     assert.equal(await mode(), 'records');
     assert.match(await ms(() => document.querySelector('#records-picker [aria-checked="true"]')?.textContent ?? ''), /Intermediate/);
@@ -1496,11 +1529,20 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     assert.equal(await mode(), 'classic-2d-choice');
     assert.deepEqual(await chosen(), ['intermediate']);
     assert.equal(await ms(() => document.getElementById('c2d-noguess').checked), false);
+    // Unpinned, a preset closes the panel again.
+    await page.click('#c2d-panel-toggle');
+    assert.deepEqual(await panel(), { open: 'false', pinned: 'false' });
+    assert.deepEqual(await stored(), { pinned: false }, 'unpinning is stored too');
 
-    // Custom: the form and the bests for that size; Random fills a valid board; a refused one disables Play.
+    // Custom opens the panel on its own: the form and the bests for that size; Random fills a valid board; a refused one disables Play.
     await page.click('#c2d-choice [data-size="custom"]');
     assert.deepEqual([await shown('c2d-settings'), await shown('c2d-custom'), await shown('c2d-bests'), await shown('c2d-code-panel')], [true, true, true, false]);
-    assert.equal(await text('c2d-summary'), 'Custom · 30 × 16 · 99 mines');
+    assert.deepEqual(await panel(), { open: 'true', pinned: 'false' }, 'open, pinning nothing');
+    // While Custom is chosen the toggle changes only the stored preference.
+    await page.click('#c2d-panel-toggle');
+    assert.deepEqual(await panel(), { open: 'true', pinned: 'true' });
+    await page.click('#c2d-panel-toggle');
+    assert.deepEqual(await panel(), { open: 'true', pinned: 'false' }, 'Custom keeps it open, unpinned');
     assert.equal(await text('c2d-bests-title'), '30 × 16 · 99 mines · your bests');
     assert.equal(await ms(() => document.querySelector('#c2d-choice [data-custom-meta]').textContent), '30 × 16 · 99 mines · 20.6 % mines');
     await page.fill('#c2d-mines', '400');
@@ -1509,7 +1551,6 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     assert.equal(await ms(() => document.getElementById('c2d-mines').getAttribute('aria-invalid')), 'true');
     assert.equal(await ms(() => document.getElementById('c2d-mines').classList.contains('is-invalid')), true, 'the refused field is marked invalid');
     assert.equal(await ms(() => document.querySelectorAll('#c2d-choice .ui-field__input.is-invalid').length), 1, 'and only it');
-    assert.equal(await text('c2d-summary'), 'Custom · 30 × 16 · 400 mines', 'the refused board summarised');
     for (let i = 0; i < 5; i++) {
       await page.click('#c2d-random');
       const f = await ms(() => ['width', 'height', 'mines'].map((n) => Number(document.getElementById(`c2d-${n}`).value)));
@@ -1524,7 +1565,7 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     await page.click('#c2d-choice [data-size="code"]');
     assert.deepEqual([await shown('c2d-settings'), await shown('c2d-custom'), await shown('c2d-bests'), await shown('c2d-code-panel')], [false, false, false, true]);
     assert.equal(await text('c2d-code-info'), CODE_PROMPT);
-    assert.equal(await text('c2d-summary'), 'Board code · paste a code to play');
+    assert.deepEqual(await panel(), { open: 'true', pinned: 'false' }, 'Insert Board Code opens the panel on its own');
     assert.equal(await ms(() => document.getElementById('c2d-play').disabled), true);
     const codeLine = () => ms(() => {
       const line = document.getElementById('c2d-code-info');
@@ -1544,7 +1585,6 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     assert.equal(await ms(() => document.getElementById('c2d-play').disabled), false);
     assert.deepEqual(await codeLine(), { cls: 'ui-text ui-text--success', icon: null, invalid: false, aria: null }, 'an accepted code: the success line');
     assert.equal(await text('c2d-code-info'), 'Intermediate · 16 × 16 · 40 mines · no-guess · starts on the marked cell');
-    assert.equal(await text('c2d-summary'), 'Board code · Intermediate · 16 × 16 · 40 mines · no-guess');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d', 'Play plays the code\'s challenge');
     assert.equal(await ms(() => globalThis.__ms.modes.state.mode), 'classic-2d');
@@ -1564,7 +1604,7 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
   }
 });
 
-test('in a browser, the board choice at every supported window size: its window\'s width, centred under the title, no horizontal scroll, the presets unscrolled at 768 px high, one column on a phone under Back and over the pinned bar', async (t) => {
+test('in a browser, the board choice at every supported window size: its window as narrow as its content and widened by the panel, centred on the page, no horizontal scroll, the presets unscrolled at 768 px high, one column on a phone under its title bar, the drawer under the options and over the slimmer pinned bar', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1575,43 +1615,55 @@ test('in a browser, the board choice at every supported window size: its window\
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
     await page.click('#menu-entry-classic-2d');
-    for (const [width, height, frame] of [[1920, 1080, 1120], [1366, 768, 1080], [1024, 768, 984], [390, 844, 390]]) {
+    for (const [width, height, open] of [[1920, 1080, 1120], [1366, 768, 1080], [1024, 768, 984], [390, 844, 390]]) {
       await page.setViewportSize({ width, height });
       const at = `${width} × ${height}`;
       for (const size of ['intermediate', 'custom', 'code']) {
+        if (width <= 719) await page.evaluate((v) => document.querySelector(`#c2d-choice [data-size="${v}"]`).scrollIntoView({ block: 'center' }), size);
         await page.click(`#c2d-choice [data-size="${size}"]`);
         const m = await page.evaluate(() => {
           const r = (id) => document.getElementById(id).getBoundingClientRect();
           const body = document.getElementById('c2d-choice-body');
           return {
             scroll: document.documentElement.scrollWidth, layer: document.getElementById('c2d-choice').scrollWidth,
-            frame: r('c2d-choice-frame'), title: r('c2d-choice-wordmark'), body: [body.scrollHeight, body.clientHeight, body.scrollWidth, body.clientWidth],
-            bests: getComputedStyle(document.getElementById('c2d-bests')).display, summary: getComputedStyle(document.getElementById('c2d-summary')).display,
-            play: r('c2d-play'), back: r('c2d-choice-back'), backText: document.getElementById('c2d-choice-back').innerText.split('\n')[0],
-            option: r('c2d-code-option'), rule: document.querySelector('#c2d-choice-body > .ui-divider--vertical').getBoundingClientRect(),
+            frame: r('c2d-choice-frame'), body: [body.scrollHeight, body.clientHeight, body.scrollWidth, body.clientWidth],
+            open: document.getElementById('c2d-choice-panel').dataset.open, toggle: r('c2d-panel-toggle'), bar: r('c2d-drawer-bar'),
+            label: document.getElementById('c2d-drawer-bar').textContent,
+            play: r('c2d-play'), back: r('c2d-choice-back'), backText: document.getElementById('c2d-choice-back').innerText.trim(),
+            windowButtons: [...document.querySelectorAll('#c2d-choice-frame [data-window]')].map((b) => b.getBoundingClientRect().width),
+            option: r('c2d-code-option'), foot: document.querySelector('#c2d-choice-frame > .ui-frame__foot').getBoundingClientRect(),
           };
         });
+        const opens = size !== 'intermediate';
+        assert.equal(m.open, String(opens), `${at} ${size}: the panel open for Custom and the code only`);
         assert.ok(m.scroll <= width && m.layer <= width && m.body[2] <= m.body[3], `${at} ${size}: no horizontal scroll`);
-        assert.equal(Math.round(m.frame.width), frame, `${at}: the window's width`);
         assert.ok(m.frame.bottom <= height + 0.5 && m.play.bottom <= height, `${at} ${size}: the window and Play in the page`);
+        assert.ok(m.play.right >= m.frame.right - 30, `${at} ${size}: Play at the foot's right`);
         if (width > 719) {
-          assert.ok(m.frame.top >= m.title.bottom, `${at} ${size}: the window under the title`);
-          const band = width >= 1440 ? 176 : width >= 1200 ? 106 : 96;
+          if (opens) assert.equal(Math.round(m.frame.width), open, `${at}: the window's width with the panel open`);
+          else assert.ok(Math.round(m.frame.width) < open && m.frame.width >= 460, `${at}: the window as narrow as its content`);
+          const margin = width >= 1440 ? 40 : 24;
           const centred = Math.abs((m.frame.top + m.frame.bottom) / 2 - height / 2) <= 1;
-          assert.ok(m.frame.top >= band - 0.5 && (centred || m.frame.top - band <= 0.5), `${at} ${size}: centred, or held at the band under the wordmark`);
+          assert.ok(m.frame.top >= margin - 0.5 && (centred || m.frame.top - margin <= 0.5), `${at} ${size}: centred, or held at the canvas's margin`);
+          assert.ok(Math.abs(m.frame.left + m.frame.right - width) <= 1, `${at} ${size}: centred across`);
           if (size !== 'custom' && height <= 900) assert.ok(m.body[0] <= m.body[1], `${at} ${size}: the window fits the page unscrolled`);
-          if (width === 1366 && size === 'intermediate') assert.ok(Math.abs(m.frame.height - 506) <= 2 && Math.abs(m.frame.top - 131) <= 1, `${at}: the canvas's window, 506 px tall at 131`);
-          assert.equal(m.backText, 'Main menu');
+          assert.equal(m.backText, '', 'Back shows its arrow alone');
+          assert.deepEqual(m.windowButtons.map(Math.round), [38, 38, 38], `${at}: Minimise, Fullscreen and Quit, 38 px squares`);
+          assert.deepEqual([Math.round(m.toggle.width), Math.round(m.toggle.height)], [38, 38], `${at}: the panel toggle, a 38 px square`);
+          assert.ok(m.toggle.right <= m.frame.right - 20 && m.toggle.right >= m.frame.right - 30, `${at}: at the heading's right`);
+          assert.equal(m.bar.height, 0, 'no drawer bar on a desktop window');
         } else {
-          assert.equal(m.title.height, 0, 'no title on a phone');
-          assert.equal(m.bests, 'none', 'no bests on a phone');
-          assert.equal(m.summary, 'none');
+          assert.equal(Math.round(m.frame.width), open, 'full-bleed');
+          assert.deepEqual(m.windowButtons, [0, 0, 0], 'no window buttons on a phone');
+          assert.equal(m.toggle.width, 0, 'no panel toggle on a phone');
+          assert.ok(m.bar.height >= 52 && Math.round(m.bar.width) === width, 'the drawer bar full width under the options');
+          assert.ok(m.bar.top > m.option.bottom, 'under the Board list');
+          assert.equal(m.label, size === 'code' ? 'Board code' : 'Board settings', `${size}: the drawer names what it holds`);
           assert.ok(Math.abs(m.play.bottom - height) <= 24, 'Play pinned at the bottom');
-          assert.equal(Math.round(m.play.height), 54, 'Play compact');
-          assert.equal(m.backText, 'Back', 'Back reads Back');
-          assert.ok(m.back.height >= 44, 'a 44 px Back');
+          assert.equal(Math.round(m.play.height), 44, 'Play slimmer');
+          assert.equal(Math.round(m.foot.height), 64, 'the slimmer bottom bar');
+          assert.ok(Math.round(m.back.height) === 40 && Math.round(m.back.width) === 40, 'a 40 px Back, the canvas\'s');
           assert.ok(m.option.height >= 56, 'the options at least 56 px');
-          assert.ok(m.rule.height === 1 && m.rule.width > 300, 'a rule between the options and the settings');
         }
       }
     }
@@ -1679,7 +1731,7 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
           assert.match(await ms(() => getComputedStyle(document.getElementById('c2d-panel')).backgroundColor), /^rgb\(/, `${at}: the board's frame is an opaque surface`);
         }
         assert.ok(g.strip.y + g.strip.height <= g.areaTop + g.layout.viewY, `${at}: the counter strip above the board`);
-        assert.ok(g.pause.y + g.pause.height <= g.strip.y && g.pause.x + g.pause.width <= g.frame.x + g.frame.width, `${at}: Pause in the window's head`);
+        assert.ok(g.pause.y + g.pause.height <= g.strip.y && g.pause.x - g.frame.x < 30, `${at}: Pause at the start of the window's head`);
         assert.ok(g.frame.x >= 0 && g.frame.x + g.frame.width <= viewport.width && g.frame.y + g.frame.height <= viewport.height, `${at}: the window inside the screen`);
         assert.deepEqual(await ms(() => ['c2d-time', 'c2d-mines-left', 'c2d-clicks'].map((id) => document.getElementById(id).textContent)), ['000', '099', '0']);
 
@@ -1753,7 +1805,7 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
           });
           assert.ok(v.bottom <= v.controlsTop - 12, `${at}: the board area ends the body's gap above the controls`);
           const tile = Math.floor(Math.min(v.width / 30, v.height / 16));
-          assert.ok(tile >= 24, `${at}: Expert fits the viewer at ${tile} px, with no scrolling (J-Replay-m draws its 16 rows at 24 px)`);
+          assert.ok(tile >= 21, `${at}: Expert fits the viewer under its heading at ${tile} px, with no scrolling`);
         }
         assert.deepEqual(errors, [], `${at}: no page errors`);
         await page.close();
@@ -1801,7 +1853,7 @@ function measurePauseCard() {
 // The pause card's font sizes with a fine pointer, which its two columns leave as they are.
 const PAUSE_FONTS_FINE = Object.freeze({ title: 34, status: 15, button: 17, slider: 16, switch: 16, heading: 13, list: 15, keyName: 15, kbd: null, statLabel: null });
 
-test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter strip keep one line each above the board; the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
+test('in a browser, at 1024 × 768 with a mouse: the window\'s head, counter strip and foot keep one line each; the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1822,12 +1874,15 @@ test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter 
         const area = document.getElementById('c2d-board').getBoundingClientRect();
         const line = (els) => { const r = els.map(rect); const top = Math.min(...r.map((x) => x.y)); return r.every((x) => x.y < top + Math.max(...r.map((y) => y.height)) - 1); };
         return {
-          head: line([document.getElementById('hud-swap'), document.getElementById('c2d-title'), document.getElementById('c2d-pause')]),
+          head: line([document.getElementById('c2d-pause'), document.querySelector('#c2d-frame .ui-frame__logo'), ...document.querySelectorAll('#c2d-frame [data-window]')]),
           strip: line([document.getElementById('c2d-mines-left'), document.getElementById('c2d-restart'), document.getElementById('c2d-time')]),
+          foot: line([document.getElementById('c2d-line'), document.getElementById('hud-swap'), document.getElementById('c2d-figures-toggle')]),
+          footInside: (() => { const f = document.querySelector('#c2d-frame > .ui-frame__foot').getBoundingClientRect(); return [...document.querySelectorAll('#c2d-tools .ui-button')].every((b) => b.getBoundingClientRect().right <= f.right + 0.5); })(),
           stripBottom: rect(document.getElementById('c2d-counters')).bottom, boardTop: area.top + v.layout.viewY,
         };
       });
-      assert.ok(rows.head, `${at}: Swap clicks, the title and Pause on one line`);
+      assert.ok(rows.head, `${at}: Pause, the logo and the window buttons on one line`);
+      assert.ok(rows.foot && rows.footInside, `${at}: the mode and board, Swap clicks and the live-figures toggle on one line inside the window`);
       assert.ok(rows.strip, `${at}: mines left, Restart and the timer on one line`);
       assert.ok(rows.stripBottom <= rows.boardTop, `${at}: the strip above the board`);
       // The first click starts the game, so a restart asks first.

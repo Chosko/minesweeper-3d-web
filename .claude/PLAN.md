@@ -1,7 +1,7 @@
 # Plan
 
 Roadmap: .claude/domain/product-roadmap.md
-Last reconciled: 2026-10-21
+Last reconciled: 2026-10-23
 
 ---
 
@@ -100,7 +100,7 @@ Features: none
 - replay-playback: depends on replay-recording, replay-library, cell-graph-rules-engine, 3d-board-graph, classic-2d-square-play, 3d-play-flow, square-tile-skin, screen-components, results-screen, game-shell
 - 3d-game-records: depends on game-summary, personal-records, 3d-board-graph, 3d-play-flow, platform-storage
 - 3d-results-records-screens: depends on 3d-game-records, results-screen, records-screen, 3d-play-flow, game-shell, screen-components, replay-playback, replay-library
-- steam-desktop-host: depends on platform-storage, replay-library, game-shell
+- steam-desktop-host: depends on platform-storage, replay-library, game-shell, shared-screen-layout
 - steam-cloud-saves: depends on steam-desktop-host, platform-storage, replay-library
 - steam-leaderboards: depends on steam-desktop-host, steam-cloud-saves, replay-playback, replay-recording, replay-library, game-summary, 3d-game-records, personal-records, game-shell, platform-storage
 - leaderboard-screen: depends on steam-leaderboards, replay-playback, game-summary, 3d-game-records, screen-components, game-shell, results-screen, shared-screen-layout, theme-system

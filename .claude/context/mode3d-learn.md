@@ -16,8 +16,8 @@ the stylesheets (§ Learn 3D's screens).
 `js/mode3d/learn.js`
 - `LEARN_BOARD` — frozen `{X, Y, Z, mines, seed, generatorVersion,
   startCell, minePositions, proofNumber, lessonNumber, lessonMine}`: the
-  lesson box, 4 × 4 × 3 · 4 outside the presets, seed 75, start cell 26 (the marked centre cell),
-  P 36, L 25, M 40; `LEARN_TITLE` 'Learn 3D'.
+  lesson box, a size outside the presets, its seed and its start cell (the marked centre cell),
+  the cells P (`proofNumber`), L (`lessonNumber`) and M (`lessonMine`); `LEARN_TITLE` 'Learn 3D'.
 - `lessonCells(view, startCell)` → `{proofNumber, lessonNumber, lessonMine}`
   or null: the board conditions after the first reveal (not won, a cube
   hidden, a 1 with one closed neighbour M, another 1 L nearest the start
@@ -27,8 +27,9 @@ the stylesheets (§ Learn 3D's screens).
   session's forced, marked start cell ([mode3d-session.md](mode3d-session.md)).
 - `LEARN_PROMPTS` (`start`, `shift`, `ctrl`, `flag`, `chord`, `rest`),
   `LEARN_HINTS` (each prompt's `HINT_TEXT` name,
-  [settings-bindings.md](settings-bindings.md)), `learnStepOf(hint)` (a
-  step prompt's "1 / 4", null for the start and the rest);
+  [settings-bindings-rows.md](settings-bindings-rows.md)), `learnStepOf(hint)` (a
+  step prompt's place among the step prompts, as "<step> / <steps>", null for the start and the
+  rest);
   `createLearnPrompts({lessonNumber, lessonMine})` → `current`,
   `done(name)`, `tinted`, `started()`, `shift(selected)`, `ctrl()`,
   `flagged(cells)`, `chorded(cell, revealed)`, `lessonClosed(count)` (L's
@@ -43,8 +44,8 @@ the stylesheets (§ Learn 3D's screens).
   prompt is done by its action at any time after the first reveal and
   skipped when its turn comes; the chord prompt is also done once L has no
   closed, unflagged neighbour, since a chord on L can then open nothing; L
-  carries the start-cell tint during prompts 1 and 4, M during prompt 3. Starting it saves no choice and moves
-  no "Last played" mark; the shell's wiring is
+  carries the start-cell tint during the `shift` and `chord` prompts, M during `flag`. Starting it saves no choice and moves
+  no last-board mark (`data-last`); the shell's wiring is
   [app-shell-3d-session.md](app-shell-3d-session.md).
 - **Learn 3D's end.** A win offers *Play Cube Intro* — an ordinary pick of
   Cube Intro, saved as the last choice — a loss *Try again*
@@ -52,16 +53,15 @@ the stylesheets (§ Learn 3D's screens).
 - **Learn 3D's screens** (J-Ready-states: "Learn 3D · prompt 1–4", "clear
   the rest", "end card · won", "end card · lost").
   - Play layout: `UI.setLearn(on)` puts `hud--learn` on `#hud` and hides
-    the timer (the pause card then shows mines left alone). The figures
-    panel is its head alone — the title "Learn 3D" and Pause with its Esc
-    hint, no 3BV, Clicks, Flags or reminder — and above a phone the head
-    and the counter strip (mines and Restart) stand in a column at the top
-    left, the help panel on the right edge; on a phone the overlay keeps
-    the phone layouts with the timer and figures gone. The layout is
-    `css/style.css`'s, the head's surface and title size the theme's.
+    the timer (the pause card then shows mines left alone). No title, no
+    figures panel and no live-figures toggle: above a phone the floating
+    Pause and the counter strip (mines and Restart) stand in a column at
+    the top left, the help panel on the right edge; on a phone the overlay
+    keeps the phone layouts with the timer gone. The layout is
+    `css/style.css`'s, Pause's surface the theme's.
   - Prompt strip: a Learn 3D prompt takes the hint strip's own form
     (`hint-strip--learn`, set by `setHintStrip`'s `learn`): no close
-    button, its own padding and gap, the step ("1 / 4") smaller in the mono
+    button, its own padding and gap, the step (`learnStepOf`) smaller in the mono
     face, before the prompt.
   - End cards: the "Learn 3D" section label above the title, the line in
     ink on both — the win's offer of Cube Intro, the loss's "The lesson box
@@ -83,13 +83,13 @@ the stylesheets (§ Learn 3D's screens).
 - [app-shell-3d-session.md](app-shell-3d-session.md) — the guided game's
   wiring, its hint strip and end card; [app-shell-3d.md](app-shell-3d.md)
   — the ready card's Learn 3D line.
-- [settings-bindings.md](settings-bindings.md) — the `HINT_TEXT` the
+- [settings-bindings-rows.md](settings-bindings-rows.md) — the `HINT_TEXT` the
   prompts name.
 - [engine-3d.md](engine-3d.md) — the 3D state view `lessonCells` and
   `closedAround` read.
 - [app-shell-hud.md](app-shell-hud.md) — the 3D overlay and the hint strip
   the play layout changes.
-- [testing.md](testing.md) — `tests/mode3d-learn.test.mjs` (the layout and
+- [testing-files.md](testing-files.md) — `tests/mode3d-learn.test.mjs` (the layout and
   the prompt strip in the Playwright lesson),
   `tests/components-learn-end.test.mjs` (the end cards).
 

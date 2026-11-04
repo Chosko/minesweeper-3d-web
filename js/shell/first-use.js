@@ -3,7 +3,9 @@
 // shell (js/main.js) hands in the storage interface and the records store, and draws the hints.
 //
 // The document: { games: { [mode]: count }, finished3D, autoHideToast, aimHint, scrollHint,
-//                 dismissed: { [mode]: bool } } for the modes 'classic-2d' and '3d'.
+//                 dismissed: { [mode]: bool } } for the modes 'classic-2d' and '3d'. A Hexagon or
+//                 Triangle game shares Classic 2D's record (FIRST_USE_RECORD): every mode argument
+//                 below, stripShown's included, takes either mode id.
 //   games         games counted per mode: a game counts when its mode reports game started
 //                 (an abandoned game counts too);
 //   finished3D    a 3D game was finished, won or lost (an abandoned one does not count), or Learn 3D
@@ -16,7 +18,8 @@
 //                 (a document without it reads as not yet);
 //   dismissed     the mode's hint strip was dismissed, for good.
 // When the document is first created it is seeded from the records store's per-mode game
-// counters: a returning player's recorded games count toward the three, and any recorded 3D game
+// counters: a returning player's recorded games count toward the three, a record's games summed over
+// every mode sharing it (Hexagon's and Triangle's toward Classic 2D's), and any recorded 3D game
 // counts as the finished one, so a returning player is not taught again. A malformed document is
 // seeded afresh. Storage failure never blocks play: until the document loads, and when nothing
 // can be read or saved, the hints behave as on first use for the session.
@@ -37,10 +40,16 @@
 //   picked through numbers (`through`) is a closed cube, else null.
 // createDwell(ms) → update(key, now): true once the same non-null key has been held `ms` long.
 
+import { MODE as HEXAGON } from '../hexagon/board-setup.js';
+import { MODE as TRIANGLE } from '../triangle/board-setup.js';
+
 export const FIRST_USE_DOC = 'shell.firstUse';
 export const FIRST_USE_VERSION = 1;
 export const FIRST_GAMES = 3;
 export const FIRST_USE_MODES = Object.freeze(['classic-2d', '3d']);
+/** The record a mode's games and strip are kept in: the flat modes played in the Classic 2D window share Classic 2D's. */
+export const FIRST_USE_RECORD = Object.freeze({ [HEXAGON]: 'classic-2d', [TRIANGLE]: 'classic-2d' });
+const recordOf = (m) => FIRST_USE_RECORD[m] ?? m;
 export const ONE_TIME_HINTS = Object.freeze(['autoHideToast', 'aimHint', 'scrollHint']);
 export const AIM_DWELL_MS = 1000;
 
@@ -67,9 +76,9 @@ export function normaliseFirstUse(data) {
 function seeded(records) {
   const s = fresh();
   try {
-    for (const m of FIRST_USE_MODES) {
+    for (const m of [...FIRST_USE_MODES, ...Object.keys(FIRST_USE_RECORD)]) {
       const games = records.overall(m)?.games;
-      s.games[m] = isCount(games) ? games : 0;
+      if (isCount(games)) s.games[recordOf(m)] += games;
     }
     s.finished3D = s.games['3d'] > 0;
   } catch {
@@ -89,8 +98,9 @@ export function createFirstUse({ storage, records }) {
       return Promise.resolve(); // storage never blocks play
     }
   };
-  const mode = (m) => {
-    if (!FIRST_USE_MODES.includes(m)) throw new Error(`first use: unknown mode "${m}"`);
+  const mode = (id) => {
+    const m = recordOf(id);
+    if (!FIRST_USE_MODES.includes(m)) throw new Error(`first use: unknown mode "${id}"`);
     return m;
   };
   return {
@@ -109,7 +119,8 @@ export function createFirstUse({ storage, records }) {
     inFirstGames(m) { return state.games[mode(m)] < FIRST_GAMES; },
     /** Whether the ready card shows the "How 3D works" block: no 3D game finished yet. */
     get rules3D() { return !state.finished3D; },
-    gameStarted(m, { learn = false } = {}) {
+    gameStarted(id, { learn = false } = {}) {
+      const m = recordOf(id);
       if (!FIRST_USE_MODES.includes(m) || learn) return;
       state.games[m] += 1;
       save();
@@ -120,8 +131,9 @@ export function createFirstUse({ storage, records }) {
       save();
     },
     dismissed(m) { return state.dismissed[mode(m)]; },
-    dismiss(m) {
-      if (state.dismissed[mode(m)]) return;
+    dismiss(id) {
+      const m = mode(id);
+      if (state.dismissed[m]) return;
       state.dismissed[m] = true;
       save();
     },
@@ -138,8 +150,9 @@ export function createFirstUse({ storage, records }) {
   };
 }
 
-export function stripShown({ mode, screen, eligible, used, dismissed, touchOnly }) {
+export function stripShown({ mode: id, screen, eligible, used, dismissed, touchOnly }) {
   if (!eligible || dismissed) return false;
+  const mode = recordOf(id);
   if (mode === '3d') return screen === 'playing';
   if (mode === 'classic-2d') return screen === 'classic-2d' && (!!used || !!touchOnly);
   return false;

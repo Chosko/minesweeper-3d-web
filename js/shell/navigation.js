@@ -42,22 +42,31 @@ export function tabWrap(items, cur, back) {
 /**
  * The control a focus move from `cur` in `dir` lands on, or null to stay. `items` are the topmost
  * layer's focusables in DOM order; `spatial(dir)` is the spatial search's pick or null; `groupOf(item)`
- * is the group an item sits in (a table, a menu), or null.
+ * is the group an item sits in (a table, a menu), or null; `rowOf(item)` the row an item sits in (a
+ * window's title bar), or null.
  * - Down / Up from inside a group take the next / previous item in DOM order, so each of its items is
  *   a stop and the move leaves the group at its ends in DOM order.
+ * - Right / Left from inside a row take the next / previous item of the row in DOM order, and go
+ *   nowhere past its ends.
  * - Otherwise the spatial pick wins; Down / Up landing in a group land on its first / last item.
  * - With no spatial pick: the next item in DOM order for Down and Right, the previous for Up and
- *   Left. Past either end of `items` the move goes nowhere (no wrap).
+ *   Left, and Up landing in a row lands on its first item. Past either end of `items` the move goes
+ *   nowhere (no wrap).
  */
-export function focusMove(items, cur, dir, { spatial, groupOf = () => null }) {
+export function focusMove(items, cur, dir, { spatial, groupOf = () => null, rowOf = () => null }) {
   const i = items.indexOf(cur);
   if (i < 0) return null;
   const forward = dir === 'down' || dir === 'right';
   const vertical = dir === 'down' || dir === 'up';
   const adjacent = items[forward ? i + 1 : i - 1] ?? null;
   if (vertical && groupOf(cur) != null) return adjacent;
+  const row = vertical ? null : rowOf(cur);
+  if (row != null) return adjacent && rowOf(adjacent) === row ? adjacent : null;
   const found = spatial(dir);
-  if (!found) return adjacent;
+  if (!found) {
+    const into = dir === 'up' && adjacent != null ? rowOf(adjacent) : null;
+    return into != null && into !== rowOf(cur) ? items.find((e) => rowOf(e) === into) : adjacent;
+  }
   const into = vertical ? groupOf(found) : null;
   if (into == null) return found;
   const members = items.filter((e) => groupOf(e) === into);
@@ -89,9 +98,15 @@ export function keepsArrow(control, dir) {
   return horizontal && (type === 'range' || TEXT_TYPES.has(type));
 }
 
-/** Controller buttons that mean Back on a screen: the back button always, B off the board. */
-export function backButtons(screen) {
-  return screen === 'playing' ? [BTN.BACK] : [BTN.B, BTN.BACK];
+/**
+ * Controller buttons that mean Back on a screen: B and the back button off the board, none on it —
+ * Start pauses and the back button shows or hides the live figures. Over a board status card
+ * (`card`) the back button is Back, and B too over Classic 2D's, which is navigated as a menu.
+ */
+export function backButtons(screen, { card = false } = {}) {
+  if (screen === 'playing') return card ? [BTN.BACK] : [];
+  if (screen === 'classic-2d' && !card) return [];
+  return [BTN.B, BTN.BACK];
 }
 
 /**

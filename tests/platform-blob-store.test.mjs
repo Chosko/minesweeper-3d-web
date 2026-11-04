@@ -6,140 +6,26 @@ import { fileURLToPath } from 'node:url';
 import { createBlobStore } from '../js/platform/blob-store.js';
 import { createMemoryBlobStore } from '../js/platform/memory-blob-store.js';
 import { openIndexedDBBlobStore, DB_NAME, STORE_NAME } from '../js/platform/indexeddb-blob-store.js';
+import { blobStoreSuite } from './helpers/platform-suites.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const bytes = (...values) => new Uint8Array(values);
 
-// A blob store over a fresh in-memory implementation, opened at once.
-function setup(options) {
+// ---------------------------------------------------------------- the interface suite
+
+blobStoreSuite('in memory', (options) => {
   const impl = createMemoryBlobStore(options);
   const store = createBlobStore({ open: () => impl, fallback: () => createMemoryBlobStore() });
-  return { impl, store };
-}
-
-// ---------------------------------------------------------------- the interface
-
-test('put, get, delete, list and available are all asynchronous', async () => {
-  const { store } = setup();
-  const calls = [
-    store.put('a', bytes(1)),
-    store.get('a'),
-    store.list(),
-    store.delete('a'),
-    store.available(),
-  ];
-  for (const call of calls) assert.ok(call instanceof Promise);
-  await Promise.all(calls);
+  return { store, stored: (name) => impl.blobs.get(name), names: () => [...impl.blobs.keys()] };
 });
 
-test('a blob put under a name is got back byte for byte', async () => {
-  const { store } = setup();
-  const blob = new Uint8Array(70_000).map((_, i) => (i * 31) & 0xff);
-  assert.deepEqual(await store.put('replay-1', blob), { ok: true });
-  const back = await store.get('replay-1');
-  assert.ok(back instanceof Uint8Array);
-  assert.deepEqual(back, blob);
-});
-
-test('an empty blob round-trips; a missing name gets undefined', async () => {
-  const { store } = setup();
-  await store.put('empty', new Uint8Array(0));
-  assert.deepEqual(await store.get('empty'), new Uint8Array(0));
-  assert.equal(await store.get('nothing'), undefined);
-});
-
-test('the store keeps its own copy: changing the bytes put or got changes nothing stored', async () => {
-  const { store } = setup();
-  const blob = bytes(1, 2, 3);
-  await store.put('x', blob);
-  blob[0] = 99;
-  const got = await store.get('x');
-  assert.deepEqual(got, bytes(1, 2, 3));
-  got[1] = 99;
-  assert.deepEqual(await store.get('x'), bytes(1, 2, 3));
-});
-
-test('a blob view onto part of a larger buffer stores only its own bytes', async () => {
-  const { store } = setup();
-  const buffer = new Uint8Array([9, 9, 1, 2, 3, 9]).buffer;
-  await store.put('view', new Uint8Array(buffer, 2, 3));
-  const got = await store.get('view');
-  assert.deepEqual(got, bytes(1, 2, 3));
-  assert.equal(got.byteLength, 3);
-});
-
-test('a second put under the same name replaces the blob', async () => {
-  const { store } = setup();
-  await store.put('x', bytes(1));
-  await store.put('x', bytes(2, 2));
-  assert.deepEqual(await store.get('x'), bytes(2, 2));
-  assert.deepEqual(await store.list(), ['x']);
-});
-
-test('list names every stored blob once, in sorted order', async () => {
-  const { store } = setup();
-  assert.deepEqual(await store.list(), []);
-  for (const name of ['c', 'a', 'b']) await store.put(name, bytes(1));
-  assert.deepEqual(await store.list(), ['a', 'b', 'c']);
-});
-
-test('delete removes a blob; deleting a missing name is not an error', async () => {
-  const { store } = setup();
-  await store.put('a', bytes(1));
-  await store.put('b', bytes(2));
-  assert.deepEqual(await store.delete('a'), { ok: true });
-  assert.equal(await store.get('a'), undefined);
-  assert.deepEqual(await store.list(), ['b']);
-  assert.deepEqual(await store.delete('a'), { ok: true });
-});
-
-test('a bad name or a value that is not bytes is a programming error, thrown at once', () => {
-  const { store } = setup();
-  for (const name of ['', undefined, null, 7, {}]) {
-    assert.throws(() => store.put(name, bytes(1)), TypeError, String(name));
-    assert.throws(() => store.get(name), TypeError, String(name));
-    assert.throws(() => store.delete(name), TypeError, String(name));
-  }
-  for (const value of [undefined, null, 'text', [1, 2], new ArrayBuffer(2), new Uint16Array(2)]) {
-    assert.throws(() => store.put('x', value), TypeError, String(value));
-  }
-});
-
-test('a write the implementation refuses is reported, never thrown, and stores nothing', async () => {
-  const { impl, store } = setup({ failWrites: true });
-  const result = await store.put('x', bytes(1));
-  assert.equal(result.ok, false);
-  assert.equal(result.reason, 'write-failed');
-  assert.ok(result.error instanceof Error);
-  assert.equal(impl.blobs.size, 0);
-  const removed = await store.delete('x');
-  assert.equal(removed.ok, false);
-  assert.equal(removed.reason, 'write-failed');
-});
-
-test('a read the implementation fails rejects, so a failure is never mistaken for a missing blob', async () => {
-  const { store } = setup({ initial: { a: bytes(1) }, failReads: true });
-  await assert.rejects(store.get('a'));
-  await assert.rejects(store.list());
-});
-
-test('the in-memory implementation exposes its blobs for tests and can be seeded', async () => {
+test('the in-memory implementation exposes its blobs for tests and can be seeded', () => {
   const impl = createMemoryBlobStore({ initial: { seeded: bytes(4, 5) } });
   assert.ok(impl.blobs instanceof Map);
-  const store = createBlobStore({ open: () => impl, fallback: () => createMemoryBlobStore() });
-  assert.deepEqual(await store.get('seeded'), bytes(4, 5));
-  await store.put('new', bytes(6));
-  assert.deepEqual(impl.blobs.get('new'), bytes(6));
+  assert.deepEqual(impl.blobs.get('seeded'), bytes(4, 5));
 });
 
 // ---------------------------------------------------------------- start-up selection
-
-test('the opened implementation is used and the store persists', async () => {
-  const { impl, store } = setup();
-  assert.equal(await store.available(), true);
-  await store.put('x', bytes(1));
-  assert.ok(impl.blobs.has('x'));
-});
 
 for (const [label, open] of [
   ['open rejects', () => Promise.reject(new Error('refused'))],

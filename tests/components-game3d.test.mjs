@@ -1,6 +1,7 @@
-// The 3D game's overlay in a browser, at the artboard sizes where its layout differs (J-Game3D-xl, -m, -p, -ls and
-// J-Game3D-states): the counters, the figures panel or the phone's title and Pause, the help panel, the
-// hint strip and the view chips in their places, every readout on a surface of its own, Pause and Restart.
+// The 3D game's overlay in a browser, at the artboard sizes where its layout differs (J-Game3D-l, -m, -p, -ls and
+// J-Game3D-states): no title, the floating Pause and live-figures toggle, the counters, the figures panel the
+// toggle opens, the help panel, the hint strip and the view chips in their places, every readout on a surface
+// of its own, Pause and Restart.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
@@ -12,18 +13,19 @@ import { measureContrast } from './helpers/contrast.mjs';
 const suite = browserSuite();
 const SHOTS = process.env.MS_SHOTS === '1';
 
-// The 3D game's overlay at the artboard sizes where its layout differs (J-Game3D-xl, -m, -p, -ls and
-// J-Game3D-states; -l lays the panel out as -xl and -m do, between their widths, at -m's density): every part in its place on
-// its own surface, readable over any sky the theme draws.
-// Each size's HUD density: the counter digits, the panel's title, a figure's value and the 3BV's, a figure's top padding, Restart's height.
+// The 3D game's overlay at the artboard sizes where its layout differs (J-Game3D-states at 1920 × 1080, -m, -p, -ls;
+// -l lays the panel out as the full HD frame and -m do, between their widths, at -m's density): every part in its
+// place on its own surface, readable over any sky the theme draws.
+// Each size's HUD density: the counter digits, a figure's value and the 3BV's, a figure's top padding (the panel
+// open), Restart's height and Pause's width.
 const GAME_3D_SIZES = [
-  ['xl', { viewport: { width: 1920, height: 1080 } }, 300, ['34px', '17px', '28px', '16px', '11px', 38]],
-  ['m', { viewport: { width: 1024, height: 768 } }, 280, ['28px', '15px', '23px', '23px', '8px', 38]],
-  ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, null, ['26px', '16px', null, null, null, 44]],
-  ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, null, ['26px', '15px', null, null, null, 44]],
+  ['xl', { viewport: { width: 1920, height: 1080 } }, 300, ['34px', '28px', '16px', '11px', 38, 38]],
+  ['m', { viewport: { width: 1024, height: 768 } }, 280, ['28px', '23px', '23px', '8px', 38, 38]],
+  ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, null, ['26px', null, null, null, 38, 40]],
+  ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, null, ['26px', null, null, null, 38, 44]],
 ];
 for (const [size, device, panelWidth, density] of GAME_3D_SIZES) {
-  test(`in a browser, the 3D game's overlay at ${size} (${device.viewport.width} × ${device.viewport.height}): the counters at the top centre, the panel or the phone's title and Pause, every readout on its own surface and the contrast contract met`, async (t) => {
+  test(`in a browser, the 3D game's overlay at ${size} (${device.viewport.width} × ${device.viewport.height}): no title, Pause floating at the top left, the counters at the top centre, the live-figures toggle and the panel it opens on the right (none on a phone), every readout on its own surface and the contrast contract met`, async (t) => {
     const env = await suite.open(t);
     if (!env) return;
     const { browser, base } = env;
@@ -50,28 +52,44 @@ for (const [size, device, panelWidth, density] of GAME_3D_SIZES) {
       assert.equal(await ms(() => globalThis.__ms.state.time), 1234.5);
       await frames();
       if (shots) await page.screenshot({ path: join(shots, 'game.png') });
-      const g = await ms(() => {
+      const measure = () => ms(() => {
         const box = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
         const $ = (id) => document.getElementById(id);
         const shown = (el) => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0;
         return {
-          strip: box($('hud-counters')), panel: box($('hud-figures')), head: box($('hud-figures').querySelector('.ui-figures__head')),
-          title: box($('hud-title')), pause: box($('hud-pause')), tools: box($('hud-tools')),
-          body: shown($('hud-figures').querySelector('.ui-figures__body')), toolsShown: shown($('hud-tools')),
-          text: $('hud-title').textContent, tip: $('hud-title').getAttribute('title'), name: $('hud-title').getAttribute('aria-label'),
+          strip: box($('hud-counters')), panel: box($('hud-figures')), pause: box($('hud-pause')), toggle: box($('hud-figures-toggle')), tools: box($('hud-tools')),
+          panelShown: shown($('hud-figures')), toggleShown: shown($('hud-figures-toggle')), toolsShown: shown($('hud-tools')),
+          pressed: $('hud-figures-toggle').getAttribute('aria-pressed'), sunk: getComputedStyle($('hud-figures-toggle')).transform,
+          title: !!$('hud-title') || /Cube Intermediate/.test($('hud').textContent),
           scroll: document.documentElement.scrollWidth <= innerWidth && document.body.scrollWidth <= innerWidth,
         };
       });
+      const g0 = await measure();
+      assert.equal(g0.title, false, `${size}: no mode or difficulty label anywhere in the overlay`);
+      assert.equal(g0.panelShown, false, `${size}: the live figures hidden by default`);
+      if (!touch) {
+        // The live-figures toggle opens the panel; the one stored state, Classic 2D's toggle following it.
+        assert.ok(g0.toggleShown && g0.pressed === 'false', `${size}: the toggle shows, not pressed`);
+        await page.click('#hud-figures-toggle');
+        await frames();
+        assert.equal(await ms(() => document.getElementById('c2d-figures-toggle').getAttribute('aria-pressed')), 'true', `${size}: one preference, Classic 2D's toggle pressed too`);
+      } else {
+        // A phone shows no panel and no toggle, even with the preference open.
+        await ms(() => { document.getElementById('hud').dataset.figures = 'open'; });
+        await frames();
+      }
+      const g = await measure();
+      if (touch) await ms(() => { delete document.getElementById('hud').dataset.figures; });
       assert.ok(g.scroll, `${size}: no sideways scroll`);
       const sizes = await ms(() => {
         const font = (sel) => getComputedStyle(document.querySelector(sel)).fontSize;
         const figure = document.querySelector('#hud-figures [data-figure="rate"]');
         const shown = figure.getBoundingClientRect().width > 0;
-        return [font('#hud-time'), font('#hud-title'), shown ? font('#hud-figures [data-figure="rate"] .ui-figure__value') : null,
+        return [font('#hud-time'), shown ? font('#hud-figures [data-figure="rate"] .ui-figure__value') : null,
           shown ? font('#hud-figures [data-figure="bbbv"] .ui-figure__value') : null, shown ? getComputedStyle(figure).paddingTop : null,
-          document.getElementById('hud-restart').getBoundingClientRect().height];
+          document.getElementById('hud-restart').getBoundingClientRect().height, document.getElementById('hud-pause').getBoundingClientRect().width];
       });
-      assert.deepEqual(sizes, density, `${size}: the HUD's counters, title, figures and Restart at the size step's density`);
+      assert.deepEqual(sizes, density, `${size}: the HUD's counters, figures, Restart and Pause at the size step's density`);
       if (touch) {
         const modes = await ms(() => [...document.querySelectorAll('#touch-modes .ui-button')].map((b) => { const r = b.getBoundingClientRect(); return [r.width >= 76, r.height >= 44, getComputedStyle(b).fontSize]; }));
         assert.deepEqual(modes, [[true, true, '15px'], [true, true, '15px'], [true, true, '15px']], `${size}: the view-mode buttons at least 76 × 44, 15 px`);
@@ -124,28 +142,27 @@ for (const [size, device, panelWidth, density] of GAME_3D_SIZES) {
         const back = await stick();
         assert.deepEqual([back.left, back.bottom, back.kx, back.ky], [24, ls ? 18 : 28, 0, 0], `${size}: back at rest on the lift`);
       }
-      assert.deepEqual([g.tip, g.name], ['3D · Cube Intermediate', '3D · Cube Intermediate'], `${size}: the full name is the title's tooltip and name`);
       assert.ok(Math.abs((g.strip.x + g.strip.right) / 2 - vw / 2) < 2, `${size}: the counters centred (${g.strip.x}..${g.strip.right})`);
+      assert.ok(Math.abs(g.pause.width - g.pause.height) < 1, `${size}: Pause an icon-only square`);
       if (panelWidth) {
         assert.ok(g.strip.y >= 16 && g.strip.y <= 32, `${size}: the counters at the top (${g.strip.y})`);
-        assert.ok(Math.abs(g.panel.width - panelWidth) < 1 && Math.abs(g.panel.right - (vw - 24)) < 1, `${size}: the ${panelWidth} px panel on the right (${g.panel.width}, ${g.panel.right})`);
-        assert.ok(Math.abs((g.panel.y + g.panel.bottom) / 2 - vh / 2) < 2, `${size}: the panel centred vertically (${g.panel.y}..${g.panel.bottom})`);
-        assert.ok(g.body, `${size}: the live figures under the panel's head`);
-        assert.ok(g.head.y === g.panel.y && g.title.x < g.pause.x && g.pause.right <= g.panel.right, `${size}: the head bar with the title and Pause`);
-        assert.equal(g.text, '3D', `${size}: the full name does not fit the bar, so the difficulty is dropped`);
+        assert.deepEqual([g.pause.x, g.pause.y], [24, 24], `${size}: Pause floating at the top left`);
+        assert.ok(g.toggleShown && Math.abs(g.toggle.right - (vw - 24)) < 1 && Math.abs(g.toggle.y - 24) <= 2 && Math.abs(g.toggle.width - 38) < 1, `${size}: the 38 px toggle at the top right (${g.toggle.right}, ${g.toggle.y})`);
+        assert.ok(g.pause.right < g.strip.x && g.strip.right < g.toggle.x, `${size}: Pause, the counters and the toggle apart`);
+        assert.ok(g.pressed === 'true' && g.sunk !== 'none', `${size}: the toggle pressed and sunk while open`);
+        assert.ok(g.panelShown && Math.abs(g.panel.width - panelWidth) < 1 && Math.abs(g.panel.right - (vw - 24)) < 1, `${size}: the ${panelWidth} px panel on the right (${g.panel.width}, ${g.panel.right})`);
+        assert.ok(Math.abs((g.panel.y + g.panel.bottom) / 2 - vh / 2) < 2 && g.panel.y > g.toggle.bottom, `${size}: the panel centred vertically, below the toggle (${g.panel.y}..${g.panel.bottom})`);
         assert.ok(g.toolsShown && Math.abs((g.tools.x + g.tools.right) / 2 - vw / 2) < 2 && g.tools.bottom <= vh - 16 && g.tools.y > g.panel.bottom, `${size}: the HUD strip at the bottom centre`);
       } else {
-        assert.equal(g.body, false, `${size}: no figures on a phone`);
-        assert.equal(g.text, '3D · Cube Intermediate', `${size}: a phone keeps the full name`);
+        assert.equal(g.panelShown, false, `${size}: no figures on a phone`);
+        assert.equal(g.toggleShown, false, `${size}: no live-figures toggle on a phone`);
         assert.equal(g.toolsShown, false, `${size}: no HUD key strip on a phone`);
         if (size === 'p') {
-          assert.ok(g.head.y <= 16 && g.head.x <= 16 && g.head.right >= vw - 16, `${size}: the title and Pause bar on top`);
-          assert.ok(g.strip.y >= g.head.bottom && g.pause.right <= vw - 12, `${size}: the counters below it`);
+          assert.deepEqual([g.pause.x, g.pause.y], [12, 12], `${size}: Pause on top at the left`);
+          assert.ok(g.strip.y >= g.pause.bottom + 8 && g.strip.x === 12 && Math.abs(g.strip.right - (vw - 12)) < 1, `${size}: the counters under it, the screen's width`);
         } else {
-          assert.ok(g.title.x <= 16 && g.title.y <= 14, `${size}: the title a pill at the top left`);
-          assert.ok(g.strip.y <= 14, `${size}: the counters at the top centre`);
-          assert.ok(g.pause.right >= vw - 16 && g.pause.y <= 14 && g.pause.width <= 52 && g.pause.width >= 44, `${size}: Pause an icon button at the top right (${g.pause.width} px)`);
-          assert.ok(g.title.right < g.strip.x && g.strip.right < g.pause.x, `${size}: the three apart`);
+          assert.deepEqual([g.pause.x, g.pause.y], [12, 10], `${size}: Pause at the top left`);
+          assert.ok(Math.abs(g.strip.y - 10) <= 1 && g.pause.right < g.strip.x, `${size}: the counters at the top centre, clear of Pause`);
         }
         const toolbar = await ms(() => document.getElementById('touch-modes').getBoundingClientRect().toJSON());
         assert.ok(toolbar.y > g.strip.bottom && toolbar.right <= vw - 12 && toolbar.bottom <= vh - 16, `${size}: the Shift / Space / Ctrl toolbar at the bottom right, clear of the overlay`);
@@ -196,6 +213,13 @@ for (const [size, device, panelWidth, density] of GAME_3D_SIZES) {
         assert.ok(Math.abs((help.y + help.bottom) / 2 - vh / 2) < 2, `${size}: the help panel centred vertically`);
         assert.ok(await ms(() => { const h = document.getElementById('help'); return h.scrollHeight <= h.clientHeight; }), `${size}: every help row and the foot line show unclipped`);
         await page.keyboard.press('KeyH');
+        // The keyboard reaches the toggle in the Tab order and presses it with Enter, which never reaches the scene.
+        await ms(() => document.getElementById('hud-figures-toggle').focus());
+        await page.keyboard.press('Enter');
+        await frames();
+        assert.deepEqual(await ms(() => [document.getElementById('hud-figures-toggle').getAttribute('aria-pressed'), getComputedStyle(document.getElementById('hud-figures')).display, globalThis.__ms.state.mode, globalThis.__ms.state.started]),
+          ['false', 'none', 'playing', false], `${size}: Enter on the toggle closes the panel and plays nothing`);
+        await ms(() => document.getElementById('hud-figures-toggle').blur());
       }
       // Pause pauses the game.
       if (touch) await page.tap('#hud-pause'); else await page.click('#hud-pause');

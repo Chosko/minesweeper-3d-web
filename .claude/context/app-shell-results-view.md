@@ -8,7 +8,7 @@ content, its formats — documented in its head comment — and the binder that
 fills `#results`) — the screen over the finished board, and Look at the board
 in `js/main.js`. The flow that records the game and routes to the screen, and
 the screen's actions, are [app-shell-results.md](app-shell-results.md); the
-screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
+screen's markup is [app-shell-markup-game.md](app-shell-markup-game.md) § Screens.
 
 ## PUBLIC API
 
@@ -22,7 +22,8 @@ screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 - `resultsContent({summary, comparison?, saved?, notSaved?, watch?, rank?,
   streak?, standing?, watchBest?, swapped?})` → `{outcome, title, board, rank, label,
   tiles, details, code, notes, watch, watchBest, compact, look, over3d}`
-  (fields in the head comment): `board` the mode and the board's label,
+  (fields in the head comment): `board` the mode's name (`MODE_NAMES`,
+  [app-shell-daily.md](app-shell-daily.md)) and the board's label,
   `rank` the chip on a ranked win, `label` a
   challenge's chip in its place; `tiles` the four figure tiles (a win's
   time, 3BV/s, efficiency and 3BV; a loss's time, 3BV solved with its
@@ -44,7 +45,8 @@ screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   The screen's composition is the head comment of `css/components.css`
   (*Results screen*).
 - `RESULTS_ACTIONS` (`r-again`, `r-watch`, `r-watch-best`, `r-look`,
-  `r-records`, `r-menu`);
+  `r-records`, `r-menu`) — Play again `#r-again` the large go button with
+  the confirm key hint, the others secondary;
   `resultsEnter({focused, repeat})` → `'playAgain'` (focus on Play again or
   on no action), null (another action's own activation), `'ignore'`
   (auto-repeat).
@@ -95,7 +97,7 @@ screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   listeners feed `LOOK_END`.
 - [app-shell-kit-layout.md](app-shell-kit-layout.md) — the results screen's composition
   in the catalogue.
-- [testing.md](testing.md) — `tests/results.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/results.test.mjs`,
   `tests/mode3d-end.test.mjs` (the look).
 
 ## WHEN TO READ THE SOURCE

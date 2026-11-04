@@ -48,7 +48,7 @@ test('in a browser, the pause card, its confirmation and the board status card m
     return page.evaluate(() => {
       const el = document.activeElement;
       const s = getComputedStyle(el);
-      return { id: el.id, selectable: el.matches('.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
+      return { id: el.id, selectable: el.matches('.ui-button, .ui-menu__item, .ui-play-tile, .ui-small-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
     });
   };
   try {
@@ -84,7 +84,8 @@ test('in a browser, the pause card, its confirmation and the board status card m
     await page.click('#hud-pause');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'paused');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'p-resume', 'Resume takes the focus');
-    assert.ok(await page.evaluate(() => document.getElementById('p-resume').classList.contains('ui-button--primary')), 'Resume is the primary action');
+    assert.ok(await page.evaluate(() => ['ui-button--primary', 'ui-button--go'].every((c) => document.getElementById('p-resume').classList.contains(c))), 'Resume is the green primary action');
+    assert.ok(await page.evaluate(() => document.getElementById('p-restart').classList.contains('ui-button--secondary')), 'Restart beside it is a secondary button');
     await check(page, '#pause-card', 'pause');
     await page.keyboard.press('Tab');
     const f = await ring(page);
@@ -201,7 +202,7 @@ test('in a browser, the pause card, its confirmation and the board status card m
     assert.equal(await page.evaluate(() => globalThis.__ms.game.state), 'lost');
     const order = await page.evaluate(() => [...document.querySelectorAll('#pause .ui-actions button')].map((b) => [b.id, b.className]));
     assert.equal(order[0][0], 'p-restart', 'Play again comes first once the game ended');
-    assert.match(order[0][1], /ui-button--primary/);
+    assert.match(order[0][1], /ui-button--primary ui-button--go/, 'the green primary action');
     assert.equal(await page.evaluate(() => document.getElementById('p-resume').offsetParent), null, 'an ended game has nothing to resume');
     assert.equal(await page.evaluate(() => document.querySelector('#p-restart [data-label]').textContent), 'Play again');
     assert.equal(await page.evaluate(() => document.querySelector('#p-restart .ui-key-hint__key')?.textContent), 'F2', 'its key hint stays');

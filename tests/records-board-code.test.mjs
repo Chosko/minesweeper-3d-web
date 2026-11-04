@@ -11,6 +11,10 @@ import { startCell } from '../js/generation/start-cell.js';
 
 const sq = (width, height, mines, noGuess = false) =>
   createBoardIdentity({ mode: 'classic-2d', grid: 'square', width, height, mines, noGuess });
+const hx = (width, height, mines, noGuess = false) =>
+  createBoardIdentity({ mode: 'hexagon', grid: 'hex', width, height, mines, noGuess });
+const tr = (width, height, mines, noGuess = false) =>
+  createBoardIdentity({ mode: 'triangle', grid: 'tri', width, height, mines, noGuess });
 const box = (width, height, depth, mines, noGuess = false) =>
   createBoardIdentity({ mode: '3d', width, height, depth, mines, noGuess });
 const V = GENERATOR_VERSION;
@@ -154,13 +158,187 @@ test('board code: the code of a recorded game carries its own generator version;
   assert.equal(codeOf(null), null);
 });
 
+// ---------- hexagon boards ----------
+
+test('board code: a hexagon board is spelled H before the 2D token', () => {
+  assert.equal(boardToken(hx(9, 9, 13)), 'HB');
+  assert.equal(boardToken(hx(16, 16, 50, true)), 'HIN');
+  assert.equal(boardToken(hx(30, 16, 100)), 'HE');
+  assert.equal(boardToken(hx(30, 16, 100, true)), 'HEN');
+  assert.equal(boardToken(hx(20, 12, 50)), 'H20X12M50');
+  assert.equal(boardToken(hx(9, 9, 10, true)), 'H9X9M10N', 'a square standard size is a custom hexagon board');
+  assert.equal(boardToken(hx(30, 16, 99)), 'H30X16M99');
+  assert.equal(boardToken({ ...hx(30, 16, 100, true), daily: true }), 'HEN');
+  assert.equal(boardToken(sq(9, 9, 13)), '9X9M13', 'a hexagon standard size is a custom square board');
+});
+
+test('board code: a hexagon board builds the hex graph', () => {
+  assert.deepEqual(graphOf(hx(30, 16, 100)), { kind: 'hex', width: 30, height: 16 });
+  assert.deepEqual(graphOf(sq(30, 16, 99)), { kind: 'square', width: 30, height: 16 });
+});
+
+test('board code: hexagon round trips, both forms', () => {
+  for (const board of [hx(9, 9, 13), hx(16, 16, 50, true), hx(30, 16, 100, true), hx(20, 12, 50), hx(1, 2, 1), hx(100, 100, 2000, true)]) {
+    const cells = board.width * board.height;
+    for (const seed of [0, 2 ** 32 - 1]) {
+      for (const start of [0, cells - 1]) {
+        const code = encodeBoardCode({ board, seed, startCell: start, generatorVersion: V });
+        assert.ok(code.startsWith('H'), code);
+        assert.deepEqual(parseBoardCode(code), { ok: true, board, seed, startCell: start, generatorVersion: V }, code);
+        assert.deepEqual(parseBoardCode(code.toLowerCase()), parseBoardCode(code));
+      }
+    }
+    const code = encodeBoardCode({ board, generatorVersion: V, daily: '20261231' });
+    assert.deepEqual(parseBoardCode(code), {
+      ok: true, board, seed: dailySeed('20261231', boardToken(board)), startCell: startCell({ kind: 'hex', width: board.width, height: board.height }),
+      generatorVersion: V, daily: '20261231',
+    }, code);
+  }
+  assert.match(encodeBoardCode({ board: hx(30, 16, 100, true), generatorVersion: V, daily: '20261011' }), /^HEN-20261011-1[0-9A-F]{3}$/);
+});
+
+test('board code: a hexagon code is spelled canonically and checked against the hexagon custom limits', () => {
+  for (const canonical of ['H30X16M100-00000000-0', 'H9X9M13N-00000000-0', 'HH-00000000-0', 'H-00000000-0', 'HX-00000000-0', 'H09X9M11-00000000-0']) {
+    assert.deepEqual(parseBoardCode(withCheck(canonical)), { ok: false, reason: CODE_REASONS.malformed }, canonical);
+  }
+  const cases = [
+    ['H101X5M3-00000000-0', /width must be a whole number from 1 to 100/i],
+    ['H1X1M0-00000000-0', /no room for a mine/],
+    ['H9X9M0-00000000-0', /Mines must be a whole number from 1/],
+    ['H9X9M81-00000000-0', /Mines must be a whole number from 1/],
+  ];
+  for (const [canonical, reason] of cases) {
+    const r = parseBoardCode(withCheck(canonical));
+    assert.equal(r.ok, false, canonical);
+    assert.match(r.reason, reason, canonical);
+  }
+  assert.deepEqual(parseBoardCode(withCheck('HB-00000000-81')), { ok: false, reason: CODE_REASONS.start });
+  assert.equal(parseBoardCode(withCheck('H9X9M31N-00000000-80')).ok, true, 'no-guess is never refused up front');
+});
+
+test('board code: every square and 3D code keeps its meaning beside the hexagon shape', () => {
+  for (const [code, board] of [
+    [withCheck('EN-9C41D07A-247'), sq(30, 16, 99, true)], [withCheck('B-00000000-0'), sq(9, 9, 10)],
+    [withCheck('20X12M50-00000000-0'), sq(20, 12, 50)], [withCheck('8X8X8M40N-00000000-0'), box(8, 8, 8, 40, true)],
+  ]) {
+    assert.deepEqual(parseBoardCode(code).board, board, code);
+  }
+  assert.notDeepEqual(parseBoardCode(withCheck('HB-00000000-0')).board, parseBoardCode(withCheck('B-00000000-0')).board);
+  assert.equal(parseBoardCode('HEN-9C41D07A-247').reason, CODE_REASONS.incomplete);
+});
+
+// ---------- triangle boards ----------
+
+test('board code: a triangle board is spelled T before the 2D token', () => {
+  assert.equal(boardToken(tr(13, 7, 8)), 'TB');
+  assert.equal(boardToken(tr(25, 13, 36, true)), 'TIN');
+  assert.equal(boardToken(tr(41, 17, 103)), 'TE');
+  assert.equal(boardToken(tr(41, 17, 103, true)), 'TEN');
+  assert.equal(boardToken(tr(20, 12, 50)), 'T20X12M50');
+  assert.equal(boardToken(tr(30, 16, 99, true)), 'T30X16M99N', 'a square standard size is a custom triangle board');
+  assert.equal(boardToken(tr(30, 16, 100)), 'T30X16M100', 'a hexagon standard size is a custom triangle board');
+  assert.equal(boardToken({ ...tr(41, 17, 103, true), daily: true }), 'TEN');
+  assert.equal(boardToken(sq(13, 7, 8)), '13X7M8', 'a triangle standard size is a custom square board');
+  assert.equal(boardToken(hx(41, 17, 103)), 'H41X17M103', 'a triangle standard size is a custom hexagon board');
+});
+
+test('board code: a triangle board builds the tri graph', () => {
+  assert.deepEqual(graphOf(tr(41, 17, 103)), { kind: 'tri', width: 41, height: 17 });
+  assert.deepEqual(graphOf(hx(30, 16, 100)), { kind: 'hex', width: 30, height: 16 });
+});
+
+test('board code: triangle round trips, both forms', () => {
+  for (const board of [tr(13, 7, 8), tr(25, 13, 36, true), tr(41, 17, 103, true), tr(20, 12, 50), tr(1, 2, 1), tr(100, 100, 2000, true)]) {
+    const cells = board.width * board.height;
+    for (const seed of [0, 2 ** 32 - 1]) {
+      for (const start of [0, cells - 1]) {
+        const code = encodeBoardCode({ board, seed, startCell: start, generatorVersion: V });
+        assert.ok(code.startsWith('T'), code);
+        assert.deepEqual(parseBoardCode(code), { ok: true, board, seed, startCell: start, generatorVersion: V }, code);
+        assert.deepEqual(parseBoardCode(code.toLowerCase()), parseBoardCode(code));
+      }
+    }
+    const code = encodeBoardCode({ board, generatorVersion: V, daily: '20261231' });
+    assert.deepEqual(parseBoardCode(code), {
+      ok: true, board, seed: dailySeed('20261231', boardToken(board)), startCell: startCell({ kind: 'tri', width: board.width, height: board.height }),
+      generatorVersion: V, daily: '20261231',
+    }, code);
+  }
+  assert.match(encodeBoardCode({ board: tr(41, 17, 103, true), generatorVersion: V, daily: '20261011' }), /^TEN-20261011-1[0-9A-F]{3}$/);
+});
+
+test('board code: a triangle code is spelled canonically and checked against the triangle custom limits', () => {
+  for (const canonical of ['T41X17M103-00000000-0', 'T13X7M8N-00000000-0', 'TT-00000000-0', 'T-00000000-0', 'TX-00000000-0', 'T013X7M9-00000000-0', 'THB-00000000-0', 'HTB-00000000-0', 'T8X8X8M40-00000000-0']) {
+    assert.deepEqual(parseBoardCode(withCheck(canonical)), { ok: false, reason: CODE_REASONS.malformed }, canonical);
+  }
+  const cases = [
+    ['T101X5M3-00000000-0', /width must be a whole number from 1 to 100/i],
+    ['T5X101M3-00000000-0', /height must be a whole number from 1 to 100/i],
+    ['T1X1M0-00000000-0', /no room for a mine/],
+    ['T13X7M0-00000000-0', /Mines must be a whole number from 1/],
+    ['T13X7M91-00000000-0', /Mines must be a whole number from 1/],
+  ];
+  for (const [canonical, reason] of cases) {
+    const r = parseBoardCode(withCheck(canonical));
+    assert.equal(r.ok, false, canonical);
+    assert.match(r.reason, reason, canonical);
+  }
+  assert.deepEqual(parseBoardCode(withCheck('TB-00000000-91')), { ok: false, reason: CODE_REASONS.start });
+  assert.equal(parseBoardCode(withCheck('TB-00000000-90')).ok, true);
+  assert.equal(parseBoardCode(withCheck('T13X7M30N-00000000-90')).ok, true, 'no-guess is never refused up front');
+});
+
+test('board code: every square, hexagon and 3D code keeps its meaning beside the triangle shape', () => {
+  for (const [code, board] of [
+    [withCheck('EN-9C41D07A-247'), sq(30, 16, 99, true)], [withCheck('B-00000000-0'), sq(9, 9, 10)],
+    [withCheck('20X12M50-00000000-0'), sq(20, 12, 50)], [withCheck('8X8X8M40N-00000000-0'), box(8, 8, 8, 40, true)],
+    [withCheck('HB-00000000-0'), hx(9, 9, 13)], [withCheck('HEN-00000000-0'), hx(30, 16, 100, true)],
+    [withCheck('H20X12M50-00000000-0'), hx(20, 12, 50)],
+  ]) {
+    assert.deepEqual(parseBoardCode(code).board, board, code);
+  }
+  assert.notDeepEqual(parseBoardCode(withCheck('TB-00000000-0')).board, parseBoardCode(withCheck('B-00000000-0')).board);
+  assert.notDeepEqual(parseBoardCode(withCheck('TB-00000000-0')).board, parseBoardCode(withCheck('HB-00000000-0')).board);
+  assert.equal(parseBoardCode('TEN-9C41D07A-247').reason, CODE_REASONS.incomplete);
+});
+
 // ---------- the daily boards ----------
 
-test('daily: two boards a day, Expert no-guess and the cube 8 × 8 × 8 · 40 no-guess', () => {
-  assert.deepEqual(DAILY_BOARDS.map((d) => [d.id, d.label, d.token]), [['expert', 'Expert', 'EN'], ['cube', 'Cube', '8X8X8M40N']]);
+test('daily: four boards a day in menu order, each named by its dimensions — Expert, Hexagon and Triangle Expert, all no-guess, and the cube 8 × 8 × 8 · 40 no-guess', () => {
+  assert.deepEqual(DAILY_BOARDS.map((d) => [d.id, d.label, d.token]), [
+    ['expert', 'Expert', 'EN'], ['hex-expert', 'Expert', 'HEN'], ['tri-expert', 'Expert', 'TEN'], ['cube', 'Cube', '8X8X8M40N'],
+  ]);
+  assert.deepEqual(DAILY_BOARDS.map((d) => [d.board.mode, graphOf(d.board).kind]), [
+    ['classic-2d', 'square'], ['hexagon', 'hex'], ['triangle', 'tri'], ['3d', 'box'],
+  ]);
   assert.equal(dailyBoardOf(sq(30, 16, 99, true)).id, 'expert');
+  assert.equal(dailyBoardOf(hx(30, 16, 100, true)).id, 'hex-expert');
+  assert.equal(dailyBoardOf(tr(41, 17, 103, true)).id, 'tri-expert');
   assert.equal(dailyBoardOf(box(8, 8, 8, 40, true)).id, 'cube');
   assert.equal(dailyBoardOf(sq(30, 16, 99, false)), null);
+  assert.equal(dailyBoardOf(hx(30, 16, 100, false)), null, 'the daily board is the no-guess one');
+  assert.equal(dailyBoardOf(hx(30, 16, 99, true)), null, 'Classic 2D\'s Expert on the hex grid is no daily board');
+});
+
+test('daily: the Classic 2D and 3D daily boards keep their seeds and codes', () => {
+  const pinned = ['expert', 'cube'].map((id) => { const g = dailyGame(id, '20261011'); return [id, g.seed, g.code, g.startCell]; });
+  assert.deepEqual(pinned, [['expert', 444544172, 'EN-20261011-184A', 255], ['cube', 449335490, '8X8X8M40N-20261011-1BDC', 292]]);
+});
+
+test('daily: the Hexagon and Triangle daily codes are the frozen daily form over HEN and TEN', () => {
+  for (const [id, token, board, kind] of [['hex-expert', 'HEN', hx(30, 16, 100, true), 'hex'], ['tri-expert', 'TEN', tr(41, 17, 103, true), 'tri']]) {
+    const g = dailyGame(id, '20261011');
+    assert.match(g.code, new RegExp(`^${token}-20261011-${V}[0-9A-F]{3}$`));
+    assert.equal(g.code, encodeBoardCode({ board, generatorVersion: V, daily: '20261011' }));
+    assert.equal(g.seed, dailySeed('20261011', token));
+    assert.equal(g.startCell, startCell({ kind, width: board.width, height: board.height }));
+    assert.equal(g.request.graph.kind, kind);
+    assert.deepEqual(g.board, board);
+    const parsed = parseBoardCode(g.code);
+    assert.deepEqual([parsed.ok, parsed.daily, parsed.seed, parsed.startCell], [true, '20261011', g.seed, g.startCell]);
+    assert.deepEqual(parsed.board, board);
+    assert.notEqual(dailyGame(id, '20261012').code, g.code, 'another day, another code');
+  }
 });
 
 test('daily: each board is generated for its marked start cell with the daily seed', () => {
@@ -177,7 +355,7 @@ test('daily: each board is generated for its marked start cell with the daily se
   }
 });
 
-test('daily: the mines of 2026-10-11\'s two boards are pinned', () => {
+test('daily: the mines of 2026-10-11\'s Classic 2D and 3D boards are pinned', () => {
   const expert = generate(dailyGame('expert', '20261011').request);
   assert.deepEqual(Array.from(expert.mines), [3, 5, 17, 36, 39, 45, 65, 67, 71, 74, 76, 81, 82, 87, 95, 105, 110, 112, 115, 117,
     120, 122, 123, 126, 134, 135, 136, 137, 141, 144, 149, 155, 159, 162, 171, 173, 190, 191, 196, 197, 215, 218, 235, 236, 239,

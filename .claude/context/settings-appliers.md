@@ -12,8 +12,9 @@ The module's head comment states its full contract.
 ## PUBLIC API
 
 - Appliers (each returns its unsubscribe): `pixelRatioFor(resolution,
-  devicePixelRatio, cells)` — `auto` the device ratio capped at 2, at 1.5
-  above 20³ cells and 1 above 50³; `sharp` the full device ratio; `fast` 1.
+  devicePixelRatio, cells)` — `auto` the device ratio under a cap that
+  steps down to 1 as the board's cell count grows (the steps are `pixelRatioFor`'s); `sharp` the
+  full device ratio; `fast` 1.
   `applyTheme(store, theme)` (the theme applier's `setTheme`; a rejected
   switch is left to the applier, which has told the player), `applyAudio`, `applyLook`, `applyCamera(store, setMode)`
   (`setMode('fly' | 'orbit')`), `applyResolution`,
@@ -50,7 +51,7 @@ The module's head comment states its full contract.
   with the current setting; the resolution applier re-runs it on change.
 - **One writer per owner.** The camera's fields are written only by
   `applyLook` and its mode only by `applyCamera`
-  ([settings.md](settings.md) § One owner per value).
+  ([settings-store.md](settings-store.md) § One owner per value).
 
 ## DOMAIN DEPENDENCIES
 
@@ -70,7 +71,7 @@ The module's head comment states its full contract.
 - [audio.md](audio.md) — `setVolume`, `setMuted`.
 - [rendering.md](rendering.md) — `BoardRenderer.setPixelRatio`, its `camera`'s `fov`.
 - [input-camera.md](input-camera.md) — `FlyCamera.sensitivity` / `invertY`; `OrbitCamera`, the Camera setting's Orbit.
-- [testing.md](testing.md) — `tests/settings-appliers.test.mjs`.
+- [testing-files.md](testing-files.md) — `tests/settings-appliers.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

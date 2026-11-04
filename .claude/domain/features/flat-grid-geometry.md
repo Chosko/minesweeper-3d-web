@@ -63,7 +63,8 @@ its siblings) rather than adding a parallel stack.
   board's cells on a plane, built from the grid kind, width and height. It is
   separate from the cell graph (`cell-graph-rules-engine`): the graph says
   which cells are neighbours, the geometry says where they are drawn. Each
-  grid feature supplies both.
+  grid feature supplies both. The geometries live in `js/geometry/`, one
+  module per grid kind behind one lookup by kind.
 - **Layout.** The board view's fit rule asks the geometry for the board's
   extent at a tile size and gap, and for each cell's tile rectangle and
   centre. The square geometry answers with today's pitch arithmetic. The fit
@@ -116,8 +117,9 @@ its siblings) rather than adding a parallel stack.
 - **Board view, painter, inputs, sampler, viewer** — take a geometry where
   they took the square grid. Each keeps its shipped public behaviour.
 - **Failure** — an unknown grid kind is a programming error (`RangeError`)
-  at board setup, never at draw time. A geometry and a graph built for
-  different sizes are refused when the view is created.
+  at board setup, never at draw time. The board view refuses a geometry
+  built for another size than its grid with a `RangeError` when it is
+  created.
 
 ## Dependencies
 

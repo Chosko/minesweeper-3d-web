@@ -10,7 +10,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 | File | Responsibility | Context file |
 | --- | --- | --- |
 | `js/mode3d/learn.js` | Learn 3D: the guided board `LEARN_BOARD`, `lessonCells`, `learnChoice` and the prompt sequence `createLearnPrompts`. DOM-free. | [mode3d-learn.md](mode3d-learn.md) |
-| `js/mode3d/board-choice.js` | The presets, custom validation, Random fill, the no-guess switch with its cell-count limit and side-of-2 rule, the last 3D choice's document name, and `bindBoardChoice` over `#board-choice`. Helpers DOM-free; the binder touches only the elements it is handed. | this file |
+| `js/mode3d/board-choice.js` | The presets, custom validation, Random fill, the no-guess switch with its cell-count limit and side-of-2 rule, the last 3D choice's document name, and `bindBoardChoice` over `#board-choice`, its panel the Classic 2D binder's `bindChoicePanel`. Helpers DOM-free; the binder touches only the elements it is handed. | this file |
 | `js/mode3d/session.js` | The 3D game on the shared engine (`create3DGame`) and the game session (`createSession`): closed box, flags before the first reveal, the first reveal's board, generating, failure offer, timer, pause, restart, leave, replay recorder. DOM-free. | [mode3d-session.md](mode3d-session.md) |
 | `js/shell/mode-3d.js` | The adapter (`create3DMode`) behind the mode contract: end delay, summaries, sealed replays, the movement sampler, pre-generation for Play again. DOM-free. | [mode3d-adapter.md](mode3d-adapter.md) |
 
@@ -26,17 +26,17 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   starts at `SPACING_START` ([input-camera.md](input-camera.md)).
 - A board choice is `{size, custom: {X, Y, Z, mines}, noGuess}`; `custom` is
   kept beside a preset so the custom fields reopen as the player left them.
-  `DEFAULT_CHOICE` is cube Beginner, custom 10 × 10 × 10 / 25, no-guess on.
-- `DIM_MIN` / `DIM_MAX` (1 / 100); `validateCustom(board)` → `{ok: true}` or
+  `DEFAULT_CHOICE` is cube Beginner, a default custom box beside it, no-guess on.
+- `DIM_MIN` / `DIM_MAX`; `validateCustom(board)` → `{ok: true}` or
   `{ok: false, field: 'X'|'Y'|'Z'|'mines', reason}` — mines 1 to cells − 1,
   so a one-cell board is refused. `customStatus(board)` → `{ok, field, max,
-  text, warn?}` (a warning above 250,000 cells).
-- `NOGUESS_CELL_LIMIT` = 8000 (20 × 20 × 20); `noGuessAvailable(choice)` —
+  text, warn?}` (a warning above `LARGE_BOARD` cells).
+- `NOGUESS_CELL_LIMIT`; `noGuessAvailable(choice)` —
   true on every preset and on a custom board of at most that many cells
   with no side of exactly 2 (a side of 1 keeps it); `noGuessReason(choice)`
-  — the side-of-2 line, which takes precedence, else the 8,000-cell line.
+  — the side-of-2 line, which takes precedence, else the cell-limit line.
   `densityHintShown(custom, noGuess)` — from Classic 2D's
-  `NOGUESS_DENSITY_HINT` ([classic2d.md](classic2d.md)).
+  `NOGUESS_DENSITY_HINT` ([classic2d-board-setup.md](classic2d-board-setup.md)).
 - `normaliseChoice(choice)` → a valid plain copy or null (null for a `size`
   outside `BOARD_SIZES`, such as a double layer or First box preset's id), with no-guess
   dropped on a custom board that does not offer it;
@@ -46,17 +46,17 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 - `presetKey(p)` (`'6,6,6,10'`, the options' `data-preset`), `presetByKey`,
   `presetLabel(p)` / `boxLine(board)` (the size line), `mineDensity(board)`,
   `presetTitle(p)` → 'Cube Beginner' (as results and Records name the
-  board); `CUSTOM_HINT`, `customInfo(board)`; `LEARN_SUMMARY`,
-  `choiceSummary({selected, custom, noGuess, code})` (the bottom bar's
-  line), `bestsTitle({selected, custom, noGuess})`.
-- `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION` = 1.
+  board); `CUSTOM_HINT`, `customInfo(board)`,
+  `bestsTitle({selected, custom, noGuess})`.
+- `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION`.
 - `bindBoardChoice({root, onStart, onLearn, onBack, onRecords?, code?,
-  bests?})` → `{show(choice, {played, held}), state(), refresh(),
-  destroy()}`, the Classic 2D binder's shape ([classic2d.md](classic2d.md))
+  bests?, pin?})` → `{show(choice, {held}), state(), refresh(),
+  destroy()}`, the Classic 2D binder's shape ([classic2d-board-choice.md](classic2d-board-choice.md))
   over `#board-choice`: `onLearn` for the Learn 3D option (first, no
-  preset), `onRecords(board)` with the chosen board as `boardOf` gives it
+  preset), `onRecords(board)` — *All records* — with the chosen board as `boardOf` gives it
   (null for Learn 3D, a code or a refused custom board), `bests(board)` the
-  shell's `boardBests` text. Its head comment lists the `data-*` hooks it
+  shell's `boardBests` text, `pin` the board choice panel's stored pin
+  shared with Classic 2D. Its head comment lists the `data-*` hooks it
   reads and what each option shows; the binder never reads the records
   itself.
 
@@ -79,16 +79,19 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   document, loaded before the first screen; a stored choice
   `normaliseChoice` refuses falls back to `DEFAULT_CHOICE`. Picking a board
   saves the choice (a failed save never stops the game) and starts
-  `MODES.start('3d', boardOf(choice))`; `show` marks it `data-last`, with
-  its Last played chip only once a choice was played or loaded.
+  `MODES.start('3d', boardOf(choice))`; `show` marks it `data-last` and
+  chooses it.
 - **The screen.** The Classic 2D board choice's composition and placement
-  (`css/components.css` head comment, *3D board choice*): Learn 3D
-  shows only its panel (how 3D works, no records), a preset the presets'
-  switch and the board's bests, Custom its own switch, the form with Random
-  and the bests for that size, Insert Board Code its field alone; the
-  bottom bar's summary, Records and Play follow the choice live. Records
-  holds the screen's state (`state()`) and Back from Records brings it back
-  (`held`). The First box sizes (4 × 4 × 3 · 4, 5 × 5 × 3 · 6) are no
+  (`css/components.css` head comment, *3D board choice*): the Board list
+  and the foot's Play, everything else in the board choice panel under
+  the same pin and auto-open rules ([classic2d-board-choice.md](classic2d-board-choice.md) § Board
+  choice panel). In the panel Learn 3D shows only how 3D works and that it
+  keeps no records (the phone drawer labelled *Learn 3D*), a preset the
+  presets' switch and the board's bests with *All records*, Custom its own
+  switch, the form with its Depth field and Random, and the bests for that
+  size, Insert Board Code its field alone; the bests and Play follow the
+  choice live. *All records* holds the screen's state (`state()`) and Back
+  from Records brings it back (`held`). The First box sizes (4 × 4 × 3 · 4, 5 × 5 × 3 · 6) are no
   preset: the records and replays played on them read as custom boards
   ([records.md](records.md)).
 
@@ -106,14 +109,14 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 - [mode3d-session.md](mode3d-session.md), [mode3d-adapter.md](mode3d-adapter.md) — the session and the adapter
   the chosen board is handed to.
 - [mode3d-learn.md](mode3d-learn.md) — Learn 3D's guided board and prompts.
-- [classic2d.md](classic2d.md) — `NOGUESS_DENSITY_HINT` and the density
+- [classic2d-board-setup.md](classic2d-board-setup.md) — `NOGUESS_DENSITY_HINT` and the density
   hint text.
 - [app-shell-menu.md](app-shell-menu.md) — the board choices' wiring in
   `js/main.js`, `createLastBoardChoice` and `boardBests`.
 - [platform.md](platform.md) — the storage the last 3D choice is a document
   in.
 - [records.md](records.md) — `PRESETS_3D`, kept equal to `PRESETS` by a test.
-- [testing.md](testing.md) — `tests/mode3d-board-choice.test.mjs`,
+- [testing-files.md](testing-files.md) — `tests/mode3d-board-choice.test.mjs`,
   `tests/mode3d-noguess-limit.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
