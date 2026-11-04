@@ -8,7 +8,11 @@
 are handed in. It keeps every sealed replay ([replay.md](replay.md)), pins
 personal bests and the replays the player pins, and keeps the newest
 `RETAINED_UNPINNED` others. `js/main.js` builds the one library (`REPLAYS`) over the platform
-`storage` and `blobStore`; the results flow adds to it
+`storage` and `blobStore` — IndexedDB on the web build; on the Steam build the Steam blob
+store `replays` (`REPLAY_STORE`), one file per replay under the save directory's
+`replays.blobs/`, which Steam Cloud syncs with the index document
+([platform.md](platform.md), [desktop.md](desktop.md) § Saves); the library is the same on
+both. The results flow adds to it
 ([app-shell-results.md](app-shell-results.md)), the Records screen's library view lists and
 pins ([records-library-view.md](records-library-view.md)), and the viewer reads bytes
 ([replay-viewer-screen.md](replay-viewer-screen.md)).
@@ -66,11 +70,15 @@ pins ([records-library-view.md](records-library-view.md)), and the viewer reads 
 - [../domain/features/replay-library.md](../domain/features/replay-library.md)
   — the replay store, index, retention, pinning, the hand-off, availability
   and the failure rules.
+- [../domain/features/steam-cloud-saves.md](../domain/features/steam-cloud-saves.md)
+  — the Steam blob store behind the library and its fit in the Steam Cloud
+  quota.
 
 ## CROSS-REFERENCES
 
 - [replay.md](replay.md) — the blob and the recorder's listing fields.
-- [platform.md](platform.md) — the document interface and the blob store.
+- [platform.md](platform.md) — the document interface and the blob store,
+  its IndexedDB and Steam implementations.
 - [records-store.md](records-store.md) — the comparison whose new bests set
   `setBest`.
 - [records-library-view.md](records-library-view.md) — the library view.

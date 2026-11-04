@@ -339,10 +339,12 @@ and rumbles on an explosion. Some browsers only start sound after a key press or
   after every game.
 - **Pause menu** (`Esc`): resume, go back to the start view (3D), restart or return to the main menu.
 - **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y, volume, the 3D neighbour count and
-  the 3D field of view (45°–90°). They are saved in `localStorage`. The defaults match the original,
+  the 3D field of view (45°–90°). They are saved in the browser's `localStorage` (as files on the
+  desktop build — see [Desktop build (Steam)](#desktop-build-steam)). The defaults match the original,
   except the 3D neighbour count, which is on, and the field of view, 60° (45° in the original, which
   a browser that already had settings keeps). The Settings page's Data panel offers the same two exports as the Records screen first; then "Reset all data" deletes the records, history, replays, settings, last board choices and first-use hints
-  from this browser, after a confirmation, and starts the game again as a new player's.
+  from this browser (from this computer on the desktop build), after a confirmation, and starts the
+  game again as a new player's.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
   chording, actions that change nothing, explosions and wins. They can be muted.
 - **Visual polish:** both boards are drawn in the chosen theme: procedurally drawn tiles and cubes
@@ -473,8 +475,18 @@ A private Steam build:
    the builder account in the git-ignored `desktop/steampipe/deploy.env` (`STEAMCMD=…`,
    `STEAM_LOGIN=…`) or the environment; `--dry-run` stops before the upload and prints its command.
 
-How the host is built — the window, the adapter, the page bridge, quitting and the packaging — is
-[.claude/context/desktop.md](.claude/context/desktop.md)'s.
+The desktop build keeps everything it saves as files under its user-data directory, never in
+browser storage. The `saves\` directory holds the settings, records, stats history, the replay
+library and its replays, the last mode and board choices and the game's other saved state. Steam
+Cloud syncs it between the player's machines, uploading when the game quits and downloading before
+it starts, and when both machines changed it Steam asks at launch which copy to keep. The `prefs\`
+directory beside it holds the machine settings (look sensitivity and render resolution), which stay
+on the machine that saved them, as do the window state and the crash log. The game saves and plays
+the same whether or not Steam is running or online. Before the app is released Steam Cloud does not
+sync on its own; how to turn it on for testing is [dev/steam/README.md](dev/steam/README.md).
+
+How the host is built — the window, the adapter, the page bridge, the file service, quitting and
+the packaging — is [.claude/context/desktop.md](.claude/context/desktop.md)'s.
 
 ## Tests
 
@@ -553,10 +565,10 @@ js/gamepad.js           Controller polling, stick curve, trigger hysteresis, but
 js/ui.js                Menus, HUD, pause menu, settings (DOM only, no game rules)
 js/textures.js          Procedurally drawn tile textures (canvas 2D -> texture array)
 js/audio.js             Synthesized sound effects (Web Audio)
-js/platform/            Platform layer: storage, blob store, start-up selection, capability flags, the page's
-                        side of the desktop bridge and the desktop window
-desktop/                Windows desktop host: Electron main process, Steam adapter, page bridge, packaging and
-                        SteamPipe scripts
+js/platform/            Platform layer: storage, blob store and their Steam implementations, start-up
+                        selection, capability flags, the page's side of the desktop bridge and the desktop window
+desktop/                Windows desktop host: Electron main process, Steam adapter, page bridge, file service
+                        for the saves, packaging and SteamPipe scripts
 deploy-steam.sh         Packages the desktop build and uploads it to Steam as a private build
 tests/gamepad.test.mjs  Controller helpers, analog camera moves and trigger -> mouse-action sequences
 docs/ORIGINAL_SPEC.md   Description of the original game's behaviour

@@ -72,10 +72,11 @@ Each module's head comment states its full contract.
 ## INTERNAL PATTERNS
 
 - **Start-up order.** `js/theme.js` runs before first paint and reads the
-  theme straight from the saved document (`localStorage` key
-  `ms3d:doc:settings`, `{ version, data }`, at the current version or the
-  one before the format step), mapping it as the format step does, so the
-  first paint is already the stored theme ([app-shell-theme-runtime.md](app-shell-theme-runtime.md)).
+  theme straight from the saved document — on the web the `localStorage`
+  key `ms3d:doc:settings`, `{ version, data }`, at the current version or
+  the one before the format step; on the desktop host the theme id the host
+  read from the document's file and handed over — mapping it as the format
+  step does, so the first paint is already the stored theme ([app-shell-theme-runtime.md](app-shell-theme-runtime.md)).
   `js/main.js` then starts the theme applier, creates the store, starts
   `load()`, calls `applySettings` and `bindSettingControls`, and awaits the
   load before `showMainMenu()`; the load's notification applies every value
