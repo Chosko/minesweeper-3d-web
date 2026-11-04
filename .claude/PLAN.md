@@ -23,7 +23,7 @@ Features: 3d-board-graph, 3d-play-flow, 3d-game-records, replay-recording, repla
 
 ## m2b-themes — The game wears its shipping look
 
-Status: [ACTIVE]
+Status: [SHIPPED]
 Covers: product-design.md § Visual design system, product-design.md § Main menu and game shell, product-design.md § 3D mode
 Features: theme-system, shared-screen-layout, in-game-layout, themed-board-art-and-motion, theme-implement-skill
 
@@ -39,7 +39,7 @@ Features: flat-grid-geometry, hexagon-grid, triangle-grid, hex-tri-board-art, fl
 
 ## m3-on-steam — The game runs as a Steam app
 
-Status: [PLANNED]
+Status: [ACTIVE]
 Covers: product-design.md § Steam features, product-design.md § Main menu and game shell, product-design.md § Results and records
 Features: steam-desktop-host, steam-cloud-saves, steam-leaderboards, steam-achievements, leaderboard-screen, leaderboards-menu-entry, results-steam-rank, input-rebinding
 
