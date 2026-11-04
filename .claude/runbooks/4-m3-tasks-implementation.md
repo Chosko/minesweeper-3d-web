@@ -46,7 +46,7 @@ Context:
 
 Done: 2026-11-04, commit `b36fe4f` (6 files, +192/-9). Decision: the Auto-Cloud root is saved with OS "All OSes", not Windows. Premise wrong: Publish alone does not start Auto-Cloud on an unreleased app — each machine needs `testappcloudpaths 5517360` in its Steam console.
 
-## [ ] 49. Implement task 299 — Update documentation for feature `steam-cloud-saves`
+## [x] 49. Implement task 299 — Update documentation for feature `steam-cloud-saves`
 
 Depends on: 8, 9, 46, 48
 
@@ -59,6 +59,8 @@ Context:
 ```prompt
 /task-implement 299 --review
 ```
+
+Done: 2026-11-04, commit `c1f702e` (9 files, +195/-55).
 
 ## [ ] 15. Implement task 98 — Local leaderboards stand-in for the web build
 
