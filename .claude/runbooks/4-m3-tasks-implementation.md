@@ -153,7 +153,7 @@ Context:
 
 Done: 2026-11-04, commit `b1049f7` (7 files, +136/-5). Premise wrong: the step-18 note was stale — `platform.md` names no achievements slot, and `platform-host.md` already describes the filled slot and `start({ history })`.
 
-## [ ] 21. Implement task 104 — Leaderboard screen: board picker, scope tabs, entries and states
+## [!] 21. Implement task 104 — Leaderboard screen: board picker, scope tabs, entries and states
 
 Depends on: 14, 15
 
@@ -169,6 +169,8 @@ Context:
 ```prompt
 /task-implement 104 --review
 ```
+
+Done: Stopped at the owner's choice — the leaderboard screen's *Joyful tiles* artboard is not on the design canvas (only an unselected "Leaderboards" tab label on "Joyful · Records — states"); task 104 stays `[MISSING]`. 2026-11-04, no commit — nothing was implemented. Re-run once the artboard is published.
 
 ## [ ] 22. Implement task 105 — Watch replay from a leaderboard entry
 
