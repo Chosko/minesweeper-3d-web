@@ -231,7 +231,7 @@ Context: none
 /task-implement 110 --review
 ```
 
-## [~] 28. Implement task 111 — Action catalogue, bindings resolver and the bindings setting
+## [x] 28. Implement task 111 — Action catalogue, bindings resolver and the bindings setting
 
 Depends on: none
 
@@ -242,11 +242,14 @@ Context:
 /task-implement 111 --review --rounds 2
 ```
 
+Done: 2026-11-04, commit `3880759` (19 files, +1154/-296). Decision: the bindings setting is a schema entry `bindings` of a new type `overrides`, validated by the resolver (`js/settings/resolver.js`), with no control of its own; the flat modes also reserve H, M and Shift, and F1–F12 are reserved everywhere; a swap that would leave the other action with no input on its device is refused (`last`). The shell key hints stay fixed.
+
 ## [ ] 29. Implement task 112 — Classic 2D and 3D input read their actions through the bindings
 
 Depends on: 28
 
-Context: none
+Context:
+- 2026-11-04 (from step 28): the input layers still read their own fixed keys — switching them to the resolver (`js/settings/resolver.js`) is this step. Numpad Enter counts as Enter in the flat modes only (Classic 2D, Hexagon, Triangle reveal); 3D keeps Enter-only reveal. The flat modes reserve B, H, M and Shift, and F1–F12 are reserved everywhere. `UI.setBindings(resolver)` is wired in `js/main.js`, and every help surface redraws on a binding change.
 
 ```prompt
 /task-implement 112 --review --rounds 2
@@ -261,6 +264,8 @@ Needs: agent+human
 Context:
 - Task 113 builds into the framed Settings page and waits on task 171 (themes-tasks-implementation step 60); the owner supplies an artboard drawing the rebinding panels.
 
+- 2026-11-04 (from step 28): the `bindings` setting (type `overrides`) has no Settings control of its own — this step adds it. A swap that would leave the other action with no input on its device is refused with reason `last`; reserved inputs are B, H, M and Shift in the flat modes, the shell's Back, and F1–F12. `keyHintKeys` accepts a catalogue action and shows its current inputs.
+
 ```prompt
 /task-implement 113 --review
 ```
@@ -269,7 +274,8 @@ Context:
 
 Depends on: 28, 29, 30
 
-Context: none
+Context:
+- 2026-11-04 (from step 28): the bindings setting is type `overrides`, validated in `js/settings/resolver.js`; the help row tables in `js/settings/bindings.js` are templates filled from the current bindings; `keyHintKeys` takes a catalogue action. The shell key hints stay fixed.
 
 ```prompt
 /task-implement 114 --review
