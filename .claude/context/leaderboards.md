@@ -9,7 +9,7 @@ cache, reader and replay fetcher over the desktop host's bridge client, and
 the web build's local stand-in over the player's own wins. The platform
 fills its `leaderboards` slot with one implementation at start-up — the
 Steam leaderboards with the bridge, the stand-in without it
-([platform.md](platform.md)) — and callers import `leaderboards` from
+([platform-host.md](platform-host.md)) — and callers import `leaderboards` from
 `js/platform/index.js`, never a file here. The results flow's end-of-game
 hand-off calls `submit` ([app-shell-results.md](app-shell-results.md));
 `js/main.js` hands the records store and the replay library in with
@@ -193,8 +193,9 @@ playerName? })`, `LOCAL_PLAYER` `{ id: 'local', name: 'You' }`.
 
 ## CROSS-REFERENCES
 
-- [platform.md](platform.md) — the `leaderboards` slot, the capability
-  flags, storage and the blob store; [desktop.md](desktop.md) — the bridge's
+- [platform-host.md](platform-host.md) — the `leaderboards` slot, the
+  capability flags; [platform.md](platform.md) and
+  [platform-blobs.md](platform-blobs.md) — storage and the blob store; [desktop.md](desktop.md) — the bridge's
   leaderboard requests and `dev/steam/`.
 - [app-shell-results.md](app-shell-results.md) — the end-of-game hand-off
   that calls `submit`.

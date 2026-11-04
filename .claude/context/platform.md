@@ -1,34 +1,22 @@
-# Platform — storage interface, backends, blob store, start-up selection, host link
+# Platform — document storage, backends, the Steam build's storage
 
 ## OVERVIEW
 
-The platform layer: the one API the game persists through and the page's
-one link to the desktop host. Named documents of plain data, each stored as
-the text of `{ version, data }`, over a backend chosen once at start-up;
-named binary blobs too large for a document — sealed replays — through the
-blob store, over an implementation opened once at start-up; the capability
-flags, the host link (Steam state, the overlay, the quit flush) and the
-desktop window driven from the page. DOM-free apart from the browser
-backend's default `localStorage` getter, the IndexedDB implementation's
-default `indexedDB` factory and `window-actions.js`, which on the desktop
-host marks the document, adds the drag region's style, sizes the page's
-root area, settles the touch step's media queries and, windowed, shifts the
-page to the shown screen's frame.
+The platform layer's document storage: the one API the game persists its
+documents through. Named documents of plain data, each stored as the text of
+`{ version, data }`, over a backend chosen once at start-up; and the Steam
+build's storage as a whole — documents and blobs as files the desktop host
+keeps, and the save tracker the quit flush waits on. The blob store is
+[platform-blobs.md](platform-blobs.md)'s; selection, the capability flags,
+the host link and the desktop window are [platform-host.md](platform-host.md)'s.
+DOM-free apart from the browser backend's default `localStorage` getter.
 
 | File | Responsibility |
 | ---- | -------------- |
 | `js/platform/storage.js` | Storage interface (`createStorage`): registration, versioned load with upgrades, save, clear, availability, failure reporting. Header defines the backend contract. |
 | `js/platform/browser-backend.js` | The web build's backend over Web Storage. |
 | `js/platform/memory-backend.js` | In-memory backend for tests; reference implementation of the backend contract. |
-| `js/platform/blob-store.js` | Blob store interface (`createBlobStore`), the fallback to memory. Header defines the blob implementation contract. |
-| `js/platform/memory-blob-store.js` | In-memory blob implementation: the contract's reference, the fallback, what tests use. |
-| `js/platform/indexeddb-blob-store.js` | The web build's blob implementation over IndexedDB. |
 | `js/platform/steam-storage.js` | The Steam build's backend (`createSteamBackend`): each document one file the desktop host's file service keeps, over the bridge client's document requests; the save tracker (`createSaveTracker`) the quit flush waits on. |
-| `js/platform/steam-blob-store.js` | The Steam build's blob implementation (`openSteamBlobStore`): a named store, one file per blob in its directory of the save directory, over the bridge client's blob requests; `REPLAY_STORE`, the replay library's. |
-| `js/platform/index.js` | The selector (`selectPlatform`): looks for the page bridge once at start-up, fills each slot (storage, blob store, leaderboards, achievements) with its Steam implementation (`STEAM_SLOTS`) or the web build's (`BROWSER_SLOTS`); re-exports the storage methods; the capability flags, the host link with the Steam saves' flush hook, and the desktop window. |
-| `js/platform/capabilities.js` | The capability flags (`CAPABILITY_FLAGS`, `deriveFlags`, `createCapabilities`) and the latest Steam state. |
-| `js/platform/bridge-client.js` | The page's side of the page bridge: `findBridge`, the request client, `linkHost` — Steam state into the flags, overlay listeners, the quit flush. |
-| `js/platform/window-actions.js` | The desktop window driven from the page: drag region, Minimise and Fullscreen / Windowed with its icon, the root area sized to the available area (`bindAvailableArea`), the window-size media queries settled against it (`areaMatches`, `bindAreaMedia`), the windowed window's size from the shown screen frames (`SCREEN_FRAMES`, `bindScreenSize`), `reportSize`. |
 
 Document owners register here: the settings store's `settings` and
 `settings.machine` ([settings.md](settings.md)),
@@ -37,7 +25,7 @@ last Classic 2D and 3D board choices ([classic2d.md](classic2d.md),
 [mode3d.md](mode3d.md)), the records store's three documents
 ([records-store.md](records-store.md)), the Records screen's `records.view`
 ([records-library-view.md](records-library-view.md)) and `replays.library`
-([replay-library.md](replay-library.md)), the replay store's user, and the
+([replay-library.md](replay-library.md)), and the
 leaderboard outbox's `leaderboards.outbox`, with a blob store of its own
 under the same name ([leaderboards.md](leaderboards.md)). The
 machine settings document `settings.machine` is the one machine-local
@@ -50,34 +38,8 @@ over ([app-shell-theme-runtime.md](app-shell-theme-runtime.md)).
 
 ## PUBLIC API
 
-Platform module (`js/platform/index.js`) — what callers import: `storage`
-and its methods `register`, `load`, `save`, `clear`, `available` by name;
-`blobStore`; `leaderboards` — on the desktop host the Steam leaderboards,
-on the web the local stand-in (`js/leaderboards/local.js`), both from
-`js/leaderboards/index.js` with one interface and a `local` flag telling
-them apart; the shell hands both the records and the replay library through
-`leaderboards.connect({ records, replays })`, which only the stand-in reads
-([leaderboards.md](leaderboards.md)) —
-and `achievements` (null until its feature fills it); `capabilities`, the live flags of what the host offers, which
-callers read instead of testing for the platform — `desktopHost` (the
-bridge is present), `steam` (the host runs the Steam adapter, not the
-unavailable one), `achievements`, `leaderboards` and `sharedFiles` (Steam
-present and the adapter's capability of that name), `cloud` (Steam
-present) — with a getter per flag, `snapshot()`, `steamState()` and
-`subscribe(listener)`, derived at start-up from selection and again from
-every Steam state the host sends (`deriveFlags`; logged-on state never
-turns a flag off, since a call needing the Steam network rejects
-`offline`); `onOverlayActivated(listener)`, which the
-shell answers with the window blur's pause; `addFlushHook(hook)`, awaited
-before the page answers the host's flush request — with the bridge, every
-storage and blob request in flight is already one; `bindDesktopWindow({
-document, setIcon, fullArea })` → `{ actions, reportSize, screenChanged,
-dispose }`, the actions `bindWindowButtons`
-([app-shell-kit-helpers.md](app-shell-kit-helpers.md)) presses;
-`screenChanged()`, which the shell's router calls on every screen change,
-reports the windowed window's size, `fullArea()` — a 3D game outside the
-replay viewer — making it the whole work area. The web build has no host: every flag is off, and no
-overlay, flush or window action ever happens.
+Callers import `storage` and its methods by name from the platform module
+([platform-host.md](platform-host.md)), never a backend.
 
 Storage interface (`js/platform/storage.js`)
 - `createStorage({ backend })` → `{ register, load, save, clear, available }`.
@@ -116,39 +78,13 @@ Backend contract — `read(name)`, `write(name, text)`, `keepAside(name)`,
   `settled()` resolves once nothing is in flight, including every request
   one in flight led to, and never rejects.
 
-Blob store interface (`js/platform/blob-store.js`)
-- `createBlobStore({ open, fallback })` → `{ put, get, delete, list,
-  available }`. `open()` that throws, rejects or gives nothing selects
-  `fallback()`; calls made before selection settles wait for it.
-- `put` and `delete` → `{ ok: true }` or `{ ok: false, reason:
-  'write-failed', error }`, never reject; `get` → a copy of the bytes or
-  `undefined`, `list` → sorted names, both reject when the implementation
-  cannot read; `available()` → Promise, `false` over the fallback.
-- A bad name or non-`Uint8Array` bytes throw a `TypeError` synchronously.
-
-Blob implementation contract — `put`, `get`, `delete`, `list`; each may
-return a Promise and may throw.
-
-- Memory blob store: `createMemoryBlobStore({ initial, failWrites,
-  failReads }?)` plus the `blobs` Map for tests.
-- IndexedDB: `openIndexedDBBlobStore({ indexedDB }?)` → Promise of the
-  contract, rejecting when there is no factory or the open fails or is
-  blocked; `DB_NAME` `'ms3d-blobs'`, `STORE_NAME` `'blobs'`, its schema version `DB_VERSION`.
-- Steam: `openSteamBlobStore({ client, name, track? })` → the contract for
-  the store `name`, each call rejecting with the bridge's typed error —
-  `failed` for a refusing disk, `invalid` for a name the save directory
-  does not take; `REPLAY_STORE` `'replays'`, the replay library's store.
-  Any other feature opens its own store by name beside it, as the
-  leaderboard outbox does (`'leaderboards.outbox'`).
-
 ## INTERNAL PATTERNS
 
 - **Document format.** `JSON.stringify({ version, data })`; text that does
   not parse or lacks an integer `version >= 1` or a `data` key is corrupt.
   Falsy data round-trips; `undefined` and non-JSON data are
   `not-serializable`.
-- **No cache.** Every `load` and every blob call goes to the backend; the
-  owner's in-memory copy is the source of truth while the game runs.
+- **No cache.** Every `load` goes to the backend; the owner's in-memory copy is the source of truth.
 - **Upgrades.** An older document runs every step from its version up and
   is saved back at the current version; a failed save-back still returns the
   upgraded data and reports `save-failed`.
@@ -164,140 +100,50 @@ return a Promise and may throw.
 - **Browser backend keys.** One key per document, the kept-aside copy beside
   it. It never touches any other key — the legacy `ms3d.*` keys are their
   owners' to carry over and Reset all data's to remove.
-- **Blob copies.** The interface copies bytes both ways, so neither side can
-  change the other's; a failed write is reported, a failed read rejects, so
-  a failure is never mistaken for a missing blob. A blob is never kept in
-  `localStorage`.
-- **IndexedDB.** One record per blob, one transaction per call; another
-  tab's version change closes the connection, so later calls fail.
 - **The Steam build's storage.** With the bridge, documents and blobs are
   files the desktop host's file service keeps — documents in the save
   directory or, for the machine-local one, the machine prefs directory;
   blobs in a directory per store in the save directory ([desktop.md](desktop.md)
-  § Saves). The storage interface's loading, upgrades, refusal of a newer
-  version and failure rules are unchanged; only where the text lives
-  differs. Every Steam storage and blob request — reads included — goes
-  through one save tracker (`STEAM_SAVES` in `index.js`), and its
-  `settled()` is a flush hook, so the page answers the host's flush request
-  only once every request in flight, and every request it led to, has
-  settled, and Auto-Cloud's exit upload sees the final files. Nothing on
-  the Steam build reads or writes browser storage that outlives the
-  session: the pre-paint theme comes from the host, and the settings
-  store's loose-key carry-over and Reset all data's loose-key removal are
-  handed nothing there ([settings.md](settings.md)).
-- **Start-up selection.** `index.js` is the only module that imports a
-  backend or blob implementation; it selects once, when first evaluated,
-  from the page bridge (`findBridge(globalThis)`): with the bridge, each
-  slot a Steam feature filled in `STEAM_SLOTS` takes that implementation,
-  every other slot its `BROWSER_SLOTS` one — the memory blob store standing
-  in when IndexedDB is missing or refuses, the local leaderboards stand-in
-  for `leaderboards`; it never follows a later change of the globals. Slots
-  are filled in order, so the Steam leaderboards are built over the
-  selected storage and the capability flags, and open the outbox's blob
-  store through the same save-tracked Steam blob store as the replays. Tests pin that no other file under `js/` imports an
-  implementation, and that no module outside `js/platform/` tests for
-  Electron or the bridge.
-- **The available area.** At the desktop host `bindDesktopWindow` sizes the
-  page's root element — the size container every size step reads
-  ([app-shell-kit-layout.md](app-shell-kit-layout.md) § The root area) —
-  to the available area of the display the window is on: its work area
-  (`screen.availWidth` × `screen.availHeight`) while windowed, the whole
-  screen in fullscreen, again on every display change, window resize and
-  fullscreen event (`bindAvailableArea`), so the layout never reads the
-  window's own size. It then settles every window-size `@media` rule of the
-  page's stylesheets — a query list made only of width, height and
-  orientation features, the touch step's — against that area, rewriting
-  each to `all` or `not all` and keeping its text to settle again, a
-  stylesheet added later (a theme switch) once it loads (`areaMatches`,
-  `bindAreaMedia`): a desktop work area is never phone-sized, so the
-  desktop host never takes the phone layout. Any other media query (a
-  pointer, a motion preference) is left to the browser. On the web none
-  of this runs: the root area is the browser window and the touch step
-  follows it.
-- **The windowed window.** Windowed at the desktop host the window is the
-  shown screen's frame (`bindScreenSize`): the screens lay out in the
-  available area as everywhere, the box around the shown `SCREEN_FRAMES`
-  elements is measured — only those inside a layer over the screen
-  (`WINDOW_OVER`, `data-window-over` on `index.html`'s pause, results,
-  context-lost, ready and Learn 3D end layers) while one shows, so a popup
-  is the window alone and the game window's size comes back when it hides;
-  a card inside the window (`WINDOW_INSIDE`, `data-window-inside`: the
-  Classic 2D status card, which the shell fits inside the game window, or
-  inside the pause card while that is the window) is never measured —, the root
-  element shifted by its corner (`--window-x`, `--window-y`, which
-  `css/style.css` applies while the root carries `data-window-state="windowed"`,
-  the 3D scene's canvas shifted back onto the window, the toast placed on
-  it — centred, above its bottom edge, fitted to its width — and the fatal
-  card filling it, no backdrop drawn)
-  and its size sent through `reportSize`, deduplicated, on every screen
-  change, every change of a frame's size (a `ResizeObserver`), every
-  theme switch (the root's `data-theme`, a `MutationObserver`: a theme can
-  change the drop edge alone) and every change of the available area. The frame filling the box is marked
-  `data-window-edge` (`WINDOW_EDGE`): the host stylesheet the page adds
-  (`WINDOW_EDGE_CSS`) gives it, windowed, the 8 px corners Windows 11
-  rounds the frameless window to (Electron's `roundedCorners` default), and
-  its drop edge — the hard outer shadow under it, read from its computed
-  `box-shadow` (`dropEdgeOf`) — is added to the reported height, so the
-  window shows it; a card inside the window keeps its own corners. During
-  3D play the size is the whole available area and no frame is marked.
-  Nothing is measured before the first screen change nor in
-  fullscreen, where the frame sits on the backdrop; leaving fullscreen
-  measures again. The host (`desktop/window.js`) caps the size at the work
-  area of the display the window is on and moves the window inside it,
-  again whenever the window is moved.
+  § Saves, [platform-blobs.md](platform-blobs.md)). The storage interface's
+  loading, upgrades, refusal of a newer version and failure rules are
+  unchanged; only where the text lives differs. Every Steam storage and
+  blob request — reads included — goes through one save tracker
+  (`STEAM_SAVES` in `index.js`), and its `settled()` is a flush hook
+  ([platform-host.md](platform-host.md)), so the page answers the host's
+  flush request only once every request in flight, and every request it
+  led to, has settled, and Auto-Cloud's exit upload sees the final files.
+  Nothing on the Steam build reads or writes browser storage that outlives
+  the session: the pre-paint theme comes from the host, and the loose-key
+  carry-over and removal are handed nothing there ([settings.md](settings.md)).
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/platform-storage.md](../domain/features/platform-storage.md)
   — the interface, versioning, failure contract, implementation selection.
-- [../domain/features/replay-library.md](../domain/features/replay-library.md)
-  — the replay store: named blobs, IndexedDB in the web build.
-- [../domain/technical-direction.md](../domain/technical-direction.md) —
-  the platform layer as the one boundary to storage and Steam.
-- [../domain/features/steam-desktop-host.md](../domain/features/steam-desktop-host.md)
-  — platform selection with the bridge, the capability flags, the overlay
-  pause, the quit flush, the desktop window's actions.
 - [../domain/features/steam-cloud-saves.md](../domain/features/steam-cloud-saves.md)
-  — the Steam document storage and blob store, the machine-local document,
-  the quit flush's wait for saves, no browser storage beyond the session.
-- [../domain/features/steam-leaderboards.md](../domain/features/steam-leaderboards.md)
-  — the leaderboards selected per build, the local stand-in on the web.
+  — the Steam storage, the machine-local document, the quit flush's wait.
 
 ## CROSS-REFERENCES
 
-- [desktop.md](desktop.md) — the host's side of the bridge: its request
-  and event lists, the Steam state it sends, the window actions, the
-  closing sequence that sends the flush request.
+- [platform-blobs.md](platform-blobs.md) — the blob store;
+  [platform-host.md](platform-host.md) — the selector, the bridge client
+  the Steam backend requests through, the flush hook.
+- [desktop.md](desktop.md) — the file service keeping the Steam build's
+  files: the save and machine prefs directories, safe writes.
 - [testing.md](testing.md) — `tests/platform-storage.test.mjs`,
-  `tests/platform-browser.test.mjs` (every platform browser test, the
-  IndexedDB blob store's round trip among them),
-  `tests/platform-blob-store.test.mjs`, `tests/platform-selection.test.mjs`
-  (selection with a fake bridge, the flags, the host link, the desktop
-  window and its available area), `tests/platform-steam-storage.test.mjs`
-  (the Steam storage and blob store, clear, the quit flush) and the shared
-  interface suites in `tests/helpers/platform-suites.mjs`; the
-  leaderboards slot's selection is pinned in
-  `tests/leaderboards-local.test.mjs` and `tests/leaderboards-steam.test.mjs`.
-- [replay-library.md](replay-library.md) — the replay store's user;
-  [leaderboards.md](leaderboards.md) — the leaderboards slot's two
-  implementations and the outbox's document and blob store.
-- [app-shell.md](app-shell.md) — the `ms3d.*` keys nothing reads.
-- [settings.md](settings.md) — the settings and machine settings
-  documents, the legacy keys the store carries over on the browser build,
-  Reset all data.
+  `tests/platform-browser.test.mjs` (every platform browser test),
+  `tests/platform-steam-storage.test.mjs` (the Steam storage and blob
+  store, clear, the quit flush), `tests/helpers/platform-suites.mjs`.
+- [app-shell.md](app-shell.md) — the `ms3d.*` keys nothing reads;
+  [settings.md](settings.md) — the settings documents, the legacy keys
+  carried over on the browser build, Reset all data.
 
 ## WHEN TO READ THE SOURCE
 
-- A Steam save not waited for at quit, or a new store: `STEAM_SAVES` and
-  `steamBlobStore` in `index.js`, `createSaveTracker` in `steam-storage.js`.
-- Adding a Steam implementation: the backend contract in the `storage.js`
-  header and `memory-backend.js` (a blob implementation likewise from the
-  `blob-store.js` header and `memory-blob-store.js`), then fill its slot in
-  `index.js`'s `STEAM_SLOTS` only — a factory of the bridge client
-  (`bridge-client.js`) and of what is selected before it — the capability
-  flags and the earlier slots (`{ capabilities, storage, blobStore, … }`).
-- A blob store failing in the browser: `indexeddb-blob-store.js`'s
-  `openDatabase` and `run`.
+- A Steam save not waited for at quit: `STEAM_SAVES` in `index.js`,
+  `createSaveTracker` in `steam-storage.js`.
+- Adding a backend: the `storage.js` header's contract and
+  `memory-backend.js`, then its slot ([platform-host.md](platform-host.md)).
 - Changing the stored format or the failure rules: `storage.js`'s `parse`,
   `loadDocument` and `saveDocument`.
 - A storage test failing on keys or quota: `browser-backend.js` and the

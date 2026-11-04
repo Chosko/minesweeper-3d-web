@@ -73,7 +73,7 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   page's root element is the size container `root` (`css/components.css`),
   the browser window on the web and, at the desktop host, the work area of
   the display the window is on — the whole screen in fullscreen — which
-  `bindAvailableArea` sizes it to ([platform.md](platform.md)). The desktop
+  `bindAvailableArea` sizes it to ([platform-window.md](platform-window.md)). The desktop
   and compact size steps and every rule sized from the window resolve
   against it as `@container root` queries and container units, never as
   window queries or viewport units — the 3D scene's canvas and the toast
@@ -90,7 +90,7 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   shrinking to fit a smaller root area and never growing past it on a
   larger one; windowed at the desktop host no backdrop is drawn and the
   window is the frame, its corners the window's own and its drop edge
-  inside the window ([platform.md](platform.md) § The windowed window). Its head is the game's title bar on every one but
+  inside the window ([platform-window.md](platform-window.md) § The windowed window). Its head is the game's title bar on every one but
   the results card, which keeps a head of its own: Back at the start as
   its arrow icon alone (none on the main menu; the game window holds its
   own controls there, [app-shell-hud.md](app-shell-hud.md)), the game logo
@@ -103,7 +103,7 @@ binders (`ICONS`, `setNote`, `createCodeChip`, `bindSliderFill`) are
   an accessible name. On the web they press and do nothing; a desktop host
   the platform layer's `capabilities` report attaches their actions
   (`bindWindowButtons`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md);
-  [platform.md](platform.md)). A phone's head holds only Back and the
+  [platform-window.md](platform-window.md)). A phone's head holds only Back and the
   logo. The screen's name is the body heading `ui-frame__heading`, with the
   screen's control at its right in `ui-frame__action` (Records' mode
   switch, a board choice's panel toggle); the main menu has none. Then a

@@ -71,7 +71,9 @@ Store (`js/records/store.js`)
 - `attach(pauser)` → detach: `abandoned` records, `inProgress` calls `begin`
   or `checkpoint`, `finished` clears the marker; a null summary (a fixed 3D
   board's) is ignored.
-- The model's queries, delegated.
+- The model's queries, delegated; `games()` → the whole history, every
+  board and mode in play order, in compact form — what the Steam
+  achievements' catch-up reads.
 
 ## INTERNAL PATTERNS
 

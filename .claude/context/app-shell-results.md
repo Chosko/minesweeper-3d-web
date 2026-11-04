@@ -6,7 +6,7 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers `js/results/flow.js` — the results screen's (`results`) DOM-free flow:
 it records the game on the `finished` and `abandoned` hand-offs, routes a
 finished one to `results`, hands the replay to the library and a finished
-game to the leaderboards' `submit` — and its
+game to the leaderboards' `submit` and the achievements — and its
 wiring in `js/main.js`, the screen's actions included. The screen's content,
 binder, its place over the board and Look at the board are
 [app-shell-results-view.md](app-shell-results-view.md); the replay viewer's
@@ -17,14 +17,15 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 
 `js/results/flow.js`
 - `RESULTS_SCREEN` = `'results'`.
-- `createResultsFlow({records, replays?, leaderboards?, router,
-  restart(source, current), goMenu})` → `attach(pauser)` → detach,
+- `createResultsFlow({records, replays?, leaderboards?, achievements?,
+  router, restart(source, current), goMenu})` → `attach(pauser)` → detach,
   `finished(summary, mode, replay?)` → the routed data `{summary, mode,
   comparison, saved, notSaved, watch, watchBest, rank, streak, standing}`
   or null, `abandoned(summary, mode, replay?)`, `current`,
   `playAgain(source)`, `openRecords()`, `watch()`, `watchBest()`,
   `toMenu()`. Without `replays` no replay is kept and no best is watched;
-  without `leaderboards` nothing is submitted. `watch` is set when the game
+  without `leaderboards` nothing is submitted; without `achievements`
+  nothing is unlocked. `watch` is set when the game
   handed over a sealed replay and the router has the `replay` route; `watchBest` is, after a win that set
   no new best on any stat, the board's fastest-time best's id (after
   recording) when the library `has` its replay and it is not the game
@@ -75,6 +76,12 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   `leaderboards`. Eligibility, verification and the outbox are
   [leaderboards.md](leaderboards.md)'s; a throwing submit is logged and
   changes nothing else.
+- **Achievements hand-off.** For a finished game only, once the record call
+  has returned — whether or not it succeeded — the flow calls
+  `achievements.onGameFinished(summary)`; the shell passes the platform's
+  `achievements`, null on the web build, so nothing is unlocked there. The
+  catalogue, the evaluator and the unlocker are `js/achievements/`'s; a
+  throwing call is logged and changes nothing else.
 
 ## DOMAIN DEPENDENCIES
 
@@ -88,6 +95,8 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   — the end-of-game hand-off, best pinning, the session-only replay.
 - [../domain/features/steam-leaderboards.md](../domain/features/steam-leaderboards.md)
   — `submit` after the summary is recorded and the replay added.
+- [../domain/features/steam-achievements.md](../domain/features/steam-achievements.md)
+  — the end-of-game hook.
 
 ## CROSS-REFERENCES
 
@@ -104,16 +113,18 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 - [app-shell-pause.md](app-shell-pause.md) — the hand-offs the flow attaches
   to.
 - [leaderboards.md](leaderboards.md) — `submit` and the submission state.
+- [platform-host.md](platform-host.md) — the `achievements` slot.
 - [testing.md](testing.md) — `tests/results.test.mjs` (a flat-mode
   game's board line and Records route among them),
   `tests/results-watch.test.mjs` (fast only; the results' browser tests,
   Watch replay's among them, are in `tests/results.test.mjs`),
   `tests/replay-handoff.test.mjs`; `tests/leaderboards-submit.test.mjs`
-  holds the leaderboards hand-off's tests.
+  holds the leaderboards hand-off's tests,
+  `tests/achievements-unlock.test.mjs` the achievements hand-off's.
 
 ## WHEN TO READ THE SOURCE
 
-- Changing what the flow records, routes or hands to the library or the
-  leaderboards, or the
+- Changing what the flow records, routes or hands to the library, the
+  leaderboards or the achievements, or the
   screen's actions: the head comment of `js/results/flow.js` and the
   `results` wiring in `js/main.js`.

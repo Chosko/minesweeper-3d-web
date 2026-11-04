@@ -75,7 +75,7 @@ code chip and the figures panel. The catalogue those binders follow is [app-shel
   `fullscreen`, `quit`, their order), `bindWindowButtons(root,
   {capabilities, actions})` — one delegated listener for every
   `[data-window]` under `root`, calling `actions[name]` only while
-  `capabilities.desktopHost` ([platform.md](platform.md)); with no host a
+  `capabilities.desktopHost` ([platform-host.md](platform-host.md)); with no host a
   press does nothing. Returns the unbind.
 - The root area: `matchRootArea(doc, { ResizeObserver? })` → a `matchMedia`
   over the root area ([app-shell-kit-layout.md](app-shell-kit-layout.md)

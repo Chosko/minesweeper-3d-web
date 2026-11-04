@@ -14,9 +14,11 @@ the game's saves as files under the user-data directory — the save
 directory, which Steam Auto-Cloud syncs, and the machine prefs directory
 beside it, which stays on the machine — and hands the page the stored theme
 id before first paint. Nothing under `js/` imports Electron or the binding;
-the page's side of the bridge, platform selection, the Steam storage and
-blob store over the bridge, the capability flags and the desktop window
-driven from the page are [platform.md](platform.md)'s.
+the page's side of the bridge, platform selection and the capability flags
+are [platform-host.md](platform-host.md)'s, the Steam storage and blob
+store over the bridge [platform.md](platform.md)'s and
+[platform-blobs.md](platform-blobs.md)'s, the desktop window driven from
+the page [platform-window.md](platform-window.md)'s.
 
 | File | Responsibility |
 | ---- | -------------- |
@@ -161,7 +163,7 @@ Build (`desktop/build/package.mjs`, run from `desktop/`):
 - **Steam state.** `steam.state` and `steamStateChanged` carry the adapter's
   kind, logged-on state, the player and the capability booleans; the bridge
   re-reads them on every presence change. The page derives its capability
-  flags from them ([platform.md](platform.md)).
+  flags from them ([platform-host.md](platform-host.md)).
 - **The window.** Frameless and opaque on a black background, so the page
   draws the whole window; the page marks its title bars as the drag region.
   Windowed it is never resizable: `setContentSize` takes the size the page
@@ -173,8 +175,8 @@ Build (`desktop/build/package.mjs`, run from `desktop/`):
   leave events; `fullscreenChanged` tells the page, whose title bar button
   swaps its icon. The page side — the drag region, the available area, the
   reported size, the popup sizing and the frame's corners — is
-  [platform.md](platform.md) § The windowed window and § The available
-  area.
+  [platform-window.md](platform-window.md) § The windowed window and § The
+  available area.
 - **The overlay.** `OVERLAY_SWITCHES` run Chromium's GPU work in the main
   process so Steam can draw its overlay; while the adapter has the overlay
   capability, the main process invalidates the page on a timer, so Steam,
@@ -235,10 +237,12 @@ Build (`desktop/build/package.mjs`, run from `desktop/`):
 
 ## CROSS-REFERENCES
 
-- [platform.md](platform.md) — the page's side: `findBridge`, the request
-  client, the Steam storage and blob store over the slots, the capability
-  flags, `linkHost` and the quit flush, the desktop window driven from the
-  page.
+- [platform-host.md](platform-host.md) — the page's side: `findBridge`, the
+  request client, the slots, the capability flags, `linkHost` and the quit
+  flush; [platform.md](platform.md) and [platform-blobs.md](platform-blobs.md)
+  — the Steam storage and blob store over the bridge;
+  [platform-window.md](platform-window.md) — the desktop window driven from
+  the page.
 - [app-shell-kit-helpers.md](app-shell-kit-helpers.md) — `bindWindowButtons`,
   the title bar's Minimise, Fullscreen / Windowed and Quit.
 - [app-shell-pause.md](app-shell-pause.md) — the overlay pause and the quit

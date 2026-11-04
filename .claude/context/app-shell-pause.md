@@ -37,7 +37,7 @@ head comment. Both modes' end delay and its skip are
   during an end delay, else `PAUSE.pause`): the overlay's pause button,
   controller disconnect (with a note), `blur` — the window's, and the
   overlay pause: the Steam overlay opening at the desktop host
-  (`onOverlayActivated`, [platform.md](platform.md)) pauses as a window
+  (`onOverlayActivated`, [platform-host.md](platform-host.md)) pauses as a window
   blur —, `visibilitychange` hidden, `__ms.pause()`. Esc on the board, the controller's back buttons over a
   board status card and pointer-lock loss go through
   `backGame(source)` → `PAUSE.back`, which first cancels a board being
@@ -122,7 +122,7 @@ head comment. Both modes' end delay and its skip are
   at once (`activeMode().finishNow()`) so it is recorded finished.
 - **Quit flush.** Before the desktop host quits it asks the page to flush
   ([desktop.md](desktop.md) § Closing); the shell's flush hook
-  (`addFlushHook`, [platform.md](platform.md)) ends the game as closing the
+  (`addFlushHook`, [platform-host.md](platform-host.md)) ends the game as closing the
   page does — a game in its end delay finished, then `PAUSE.pageHide()` —
   and awaits the records store's and the replay library's `settled()`
   before the page answers, the host's own timeout bounding the wait.
