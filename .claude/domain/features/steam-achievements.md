@@ -86,7 +86,8 @@ DOM-free ES module tested in Node.
   event, evaluates every won game in `personal-records`' history and
   unlocks what is not yet set. Because every rule is a function of one
   summary and the history is the records' source of truth, nothing extra is
-  stored to remember pending unlocks.
+  stored to remember pending unlocks. The history keeps each game's clicks
+  by kind, so catch-up judges every rule, no flags included.
 - **Hook.** The game shell's end-of-game hand-off calls the evaluator and
   the unlocker for each finished game after the summary is recorded.
 
@@ -118,8 +119,8 @@ DOM-free ES module tested in Node.
   events and capability flags.
 - `game-summary` and `3d-game-records` — board identity, standard-board
   recognition and the 3BV/s and efficiency derivations.
-- `personal-records` — the history catch-up evaluates; it must keep each
-  game's clicks by kind, or at least its flag actions, for the no-flags rule.
+- `personal-records` — the history catch-up evaluates, with each game's
+  clicks by kind for the no-flags rule.
 - `game-shell` — the end-of-game hand-off that calls the evaluator.
 
 ## Open questions
@@ -130,6 +131,3 @@ DOM-free ES module tested in Node.
   not the design.
 - Achievement display names, descriptions and icons. Authored before the
   Steamworks settings are published; blocks nothing in code.
-- Whether `personal-records`' compact history keeps clicks by kind or only
-  a total. If only a total, the no-flags achievement is evaluated at game
-  end only and catch-up skips it.

@@ -36,7 +36,7 @@ Feature: steam-leaderboards
 
 ## 100. Achievement catalogue and evaluator
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/achievements/catalogue.js, js/achievements/evaluate.js, tests/achievements-evaluate.test.mjs, .claude/domain/features/steam-achievements.md
 Preconditions: none
