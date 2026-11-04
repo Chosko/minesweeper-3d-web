@@ -77,7 +77,7 @@ Context:
 
 Done: 2026-11-04, commit `2b18a84` (8 files, +406/-14). Decision: the stand-in gets the records store and replay library through `leaderboards.connect({ records, replays })`, called in `js/main.js` (Steam's `connect` does nothing); both implementations carry a `local` flag. Premise wrong: step 13's note was already done — task 97 creates and starts the submission.
 
-## [ ] 16. Implement task 99 — Update documentation for feature `steam-leaderboards`
+## [x] 16. Implement task 99 — Update documentation for feature `steam-leaderboards`
 
 Depends on: 12, 13, 14, 15
 
@@ -90,6 +90,8 @@ Context:
 ```prompt
 /task-implement 99 --review
 ```
+
+Done: 2026-11-04, commit `b402192` (6 files, +273/-24).
 
 ## [x] 17. Implement task 100 — Achievement catalogue and evaluator
 
