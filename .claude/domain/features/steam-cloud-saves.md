@@ -117,9 +117,11 @@ the desktop host's fixed bridge (see
 - **Source of truth** — the files on the local disk while the game runs;
   Steam Cloud's copy of the save directory between machines. Each owning
   feature keeps its in-memory copy as before.
-- **Auto-Cloud configuration** — set in the Steamworks app settings: the
-  Windows root that maps to the save directory, all files beneath it
-  recursively, and a quota of 100 MB and 1000 files per user.
+- **Auto-Cloud configuration** — set in the Steamworks app settings: one
+  root, `WinAppDataRoaming` with the subdirectory that is the save
+  directory, every file beneath it recursively, and its OS set to All OSes,
+  since a root saved for Windows alone locks the save files to Windows for
+  good; and a quota of 100 MB and 1000 files per user.
 - **Size** — documents are small apart from the stats history; the replay
   library dominates, at up to 100 unpinned replays plus pinned ones.
 
