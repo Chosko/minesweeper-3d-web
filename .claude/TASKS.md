@@ -66,7 +66,7 @@ Feature: steam-achievements
 
 ## 103. Update documentation for feature `steam-achievements`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/achievements.md, .claude/context/app-shell-results.md, .claude/context/testing-files.md, .claude/context/INDEX.md, README.md
 Preconditions: 100, 101, 102

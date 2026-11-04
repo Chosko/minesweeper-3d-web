@@ -80,8 +80,9 @@ the screen's markup is [app-shell-markup-game.md](app-shell-markup-game.md) § S
   has returned — whether or not it succeeded — the flow calls
   `achievements.onGameFinished(summary)`; the shell passes the platform's
   `achievements`, null on the web build, so nothing is unlocked there. The
-  catalogue, the evaluator and the unlocker are `js/achievements/`'s; a
-  throwing call is logged and changes nothing else.
+  catalogue, the evaluator and the unlocker are
+  [achievements.md](achievements.md)'s; a throwing call is logged and
+  changes nothing else.
 
 ## DOMAIN DEPENDENCIES
 
@@ -112,7 +113,8 @@ the screen's markup is [app-shell-markup-game.md](app-shell-markup-game.md) § S
   replay and Watch best open.
 - [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — the hand-offs the flow attaches
   to.
-- [leaderboards-submit.md](leaderboards-submit.md) — `submit` and the submission state.
+- [leaderboards-submit.md](leaderboards-submit.md) — `submit` and the submission state;
+  [achievements.md](achievements.md) — `onGameFinished`.
 - [platform-host.md](platform-host.md) — the `achievements` slot.
 - [testing-files.md](testing-files.md) — `tests/results.test.mjs` (a flat-mode
   game's board line and Records route among them),

@@ -485,6 +485,13 @@ on the machine that saved them, as do the window state and the crash log. The ga
 the same whether or not Steam is running or online. Before the app is released Steam Cloud does not
 sync on its own; how to turn it on for testing is [dev/steam/README.md](dev/steam/README.md).
 
+The Steam build has achievements, shown by Steam's overlay: a first Classic 2D win on Beginner, on
+Intermediate and on Expert, an Expert win with no-guess off, three Expert speed tiers in 3BV/s, two
+efficiency tiers and a win without placing a flag on Intermediate or Expert, a win on each of the
+three 3D cubes and a fast win on the Expert cube. Only a win on a standard board counts — custom and
+Daily boards earn none — and a game won while Steam was away unlocks its achievement the next time
+the game runs with Steam.
+
 How the host is built — the window, the adapter, the page bridge, the file service, quitting and
 the packaging — is [.claude/context/desktop.md](.claude/context/desktop.md)'s.
 

@@ -93,7 +93,8 @@ implementation:
   and event lists, the Steam state it sends, the closing sequence that
   sends the flush request ([desktop.md](desktop.md)).
 - [leaderboards.md](leaderboards.md), [leaderboards-steam.md](leaderboards-steam.md) — the leaderboards slot's two
-  implementations; [app-shell-results.md](app-shell-results.md) — the
+  implementations; [achievements.md](achievements.md) — the achievements
+  slot's implementation; [app-shell-results.md](app-shell-results.md) — the
   achievements' end-of-game hand-off.
 - [app-shell-pause.md](app-shell-pause.md) — the overlay pause;
   [app-shell-pause-hand-offs.md](app-shell-pause-hand-offs.md) — the
