@@ -63,7 +63,7 @@ Context:
 
 Done: 2026-11-04, commit `c1f702e` (9 files, +195/-55).
 
-## [ ] 15. Implement task 98 — Local leaderboards stand-in for the web build
+## [~] 15. Implement task 98 — Local leaderboards stand-in for the web build
 
 Depends on: 3, 12
 
@@ -87,7 +87,7 @@ Context:
 /task-implement 99 --review
 ```
 
-## [ ] 17. Implement task 100 — Achievement catalogue and evaluator
+## [x] 17. Implement task 100 — Achievement catalogue and evaluator
 
 Depends on: none
 
@@ -98,12 +98,16 @@ Context:
 /task-implement 100 --review
 ```
 
+Done: 2026-11-04, commit `4e34106` (5 files, +339/-7). Decision: a Daily board earns nothing; a challenge game on a standard board earns; 3BV/s and efficiency are compared at the results screen's precision; speed and efficiency API names carry their rank (`CLASSIC_EXPERT_SPEED_1`), not their value. Premise wrong: task 115 was already done, and the shipped cube presets are Intro, Beginner, Intermediate and Expert (10×10×10/100), not the body's 12×12×8/130.
+
 ## [ ] 18. Implement task 101 — Achievement unlocker, catch-up and the end-of-game hook
 
 Depends on: 3, 17
 
 Context:
 - 2026-10-25 (from step 3): the page's achievements slot is null until its own feature fills it; task 86 is `[PARTIAL]` (content size deferred, nothing this step needs).
+
+- 2026-11-04 (from step 17): the compact history keeps each game's clicks by kind, so catch-up judges every rule ("no flags" included) by passing a history entry straight to `earned()`; the evaluator reads either `board` or `boardKey`. A Daily board earns nothing; a challenge game on a standard board earns.
 
 ```prompt
 /task-implement 101 --review
@@ -117,6 +121,8 @@ Needs: agent+human
 
 Context:
 - 2026-10-28 (from step 5): the user added a test achievement with API name `SPIKE_PROBE` in Steamworks for the spike, and it unlocked on the user's account. It is not part of the catalogue. The overlay showed only with the switches step 6 adds to `desktop/main.js`.
+
+- 2026-11-04 (from step 17): speed and efficiency API names carry their rank (`CLASSIC_EXPERT_SPEED_1`), so calibrating a threshold renames nothing. Every threshold is provisional, the 3D cube Expert speed one at 0.5 3BV/s. The shipped cube presets are Intro, Beginner, Intermediate and Expert (10×10×10/100); the evaluator looks presets up by name.
 
 ```prompt
 /task-implement 102 --review
@@ -214,7 +220,7 @@ Context: none
 /task-implement 110 --review
 ```
 
-## [ ] 28. Implement task 111 — Action catalogue, bindings resolver and the bindings setting
+## [~] 28. Implement task 111 — Action catalogue, bindings resolver and the bindings setting
 
 Depends on: none
 
