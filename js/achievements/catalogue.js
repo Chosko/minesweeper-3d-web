@@ -13,12 +13,13 @@
 // test pins them. A tier's name carries its rank, never its threshold, so calibrating a threshold
 // renames nothing.
 
-// The thresholds, provisional until calibrated against real play: 3BV/s for the speed tiers,
-// efficiency as a percentage.
+// The thresholds: 3BV/s for the speed tiers, efficiency as a percentage. Each one is quoted in its
+// achievement's Steamworks description, so a change here changes that text too. The cube Expert
+// speed is a 30-minute game on a typical cube Expert board (about 360 3BV).
 export const THRESHOLDS = Object.freeze({
-  expertSpeed: Object.freeze([1, 2, 3]),
-  efficiency: Object.freeze([100, 150]),
-  cubeExpertSpeed: 0.5,
+  expertSpeed: Object.freeze([1, 1.5, 2.5]),
+  efficiency: Object.freeze([100, 130]),
+  cubeExpertSpeed: 0.2,
 });
 
 const atLeast = (value, threshold) => value !== null && value >= threshold;

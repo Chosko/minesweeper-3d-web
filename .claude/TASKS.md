@@ -56,7 +56,7 @@ Feature: steam-achievements
 
 ## 102. Steamworks achievement definitions, threshold calibration and overlay check
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude+human
 Files: js/achievements/catalogue.js, tests/achievements-evaluate.test.mjs, .claude/domain/features/steam-achievements.md
 Preconditions: 101

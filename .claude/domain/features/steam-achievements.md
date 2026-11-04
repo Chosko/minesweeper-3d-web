@@ -34,15 +34,18 @@ no-guess on or off unless stated:
 - **Classic 2D firsts** — a first win on Beginner, on Intermediate and on
   Expert (three).
 - **Expert the hard way** — a Classic 2D Expert win with no-guess off.
-- **Expert speed** — a Classic 2D Expert win at 3BV/s of at least 1, 2 and
-  3 (three).
+- **Expert speed** — a Classic 2D Expert win at 3BV/s of at least each
+  tier's threshold (three).
 - **Efficiency** — a Classic 2D Intermediate or Expert win at an efficiency
-  of at least 100 % and of at least 150 % (two).
+  of at least each tier's threshold (two).
 - **No flags** — a Classic 2D Intermediate or Expert win without placing a
   flag.
 - **3D presets** — a win on each of the three 3D cube presets: Beginner,
   Intermediate and Expert (three).
 - **3D speed** — a cube Expert win at 3BV/s of at least a set threshold.
+
+The thresholds and each achievement's display text are in
+[§ Thresholds and display text](#thresholds-and-display-text).
 
 Non-goals:
 
@@ -57,8 +60,8 @@ Non-goals:
 - An in-game achievement list or notification — Steam's overlay shows them.
 - Achievements in the web build — the web preview has no Steam; nothing is
   shown or kept for them there.
-- Achievement icons and final display text — authored in the Steamworks app
-  settings with the catalogue's names; see Open questions.
+- Final achievement icon art — the Steamworks settings carry placeholder
+  icons until it is authored.
 
 ## Architecture
 
@@ -123,11 +126,29 @@ DOM-free ES module tested in Node.
   clicks by kind for the no-flags rule.
 - `game-shell` — the end-of-game hand-off that calls the evaluator.
 
-## Open questions
+## Thresholds and display text
 
-- The exact speed and efficiency thresholds, including the 3D cube Expert
-  speed threshold. Calibrated against real play before the names are
-  published in the Steamworks settings; blocks the catalogue's constants,
-  not the design.
-- Achievement display names, descriptions and icons. Authored before the
-  Steamworks settings are published; blocks nothing in code.
+The thresholds are set from the play of a capable, not elite, player: a
+typical Classic 2D Expert board is about 175 3BV, so the speed tiers are
+about three minutes, two minutes and seventy seconds; efficiency counts every
+click, flags included, so the top tier asks for very economical play; the
+cube Expert speed is a 30-minute game on a typical cube Expert board of about
+360 3BV. Each description quotes its threshold, so a threshold changes only
+with its Steamworks text.
+
+| API name | Display name | Description |
+| -------- | ------------ | ----------- |
+| `CLASSIC_BEGINNER_WIN` | First Sweep | Win a Classic 2D game on Beginner. |
+| `CLASSIC_INTERMEDIATE_WIN` | Moving Up | Win a Classic 2D game on Intermediate. |
+| `CLASSIC_EXPERT_WIN` | Expert Sweeper | Win a Classic 2D game on Expert. |
+| `CLASSIC_EXPERT_HARD_WAY` | The Hard Way | Win a Classic 2D Expert game with no-guess off. |
+| `CLASSIC_EXPERT_SPEED_1` | Quick Hands | Win a Classic 2D Expert game at 1 3BV/s or faster. |
+| `CLASSIC_EXPERT_SPEED_2` | Fast Sweeper | Win a Classic 2D Expert game at 1.5 3BV/s or faster. |
+| `CLASSIC_EXPERT_SPEED_3` | Lightning | Win a Classic 2D Expert game at 2.5 3BV/s or faster. |
+| `CLASSIC_EFFICIENCY_1` | No Wasted Clicks | Win a Classic 2D Intermediate or Expert game at 100% efficiency or better. |
+| `CLASSIC_EFFICIENCY_2` | Click Economist | Win a Classic 2D Intermediate or Expert game at 130% efficiency or better. |
+| `CLASSIC_NO_FLAGS` | No Flags Needed | Win a Classic 2D Intermediate or Expert game without placing a single flag. |
+| `CUBE_BEGINNER_WIN` | Into the Third Dimension | Win a 3D game on the Beginner cube. |
+| `CUBE_INTERMEDIATE_WIN` | Cubed | Win a 3D game on the Intermediate cube. |
+| `CUBE_EXPERT_WIN` | Master of the Cube | Win a 3D game on the Expert cube. |
+| `CUBE_EXPERT_SPEED` | Cube Rush | Win a 3D Expert cube game at 0.2 3BV/s or faster. |

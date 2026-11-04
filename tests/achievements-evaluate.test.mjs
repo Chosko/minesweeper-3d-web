@@ -14,8 +14,9 @@ const cube = (name, noGuess = true, extra = {}) => {
   return createBoardIdentity({ mode: '3d', width: p.width, height: p.height, depth: p.depth, mines: p.mines, noGuess, ...extra });
 };
 
-// A slow, wasteful win by default: earns only the board's own win achievements.
-const BBBV = 150;
+// A slow, wasteful win by default: earns only the board's own win achievements. BBBV divides
+// 100 × BBBV by every efficiency threshold, so a whole click count lands on each one exactly.
+const BBBV = 390;
 const clicks = ({ reveal = 1000, flag = 0, flagWasted = 0, chord = 0 } = {}) => ({
   reveal: { effective: reveal, wasted: 0 },
   flag: { effective: flag, wasted: flagWasted },
@@ -55,6 +56,12 @@ test('the thresholds are frozen constants in one place, ascending per tier', () 
     assert.ok(tiers.every((t, i) => i === 0 || t > tiers[i - 1]));
   }
   assert.equal(typeof THRESHOLDS.cubeExpertSpeed, 'number');
+});
+
+test('the thresholds hold the values calibrated for the published Steamworks text', () => {
+  assert.deepEqual(THRESHOLDS.expertSpeed, [1, 1.5, 2.5]);
+  assert.deepEqual(THRESHOLDS.efficiency, [100, 130]);
+  assert.equal(THRESHOLDS.cubeExpertSpeed, 0.2);
 });
 
 // ---------- Classic 2D firsts and Expert the hard way ----------
