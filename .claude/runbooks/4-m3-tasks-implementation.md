@@ -63,7 +63,7 @@ Context:
 
 Done: 2026-11-04, commit `c1f702e` (9 files, +195/-55).
 
-## [~] 15. Implement task 98 — Local leaderboards stand-in for the web build
+## [x] 15. Implement task 98 — Local leaderboards stand-in for the web build
 
 Depends on: 3, 12
 
@@ -75,6 +75,8 @@ Context:
 /task-implement 98 --review
 ```
 
+Done: 2026-11-04, commit `2b18a84` (8 files, +406/-14). Decision: the stand-in gets the records store and replay library through `leaderboards.connect({ records, replays })`, called in `js/main.js` (Steam's `connect` does nothing); both implementations carry a `local` flag. Premise wrong: step 13's note was already done — task 97 creates and starts the submission.
+
 ## [ ] 16. Implement task 99 — Update documentation for feature `steam-leaderboards`
 
 Depends on: 12, 13, 14, 15
@@ -82,6 +84,8 @@ Depends on: 12, 13, 14, 15
 Context:
 - 2026-10-31 (from step 13): `.claude/context/app-shell-results.md` does not yet describe the results flow's new `leaderboards` option (added in `4669c60`). A game leaving the queue unsubmitted becomes `not-eligible` with a `reason` (`replaced`, `beaten`, `invalid`, `no-replay` or the submitter's own); a rejection carries `refused`, `differs`, `outcome`, `board` or `time` — a field the domain document does not list.
 - 2026-11-03 (from step 14): the 12 Steam leaderboards are created from the game client with `FindOrCreateLeaderboard` (ascending, milliseconds), not in the Steamworks settings — boards created there with Writes Trusted kept refusing client uploads after it was cleared. A queued score is sent on reconnect while the game keeps running, as well as at start. Any document saying the boards are created in Steamworks, or that the queue resends only at start, is wrong.
+
+- 2026-11-04 (from step 15): `.claude/context/testing.md` has no `leaderboards-` row for any leaderboards test file, the stand-in's included. The platform's browser slots constant is exported as `BROWSER_SLOTS`. The stand-in is wired through `leaderboards.connect({ records, replays })` in `js/main.js`, and both implementations carry a `local` flag.
 
 ```prompt
 /task-implement 99 --review
@@ -100,7 +104,7 @@ Context:
 
 Done: 2026-11-04, commit `4e34106` (5 files, +339/-7). Decision: a Daily board earns nothing; a challenge game on a standard board earns; 3BV/s and efficiency are compared at the results screen's precision; speed and efficiency API names carry their rank (`CLASSIC_EXPERT_SPEED_1`), not their value. Premise wrong: task 115 was already done, and the shipped cube presets are Intro, Beginner, Intermediate and Expert (10×10×10/100), not the body's 12×12×8/130.
 
-## [ ] 18. Implement task 101 — Achievement unlocker, catch-up and the end-of-game hook
+## [~] 18. Implement task 101 — Achievement unlocker, catch-up and the end-of-game hook
 
 Depends on: 3, 17
 
@@ -148,6 +152,8 @@ Context:
 - 2026-10-11 (amend): task 104 was re-planned so the 3D board picker lists the three cube presets only.
 - 2026-10-13 (amend): task 104 was re-planned into the shared layout's screen frame: it now waits on task 163 (themes-tasks-implementation step 7) and is claude+human — the owner supplies the leaderboard screen's *Joyful tiles* artboard before any markup is written.
 - Task 104 also builds the rankings (scope tabs, own standing, entry list, states) as one part for a given board, which the Records Leaderboards tab of task 107 (step 24) shows in place.
+
+- 2026-11-04 (from step 15): both leaderboards implementations carry a `local` flag (`true` for the web stand-in), for the screen's "local only" state. Local entries are all `playerId: 'local'`, named `You`; `friends` and `around` return the whole list and `standing` gives `friendsRank: null`.
 
 ```prompt
 /task-implement 104 --review
