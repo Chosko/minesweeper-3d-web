@@ -41,6 +41,8 @@
 //   boardsPlayed(mode?), bests(board), counters(board), winRate(board), completedWinRate(board),
 //   history(board), overall(mode?), overallWinRate(mode?), overallCompletedWinRate(mode?) — the
 //   model's queries.
+//   games()              → a copy of the whole history: every recorded game in play order, in
+//                          compact form, every board and mode — what achievement catch-up reads.
 // record, begin and checkpoint before load() throw: that is a programming error.
 
 import { createRecordsModel, upgradeRecords, hasCompletedCounters } from './model.js';
@@ -185,6 +187,8 @@ export function createRecordsStore({ storage, onNotSaved = () => {} }) {
     available() { return persists(); },
 
     settled() { return queue; },
+
+    games() { return model.documents().history; },
 
     attach(pauser) {
       const offs = [

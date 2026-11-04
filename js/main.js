@@ -32,7 +32,7 @@ import { token, onThemeChange } from './tokens.js';
 import { themeApplier } from './themes/applier.js';
 import { bindBoardArt } from './shell/board-art.js';
 import { BOARD_ART } from './classic2d/tile-skin.js';
-import { storage, blobStore, leaderboards, capabilities, onOverlayActivated, addFlushHook, bindDesktopWindow } from './platform/index.js';
+import { storage, blobStore, leaderboards, achievements, capabilities, onOverlayActivated, addFlushHook, bindDesktopWindow } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
 import { countedClicks } from './records/summary.js';
@@ -952,6 +952,8 @@ const RECORDS = createRecordsStore({
 const recordsLoaded = RECORDS.load();
 RECORDS.attach(PAUSE);
 RECORDS.onChange(() => { CHOICE_2D.refresh(); HEX_MODE.choice.refresh(); TRI_MODE.choice.refresh(); CHOICE_3D.refresh(); });
+// The Steam build's achievements catch up over the records' history once it has loaded.
+recordsLoaded.then(() => achievements?.start({ history: () => RECORDS.games() }), () => {});
 
 // ---------- first-use hints ----------
 // What a new player has been taught, in the platform-storage document shell.firstUse, seeded from
@@ -1225,6 +1227,7 @@ const RESULTS = createResultsFlow({
   records: RECORDS,
   replays: REPLAYS,
   leaderboards,
+  achievements,
   router: SHELL,
   restart: (source, { mode, summary }) => {
     if (MODES.active) PAUSE.restart(source);

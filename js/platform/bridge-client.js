@@ -45,6 +45,13 @@ export function createBridgeClient(host) {
     deleteBlob: (store, key) => call(() => host.blobs.delete(store, key)),
     listBlobs: (store) => call(() => host.blobs.list(store)),
     /**
+     * Steam achievements (desktop/adapter/interface.js): which of the names are set → those names;
+     * one set; the store that commits the sets.
+     */
+    achievementsSet: (names) => call(() => host.achievements.read(names)),
+    setAchievement: (name) => call(() => host.achievements.set(name)),
+    storeStats: () => call(() => host.achievements.store()),
+    /**
      * Steam leaderboards and shared files (desktop/adapter/interface.js): a leaderboard's handle by
      * name; an upload keeping the best → { changed, rankBefore, rankAfter }; a download of a rank
      * range in a scope or of named players → { total, entries }; a shared file attached to the

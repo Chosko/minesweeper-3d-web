@@ -46,7 +46,7 @@ Feature: steam-achievements
 
 ## 101. Achievement unlocker, catch-up and the end-of-game hook
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/achievements/unlock.js, js/achievements/index.js, js/results/flow.js, js/platform/index.js, tests/achievements-unlock.test.mjs
 Preconditions: 100

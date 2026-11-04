@@ -90,12 +90,12 @@ test('with the bridge the platform selects the Steam implementation of every slo
   assert.equal(platform.capabilities.desktopHost, true);
 });
 
-test('the Steam slots are the four the later features fill; steam-cloud-saves fills storage and the blob store, steam-leaderboards the leaderboards', () => {
+test('the Steam slots are the four the later features fill; steam-cloud-saves fills storage and the blob store, steam-leaderboards the leaderboards, steam-achievements the achievements', () => {
   assert.deepEqual(Object.keys(STEAM_SLOTS), ['storage', 'blobStore', 'leaderboards', 'achievements']);
   assert.equal(typeof STEAM_SLOTS.storage, 'function');
   assert.equal(typeof STEAM_SLOTS.blobStore, 'function');
   assert.equal(typeof STEAM_SLOTS.leaderboards, 'function');
-  assert.equal(STEAM_SLOTS.achievements, null);
+  assert.equal(typeof STEAM_SLOTS.achievements, 'function');
   const { host } = fakeBridge();
   const seen = [];
   const steam = { ...STEAM_SLOTS, leaderboards: (client, selected) => { seen.push({ client, ...selected }); return 'steam leaderboards'; } };
@@ -106,7 +106,7 @@ test('the Steam slots are the four the later features fill; steam-cloud-saves fi
   assert.equal(seen[0].client, platform.client);
   assert.equal(seen[0].storage, platform.storage, 'the leaderboards get the selected storage');
   assert.equal(seen[0].capabilities, platform.capabilities, 'and the live flags');
-  assert.equal(platform.achievements, 'local achievements');
+  assert.equal(typeof platform.achievements.onGameFinished, 'function', 'the Steam achievements');
 });
 
 test('without the bridge the platform selects the browser implementations and local stand-ins, and every flag is off', () => {

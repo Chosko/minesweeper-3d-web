@@ -4,9 +4,10 @@
 // which the Steam features fill — storage and the replay store from steam-cloud-saves, files the
 // desktop host keeps (js/platform/steam-storage.js, js/platform/steam-blob-store.js), the
 // leaderboards from steam-leaderboards (js/leaderboards/index.js, its outbox in a blob store of its
-// own), achievements); absent, or for a slot no Steam feature has filled, the browser implementation
-// or local stand-in. Callers import what is selected from here and never an implementation, nor test
-// for Electron or the bridge: the web build's storage is the browser backend
+// own), the achievements from steam-achievements (js/achievements/index.js)); absent, or for a slot
+// no Steam feature has filled, the browser implementation or local stand-in. Callers import what is
+// selected from here and never an implementation, nor test for Electron or the bridge: the web
+// build's storage is the browser backend
 // (js/platform/browser-backend.js) for documents, and IndexedDB (js/platform/indexeddb-blob-store.js)
 // for blobs, falling back to memory (js/platform/memory-blob-store.js) when IndexedDB is unavailable
 // or refuses to open; the leaderboards are the local stand-in over the player's own wins
@@ -35,6 +36,7 @@ import { createCapabilities } from './capabilities.js';
 import { findBridge, createBridgeClient, linkHost } from './bridge-client.js';
 import { bindWindowActions } from './window-actions.js';
 import { createSteamLeaderboards, createLocalLeaderboards } from '../leaderboards/index.js';
+import { createSteamAchievements } from '../achievements/index.js';
 
 /** Every storage and blob request the Steam implementations have in flight, for the quit flush. */
 const STEAM_SAVES = createSaveTracker();
@@ -56,7 +58,7 @@ export const STEAM_SLOTS = Object.freeze({
   leaderboards: (client, { storage, capabilities }) => createSteamLeaderboards({
     client, capabilities, storage, openBlobStore: (name) => steamBlobStore(client, name),
   }),
-  achievements: null,
+  achievements: (client, { capabilities }) => createSteamAchievements({ client, capabilities }),
 });
 
 /** The web build's implementation of each slot. */
