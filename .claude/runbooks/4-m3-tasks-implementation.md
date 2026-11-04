@@ -85,7 +85,7 @@ Context:
 - 2026-10-31 (from step 13): `.claude/context/app-shell-results.md` does not yet describe the results flow's new `leaderboards` option (added in `4669c60`). A game leaving the queue unsubmitted becomes `not-eligible` with a `reason` (`replaced`, `beaten`, `invalid`, `no-replay` or the submitter's own); a rejection carries `refused`, `differs`, `outcome`, `board` or `time` — a field the domain document does not list.
 - 2026-11-03 (from step 14): the 12 Steam leaderboards are created from the game client with `FindOrCreateLeaderboard` (ascending, milliseconds), not in the Steamworks settings — boards created there with Writes Trusted kept refusing client uploads after it was cleared. A queued score is sent on reconnect while the game keeps running, as well as at start. Any document saying the boards are created in Steamworks, or that the queue resends only at start, is wrong.
 
-- 2026-11-04 (from step 15): `.claude/context/testing.md` has no `leaderboards-` row for any leaderboards test file, the stand-in's included. The platform's browser slots constant is exported as `BROWSER_SLOTS`. The stand-in is wired through `leaderboards.connect({ records, replays })` in `js/main.js`, and both implementations carry a `local` flag.
+- 2026-11-04 (from step 15): `.claude/context/testing-files.md` has no `leaderboards-` row for any leaderboards test file, the stand-in's included. The platform's browser slots constant is exported as `BROWSER_SLOTS`. The stand-in is wired through `leaderboards.connect({ records, replays })` in `js/main.js`, and both implementations carry a `local` flag.
 
 ```prompt
 /task-implement 99 --review

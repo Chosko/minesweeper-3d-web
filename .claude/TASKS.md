@@ -68,7 +68,7 @@ Feature: steam-achievements
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/achievements.md, .claude/context/app-shell-results.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Files: .claude/context/achievements.md, .claude/context/app-shell-results.md, .claude/context/testing-files.md, .claude/context/INDEX.md, README.md
 Preconditions: 100, 101, 102
 Feature: steam-achievements
 
@@ -98,7 +98,7 @@ Feature: leaderboard-screen
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/leaderboards.md, .claude/context/app-shell-navigation.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Files: .claude/context/leaderboards.md, .claude/context/app-shell-navigation.md, .claude/context/replay-playback.md, .claude/context/testing-files.md, .claude/context/INDEX.md, README.md
 Preconditions: 104, 105
 Feature: leaderboard-screen
 
@@ -118,7 +118,7 @@ Feature: leaderboards-menu-entry
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/records-screen-view.md, .claude/context/app-shell-pause.md, .claude/context/testing.md, README.md
+Files: .claude/context/records-screen-view.md, .claude/context/app-shell-pause.md, .claude/context/testing-files.md, README.md
 Preconditions: 107
 Feature: leaderboards-menu-entry
 
@@ -138,7 +138,7 @@ Feature: results-steam-rank
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/app-shell-results.md, .claude/context/leaderboards.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Files: .claude/context/app-shell-results.md, .claude/context/leaderboards.md, .claude/context/testing-files.md, .claude/context/INDEX.md, README.md
 Preconditions: 109
 Feature: results-steam-rank
 
@@ -178,7 +178,7 @@ Feature: input-rebinding
 
 Status: [MISSING]
 Target: claude
-Files: README.md, .claude/context/input.md, .claude/context/app-shell-ui.md, .claude/context/testing.md, .claude/context/INDEX.md
+Files: README.md, .claude/context/input.md, .claude/context/app-shell-ui.md, .claude/context/testing-files.md, .claude/context/INDEX.md
 Preconditions: 111, 112, 113
 Feature: input-rebinding
 
