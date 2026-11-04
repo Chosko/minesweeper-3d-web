@@ -106,7 +106,7 @@ Context:
 
 Done: 2026-11-04, commit `4e34106` (5 files, +339/-7). Decision: a Daily board earns nothing; a challenge game on a standard board earns; 3BV/s and efficiency are compared at the results screen's precision; speed and efficiency API names carry their rank (`CLASSIC_EXPERT_SPEED_1`), not their value. Premise wrong: task 115 was already done, and the shipped cube presets are Intro, Beginner, Intermediate and Expert (10×10×10/100), not the body's 12×12×8/130.
 
-## [~] 18. Implement task 101 — Achievement unlocker, catch-up and the end-of-game hook
+## [x] 18. Implement task 101 — Achievement unlocker, catch-up and the end-of-game hook
 
 Depends on: 3, 17
 
@@ -118,6 +118,8 @@ Context:
 ```prompt
 /task-implement 101 --review
 ```
+
+Done: 2026-11-04, commit `3c01ffe` (10 files, +533/-12). Decision: the Steam achievements object gains `start({ history })`, called from `js/main.js` once the records load — catch-up needs the records, created after the platform; `onGameFinished` unlocks before it.
 
 ## [ ] 19. Implement task 102 — Steamworks achievement definitions, threshold calibration and overlay check
 
@@ -138,7 +140,8 @@ Context:
 
 Depends on: 17, 18, 19
 
-Context: none
+Context:
+- 2026-11-04 (from step 18): `.claude/context/platform.md` still says the achievements slot is empty. The Steam achievements object has a `start({ history })` method the feature document does not name, called from `js/main.js` with `RECORDS.games()` (a new copy of the whole history); before it `catchUp()` does nothing, and catch-up may run twice at start-up, harmlessly. `js/platform/bridge-client.js` gains `achievementsSet`, `setAchievement` and `storeStats`.
 
 ```prompt
 /task-implement 103 --review
