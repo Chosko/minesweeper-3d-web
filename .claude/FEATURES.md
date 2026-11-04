@@ -184,7 +184,7 @@ Tasks: 81, 82, 83
 
 ## steam-desktop-host — Electron host for Windows, Steamworks capability adapter, page bridge and SteamPipe build
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/steam-desktop-host.md
 Source: product-design.md § Steam features (m3-on-steam)
 Tasks: 84, 85, 86, 87, 88, 89, 90, 294, 295, 300, 301
@@ -193,7 +193,7 @@ Tasks: 84, 85, 86, 87, 88, 89, 90, 294, 295, 300, 301
 
 ## steam-cloud-saves — Save files in the user-data directory, synced by Steam Auto-Cloud
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/steam-cloud-saves.md
 Source: product-design.md § Steam features (m3-on-steam)
 Tasks: 91, 92, 93, 298, 299
@@ -202,7 +202,7 @@ Tasks: 91, 92, 93, 298, 299
 
 ## steam-leaderboards — Free-play Steam leaderboards: catalogue, verified submission with replay, offline outbox, queries
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/steam-leaderboards.md
 Source: product-design.md § Steam features (m3-on-steam)
 Tasks: 95, 96, 97, 98, 99
