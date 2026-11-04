@@ -1,7 +1,8 @@
 # The files a theme writes
 
 Read at step 5. The run writes the theme's own folder and its registry entry,
-and nothing else; the registry entry is the entry in `js/themes/registry.js`
+and nothing else — a catch-up's ledger lines are written at step 7
+(`./changelog.md`); the registry entry is the entry in `js/themes/registry.js`
 together with its pre-paint mirror in `js/theme.js` (§ *The registry entry*).
 The default theme's folder is the model for every file's shape.
 

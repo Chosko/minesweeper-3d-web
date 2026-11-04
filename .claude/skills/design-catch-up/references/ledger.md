@@ -4,9 +4,10 @@ Authority for: `.claude/DESIGN-LEDGER.md` — its shape, how a run reads it and
 when a run writes it. Read at steps 1, 2 and 7.
 
 The ledger is the repository's record of which changelog entries it has
-caught up with, and how. It is a history artifact: records are appended and
-never rewritten, except the header lines below and a record's `Open:` lines
-a later run answers.
+caught up with, how, and which themes implement each entry. It is a history
+artifact: records are appended and never rewritten, except the header lines
+below, a record's `Open:` lines a later run answers, and the `Implemented:`
+lines `/theme-implement catch-up` adds.
 
 ---
 
@@ -27,6 +28,7 @@ Points:
 - <point, in a few words> — <route>: <what it produced>
 Open:
 - <point set aside> — <in review | open question: …>
+Implemented: <theme-id> — <YYYY-MM-DD> — <commit> | uncommitted
 ```
 
 - **`Changelog:`** — the changelog every run reads unless given a URL.
@@ -42,6 +44,11 @@ Open:
   amended, task ids, runbook and steps, a spec path under `--quick`, or the
   entry and point that superseded it.
 - **`Open:`** — only when the entry had points set aside; omitted otherwise.
+- **`Implemented:`** — one line per theme whose `/theme-implement catch-up`
+  checked every point of the entry in its renders and code and landed
+  (`../../theme-implement/references/changelog.md`); none until one has.
+  The line lands in the theme's own commit, so `<commit>` reads `see the
+  commit that adds this line`, as `Caught up:` reads for this skill's.
 
 ## Reading
 

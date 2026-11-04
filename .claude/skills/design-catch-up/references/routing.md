@@ -39,9 +39,10 @@ matches wins:
 2. **`theme`** — the point changes only how a theme draws parts its
    catalogue already has (a colour, a size, a radius, an edge, a timing), and
    the documents already state the behaviour. It becomes one runbook step per
-   theme, `/theme-implement <canvas-url> <theme-id>`, which updates the theme
-   from its canvas and stops, naming the task needed, when the contract
-   cannot express it.
+   theme, `/theme-implement catch-up <theme-id> <canvas-url>`, which updates
+   the theme from its canvas, checks every point of its entries, and stops,
+   naming the task needed, when the contract cannot express a point or the
+   code does not carry it yet.
 3. **`revise`** — the point changes what an architected feature document
    states or promises, whatever the feature's status: a behaviour, a
    component, a layout rule, a persistence or platform rule, a design rule in
@@ -88,8 +89,8 @@ The owner sequence, in this order; a step with nothing to do is not in it:
    (a `-2`, `-3` suffix when the name is taken) whose steps implement the
    work steps 3 and 4 created: `/task-implement <N> --review` per new task
    and per task left `[STALE]` for reconciliation, in plan order, then one
-   `/theme-implement <canvas-url> <theme-id>` per theme a `theme` point
-   reaches, last, so the theme reads a canvas whose new parts the tasks have
+   `/theme-implement catch-up <theme-id> <canvas-url>` per theme the
+   entries name, last, so the theme reads a canvas whose new parts the tasks have
    built. The gate reply `runbook <id|name>` appends the same steps to that
    open runbook instead (`/runbook-create --append <id|name>`).
 
